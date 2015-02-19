@@ -1,0 +1,28 @@
+OASISFormat: 0.4
+OCamlVersion: >= 4.02.1
+Name: uwt
+Version: @VERSION@
+LicenseFile: COPYING
+License: LGPL-2.1 with OCaml linking exception
+Authors: fdopen@ml.ignorelist.com
+Maintainers: fdopen@ml.ignorelist.com
+Homepage: https://github.com/fdopen/uwt
+Synopsis: libuv bindings
+Description:
+  Uwt provides OCaml bindings for libuv, on top of lwt.
+
+Plugins: DevFiles (0.4)
+BuildType:              Custom (0.4)
+BuildTools:             omake
+InstallType:            Custom (0.4)
+XCustomBuild:           $omake all NATIVE_ENABLED=$is_native
+XCustomBuildClean:      $omake clean
+XCustomInstall:         $omake install
+XCustomUninstall:       $omake uninstall
+XDevFilesEnableMakefile: false
+XDevFilesEnableConfigure: false
+
+Library "uwt"
+  Path:               src
+  BuildDepends: unix, bytes, bigarray, lwt (>= 2.4.7), ppx_deriving, ppx_import
+  XMETARequires: unix, bytes, bigarray, lwt

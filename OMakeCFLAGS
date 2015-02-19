@@ -1,0 +1,34 @@
+DEVCFLAGS=-Wall
+DEVCFLAGS+=-Wextra 
+DEVCFLAGS+=-g3
+DEVCFLAGS+=-O0
+DEVCFLAGS+=-Waggregate-return
+DEVCFLAGS+=-Wbad-function-cast
+DEVCFLAGS+=-Wcast-align
+DEVCFLAGS+=-Wcast-qual
+DEVCFLAGS+=-Wdate-time
+DEVCFLAGS+=-Wendif-labels
+DEVCFLAGS+=-Werror=overflow
+DEVCFLAGS+=-Wfloat-equal
+DEVCFLAGS+=-Wformat=2 -Wformat-security -Wformat-nonliteral
+DEVCFLAGS+=-Winit-self
+DEVCFLAGS+=-Wlogical-op
+DEVCFLAGS+=-Wmissing-declarations
+DEVCFLAGS+=-Wmissing-include-dirs
+DEVCFLAGS+=-Wmissing-prototypes
+DEVCFLAGS+=-Wnested-externs
+DEVCFLAGS+=-Wold-style-definition
+DEVCFLAGS+=-Wpointer-arith
+DEVCFLAGS+=-Wredundant-decls
+DEVCFLAGS+=-Wshadow
+DEVCFLAGS+=-Wsign-compare # currently in -Wextra
+DEVCFLAGS+=-Wstrict-prototypes
+DEVCFLAGS+=-Wsuggest-attribute=noreturn
+DEVCFLAGS+=-Wundef
+DEVCFLAGS+=-Wuninitialized 
+DEVCFLAGS+=-Wunused 
+DEVCFLAGS+=-Wunused-macros
+DEVCFLAGS+=-Wwrite-strings 
+DEVCFLAGS+=-pedantic 
+DEVCFLAGS+=-std=gnu11 
+#DEVCFLAGS+=-DNDEBUG=1

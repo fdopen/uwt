@@ -1,0 +1,74 @@
+.DEFAULT: all
+.PHONY: clean all distclean doc #lib
+
+CC= $(OCAMLC_CC)
+CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS)
+
+configure config.h.in: configure.ac
+	autoreconf -fi
+
+if $(equal $(OSTYPE),Win32)
+	config.h: config.h.in configure
+		bash.exe configure CC="$(OCAMLC_CC) $(OCAMLC_CC_CFLAGS)"
+else
+	config.h: config.h.in configure
+		./configure CC="$(OCAMLC_CC) $(OCAMLC_CC_CFLAGS)"
+
+clean::
+	rm -f config.log config.status
+
+distclean::
+	rm -f config.h *~ configure
+	rm -rf autom4te.cache
+
+section
+	.SCANNER: scan-c-%: config.h
+	CFILES= emap_gen
+	CFLAGS= $(CFLAGS) $(CFLAGS_LIBUV)
+	LDFLAGS+= $(LDFLAGS_LIBUV)
+	Repeat_ctargets($(CFILES))
+	T=$(CProgram emap_gen, $(CFILES))
+	clean::
+		rm -f emap_gen$(EXE) map_error.h error.ml
+	byte_order.ml error.ml map_error.h: emap_gen$(EXE)
+		./emap_gen$(EXE)
+
+section
+	.SCANNER: scan-c-%: map_error.h config.h
+	.SCANNER: scan-ocaml-%: error.ml byte_order.ml
+	OCAMLPACKS+= lwt bigarray unix
+	OCAMLFINDFLAGS+= -pp cppo
+	MLFILES= uwt uwt_bytes uwt_io
+	CFILES= uwt_stubs uwt_bytes_stubs
+	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
+	LDFLAGS+=$(LDFLAGS_LIBUV)
+	Repeat_targets($(MLFILES))
+	UV=$(MixedLibrary uwt, $(MLFILES), $(CFILES))
+	all:: $(UV)
+	export UV
+
+section
+	OCAMLPACKS+= lwt bigarray unix
+	x=$(CreateDoc uwt,html,uwt.mli uwt_io.mli)
+
+ConfReplace(META)
+
+clean::
+	rm -f META
+
+.PHONY: install uninstall
+section
+	IFILES= $(filter-out %.o %.cmo, $(UV))
+	CMTIFILES=$(replacesuffixes .cmi, .cmti, $(filter %.cmi, $(UV)))
+	install: META $(UV)
+		$(OCAMLFIND) remove uwt || true
+		$(OCAMLFIND) install uwt META $(IFILES) -optional $(CMTIFILES)
+	uninstall:
+		$(OCAMLFIND) remove uwt
+
+clean::
+	clean-helper()
+	rm -f oUnit*.log setup.data setup.log *.tar*
+
+distclean:: clean
+	rm -f *~

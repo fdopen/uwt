@@ -1,0 +1,8 @@
+version = "@VERSION@"
+description = "libuv bindings"
+requires = "lwt bigarray unix bytes"
+archive(byte) = "uwt.cma"
+archive(byte, plugin) = "uwt.cma"
+archive(native) = "uwt.cmxa"
+archive(native, plugin) = "uwt.cmxs"
+exists_if = "uwt.cma"

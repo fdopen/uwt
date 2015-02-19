@@ -1,0 +1,53 @@
+.PHONY: clean all distclean install uninstall #lib 
+
+VERSION=0.0.1
+PROJNAME=uwt
+USE_OCAMLFIND= true
+BYTE_ENABLED=	true
+OCAML_BYTE_LINK_FLAGS= # no custom
+
+include OMakeIncludes
+include OMakeCFLAGS
+# omake sets OCAMLFLAGS to '-warn-error A' by default which usually
+# breaks compilation every time a new ocaml version is released
+static.=
+	PATH_PKG_CONFIG=$(Check_prog_in_path pkg-config)
+	if $(equal $(PATH_PKG_CONFIG), false)
+		PATH_PKG_CONFIG=$(Check_prog_in_path pkgconf)
+		export
+	x=$(pkg_config LIBUV,libuv)
+	if $(not $(x))
+		$(ConfMsgError $''libuv missing'')
+	x=$(pkg_config_between_vers LIBUV,libuv,1.2,2.0)
+	if $(not $(x))
+		$(ConfMsgError $''libuv version not supported'')
+	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))
+		export
+		OCAMLFLAGS= -g -bin-annot -safe-string -w A-4 #-32-33-37-39-48-4 -warn-error A-32-33-37-39-48-4
+		CFLAGS= $(DEVCFLAGS)
+	else
+		export
+		OCAMLFLAGS= -g -bin-annot -safe-string
+		CFLAGS= -g
+	export OCAMLFLAGS CFLAGS
+
+ConfReplace(_oasis)
+
+.DEFAULT: all
+.SUBDIRS: src examples
+
+ConfReplace(_oasis)
+
+setup.ml: _oasis
+	oasis setup
+
+clean::
+	clean-helper()
+	rm -f oUnit*.log setup.data setup.log *.tar*
+
+distclean:: clean
+	rm -f *~ .*~ setup.ml _oasis *.xz *.gz
+
+.PHONY: echo-pkg
+echo-pkg:
+	@echo $(PROJNAME)-$(VERSION)

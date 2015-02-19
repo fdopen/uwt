@@ -1,0 +1,196 @@
+String_subst(from, to, s) =
+   # Create a channel from a string
+   inx = $(open-in-string $s)
+   # Perform the substitution collecting results
+   result[] =
+   lex-search($(inx))
+   case $(from)
+       # Evaluate the replacement in this context
+       result[] += $"$(to)"
+       export
+   default
+       result[] += $0
+       export
+   # Remember to close the input
+   close($(inx))
+   # Flatten into a normal string
+   concat($(EMPTY), $(result))
+
+ConfReplace(file)=
+	$(file): $(file).in
+		section:
+			if $(file-exists $(file))
+				chmod(0644 $(file))
+			stdout = $(fopen $(file), w)
+			fsubst($(file).in)
+			case $"@\([A-Z0-9_]+\)@" g
+				getvar($1)
+			close($(stdout))
+			if $(not $(equal $(OSTYPE), Win32))
+				chmod(0444 $(file))
+
+Repeat_targets(t)=
+	foreach(f, $(t))
+		$(f).cmi:
+		$(f).cmo:
+		$(f).o:
+		$(f).cmx:
+		$(f)$(EXT_OBJ):
+
+Repeat_ctargets(t)=
+	foreach(f, $(t))
+		$(f)$(EXT_OBJ): $(f).c
+
+Camlp4o(FILES) =
+	section
+		OCAMLPACKS+= camlp4
+		OCAMLFINDFLAGS+= -syntax camlp4o
+		Repeat_targets($(FILES))
+
+.PHONY:doc
+CreateDoc(name,folder,files)=
+	mlifiles = $(filter-exists $(addsuffix .mli, $(set $(removesuffix $(files)))))
+	cmifiles = $(addsuffix .cmi, $(removesuffix $(mlifiles)))
+	if $(USE_OCAMLFIND)	
+		$(name).idoc: $(mlifiles) $(cmifiles) /.PHONY/OCamlGeneratedFilesTarget
+			$(OCAMLFIND) ocamldoc -dump $(name).idoc -stars \
+				$(PREFIXED_OCAMLINCLUDES) -package "$(OCAMLPACKS)" \
+				$(mlifiles)
+	else
+		$(name).idoc: $(mlifiles) $(cmifiles) /.PHONY/OCamlGeneratedFilesTarget
+			ocamldoc -dump $(name).idoc -stars \
+				$(PREFIXED_OCAMLINCLUDES) $(mlifiles)
+	doc:: $(cmifiles) $(name).idoc
+		mkdir(-m 0755 -p $(folder))
+		$(OCAMLFIND) ocamldoc -d html -stars -t $(capitalize $(name)) -html $(mapprefix -load, $(name).idoc)
+	clean::
+		rm(-r -f $(folder))
+		rm(-f $(name).idoc)		
+
+Regex_ar(regex,ar)=
+	foreach(f, $(ar))
+		match $(f)
+		case $(regex)
+			return $(f)
+	return $(string)
+
+static. =
+	section
+		if $(not $(CheckProg ocamlfind))
+			$(ConfMsgError ocamlfind missing)
+		config_out=$(shella ocamlfind ocamlc -config)
+		CC_CONFIG=$(Regex_ar $"^bytecomp_c_compiler:",$(config_out))
+		OCAMLC_CC= $(nth 1, $(CC_CONFIG))
+		OCAMLC_CC_CFLAGS=$(nth-tl 2, $(CC_CONFIG))
+		OCAMLC_SYSTEM=$(nth 1, $(Regex_ar $"^system:",$(config_out)))
+		OCAMLLIB=
+			if $(defined OCAMLLIB)
+				value $(OCAMLLIB)
+			else
+				value $(nth 1, $(Regex_ar $"^standard_library:", $(config_out)))
+		OCAMLC_VERSION=$(nth 1, $(Regex_ar $"^version:",$(config_out)))
+		x=$(split .,$(OCAMLC_VERSION))
+		OCAMLC_VERSION_MAJOR=$(int $(x.nth 0))
+		OCAMLC_VERSION_MINOR=$(int $(x.nth 1))
+		HAVE_NATIVE_DYNLINK=$(eq 0,$(shell-code ocamlfind query -predicates native dynlink))
+		export OCAMLLIB
+		export OCAMLC_VERSION
+		export OCAMLC_CC
+		export OCAMLC_SYSTEM
+		export OCAMLC_CC_CFLAGS
+		export HAVE_NATIVE_DYNLINK
+		export OCAMLC_VERSION_MAJOR OCAMLC_VERSION_MINOR
+
+
+# returns all generated (or existing) files that should be installed
+MixedLibrary(name,mlfiles,cfiles)=
+	CC= $(OCAMLC_CC)
+	CFLAGS= $(OCAMLC_CC_CFLAGS) -I$(OCAMLLIB) $(CFLAGS)
+	BYTELIB   = $(file $(name).cma)
+	NATIVELIB = $(file $(name).cmxa) $(file $(name).a)
+	NATIVEDYNLIB= $(file $(name).cmxs)
+	CMXFILES = $(addsuffix .cmx, $(mlfiles))
+	CMIFILES = $(addsuffix .cmi, $(mlfiles))
+	CMOFILES = $(addsuffix .cmo, $(mlfiles))
+	MLIFILES = $(filter-exists $(addsuffix .mli, $(mlfiles)))
+	C_OBJS = $(addsuffix $(EXT_OBJ), $(cfiles))
+	OCAML_MKLIB_FLAGS= $(LDFLAGS)
+	OCAMLFLAGS+= $(mapprefix -ccopt, $(CFLAGS))
+	Repeat_ctargets($(cfiles))
+	$(BYTELIB): $(addsuffix .cmo, $(mlfiles)) lib$(name)$(EXT_LIB) dll$(name)$(EXT_DLL) $(C_OBJS)
+		$(OCAMLFIND) ocamlmklib -o $(name) $(OCamlLinkSort $(addsuffix .cmo, $(mlfiles))) $(OCAML_LINK_FLAGS) $(OCAML_MKLIB_FLAGS)
+	$(NATIVELIB): $(CMXFILES) lib$(name)$(EXT_LIB) dll$(name)$(EXT_DLL) $(C_OBJS)
+		$(OCAMLFIND) ocamlmklib -o $(name) $(OCamlLinkSort $(addsuffix .cmx, $(mlfiles))) $(OCAML_LINK_FLAGS) $(OCAML_MKLIB_FLAGS)
+
+	lib$(name)$(EXT_LIB) dll$(name)$(EXT_DLL): $(C_OBJS)
+		$(OCAMLFIND) ocamlmklib -oc $(name) $(addsuffix $(EXT_OBJ), $(cfiles)) $(OCAML_LINK_FLAGS) $(OCAML_MKLIB_FLAGS)
+
+	$(NATIVEDYNLIB): $(NATIVELIB)
+		$(OCAMLFIND) ocamlopt -shared -o $@ -I . $(OCAML_LINK_FLAGS) $<
+
+	return $(array $(if $(NATIVE_ENABLED), $(NATIVELIB) $(CMXFILES) \
+				$(if $(HAVE_NATIVE_DYNLINK), $(NATIVEDYNLIB))), \
+			$(if $(BYTE_ENABLED), $(BYTELIB) $(CMOFILES)), \
+			lib$(name)$(EXT_LIB), \
+			dll$(name)$(EXT_DLL), \
+			$(CMIFILES) $(MLIFILES) \
+		  $(C_OBJS) \
+		)
+
+clean-helper()=
+		rm(-f $(glob *$(EXT_OBJ) *$(EXT_DLL) *$(EXT_LIB) *.cmt *.annot *.cma \
+	     *.cmi *.cmti *.cmxa *.cmx *.cmxs *.cmo *.opt *.run *.exe))
+
+
+# useful functions from camlspotter
+where1(com) =
+  WHERE = $(where $(prog))
+  if $(WHERE)
+    value $(nth 0, $(WHERE))
+  else
+    value
+
+Check_prog_in_path(prog) =
+   ConfMsgChecking(for $(prog))
+   WHERE = $(where1 $(prog))
+   if $(WHERE)
+      ConfMsgResult(found $(WHERE))
+      return $(WHERE)
+   else
+      ConfMsgResult(FAILED - no $(prog) found)
+      return false
+
+pkg_config(name, libname) =
+  ConfMsgChecking(for $(libname) by pkg-config)
+  if $(and $(defined this.PATH_PKG_CONFIG), $(equal 0, $(shell-code $(PATH_PKG_CONFIG) $(libname))))
+    # this is required since it is called in .STATIC
+    setvar(this.LDFLAGS_$(name), $(shell $(PATH_PKG_CONFIG) --libs $(libname)))
+    setvar(this.CFLAGS_$(name), $(shell $(PATH_PKG_CONFIG) --cflags $(libname)))
+    setvar(this.SUPPORT_$(uppercase $(name)), true)
+    setvar(this.HAVE_$(uppercase $(name)), true)
+    ConfMsgResult(found)
+    export
+    value true
+  else 
+    ConfMsgResult(failed $(PATH_PKG_CONFIG) $(libname))
+    value false
+  export
+
+pkg_config_version(libname) =
+  value $(shell $(PATH_PKG_CONFIG) $(libname) --modversion)
+
+pkg_config_between_vers(name, libname, min_ver, too_high_ver) =
+  if $(pkg_config $(name), $(libname))
+    ConfMsgChecking($(libname): $(min_ver) <= version < $(too_high_ver))
+    ver=$(pkg_config_version $(libname)) 
+    if $(and $(le $(cmp-versions $(min_ver), $(ver)), 0), $(lt $(cmp-versions $(ver), $(too_high_ver)), 0))
+      ConfMsgResult($(ver) ... yes)
+      value true
+      export
+    else
+      ConfMsgResult($(ver) ... no)
+      value false # do not export
+    export
+  else
+    value false
+  export

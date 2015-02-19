@@ -1,0 +1,43 @@
+.DEFAULT: all
+
+OCAMLPACKS+= ppx_import lwt bigarray unix ppx_deriving.show
+OCAMLINCLUDES[]+= $(dir ../src)
+OCAML_LIBS+= $(file ../src/uwt)
+
+section
+	f=help
+	Repeat_targets($(f))
+	TEST_PROG=$(OCamlLibrary $(f),$(f))
+
+example_r(f,x)=
+	if $(equal $(x),true)
+		OCAML_LIBS+= $(file help)
+		export
+	Repeat_targets($(f))
+	TEST_PROG=$(OCamlProgram $(f),$(f))
+	all:: $(TEST_PROG)
+	clean::
+		rm -f $(f)$(EXE)
+
+example(f)=
+	example_r($(f),false)
+
+example_h(f)=
+	example_r($(f),true)
+
+example(copy)
+example(spawn)
+example_h(echo_tcp)
+example_h(hello_http)
+example_h(fs_event)
+example(timer)
+example_h(fs_poll)
+example(usage)
+example(dns)
+
+clean::
+	clean-helper()
+	rm -f oUnit*.log setup.data setup.log *.tar*
+
+distclean:: clean
+	rm -f *~ .*~

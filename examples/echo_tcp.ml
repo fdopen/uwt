@@ -1,0 +1,41 @@
+open Lwt.Infix
+
+let server_port = 9009
+let server_ip4 = "127.0.0.1"
+let server_backlog = 32
+let client_buf_size = 1024
+
+module U = Uwt
+module T = U.Tcp
+
+let echo_client c =
+  let buf = Bytes.create client_buf_size in
+  let rec iter () =
+    T.read ~buf c >>= function
+    | 0 -> Lwt.return_unit
+    | len ->
+      T.write ~buf ~len c >>= fun () ->
+      iter ()
+  in
+  Lwt.finalize iter ( fun () -> T.close c )
+
+let on_listen server x =
+  if Uwt.Result.is_error x then
+    Uwt_io.printl "listen error" |> ignore
+  else
+    match T.accept server with
+    | U.Error _ -> Uwt_io.printl "accept error" |> Lwt.ignore_result
+    | U.Ok c -> echo_client c |> ignore
+
+let echo_server () =
+  let server = T.init_exn () in
+  Lwt.finalize ( fun () ->
+      let sock = U.Misc.ip4_addr_exn server_ip4 server_port in
+      T.bind_exn server sock;
+      let () = T.listen_exn server ~back:server_backlog ~cb:on_listen in
+      Help.wait ()
+    ) ( fun () -> T.close server )
+
+let () = U.Main.run (echo_server ())
+
+let () = Help.clean ()
