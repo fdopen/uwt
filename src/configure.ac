@@ -7,11 +7,12 @@ AC_USE_SYSTEM_EXTENSIONS
 
 AC_MSG_CHECKING([posix source 200809L])
 
-AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h fcntl.h)
+AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_DECLS([strnlen], [], [], [#include <string.h>])
 AC_HEADER_STDBOOL
 AC_C_BIGENDIAN
+AC_SYS_LARGEFILE
 
 AC_MSG_CHECKING([_Static_assert])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([_Static_assert (1, "");],

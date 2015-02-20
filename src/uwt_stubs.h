@@ -30,8 +30,9 @@ P1(uwt_default_loop);
 P2(uwt_run_loop);
 P1(uwt_loop_close_na);
 
-P1(uwt_new_uv_fs_t);
-P1(uwt_cancel_noerr_na);
+P2(uwt_req_create);
+P1(uwt_req_cancel_noerr_na);
+
 P6(uwt_fs_open_native);
 BY(uwt_fs_open_byte);
 P7(uwt_fs_read_native);
@@ -164,7 +165,6 @@ P1(uwt_get_total_memory);
 P1(uwt_hrtime);
 P1(uwt_getrusage);
 
-P2(uwt_new_req_dns);
 P6(uwt_getaddrinfo_native);
 BY(uwt_getaddrinfo_byte);
 P5(uwt_getnameinfo);
@@ -177,8 +177,13 @@ P2(uwt_kill_na);
 
 P1(uwt_get_fd);
 P1(uwt_get_socket);
-P1(uwt_sockaddr);
+P1(uwt_to_sockaddr);
+P1(uwt_of_sockaddr);
 P1(uwt_sun_path);
+
+P5(uwt_getservbyname);
+P6(uwt_lseek_native);
+BY(uwt_lseek_byte);
 
 /* valgrind */
 P1(uwt_free_all_memory);

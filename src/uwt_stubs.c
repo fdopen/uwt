@@ -39,6 +39,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <errno.h>
 
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
@@ -57,6 +58,15 @@
 #endif
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
 #endif
 
 #include <caml/mlvalues.h>
@@ -338,23 +348,29 @@ union all_sockaddr {
 
 struct req;
 typedef value (*req_c_cb)(uv_req_t*);
+typedef void (*clean_cb)(struct req*);
 
 union uparam {
     void * c_void;
     const void * c_cvoid;
-    /*   int c_int;
-    uintptr_t c_uintptr_t;
-    intptr_t c_intptr_t;
-    value o_value;
-    ssize_t c_ssize_t;
-    size_t c_size_t; */
+    int c_int;
+};
+
+struct cparam2 {
+    union uparam void1;
+    union uparam void2;
+};
+
+union u2param {
+    int64_t c_int64_t;
+    struct cparam2 c;
 };
 
 struct ATTR_PACKED req {
     uv_req_t * req;
     req_c_cb c_cb;
-    union uparam void1;
-    union uparam void2;
+    clean_cb clean_cb;
+    union u2param c;
     uv_buf_t buf;
     cb_t cb;
     cb_t sbuf;
@@ -368,6 +384,7 @@ struct ATTR_PACKED req {
     unsigned int clean_req: 1;
     unsigned int buf_contains_ba: 1;
     unsigned int in_cb: 1;
+    unsigned int work_cb_called: 1;
 };
 
 #define Req_val(v)                              \
@@ -530,6 +547,7 @@ uwt_init_stacks_na(value unit)
   XX(UV_FS,uv_fs_t);
   XX(UV_GETADDRINFO,uv_getaddrinfo_t);
   XX(UV_GETNAMEINFO,uv_getnameinfo_t);
+  XX(UV_WORK,uv_work_t);
 #undef XX
 #define XX(t,d)                                 \
   stacks_handle_t[t].s = NULL;                  \
@@ -706,9 +724,9 @@ cleanup_uv_req_t(struct req * wp)
       uv_fs_req_cleanup((uv_fs_t*)req);
       break;
     case UV_GETADDRINFO:
-      if ( wp->void1.c_void != NULL ){
-        uv_freeaddrinfo(wp->void1.c_void);
-        wp->void1.c_void = NULL;
+      if ( wp->c.c.void1.c_void != NULL ){
+        uv_freeaddrinfo(wp->c.c.void1.c_void);
+        wp->c.c.void1.c_void = NULL;
       }
       break;
     default:
@@ -771,6 +789,10 @@ req_free_most(struct req * wp)
       free_uv_buf_t(&wp->buf);
     }
     wp->buf.base = NULL;
+  }
+  if ( wp->clean_cb != NULL){
+    wp->clean_cb(wp);
+    wp->clean_cb = NULL;
   }
   if ( wp->req ){
     free_uv_req_t(wp->req);
@@ -904,16 +926,17 @@ req_create(uv_req_type typ, enum cb_type cb_type)
     caml_raise_out_of_memory();
   }
 
-  wp->void1.c_void = NULL;
-  wp->void2.c_void = NULL;
+  wp->c.c.void1.c_void = NULL;
+  wp->c.c.void2.c_void = NULL;
 
   wp->c_cb = NULL;
+  wp->clean_cb = NULL;
   wp->cb = CB_INVALID;
   wp->sbuf = CB_INVALID;
   wp->buf.base = NULL;
   wp->buf.len = 0;
   wp->offset = 0;
-  /* wp->c_param not initialized */
+  wp->c_param = 0;
   wp->in_use = 0;
   wp->cancel = 0;
   wp->clean_req = 0;
@@ -921,7 +944,7 @@ req_create(uv_req_type typ, enum cb_type cb_type)
   wp->buf_contains_ba = 0;
   wp->in_cb = 0;
   wp->cb_type = cb_type;
-
+  wp->work_cb_called = 0;
   wp->req->data = wp;
   wp->req->type = typ;
   return wp;
@@ -1104,30 +1127,27 @@ universal_callback(uv_req_t * req)
     value exn = Val_unit;
     wp_req->clean_req = 1;
     assert( wp_req->in_use == 1 );
-    if ( wp_req->cancel == 1 ){
-      if (unlikely( ((uv_fs_t*)req)->result != UV_ECANCELED )){
-        DEBUG_PF("dubious cancel status");
+    if ( wp_req->cancel != 1 ){
+      if ( unlikely (wp_req->cb == CB_INVALID )){
+        DEBUG_PF("no ocaml callback");
       }
-    }
-    else if ( unlikely (wp_req->cb == CB_INVALID )){
-      DEBUG_PF("no ocaml callback");
-    }
-    else if ( unlikely (wp_req->c_cb == NULL )){
-      DEBUG_PF("no c-callback");
-    }
-    else {
-      wp_req->in_cb = 1;
-      if ( wp_req->c_cb == ret_unit_cparam ){
-        exn = VAL_UNIT_UV_RESULT(wp_req->c_param);
-      }
-      else if ( wp_req->c_cb == ret_uv_result_unit ){
-        exn = VAL_UNIT_UV_RESULT(((uv_fs_t*)req)->result);
+      else if ( unlikely (wp_req->c_cb == NULL )){
+        DEBUG_PF("no c-callback");
       }
       else {
-        exn = wp_req->c_cb(req);
+        wp_req->in_cb = 1;
+        if ( wp_req->c_cb == ret_unit_cparam ){
+          exn = VAL_UNIT_UV_RESULT(wp_req->c_param);
+        }
+        else if ( wp_req->c_cb == ret_uv_result_unit ){
+          exn = VAL_UNIT_UV_RESULT(((uv_fs_t*)req)->result);
+        }
+        else {
+          exn = wp_req->c_cb(req);
+        }
+        exn = CAML_CALLBACK1(wp_req,cb,exn);
+        wp_req->in_cb = 0;
       }
-      exn = CAML_CALLBACK1(wp_req,cb,exn);
-      wp_req->in_cb = 0;
     }
     req_free_most(wp_req);
     if ( Is_exception_result(exn) ){
@@ -1135,6 +1155,43 @@ universal_callback(uv_req_t * req)
     }
   }
 }
+
+
+CAMLprim value
+uwt_req_create(value o_loop, value o_type)
+{
+  CAMLparam1(o_loop);
+  value res =  caml_alloc_custom(&uwt_wp, sizeof(intnat), 0, 1);
+  Field(res,1) = 0;
+  int type;
+  switch (Long_val(o_type)){
+  case 0: type = UV_FS; break;
+  case 1: type = UV_GETADDRINFO; break;
+  case 2: type = UV_GETNAMEINFO; break;
+  default: /* fall */
+  case 3: type = UV_WORK; break;
+  }
+  struct req * req = req_create(type,Field(o_loop,2));
+  Field(res,1) = (intptr_t)req;
+  CAMLreturn(res);
+}
+
+CAMLprim value
+uwt_req_cancel_noerr_na(value res)
+{
+  struct req * wp = Req_val(res);
+  if ( wp != NULL &&
+       wp->req != NULL &&
+       wp->in_use == 1 &&
+       wp->cancel == 0 &&
+       wp->in_cb == 0
+       ){
+    wp->cancel = 1;
+    uv_cancel(wp->req);
+  }
+  return Val_unit;
+}
+
 
 /* {{{ Fs start */
 
@@ -1311,46 +1368,14 @@ universal_callback(uv_req_t * req)
 #define RSTART(i,n,...)                         \
   RSTART_(i,n,__VA_ARGS__)
 
-#define FRSTART(x,n,...)                        \
-  RSTART(x,fs_##n,__VA_ARGS__)
-
 #define FSSTART(...)                            \
-  FRSTART(c,__VA_ARGS__)
+  RSTART(c,__VA_ARGS__)
 
 #define UFSSTART(...)                           \
-  FRSTART(u,__VA_ARGS__)
+  RSTART(u,__VA_ARGS__)
 
 #define IFSSTART(...)                           \
-  FRSTART(i,__VA_ARGS__)
-
-CAMLprim value
-uwt_new_uv_fs_t(value o_loop)
-{
-  CAMLparam1(o_loop);
-  value res;
-  struct req * req;
-  res =  caml_alloc_custom(&uwt_wp, sizeof(intnat), 0, 1);
-  Field(res,1) = 0;
-  req = req_create(UV_FS,Field(o_loop,2));
-  Field(res,1) = (intptr_t)req;
-  CAMLreturn(res);
-}
-
-CAMLprim value
-uwt_cancel_noerr_na(value res)
-{
-  struct req * wp = Req_val(res);
-  if ( wp != NULL &&
-       wp->req != NULL &&
-       wp->in_use == 1 &&
-       wp->cancel == 0 &&
-       wp->in_cb == 0
-       ){
-    wp->cancel = 1;
-    uv_cancel(wp->req);
-  }
-  return Val_unit;
-}
+  RSTART(i,__VA_ARGS__)
 
 static value
 ret_uv_result_unit(uv_req_t * r)
@@ -1408,7 +1433,7 @@ static int open_flag_table[9] = {
 #endif
 };
 
-IFSSTART(open,o_name,o_flag_list,o_perm,{
+IFSSTART(fs_open,o_name,o_flag_list,o_perm,{
   int flags = caml_convert_flag_list(o_flag_list,open_flag_table);
   COPY_STR1(o_name,{
       BLOCK({
@@ -1454,7 +1479,7 @@ fs_read_cb(uv_req_t * r)
   return param;
 }
 
-FSSTART(read,o_file,o_buf,o_offset,o_len,{
+FSSTART(fs_read,o_file,o_buf,o_offset,o_len,{
   size_t slen = (size_t)Long_val(o_len);
   struct req * wp = wp_req;
   unsigned int offset = Long_val(o_offset);
@@ -1514,7 +1539,7 @@ fs_write_cb(uv_req_t * r)
   return erg;
 }
 
-FSSTART(write,
+FSSTART(fs_write,
         o_file,
         o_buf,
         o_pos,
@@ -1563,13 +1588,13 @@ FSSTART(write,
   }
 })
 
-UFSSTART(close,o_fd,{
+UFSSTART(fs_close,o_fd,{
     BLOCK({
         ret = uv_fs_close(loop,req,Long_val(o_fd),cb);
       });
 })
 
-UFSSTART(unlink,o_path,{
+UFSSTART(fs_unlink,o_path,{
   COPY_STR1(o_path,{
     BLOCK({
       ret = uv_fs_unlink(loop,req,STRING_VAL(o_path),cb);
@@ -1577,48 +1602,48 @@ UFSSTART(unlink,o_path,{
   });
 })
 
-UFSSTART(mkdir,o_path,o_mode,{
+UFSSTART(fs_mkdir,o_path,o_mode,{
   COPY_STR1(o_path,{
       BLOCK({
           ret = uv_fs_mkdir(loop,req,STRING_VAL(o_path),Long_val(o_mode),cb);});
     });
 })
 
-UFSSTART(rmdir,o_path,{
+UFSSTART(fs_rmdir,o_path,{
   COPY_STR1(o_path,{
       BLOCK({ret = uv_fs_rmdir(loop,req,STRING_VAL(o_path),cb);});
     });
 })
 
-UFSSTART(rename,o_old,o_new,{
+UFSSTART(fs_rename,o_old,o_new,{
   COPY_STR2(o_old,o_new,{
       BLOCK({ret = uv_fs_rename(loop,req,STRING_VAL(o_old),
                                 STRING_VAL(o_new),cb);});
     });
 })
 
-UFSSTART(link,o_old,o_new,{
+UFSSTART(fs_link,o_old,o_new,{
     COPY_STR2(o_old,o_new,{
         BLOCK({ret = uv_fs_link(loop,req,STRING_VAL(o_old),
                                 STRING_VAL(o_new),cb);});
       });
 })
 
-UFSSTART(fsync,o_fd,{
+UFSSTART(fs_fsync,o_fd,{
     BLOCK({ret = uv_fs_fsync(loop,req,Long_val(o_fd),cb);});
 })
 
-UFSSTART(fdatasync,o_fd,{
+UFSSTART(fs_fdatasync,o_fd,{
     BLOCK({ret = uv_fs_fdatasync(loop,req,Long_val(o_fd),cb);});
 })
 
-UFSSTART(ftruncate,o_fd,o_off,{
+UFSSTART(fs_ftruncate,o_fd,o_off,{
   int64_t off = Int64_val(o_off);
   BLOCK({ret = uv_fs_ftruncate(loop,req,Long_val(o_fd),off,cb);});
 })
 
 #define fs_sendfile_cb ret_int64
-FSSTART(sendfile,o_outfd,o_infd,o_offset,o_len,{
+FSSTART(fs_sendfile,o_outfd,o_infd,o_offset,o_len,{
   int64_t offset = Int64_val(o_offset);
   int64_t len = Int64_val(o_len);
   BLOCK({ret = uv_fs_sendfile(loop,
@@ -1687,7 +1712,7 @@ fs_scandir_cb(uv_req_t * r)
   }
 }
 
-FSSTART(scandir,o_path,{
+FSSTART(fs_scandir,o_path,{
     COPY_STR1(o_path,{
         BLOCK({ret = uv_fs_scandir(loop,req,STRING_VAL(o_path),0,cb);});
       });
@@ -1717,7 +1742,7 @@ fs_mkdtemp_cb(uv_req_t * r)
   return param;
 }
 
-FSSTART(mkdtemp,o_path,{
+FSSTART(fs_mkdtemp,o_path,{
     COPY_STR1(o_path,{
         BLOCK({ret = uv_fs_mkdtemp(loop,req,STRING_VAL(o_path),cb);});
       });
@@ -1748,7 +1773,7 @@ fs_readlink_cb(uv_req_t * r)
   return param;
 }
 
-FSSTART(readlink,o_path,{
+FSSTART(fs_readlink,o_path,{
     COPY_STR1(o_path,{
         BLOCK({ret = uv_fs_readlink(loop,req,STRING_VAL(o_path),
                                   cb);});
@@ -1761,7 +1786,7 @@ access_permission_table[] = {
   R_OK, W_OK, X_OK, F_OK
 };
 
-UFSSTART(access,o_path,o_list,{
+UFSSTART(fs_access,o_path,o_list,{
     int fl = caml_convert_flag_list(o_list, access_permission_table);
     COPY_STR1(o_path,{
         BLOCK({ret = uv_fs_access(loop,
@@ -1772,7 +1797,7 @@ UFSSTART(access,o_path,o_list,{
     });
 })
 
-UFSSTART(chmod,o_path,o_mode,{
+UFSSTART(fs_chmod,o_path,o_mode,{
     COPY_STR1(o_path,{
         BLOCK({ret = uv_fs_chmod(loop,
                                  req,
@@ -1783,7 +1808,7 @@ UFSSTART(chmod,o_path,o_mode,{
       });
 })
 
-UFSSTART(fchmod,o_path,o_mode,{
+UFSSTART(fs_fchmod,o_path,o_mode,{
     BLOCK({ret = uv_fs_fchmod(loop,
                             req,
                             Long_val(o_path),
@@ -1791,7 +1816,7 @@ UFSSTART(fchmod,o_path,o_mode,{
                             cb);});
 })
 
-UFSSTART(chown,o_path,o_uid,o_gid,{
+UFSSTART(fs_chown,o_path,o_uid,o_gid,{
     COPY_STR1(o_path,{
         BLOCK({ret = uv_fs_chown(loop,
                                  req,
@@ -1802,7 +1827,7 @@ UFSSTART(chown,o_path,o_uid,o_gid,{
       });
 })
 
-UFSSTART(fchown,o_fd,o_uid,o_gid,{
+UFSSTART(fs_fchown,o_fd,o_uid,o_gid,{
     BLOCK({
         ret = uv_fs_fchown(loop,
                            req,
@@ -1813,7 +1838,7 @@ UFSSTART(fchown,o_fd,o_uid,o_gid,{
       });
 })
 
-UFSSTART(utime,o_p,o_atime,o_mtime,{
+UFSSTART(fs_utime,o_p,o_atime,o_mtime,{
   double atime = Double_val(o_atime);
   double mtime = Double_val(o_mtime);
   COPY_STR1(o_p,{
@@ -1827,7 +1852,7 @@ UFSSTART(utime,o_p,o_atime,o_mtime,{
     });
 })
 
-UFSSTART(futime,o_fd,o_atime,o_mtime,{
+UFSSTART(fs_futime,o_fd,o_atime,o_mtime,{
   double atime = Double_val(o_atime);
   double mtime = Double_val(o_mtime);
   BLOCK({ret = uv_fs_futime(loop,
@@ -1838,7 +1863,7 @@ UFSSTART(futime,o_fd,o_atime,o_mtime,{
                             cb);});
 })
 
-UFSSTART(symlink,o_opath,o_npath,o_mode,{
+UFSSTART(fs_symlink,o_opath,o_npath,o_mode,{
   int flag;
   switch(Long_val(o_mode)){
   case 0: flag = 0; break;
@@ -1949,7 +1974,7 @@ fs_stat_cb(uv_req_t * r)
   return param;
 }
 
-FSSTART(stat,o_file,{
+FSSTART(fs_stat,o_file,{
     COPY_STR1(o_file,{
         BLOCK({
             ret = uv_fs_stat(loop,req,STRING_VAL(o_file),cb);
@@ -1958,7 +1983,7 @@ FSSTART(stat,o_file,{
 })
 
 #define fs_lstat_cb fs_stat_cb
-FSSTART(lstat,o_file,{
+FSSTART(fs_lstat,o_file,{
     COPY_STR1(o_file,{
         BLOCK({
             ret = uv_fs_lstat(loop,req,STRING_VAL(o_file),cb);});
@@ -1966,7 +1991,7 @@ FSSTART(lstat,o_file,{
 })
 
 #define fs_fstat_cb fs_stat_cb
-FSSTART(fstat,o_file,{
+FSSTART(fs_fstat,o_file,{
     BLOCK({
         ret = uv_fs_fstat(loop,req,Long_val(o_file),cb);
           });
@@ -4484,26 +4509,6 @@ uwt_hrtime(value unit)
 /* }}} Misc end */
 
 /* {{{ DNS start */
-CAMLprim value
-uwt_new_req_dns(value o_loop, value o_type)
-{
-  CAMLparam1(o_loop);
-  value res;
-  struct req * req;
-  res =  caml_alloc_custom(&uwt_wp, sizeof(intnat), 0, 1);
-  Field(res,1) = 0;
-  int type;
-  switch (Long_val(o_type)){
-  case 0: type = UV_GETADDRINFO; break;
-  case 1: /* fall */
-  default:
-    type = UV_GETNAMEINFO; break;
-  }
-  req = req_create(type,Field(o_loop,2));
-  Field(res,1) = (intptr_t)req;
-  CAMLreturn(res);
-}
-
 static value
 cst_to_constr(int n, int *tbl, int size, int deflt)
 {
@@ -4568,7 +4573,7 @@ ret_addrinfo_list(uv_req_t * rdd)
     Field(ifo,0) = Val_error(status);
   }
   else {
-    struct addrinfo* info = wp->void1.c_void;
+    struct addrinfo* info = wp->c.c.void1.c_void;
     struct addrinfo * r;
     value e = Val_int(0);
     value v = Val_int(0);
@@ -4591,8 +4596,8 @@ ret_addrinfo_list(uv_req_t * rdd)
     ifo = caml_alloc_small(1,Ok_tag);
     Field(ifo,0) = list_head;
     End_roots();
-    uv_freeaddrinfo( wp->void1.c_void );
-    wp->void1.c_void = NULL;
+    uv_freeaddrinfo( wp->c.c.void1.c_void );
+    wp->c.c.void1.c_void = NULL;
     wp->clean_req = 0;
   }
   return ifo;
@@ -4607,10 +4612,16 @@ cb_getaddrinfo (uv_getaddrinfo_t* req,
   struct req * r = req->data;
   if ( r ){
     r->c_param = status;
-    r->void1.c_void = res;
+    r->c.c.void1.c_void = res;
   }
   universal_callback((void*)req);
 }
+
+#define RETURN_RESULT_T_INVALID_LOOP_REQ(loop,req)                    \
+  if (unlikely( loop == NULL || req == NULL || loop->loop == NULL ||  \
+                req->req == NULL || req->in_use == 1 )){              \
+    return VAL_RESULT_UV_UWT_EFATAL;                                  \
+  }
 
 CAMLprim value
 uwt_getaddrinfo_native(value o_node,
@@ -4620,9 +4631,10 @@ uwt_getaddrinfo_native(value o_node,
                        value o_req,
                        value o_cb)
 {
-  CAMLparam5(o_node,o_serv,o_opts,o_req,o_cb);
   struct loop * loop = Loop_val(o_loop);
   struct req * req = Req_val(o_req);
+  RETURN_RESULT_T_INVALID_LOOP_REQ(loop,req);
+  CAMLparam5(o_node,o_serv,o_opts,o_req,o_cb);
   int erg;
   char * node;
   char * serv;
@@ -4711,8 +4723,8 @@ cb_getnameinfo(uv_getnameinfo_t* req, int status,
   struct req * r = req->data;
   if ( r ){ /* does not work synchronously */
     r->c_param = status;
-    r->void1.c_cvoid = hostname;
-    r->void2.c_cvoid = service;
+    r->c.c.void1.c_cvoid = hostname;
+    r->c.c.void2.c_cvoid = service;
   }
   universal_callback((void*)req);
 }
@@ -4732,8 +4744,10 @@ ret_getnameinfo(uv_req_t * rdd)
     value tmp2 = Val_unit;
     ifo = Val_unit ;
     Begin_roots3(tmp1,tmp2,ifo);
-    tmp1 = caml_copy_string(wp->void1.c_cvoid == NULL ? "" : wp->void1.c_cvoid);
-    tmp2 = caml_copy_string(wp->void2.c_cvoid == NULL ? "" : wp->void2.c_cvoid);
+    tmp1 = caml_copy_string(wp->c.c.void1.c_cvoid == NULL ? "" :
+                            wp->c.c.void1.c_cvoid);
+    tmp2 = caml_copy_string(wp->c.c.void2.c_cvoid == NULL ? "" :
+                            wp->c.c.void2.c_cvoid);
     ifo = caml_alloc_small(2,0);
     Field(ifo,0) = tmp1;
     Field(ifo,1) = tmp2;
@@ -4749,11 +4763,12 @@ CAMLprim value
 uwt_getnameinfo(value o_sockaddr, value o_list, value o_loop,
                 value o_req, value o_cb)
 {
+  struct loop * loop = Loop_val(o_loop);
+  struct req * req = Req_val(o_req);
+  RETURN_RESULT_T_INVALID_LOOP_REQ(loop,req);
   CAMLparam3(o_sockaddr,o_cb,o_req);
   value ret;
   int flags = caml_convert_flag_list(o_list, getnameinfo_flag_table);
-  struct loop * loop = Loop_val(o_loop);
-  struct req * req = Req_val(o_req);
   int erg;
 
   GR_ROOT_ENLARGE();
@@ -5057,7 +5072,7 @@ uwt_get_socket(value o_fd)
 }
 
 CAMLprim value
-uwt_sockaddr(value o_sock)
+uwt_of_sockaddr(value o_sock)
 {
   CAMLparam1(o_sock);
   CAMLlocal1(ret);
@@ -5069,6 +5084,15 @@ uwt_sockaddr(value o_sock)
                (void*)SOCKADDR_VAL(ret),
                &addr_len);
   CAMLreturn(ret);
+}
+
+CAMLprim value
+uwt_to_sockaddr(value o_sock)
+{
+  struct sockaddr_storage stor;
+  memcpy(&stor,SOCKADDR_VAL(o_sock),sizeof stor);
+  value ret = alloc_sockaddr((void*)&stor,sizeof stor,-1);
+  return ret;
 }
 
 CAMLprim value
@@ -5096,6 +5120,299 @@ uwt_sun_path(value o_sock)
 }
 
 /* }}} Compat End */
+
+/* {{{ Unix start */
+
+static char **
+c_copy_string_array(char **src)
+{
+  char ** p = src;
+  size_t i = 0 ;
+  while ( *p ){
+    i++;
+    p++;
+  }
+  size_t len = i;
+  p = malloc((len+1) * sizeof(char *));
+  if ( p == NULL ){
+    return NULL;
+  }
+  for ( i = 0 ; i < len ; ++i ){
+    p[i] = strdup(src[i]);
+    if ( p[i] == NULL ){
+      size_t j;
+      for ( j = 0 ; j < i ; j++ ){
+        free(p[j]);
+      }
+      free(p);
+      return NULL;
+    }
+  }
+  p[len] = NULL;
+  return p;
+}
+
+static void
+c_free_string_array(char ** src)
+{
+  char ** p = src;
+  while (*p){
+    free(*p);
+    ++p;
+  }
+  free(src);
+}
+
+static void
+getservbyname_clean_cb(struct req * r)
+{
+  if ( r->work_cb_called == 0 ){
+    free(r->c.c.void1.c_void);
+    free(r->c.c.void2.c_void);
+  }
+  else {
+    struct servent * s = r->c.c.void1.c_void;
+    if ( s ){
+      free(s->s_proto);
+      free(s->s_name);
+      c_free_string_array(s->s_aliases);
+      free(s);
+    }
+  }
+  r->c.c.void1.c_void = NULL;
+  r->c.c.void2.c_void = NULL;
+}
+
+static void
+getservbyname_work_cb(uv_work_t *req)
+{
+  struct req * r = req->data;
+  char * name = r->c.c.void1.c_void;
+  char * proto = r->c.c.void2.c_void;
+  struct servent * serv = getservbyname(name,proto);
+  r->work_cb_called = 1;
+  if ( serv == NULL ){
+    r->c.c.void1.c_void = NULL;
+    r->c.c.void2.c_void = NULL;
+  }
+  else {
+    struct servent * s = malloc(sizeof *s);
+    if ( s == NULL ){
+      goto nomem1;
+    }
+    s->s_name = strdup(serv->s_name);
+    if ( s->s_name == NULL && serv->s_name == NULL ){
+      goto nomem2;
+    }
+    s->s_proto = strdup(serv->s_proto);
+    if ( s->s_proto == NULL && serv->s_proto != NULL ){
+      goto nomem3;
+    }
+    s->s_aliases = c_copy_string_array(serv->s_aliases);
+    if ( s->s_aliases == NULL && serv->s_aliases != NULL ){
+      goto nomem4;
+    }
+    s->s_port = serv->s_port;
+    r->c.c.void1.c_void = s;
+    r->c.c.void2.c_void = NULL;
+    goto endf;
+  nomem4:
+    free(s->s_proto);
+  nomem3:
+    free(s->s_name);
+  nomem2:
+    free(s);
+  nomem1:
+    r->c.c.void1.c_void = NULL;
+    r->c.c.void2.c_int = UV_ENOMEM;
+  }
+ endf:
+  free(name);
+  free(proto);
+}
+
+static value
+getservbyname_cb(uv_req_t * req)
+{
+  struct req * r = req->data;
+  value ret;
+  if ( r->c_param < 0 ){
+    ret = caml_alloc_small(1,Error_tag);
+    Field(ret,0) = Val_error(r->c_param);
+  }
+  else {
+    struct servent *entry = r->c.c.void1.c_void ;
+    if ( entry == NULL ){
+      ret = caml_alloc_small(1,Error_tag);
+      Field(ret,0) = VAL_UV_UWT_ENOENT;
+    }
+    else {
+      value res;
+      value name = Val_unit, aliases = Val_unit, proto = Val_unit;
+      Begin_roots3(name, aliases, proto);
+       name = caml_copy_string(entry->s_name);
+       aliases = caml_copy_string_array((const char **)entry->s_aliases);
+       proto = caml_copy_string(entry->s_proto);
+       res = caml_alloc_small(4, 0);
+       Field(res,0) = name;
+       Field(res,1) = aliases;
+       Field(res,2) = Val_int(ntohs(entry->s_port));
+       Field(res,3) = proto;
+       name = caml_alloc_small(1,Ok_tag);
+       Field(name,0) = res;
+       ret = name;
+      End_roots();
+    }
+  }
+  return ret;
+}
+
+static void
+common_after_work_cb(uv_work_t *req, int status)
+{
+  struct req * r = req->data;
+  if ( r ){
+    r->c_param = status;
+  }
+  universal_callback((uv_req_t*)req);
+}
+
+CAMLprim value
+uwt_getservbyname(value o_name, value o_proto, value o_loop,
+                  value o_req, value o_cb)
+{
+  struct loop * loop = Loop_val(o_loop);
+  struct req * req = Req_val(o_req);
+  RETURN_RESULT_T_INVALID_LOOP_REQ(loop,req);
+  CAMLparam5(o_name,o_proto,o_loop,o_req,o_cb);
+  value ret;
+  GR_ROOT_ENLARGE();
+  req->c.c.void1.c_void = strdup(String_val(o_name));
+  req->c.c.void2.c_void = strdup(String_val(o_proto));
+  if ( !req->c.c.void1.c_void || !req->c.c.void2.c_void ){
+    free(req->c.c.void1.c_void);
+    free(req->c.c.void2.c_void);
+    req->c.c.void1.c_void = NULL;
+    req->c.c.void2.c_void = NULL;
+    ret = VAL_RESULT_UV_ENOMEM;
+  }
+  else {
+    int erg = uv_queue_work(loop->loop,
+                            (uv_work_t*)req->req,
+                            getservbyname_work_cb,
+                            common_after_work_cb);
+    if ( erg < 0 ){
+      free(req->c.c.void1.c_void);
+      free(req->c.c.void2.c_void);
+      req->c.c.void1.c_void = NULL;
+      req->c.c.void2.c_void = NULL;
+      Field(o_req,1) = 0;
+      req_free(req);
+    }
+    else {
+      gr_root_register(&req->cb,o_cb);
+      req->clean_cb = getservbyname_clean_cb;
+      req->c_cb = getservbyname_cb;
+      req->in_use = 1;
+    }
+    ret = VAL_UNIT_UV_RESULT(erg);
+  }
+  CAMLreturn(ret);
+}
+
+static void
+lseek_work_cb(uv_work_t *req)
+{
+  struct req * r = req->data;
+  int fd = r->c_param;
+  int whence = r->offset;
+  int64_t offset = r->c.c_int64_t;
+  r->work_cb_called = 1;
+  errno = 0;
+/* TODO: Does AC_SYS_LARGEFILE support windows? */
+#ifdef _WIN32
+  r->c.c_int64_t = _lseeki64(fd,offset,whence);
+#else
+  r->c.c_int64_t = lseek(fd,offset,whence);
+#endif
+  r->offset = errno;
+}
+
+static value
+lseek_cb(uv_req_t * req)
+{
+  struct req * r = req->data;
+  value ret;
+  if ( r->c_param < 0 ){
+    ret = caml_alloc_small(1,Error_tag);
+    Field(ret,0) = Val_error(r->c_param);
+  }
+  else if ( r->c.c_int64_t == -1 ){
+    value e;
+    switch ((int)r->offset){
+    case EINVAL: e = VAL_UV_EINVAL; break;
+    case EOVERFLOW: e =  VAL_UV_EAI_OVERFLOW; break;
+    case ESPIPE: e = VAL_UV_ESPIPE; break;
+    case ENXIO: e = VAL_UV_ENXIO ; break;
+    default: /* fall */
+    case EBADF: e = VAL_UV_EBADF ; break;
+    }
+    ret = caml_alloc_small(1,Error_tag);
+    Field(ret,0) = e;
+  }
+  else {
+    value p = caml_copy_int64(r->c.c_int64_t);
+    Begin_roots1(p);
+    ret = caml_alloc_small(1,Ok_tag);
+    Field(ret,0) = p;
+    End_roots();
+  }
+  return ret;
+}
+
+CAMLprim value
+uwt_lseek_native(value o_fd, value o_pos, value o_mode, value o_loop,
+                 value o_req, value o_cb)
+{
+  struct loop * loop = Loop_val(o_loop);
+  struct req * req = Req_val(o_req);
+  RETURN_RESULT_T_INVALID_LOOP_REQ(loop,req);
+  CAMLparam3(o_loop,o_req,o_cb);
+  int fd = Long_val(o_fd);
+  int64_t offset = Int64_val(o_pos);
+  int whence;
+  switch (Long_val(o_mode)){
+  case 0: whence = SEEK_SET; break;
+  case 1: whence = SEEK_CUR; break;
+  default:
+  case 2: whence = SEEK_END; break;
+  }
+  GR_ROOT_ENLARGE();
+
+  /* be careful: everything the worker thread needs, must be set
+     before uv_queue_work is called */
+  req->c_param = fd;
+  req->offset = whence;
+  req->c.c_int64_t = offset;
+  int erg = uv_queue_work(loop->loop,
+                          (uv_work_t*)req->req,
+                          lseek_work_cb,
+                          common_after_work_cb);
+  if ( erg < 0 ){
+    Field(o_req,1) = 0;
+    req_free(req);
+  }
+  else {
+    gr_root_register(&req->cb,o_cb);
+    req->c_cb = lseek_cb;
+    req->in_use = 1;
+  }
+  value ret = VAL_UNIT_UV_RESULT(erg);
+  CAMLreturn(ret);
+}
+BYTE_WRAP6(uwt_lseek)
+
+/* }}} Unix end */
 
 static void
 stack_clean (struct stack *s){

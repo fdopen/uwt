@@ -31,11 +31,16 @@
 /_oasis
 /src/META
 /src/config.h
+/src/config.h.in
 /src/configure
 /src/autom4te.cache/
 /src/error.ml
+/src/byte_order.ml
 /src/map_error.h
 /src/html
+/src/emap_gen
+/src/error_val.ml
+/src/error_val.mli
 /examples/copy
 /examples/dns
 /examples/echo_tcp
@@ -45,4 +50,4 @@
 /examples/spawn
 /examples/timer
 /examples/usage
-/src/emap_gen
+/examples/work

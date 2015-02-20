@@ -164,6 +164,7 @@ type error =
   | UWT_EBUSY (** e.g. reported, if you try to use Uwt.Stream.read_start,
                   while you've already registered another callback for this
                   event *)
+  | UWT_ENOENT (** entry not found, [Not_found] message for callbacks *)
 
 exception Uwt_error of error * string * string
 
@@ -293,6 +294,7 @@ module Result : sig
   val uwt_einval : int
   val uwt_enotactive : int
   val uwt_ebusy : int
+  val uwt_enoent: int
 end
 
 type file (** abstract type for a file descriptor *)
@@ -938,10 +940,20 @@ module Misc : sig
 end
 
 module Compat : sig
-  val of_sockaddr : Unix.sockaddr -> sockaddr
+  val of_unix_sockaddr: Unix.sockaddr -> sockaddr
+  val to_unix_sockaddr: sockaddr -> Unix.sockaddr
+
   (** the following functions always succeeds on *nix - but not on windows **)
   val file_of_file_descr : Unix.file_descr -> file option
   val socket_of_file_descr : Unix.file_descr -> socket option
+end
+
+module Unix : sig
+  type service_entry = Unix.service_entry
+  val getservbyname: name:string -> protocol:string -> service_entry Lwt.t
+  val lseek: file -> int64 -> Unix.seek_command -> int64 Lwt.t
+  val getaddrinfo:
+    string -> string -> Unix.getaddrinfo_option list -> Unix.addr_info list Lwt.t
 end
 
 (**/**)

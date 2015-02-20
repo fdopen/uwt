@@ -6,7 +6,7 @@ let () = Random.self_init ()
 (* We feed cat from stdin - and read its output from stdout.
    Then, we compare the result *)
 let cat_test () =
-  let len = 16_777_216 in (* 16MB, limit for 32-bit OCaml *)
+  let len = 16_777_211 in (* 16MB, limit for 32-bit OCaml *)
   let b = Bytes.init len ( fun _ -> Random.int 256 |> Char.chr ) in
   let stdin = Uwt.Pipe.init_exn () in
   let stdout = Uwt.Pipe.init_exn () in

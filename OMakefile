@@ -4,7 +4,6 @@ VERSION=0.0.1
 PROJNAME=uwt
 USE_OCAMLFIND= true
 BYTE_ENABLED=	true
-OCAML_BYTE_LINK_FLAGS= # no custom
 
 include OMakeIncludes
 include OMakeCFLAGS

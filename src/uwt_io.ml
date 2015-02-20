@@ -123,7 +123,7 @@ and 'mode _channel = {
 }
 
 and typ =
-  | Type_normal of (Uwt_bytes.t -> int -> int -> int Lwt.t)
+  | Type_normal of (Uwt_bytes.t -> int -> int -> int Lwt.t) * (int64 -> Unix.seek_command -> int64 Lwt.t)
       (* The channel has been created with [make]. The first argument
          is the refill/flush function and the second is the seek
          function. *)
@@ -186,7 +186,7 @@ let is_busy ch =
 let perform_io : type mode. mode _channel -> int Lwt.t = fun ch -> match ch.main.state with
   | Busy_primitive | Busy_atomic _ -> begin
       match ch.typ with
-        | Type_normal(perform_io) ->
+        | Type_normal(perform_io,_seek) ->
             let ptr, len = match ch.mode with
               | Input ->
                   (* Size of data in the buffer *)
@@ -468,16 +468,17 @@ let () =
   (* Flush all opened ouput channels on exit: *)
   Uwt.Main.at_exit flush_all
 
-(* let no_seek _pos _cmd =
-  Lwt.fail (Failure "Lwt_io.seek: seek not supported on this channel") *)
+let no_seek _pos _cmd =
+  Lwt.fail (Failure "Uwt_io.seek: seek not supported on this channel")
 
 let make :
   type m.
     ?buffer_size : int ->
     ?close : (unit -> unit Lwt.t) ->
+    ?seek : (int64 -> Unix.seek_command -> int64 Lwt.t) ->
     mode : m mode ->
     (Uwt_bytes.t -> int -> int -> int Lwt.t) ->
-    m channel = fun ?buffer_size ?(close=Lwt.return) ~mode perform_io ->
+    m channel = fun ?buffer_size ?(close=Lwt.return) ?(seek=no_seek) ~mode perform_io ->
   let size =
     match buffer_size with
       | None ->
@@ -501,7 +502,7 @@ let make :
     auto_flushing = false;
     mode = mode;
     offset = 0L;
-    typ = Type_normal(perform_io);
+    typ = Type_normal(perform_io, fun pos cmd -> try seek pos cmd with e -> Lwt.fail e);
   } and wrapper = {
     state = Idle;
     channel = ch;
@@ -548,6 +549,7 @@ let of_file : type m. ?buffer_size : int -> ?close : (unit -> unit Lwt.t) -> mod
     ~close:(match close with
               | Some f -> f
               | None -> (fun () -> Uwt.Fs.close fd))
+    ~seek:(fun pos cmd -> Uwt.Unix.lseek fd pos cmd)
     ~mode
     perform_io
 
@@ -1130,7 +1132,7 @@ struct
     let write_float32 oc v = write_int32 oc (Int32.bits_of_float v)
     let write_float64 oc v = write_int64 oc (Int64.bits_of_float v)
   end
-  (*
+
   (* +---------------------------------------------------------------+
      | Random access                                                 |
      +---------------------------------------------------------------+ *)
@@ -1143,12 +1145,12 @@ struct
       Lwt.return_unit
 
   let set_position : type m. m _channel -> int64 -> unit Lwt.t = fun ch pos -> match ch.typ, ch.mode with
-    | Type_normal(perform_io, seek), Output ->
+    | Type_normal(_perform_io, seek), Output ->
         flush_total ch >>= fun () ->
         do_seek seek pos >>= fun () ->
         ch.offset <- pos;
         Lwt.return_unit
-    | Type_normal(perform_io, seek), Input ->
+    | Type_normal(_perform_io, seek), Input ->
         let current = Int64.sub ch.offset (Int64.of_int (ch.max - ch.ptr)) in
         if pos >= current && pos <= ch.offset then begin
           ch.ptr <- ch.max - (Int64.to_int (Int64.sub ch.offset pos));
@@ -1169,13 +1171,12 @@ struct
         end
 
   let length ch = match ch.typ with
-    | Type_normal(perform_io, seek) ->
+    | Type_normal(_perform_io, seek) ->
         seek 0L Unix.SEEK_END >>= fun len ->
         do_seek seek ch.offset >>= fun () ->
         Lwt.return len
     | Type_bytes ->
         Lwt.return (Int64.of_int ch.length)
- *)
 end
 
 (* +-----------------------------------------------------------------+
@@ -1238,8 +1239,8 @@ let write_value oc ?flags x = primitive (fun oc -> Primitives.write_value oc ?fl
 let block ch size f = primitive (fun ch -> Primitives.block ch size f) ch
 let direct_access ch f = primitive (fun ch -> Primitives.direct_access ch f) ch
 
-(* let set_position ch pos = primitive (fun ch -> Primitives.set_position ch pos) ch
-let length ch = primitive Primitives.length ch *)
+let set_position ch pos = primitive (fun ch -> Primitives.set_position ch pos) ch
+let length ch = primitive Primitives.length ch
 
 module type NumberIO = sig
   val read_int : input_channel -> int Lwt.t

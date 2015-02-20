@@ -106,6 +106,7 @@ val null : output_channel
 val make :
   ?buffer_size : int ->
   ?close : (unit -> unit Lwt.t) ->
+  ?seek : (int64 -> Unix.seek_command -> int64 Lwt.t) ->
   mode : 'mode mode ->
   (Uwt_bytes.t -> int -> int -> int Lwt.t) -> 'mode channel
   (** [make ?buffer_size ?close ~mode perform_io] is the
@@ -116,6 +117,8 @@ val make :
 
       @param close close function of the channel. It defaults to
       [Lwt.return]
+
+      @param seek same meaning as [Unix.lseek]
 
       @param mode either {!input} or {!output}
 
@@ -188,8 +191,17 @@ val is_busy : 'a channel -> bool
 
 (** {2 Random access} *)
 
+(** {2 Random access} *)
+
 val position : 'a channel -> int64
   (** [position ch] Returns the current position in the channel. *)
+
+val set_position : 'a channel -> int64 -> unit Lwt.t
+  (** [set_position ch pos] Sets the position in the output channel. This
+      does not work if the channel does not support random access. *)
+
+val length : 'a channel -> int64 Lwt.t
+  (** Returns the length of the channel in bytes *)
 
 (** {2 Reading} *)
 

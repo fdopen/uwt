@@ -34,6 +34,7 @@ example(timer)
 example_h(fs_poll)
 example(usage)
 example(dns)
+example(work)
 
 clean::
 	clean-helper()

@@ -19,6 +19,7 @@
 #define UV_UWT_EINVAL (int16_t)(INT16_MAX + 19)
 #define UV_UWT_ENOTACTIVE (int16_t)(INT16_MAX + 20)
 #define UV_UWT_EBUSY (int16_t)(INT16_MAX + 21)
+#define UV_UWT_ENOENT (int16_t)(INT16_MAX + 22)
 
 static const char *
 get_er_msg(unsigned int d)
@@ -30,6 +31,7 @@ get_er_msg(unsigned int d)
   case UV_UWT_EINVAL: return "invalid parameter";
   case UV_UWT_ENOTACTIVE: return "handle not active";
   case UV_UWT_EBUSY: return "handle busy";
+  case UV_UWT_ENOENT: return "entry not found";
   default: assert(0);
   }
   return "unknown uv error";
@@ -118,6 +120,7 @@ int er_map [] = {
   UV_UWT_EINVAL,
   UV_UWT_ENOTACTIVE,
   UV_UWT_EBUSY,
+  UV_UWT_ENOENT,
 };
 
 static const char *
@@ -130,6 +133,7 @@ err_name(int i)
   case UV_UWT_EINVAL: return "UWT_EINVAL";
   case UV_UWT_ENOTACTIVE: return "UWT_ENOTACTIVE";
   case UV_UWT_EBUSY: return "UWT_EBUSY";
+  case UV_UWT_ENOENT: return "UWT_ENOENT";
   default: return (uv_err_name(i));
   }
 }
