@@ -50,9 +50,27 @@ section
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+=$(LDFLAGS_LIBUV)
 	Repeat_targets($(MLFILES))
-	UV=$(MixedLibrary uwt, $(MLFILES), $(CFILES))
-	all:: $(UV)
-	export UV
+	UWT_CORE=$(MixedLibrary uwt, $(MLFILES), $(CFILES))
+	all:: $(UWT_CORE)
+	export UWT_CORE
+
+section
+	OCAMLPACKS+= lwt bigarray unix lwt.log
+	OCAML_LIBS+= $(file uwt)
+	FILES= uwt_log
+	Repeat_targets($(FILES))
+	UWT_LOG=$(OCamlLibrary uwt_log, $(FILES)) $(addsuffix .cmi,$(FILES))
+	all:: $(UWT_LOG)
+	export UWT_LOG
+
+section
+	OCAMLPACKS+= lwt bigarray unix lwt.log
+	OCAML_LIBS+= $(file uwt) $(file uwt_log)
+	FILES= uwt_compat
+	Repeat_targets($(FILES))
+	UWT_COMPAT=$(OCamlLibrary uwt_compat,$(FILES)) $(addsuffix .cmi,$(FILES))
+	all:: $(UWT_COMPAT)
+	export UWT_COMPAT
 
 section
 	OCAMLPACKS+= lwt bigarray unix
@@ -65,13 +83,17 @@ clean::
 
 .PHONY: install uninstall
 section
-	IFILES= $(filter-out %.o %.cmo, $(UV))
-	CMTIFILES=$(replacesuffixes .cmi, .cmti, $(filter %.cmi, $(UV)))
-	install: META $(UV)
+	UWT= $(UWT_CORE) $(UWT_COMPAT) $(UWT_LOG)
+	IFILES= $(filter-out %.o %.cmo, $(UWT))
+	CMTIFILES=$(replacesuffixes .cma, .cmti, $(filter %.cma, $(UWT)))
+	install: META $(UWT)
 		$(OCAMLFIND) remove uwt || true
 		$(OCAMLFIND) install uwt META $(IFILES) -optional $(CMTIFILES)
 	uninstall:
 		$(OCAMLFIND) remove uwt
+	.PHONY: help
+	help: $(UWT)
+		@echo $(IFILES)
 
 clean::
 	clean-helper()

@@ -1,0 +1,96 @@
+(* Lightweight thread library for OCaml
+ * http://www.ocsigen.org/lwt
+ * Interface Lwt_log
+ * Copyright (C) 2002 Shawn Wagner <raevnos@pennmush.org>
+ *               2009 Jérémie Dimino <jeremie@dimino.org>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, with linking exceptions;
+ * either version 2.1 of the License, or (at your option) any later
+ * version. See COPYING file for details.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+ * 02111-1307, USA.
+ *)
+
+(** Logging facility *)
+
+(** This module provides functions to deal with logging.
+    It extends {!Lwt_log_core} with Unix features.
+    It adds:
+
+    - logging to the syslog daemon
+    - logging to a channel (stderr, stdout, ...)
+    - logging to a file
+*)
+
+include module type of Lwt_log_core
+  with type level = Lwt_log_core.level
+   and type logger = Lwt_log_core.logger
+   and type section = Lwt_log_core.section
+   and type template = Lwt_log_core.template
+   and module Section = Lwt_log_core.Section
+
+val render : buffer : Buffer.t -> template : template -> section : section -> level : level -> message : string -> unit
+  (** Same as {!Lwt_log_core.render}, except that the template may also contain the
+      following variables:
+
+      - [date] which will be replaced with the current date
+      - [milliseconds] which will be replaced by the fractionnal part of the current unix
+        time
+
+      For example:
+        - ["$(date) $(name)[$(pid)]: $(message)"]
+        - ["$(date).$(milliseconds) $(name)[$(pid)]: $(message)"]
+        - ["$(date): $(loc-file): $(loc-line): $(loc-column): $(message)"]
+  *)
+
+(** Syslog facility. Look at the SYSLOG(3) man page for a description
+    of syslog facilities *)
+type syslog_facility =
+    [ `Auth | `Authpriv | `Cron | `Daemon | `FTP | `Kernel
+    | `Local0 | `Local1 | `Local2 | `Local3 | `Local4 | `Local5 | `Local6 | `Local7
+    | `LPR | `Mail | `News | `Syslog | `User | `UUCP | `NTP | `Security | `Console ]
+
+val syslog : ?template : template -> ?paths : string list -> facility : syslog_facility -> unit -> logger
+  (** [syslog ?template ?paths ~facility ()] creates an logger
+      which send message to the system logger.
+
+      @param paths is a list of path to try for the syslogd socket. It
+             default to [\["/dev/log"; "/var/run/log"\]].
+      @param template defaults to ["$(date) $(name)[$(pid)]: $(section): $(message)"]
+
+      code not tested with uwt :)
+      Channel initialization contains blocking system calls.
+  *)
+
+val file : ?template : template -> ?mode : [ `Truncate | `Append ] -> ?perm : Unix.file_perm -> file_name : string -> unit -> logger Lwt.t
+  (** [desf_file ?template ?mode ?perm ~file_name ()] creates an
+      logger which will write messages to [file_name].
+
+      - if [mode = `Truncate] then the file is truncated and previous
+      contents will be lost.
+
+      - if [mode = `Append], new messages will be appended at the end
+      of the file
+
+      @param mode defaults to [`Append]
+      @param template defaults to ["$(date): $(section): $(message)"]
+  *)
+
+val channel :?template : template -> close_mode : [ `Close | `Keep ] -> channel : Uwt_io.output_channel -> unit -> logger
+  (** [channel ?template ~close_mode ~channel ()] creates a logger
+      from a channel.
+
+      If [close_mode = `Close] then [channel] is closed when the
+      logger is closed, otherwise it is left open.
+
+      @param template defaults to ["$(name): $(section): $(message)"] *)

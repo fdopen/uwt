@@ -347,6 +347,7 @@ module Fs : sig
   val read_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int Lwt.t
 
   val write : ?pos:int -> ?len:int -> file -> buf:bytes -> int Lwt.t
+  val write_string : ?pos:int -> ?len:int -> file -> buf:string -> int Lwt.t
   val write_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int Lwt.t
 
   val close : file -> unit Lwt.t
@@ -471,6 +472,7 @@ module Stream : sig
   val write_queue_size : t -> int
 
   val write : ?pos:int -> ?len:int -> t -> buf:bytes -> unit Lwt.t
+  val write_string : ?pos:int -> ?len:int -> t -> buf:string -> unit Lwt.t
   val write_ba : ?pos:int -> ?len:int -> t -> buf:buf -> unit Lwt.t
 
   val write2 : ?pos:int -> ?len:int -> buf:bytes -> send:t -> t -> unit Lwt.t

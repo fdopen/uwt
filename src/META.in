@@ -6,3 +6,25 @@ archive(byte, plugin) = "uwt.cma"
 archive(native) = "uwt.cmxa"
 archive(native, plugin) = "uwt.cmxs"
 exists_if = "uwt.cma"
+
+package "log" (
+ version = "@VERSION@"
+ description = "Logger for uwt"
+ requires = "uwt lwt.log"
+ archive(byte) = "uwt_log.cma"
+ archive(byte, plugin) = "uwt_log.cma"
+ archive(native) = "uwt_log.cmxa"
+ archive(native, plugin) = "uwt_log.cmxs"
+ exists_if = "uwt_log.cma"
+)
+
+package "compat" (
+ version = "@VERSION@"
+ description = "compat mode for lwt.unix"
+ requires = "uwt uwt.log"
+ archive(byte) = "uwt_compat.cma"
+ archive(byte, plugin) = "uwt_compat.cma"
+ archive(native) = "uwt_compat.cmxa"
+ archive(native, plugin) = "uwt_compat.cmxs"
+ exists_if = "uwt_compat.cma"
+)

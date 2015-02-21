@@ -260,6 +260,10 @@ module Fs = struct
     let dim = Bigarray.Array1.dim buf in
     write ~dim ?pos ?len t ~buf
 
+  let write_string ?pos ?len t ~buf =
+    let dim = String.length buf in
+    write ~dim ?pos ?len t ~buf
+
   let write ?pos ?len t ~buf =
     let dim = Bytes.length buf in
     write ~dim ?pos ?len t ~buf
@@ -555,6 +559,10 @@ module Stream = struct
 
   let write_ba ?pos ?len t ~(buf:buf) =
     let dim = Bigarray.Array1.dim buf in
+    write ~dim ?pos ?len t ~buf
+
+  let write_string ?pos ?len t ~buf =
+    let dim = String.length buf in
     write ~dim ?pos ?len t ~buf
 
   let write ?pos ?len t ~buf =
