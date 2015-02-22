@@ -402,6 +402,17 @@ struct ATTR_PACKED handle {
     unsigned int c_read_size; /* passed to the alloc function */
     uint16_t in_use_cnt;
     uint16_t in_callback_cnt;
+
+    /* initialized doesn't mean _init() was called.
+       Some handles contain only garbage after init was called
+       (at least uv_pipe_init).
+       If you pass such a handle to e.g. uv_write or uv_read, you program will
+       segfault (best case).
+       Most errors are already captured by libuv, but not all.
+       Therefore, I try to keep track with this flag, if a handle
+       is valid or not.
+    */
+    unsigned int initialized: 1;
     unsigned int finalize_called: 1;
     unsigned int close_called: 1;
     unsigned int close_executed: 1;
@@ -825,6 +836,7 @@ handle_create(int handle_type, enum cb_type cb_type)
   wp->ba_read = NULL;
   wp->handle->data = wp;
 
+  wp->initialized = 0;
   wp->in_use_cnt = 0;
   wp->in_callback_cnt = 0;
   wp->c_read_size = 0;
@@ -1439,16 +1451,9 @@ ret_int64(uv_req_t * r)
 
 static int open_flag_table[9] = {
 #ifdef _WIN32
-  /* o_no_inherit is currently ignored by libuv, O_NONBLOCK doesn't exist.
-     Libuv doesn't use _open    */
-  _O_RDONLY, _O_WRONLY, _O_RDWR, 0, _O_CREAT , _O_EXCL , _O_TRUNC, _O_APPEND, _O_NOINHERIT
+  _O_RDONLY, _O_WRONLY, _O_RDWR, 0, _O_CREAT , _O_EXCL , _O_TRUNC, _O_APPEND
 #else
-#ifndef O_CLOEXEC
-  O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_CREAT , O_EXCL , O_TRUNC, O_APPEND, 0
-#else
-  O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_CREAT , O_EXCL , O_TRUNC, O_APPEND, O_CLOEXEC
-#endif
-
+  O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_CREAT , O_EXCL , O_TRUNC, O_APPEND
 #endif
 };
 
@@ -2087,6 +2092,34 @@ FSSTART(fs_fstat,o_file,{
     }                                           \
   } while (0)
 
+
+#define HANDLE_NO_UNINIT_RESULT(xs)                   \
+  do {                                                \
+    value p = (xs);                                   \
+    if (unlikely( Handle_val(p)->initialized == 0 )){  \
+      return VAL_RESULT_UV_UWT_EBADF;                 \
+    }                                                 \
+  }while(0)
+
+#define HANDLE_NO_UNINIT_WRAP(xs)                     \
+  do {                                                \
+    value p = (xs);                                   \
+    if (unlikely(Handle_val(p)->initialized == 0 )){  \
+      value ret = caml_alloc_small(1,Error_tag);      \
+      Field(ret,0) = VAL_UV_UWT_EBADF;                \
+      return ret;                                     \
+    }                                                 \
+  }while(0)
+
+
+#define HANDLE_NO_UNINIT_NA(_xs)                \
+  do {                                          \
+    if (unlikely(_xs->initialized == 0)){       \
+      return VAL_RESULT_UV_UWT_EBADF;           \
+    }                                           \
+  } while (0)
+
+
 #define HANDLE_NINIT_XN(n,s,o_s,...)                  \
   struct handle * s = Handle_val(o_s);                \
   HANDLE_NCHECK(s);                                   \
@@ -2195,7 +2228,7 @@ uwt_close_noerr(value o_stream)
   {                                             \
     value ret = Val_long(0);                    \
     struct handle * s = Handle_val(o_stream);   \
-    if ( s && s->handle ){                      \
+    if ( s && s->handle && s->initialized ){                      \
       type* stream =(type*)s->handle;           \
       if ( uv_ ## fun(stream) ){                \
         ret = Val_long(1);                      \
@@ -2214,6 +2247,7 @@ CAMLprim value
 uwt_get_buffer_size_common_na(value o_stream, value o)
 {
   HANDLE_NINIT_NA(s,o_stream);
+  HANDLE_NO_UNINIT_NA(s);
   int ret;
   int x = 0;
   if ( Long_val(o) == 0 ){
@@ -2229,6 +2263,7 @@ CAMLprim value
 uwt_set_buffer_size_common_na(value o_stream, value o_len, value o)
 {
   HANDLE_NINIT_NA(s,o_stream);
+  HANDLE_NO_UNINIT_NA(s);
   int ret;
   int x = Long_val(o_len);
   if ( Long_val(o) == 0 ){
@@ -2332,6 +2367,7 @@ uwt_timer_start(value o_loop, value o_cb,
                            l_repeat);
       if ( erg >= 0 ){
         h->in_use_cnt++;
+        h->initialized = 1;
         gr_root_register(&h->cb_read,o_cb);
         gr_root_register(&h->cb_listen,v);
       }
@@ -2391,7 +2427,7 @@ uwt_write_queue_size_na(value o_s)
 {
   value ret;
   struct handle * h = Handle_val(o_s);
-  if ( HANDLE_IS_INVALID(h) ){
+  if ( HANDLE_IS_INVALID(h) || h->initialized == 0 ){
     ret = Val_long(0);
   }
   else {
@@ -2422,6 +2458,7 @@ shutdown_cb(uv_shutdown_t* req, int status)
 CAMLprim value
 uwt_shutdown(value o_stream,value o_cb)
 {
+  HANDLE_NO_UNINIT_RESULT(o_stream);
   HANDLE_NINIT(s,o_stream,o_cb);
   int ret;
   uv_stream_t* stream;
@@ -2470,6 +2507,7 @@ listen_cb(uv_stream_t *server,int status)
 CAMLprim value
 uwt_listen(value o_stream,value o_backlog,value o_cb)
 {
+  HANDLE_NO_UNINIT_RESULT(o_stream);
   HANDLE_NINIT(s,o_stream,o_cb);
   int ret;
   uv_stream_t* stream =(uv_stream_t*)s->handle;
@@ -2501,6 +2539,9 @@ uwt_accept_raw_na(value o_serv,
   }
   int ret = uv_accept((uv_stream_t*)serv->handle,
                       (uv_stream_t*)client->handle);
+  if ( ret >= 0  ){
+    client->initialized = 1 ;
+  }
   value erg = VAL_UNIT_UV_RESULT(ret);
   return erg;
 }
@@ -2584,6 +2625,7 @@ CAMLprim value
 uwt_read_start(value o_stream,
                value o_cb)
 {
+  HANDLE_NO_UNINIT_RESULT(o_stream);
   HANDLE_NINIT(s,o_stream,o_cb);
   value erg;
   if ( s->cb_read != CB_INVALID ){
@@ -2613,6 +2655,7 @@ uwt_read_start(value o_stream,
 CAMLprim value
 uwt_read_stop(value o_stream)
 {
+  HANDLE_NO_UNINIT_RESULT(o_stream);
   HANDLE_NINIT(s,o_stream);
   value erg;
   if ( s->cb_read == CB_INVALID && s->cb_read_removed_by_cb != 1){
@@ -2732,6 +2775,7 @@ alloc_cb_ba(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
 CAMLprim value
 uwt_read_own(value o_s,value o_buf,value o_offset,value o_len,value o_cb)
 {
+  HANDLE_NO_UNINIT_RESULT(o_s);
   HANDLE_NINIT(s,o_s,o_buf,o_cb);
   int ba = Tag_val(o_buf) != String_tag;
   value erg;
@@ -2798,6 +2842,7 @@ CAMLprim value
 uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
                     value o_sock,value o_cb)
 {
+  HANDLE_NO_UNINIT_RESULT(o_stream);
   HANDLE_NINIT(s,o_stream,o_buf,o_sock,o_cb);
   intnat len = Long_val(o_len);
   int ba = Tag_val(o_buf) != String_tag;
@@ -2902,6 +2947,8 @@ uwt_write2_native(value o_stream,
                   value o_len,
                   value o_cb)
 {
+  HANDLE_NO_UNINIT_RESULT(o_stream);
+  HANDLE_NO_UNINIT_RESULT(o_stream_send);
   HANDLE_NINIT2(s1,o_stream,s2,o_stream_send,o_cb,o_buf);
   value erg = 0;
   intnat len = Long_val(o_len);
@@ -2944,6 +2991,7 @@ CAMLprim value
 uwt_udp_try_send(value o_stream,value o_buf,value o_pos,
                  value o_len,value o_sock)
 {
+  HANDLE_NO_UNINIT_RESULT(o_stream);
   HANDLE_NINIT(s,o_stream,o_sock);
   uv_buf_t buf = {
     .base = String_val(o_buf) + Long_val(o_pos),
@@ -2991,6 +3039,7 @@ uwt_tty_init(value o_loop,value o_fd, value o_readable)
     h->close_executed = 1;
     ret = caml_alloc_small(1,Error_tag);
     h->close_executed = 0;
+    h->initialized = 1;
     Field(ret,0) = dc;
 
     erg = uv_tty_init(l->loop,
@@ -3015,6 +3064,7 @@ CAMLprim value
 uwt_tty_set_mode_na(value o_tty,value o_mode)
 {
   HANDLE_NINIT_NA(s,o_tty);
+  HANDLE_NO_UNINIT_NA(s);
   int mode = OCAML_ENUM_VAL(o_mode,tty_mode_list);
   int ret = uv_tty_set_mode((uv_tty_t*)s->handle,mode);
   return (VAL_UNIT_UV_RESULT(ret));
@@ -3030,6 +3080,7 @@ uwt_tty_reset_mode_na(value unit)
 CAMLprim value
 uwt_tty_get_winsize(value o_tty)
 {
+  HANDLE_NO_UNINIT_WRAP(o_tty);
   CAMLparam1(o_tty);
   CAMLlocal1(tup);
   struct handle * s = Handle_val(o_tty);
@@ -3081,7 +3132,6 @@ uwt_pipe_open(value o_loop, value o_fd,value o_ipc)
     ret = caml_alloc_small(1,Ok_tag);
     Field(ret,0) = dc;
     h->close_executed = 0;
-
     uv_pipe_t * p = (uv_pipe_t*)h->handle;
     erg = uv_pipe_init(l->loop,
                        p,
@@ -3092,6 +3142,7 @@ uwt_pipe_open(value o_loop, value o_fd,value o_ipc)
     }
     else {
       if ( o_fd != 2){
+        h->initialized = 1;
         erg = uv_pipe_open(p,Long_val(o_fd));
         if ( erg < 0 ){
           h->finalize_called = 1;
@@ -3121,6 +3172,9 @@ uwt_pipe_bind_na(value o_pipe, value o_name)
 {
   HANDLE_NINIT_NA(p,o_pipe);
   int ret = uv_pipe_bind((uv_pipe_t*)p->handle,String_val(o_name));
+  if (ret >= 0 ){
+    p->initialized = 1 ;
+  }
   return (VAL_UNIT_UV_RESULT(ret));
 }
 
@@ -3130,9 +3184,10 @@ uwt_pipe_getsockname(value o_pipe)
   struct handle * op = Handle_val(o_pipe);
   if ( HANDLE_IS_INVALID(op) ){
     value ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = UV_UWT_EBADF;
+    Field(ret,0) = VAL_UV_UWT_EBADF;
     return ret;
   }
+  HANDLE_NO_UNINIT_WRAP(o_pipe);
   CAMLparam1(o_pipe);
   CAMLlocal1(o_str);
   size_t s = 8192;
@@ -3183,6 +3238,7 @@ CAMLprim value
 uwt_pipe_pending_instances_na(value o_pipe, value o_count)
 {
   HANDLE_NINIT_NA(op,o_pipe);
+  HANDLE_NO_UNINIT_NA(op);
   uv_pipe_t* p = (uv_pipe_t*)op->handle;
   uv_pipe_pending_instances(p,Long_val(o_count));
   return (Val_int(0));
@@ -3192,6 +3248,7 @@ CAMLprim value
 uwt_pipe_pending_count_na(value o_pipe)
 {
   HANDLE_NINIT_NA(op,o_pipe);
+  HANDLE_NO_UNINIT_NA(op);
   uv_pipe_t* p = (uv_pipe_t*)op->handle;
   int ret = uv_pipe_pending_count(p);
   return (VAL_LONG_UV_RESULT(ret));
@@ -3201,7 +3258,7 @@ CAMLprim value
 uwt_pipe_pending_type_na(value o_pipe)
 {
   struct handle * h = Handle_val(o_pipe);
-  if ( HANDLE_IS_INVALID(h) ){
+  if ( HANDLE_IS_INVALID(h) || h->initialized == 0 ){
     return (Val_long(0));
   }
   uv_handle_type x = uv_pipe_pending_type((uv_pipe_t*)h->handle);
@@ -3226,6 +3283,9 @@ pipe_connect_cb(uv_connect_t* req, int status)
     ++s->in_callback_cnt;
     --s->in_use_cnt;
     r->c_param = status;
+    if ( status >= 0 ){
+      s->initialized = 1;
+    }
     universal_callback((void*)req);
     --s->in_callback_cnt;
     MAYBE_CLOSE_HANDLE(s);
@@ -3318,6 +3378,9 @@ uwt_tcp_udp_open(value o_tcp, value o_sock, bool tcp)
   else {
     ret = uv_udp_open((uv_udp_t*)t->handle,s);
   }
+  if ( ret >= 0 ){
+    t->initialized = 1;
+  }
   value erg = VAL_UNIT_UV_RESULT(ret);
   return (erg);
 }
@@ -3352,6 +3415,9 @@ uwt_tcp_udp_bind(value o_tcp, value o_sock, value o_flags, bool tcp)
   }
   else {
     ret = uv_udp_bind((uv_udp_t *)t->handle,addr,flags);
+  }
+  if ( ret >= 0 ){
+    t->initialized = 1 ;
   }
   return (VAL_UNIT_UV_RESULT(ret));
 }
@@ -3396,6 +3462,7 @@ uwt_tcp_simultaneous_accepts_na(value o_tcp,value o_enable)
 static value
 uwt_tcp_getsockpeername(value o_tcp,int peer)
 {
+  HANDLE_NO_UNINIT_WRAP(o_tcp);
   CAMLparam1(o_tcp);
   CAMLlocal1(sock);
   value ret;
@@ -3479,6 +3546,7 @@ uwt_udp_set_membership_na(value o_udp, value o_mul,
                           value o_int, value o_mem)
 {
   HANDLE_NINIT_NA(u,o_udp);
+  HANDLE_NO_UNINIT_NA(u);
   uv_membership membership = Long_val(o_mem) ? UV_JOIN_GROUP : UV_LEAVE_GROUP ;
   const char* multicast_addr = String_val(o_mul);
   const char* interface_addr = String_val(o_int);
@@ -3493,6 +3561,7 @@ CAMLprim value
 uwt_udp_set_multicast_loop_na(value o_udp, value o_b)
 {
   HANDLE_NINIT_NA(u,o_udp);
+  HANDLE_NO_UNINIT_NA(u);
   int ret = uv_udp_set_multicast_loop((uv_udp_t*)u->handle,Long_val(o_b));
   return(VAL_UNIT_UV_RESULT(ret));
 }
@@ -3501,6 +3570,7 @@ CAMLprim value
 uwt_udp_set_multicast_ttl_na(value o_udp, value o_ttl)
 {
   HANDLE_NINIT_NA(u,o_udp);
+  HANDLE_NO_UNINIT_NA(u);
   int ret;
   int ttl = Long_val(o_ttl);
   if ( ttl < 1 || ttl > 255 ){
@@ -3516,6 +3586,7 @@ CAMLprim value
 uwt_udp_set_multicast_interface_na(value o_udp, value o_inter)
 {
   HANDLE_NINIT_NA(u,o_udp);
+  HANDLE_NO_UNINIT_NA(u);
   int ret = uv_udp_set_multicast_interface((uv_udp_t*)u->handle,
                                            String_val(o_inter));
   return (VAL_UNIT_UV_RESULT(ret));
@@ -3525,6 +3596,7 @@ CAMLprim value
 uwt_udp_set_broadcast_na(value o_udp, value o_b)
 {
   HANDLE_NINIT_NA(u,o_udp);
+  HANDLE_NO_UNINIT_NA(u);
   int ret = uv_udp_set_broadcast((uv_udp_t*)u->handle,Long_val(o_b));
   return (VAL_UNIT_UV_RESULT(ret));
 }
@@ -3533,6 +3605,7 @@ CAMLprim value
 uwt_udp_set_ttl_na(value o_udp, value o_ttl)
 {
   HANDLE_NINIT_NA(u,o_udp);
+  HANDLE_NO_UNINIT_NA(u);
   int ttl = Long_val(o_ttl);
   int ret;
   if ( ttl < 1 || ttl > 255 ){
@@ -3633,6 +3706,7 @@ uwt_udp_recv_cb(uv_udp_t* handle,
 CAMLprim value
 uwt_udp_recv_start(value o_udp, value o_cb)
 {
+  HANDLE_NO_UNINIT_RESULT(o_udp);
   HANDLE_NINIT(u,o_udp,o_cb);
   value erg;
   if ( u->cb_read != CB_INVALID ){
@@ -3656,6 +3730,7 @@ uwt_udp_recv_start(value o_udp, value o_cb)
 CAMLprim value
 uwt_udp_recv_stop(value o_udp)
 {
+  HANDLE_NO_UNINIT_RESULT(o_udp);
   HANDLE_NINIT(u,o_udp);
   value erg;
   if ( u->cb_read == CB_INVALID ){
@@ -3680,7 +3755,7 @@ uwt_udp_send_queue_size_na(value o_udp)
 {
   value ret;
   struct handle * h = Handle_val(o_udp);
-  if ( HANDLE_IS_INVALID(h) ){
+  if ( HANDLE_IS_INVALID(h) || h->initialized == 0 ){
     ret = Val_long(0);
   }
   else {
@@ -3695,7 +3770,7 @@ uwt_udp_send_queue_count_na(value o_udp)
 {
   value ret;
   struct handle * h = Handle_val(o_udp);
-  if ( HANDLE_IS_INVALID(h) ){
+  if ( HANDLE_IS_INVALID(h) || h->initialized == 0 ){
     ret = Val_long(0);
   }
   else {
@@ -3767,6 +3842,7 @@ uwt_signal_start(value o_loop,
       }
       else {
         ++h->in_use_cnt;
+        h->initialized = 1;
         gr_root_register(&h->cb_read,o_cb);
         gr_root_register(&h->cb_listen,v);
       }
@@ -3908,6 +3984,7 @@ uwt_poll_start_both(value o_loop,
         handle_finalize_close(h);
       }
       else {
+        h->initialized = 1;
         ++h->in_use_cnt;
         gr_root_register(&h->cb_read,o_cb);
         gr_root_register(&h->cb_listen,v);
@@ -4070,6 +4147,7 @@ uwt_fs_event_start(value o_loop,
       }
       else {
         ++h->in_use_cnt;
+        h->initialized = 1;
         gr_root_register(&h->cb_read,o_cb);
         gr_root_register(&h->cb_listen,v);
       }
@@ -4192,6 +4270,7 @@ uwt_fs_poll_start(value o_loop,
       }
       else {
         ++h->in_use_cnt;
+        h->initialized = 1;
         gr_root_register(&h->cb_read,o_cb);
         gr_root_register(&h->cb_listen,v);
       }
@@ -4908,6 +4987,7 @@ uwt_spawn(value p1, value p2, value p3, value p4)
   memset(&stdio,0,sizeof stdio);
 
   value tmp = Field(p1,1);
+
   for ( i = 0 ; i < 3 ; ++i ){
     value cur = Field(tmp,i);
     if ( cur == Val_unit ){
@@ -4981,7 +5061,14 @@ uwt_spawn(value p1, value p2, value p3, value p4)
     handle->finalize_called = 1;
     handle_finalize_close(handle);
   }
-
+  else {
+    for ( i = 0 ; i < 3 ; ++i ){
+      if ( (stdio[i].flags & UV_CREATE_PIPE) != 0 ){
+        struct handle * h = stdio[i].data.stream->data;
+        h->initialized = 1;
+      }
+    }
+  }
 error_end:
   if (t.args){
     free(t.args);
@@ -5002,6 +5089,7 @@ error_end:
       gr_root_register(&handle->cb_read,Field(p3,0));
       gr_root_register(&handle->cb_listen,op);
     }
+    handle->initialized = 1;
     ++handle->in_use_cnt;
     Tag_val(ret) = Ok_tag;
     Store_field(ret,0,op);

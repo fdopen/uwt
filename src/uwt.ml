@@ -203,7 +203,6 @@ module Fs = struct
     | O_EXCL
     | O_TRUNC
     | O_APPEND
-    | O_CLOEXEC (* currently ignored by libuv, although there is _O_NOINHERIT *)
 
   external openfile:
     string -> open_flag list -> int ->

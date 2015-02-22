@@ -333,7 +333,6 @@ module Fs : sig
     | O_EXCL
     | O_TRUNC
     | O_APPEND
-    | O_CLOEXEC
 
   (** @param perm defaults are 0o644 *)
   val openfile : ?perm:int -> mode:open_flag list -> string -> file Lwt.t
