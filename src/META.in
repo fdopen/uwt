@@ -18,6 +18,17 @@ package "log" (
  exists_if = "uwt_log.cma"
 )
 
+package "preemptive" (
+ version = "@VERSION@"
+ description = "Preemptive threads support for Uwt"
+ requires = "uwt uwt.logt threads"
+ archive(byte) = "uwt_preemptive.cma"
+ archive(byte, plugin) = "uwt_preemptive.cma"
+ archive(native) = "uwt_preemptive.cmxa"
+ archive(native, plugin) = "uwt_preemptive.cmxs"
+ exists_if = "uwt_preemptive.cma"
+)
+
 package "compat" (
  version = "@VERSION@"
  description = "compat mode for lwt.unix"

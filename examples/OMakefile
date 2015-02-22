@@ -1,8 +1,9 @@
 .DEFAULT: all
 
-OCAMLPACKS+= ppx_import lwt bigarray unix ppx_deriving.show
+OCAMLPACKS+= ppx_import lwt bigarray unix ppx_deriving.show threads lwt.log
+OCAMLFLAGS+= -thread
 OCAMLINCLUDES[]+= $(dir ../src)
-OCAML_LIBS+= $(file ../src/uwt)
+OCAML_LIBS+= $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preemptive)
 
 section
 	f=help
@@ -35,6 +36,7 @@ example_h(fs_poll)
 example(usage)
 example(dns)
 example(work)
+example(preemptive)
 
 clean::
 	clean-helper()

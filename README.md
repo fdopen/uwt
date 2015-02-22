@@ -10,7 +10,9 @@ Uwt provides OCaml bindings for libuv - on top of lwt.
   inside `uwt.mli`
 
 * Uwt is **not** compatible with `lwt.unix`. It's not a further
-  `Lwt_engine` in addition to `select` and `libev`.
+  `Lwt_engine` in addition to `select` and `libev`. There are however
+  alternatives to the higher level modules of `lwt.unix` with a nearly
+  identic interface (Uwt_io, Uwt_preemptive, Uwt_log).
 
 * Uwt is not thread safe. All uwt functions should be called from your
   main thread.

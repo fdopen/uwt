@@ -64,6 +64,16 @@ section
 	export UWT_LOG
 
 section
+	OCAMLPACKS+= lwt bigarray unix lwt.log threads
+	OCAML_LIBS+= $(file uwt) $(file uwt_log)
+	OCAMLFLAGS+= -thread
+	FILES= uwt_preemptive
+	Repeat_targets($(FILES))
+	UWT_PREEMPTIVE=$(OCamlLibrary uwt_preemptive,$(FILES)) $(addsuffix .cmi,$(FILES))
+	all:: $(UWT_PREEMPTIVE)
+	export UWT_PREEMPTIVE
+
+section
 	OCAMLPACKS+= lwt bigarray unix lwt.log
 	OCAML_LIBS+= $(file uwt) $(file uwt_log)
 	FILES= uwt_compat
@@ -83,7 +93,7 @@ clean::
 
 .PHONY: install uninstall
 section
-	UWT= $(UWT_CORE) $(UWT_COMPAT) $(UWT_LOG)
+	UWT= $(UWT_CORE) $(UWT_COMPAT) $(UWT_LOG) $(UWT_PREEMPTIVE)
 	IFILES= $(filter-out %.o %.cmo, $(UWT))
 	CMTIFILES=$(replacesuffixes .cma, .cmti, $(filter %.cma, $(UWT)))
 	install: META $(UWT)
@@ -91,9 +101,6 @@ section
 		$(OCAMLFIND) install uwt META $(IFILES) -optional $(CMTIFILES)
 	uninstall:
 		$(OCAMLFIND) remove uwt
-	.PHONY: help
-	help: $(UWT)
-		@echo $(IFILES)
 
 clean::
 	clean-helper()

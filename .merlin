@@ -9,3 +9,5 @@ PKG ppx_deriving.show
 PKG ppx_import
 PKG unix
 PKG bigarray
+PKG threads
+B +threads

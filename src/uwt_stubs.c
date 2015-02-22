@@ -956,6 +956,15 @@ req_create(uv_req_type typ, enum cb_type cb_type)
 #define VAL_LONG_UV_RESULT(x)                   \
   ( (x) < 0 ? Val_uv_result(x) : Val_long(x))
 
+static bool runtime_locked = false;
+#define GET_RUNTIME()                           \
+  do {                                          \
+    if ( runtime_locked == true ) {             \
+      runtime_locked = false;                   \
+      caml_leave_blocking_section();            \
+    }                                           \
+  } while (0)
+
 CAMLprim value
 uwt_run_loop(value o_loop,value o_mode)
 {
@@ -978,7 +987,12 @@ uwt_run_loop(value o_loop,value o_mode)
       assert( Long_val(o_mode) == 2 );
     }
     wp->in_use = 1;
+    assert ( runtime_locked == false );
     erg = uv_run(loop, m);
+    if ( runtime_locked == true ){
+      runtime_locked = false;
+      caml_leave_blocking_section();
+    }
     wp->in_use = 0;
     ret = VAL_LONG_UV_RESULT(erg);
     /* TODO: handle this case
@@ -1058,6 +1072,9 @@ ocaml_enum_val(value o,int * x,int len)
 static void
 cache_cleaner_init(uv_loop_t * l);
 
+static void
+runtime_acquire_prepare_init(uv_loop_t *l);
+
 CAMLprim value
 uwt_default_loop(value o_mode)
 {
@@ -1075,6 +1092,7 @@ uwt_default_loop(value o_mode)
       default_loop.loop = &default_loop_uv;
       default_loop.in_use = 0;
       cache_cleaner_init(&default_loop_uv);
+      runtime_acquire_prepare_init(&default_loop_uv);
     }
   }
   if ( ret == Val_unit ){
@@ -1119,6 +1137,7 @@ static value ret_unit_cparam(uv_req_t * r);
 static void
 universal_callback(uv_req_t * req)
 {
+  GET_RUNTIME();
   struct req * wp_req = req->data;
   if (unlikely( !req->data )){
     DEBUG_PF("no data in callback!");
@@ -2017,6 +2036,7 @@ FSSTART(fs_fstat,o_file,{
       goto end_cb;                                    \
     }                                                 \
     ++h_->in_callback_cnt;                            \
+    GET_RUNTIME();                                    \
   } while (0)
 
 #define MAYBE_CLOSE_HANDLE(s)                   \
@@ -2119,6 +2139,7 @@ close_cb(uv_handle_t* handle)
   else {
     value exn = Val_unit;
     ++s->in_callback_cnt;
+    GET_RUNTIME();
     exn = CAML_CALLBACK1(s,cb_close,Val_unit);
     --s->in_callback_cnt;
     handle_free_common(s);
@@ -5526,12 +5547,46 @@ clean_caches(uv_timer_t* handle)
   }
 }
 
-uv_timer_t timer_cache_cleaner;
+static uv_timer_t timer_cache_cleaner;
 static void
 cache_cleaner_init(uv_loop_t * l)
 {
-  if (! uv_timer_init(l,&timer_cache_cleaner) ){
-    uv_timer_start(&timer_cache_cleaner,clean_caches,45000,45000);
-    uv_unref((uv_handle_t*)&timer_cache_cleaner);
+  bool abort = true;
+  if ( uv_timer_init(l,&timer_cache_cleaner) == 0 ){
+    if (uv_timer_start(&timer_cache_cleaner,clean_caches,45000,45000) == 0){
+      uv_unref((uv_handle_t*)&timer_cache_cleaner);
+      abort = false;
+    }
+  }
+  if ( abort ){
+    fputs("fatal error in uwt, can't register cache cleaner\n",stderr);
+    exit(2);
+  }
+}
+
+static uv_prepare_t acquire_prepare;
+static void
+my_enter_blocking_section(uv_prepare_t *x)
+{
+  assert(runtime_locked == false);
+  assert(x = &acquire_prepare);
+  (void)x;
+  runtime_locked = true;
+  caml_enter_blocking_section();
+}
+
+static void
+runtime_acquire_prepare_init(uv_loop_t *l)
+{
+  bool abort = true;
+  if ( uv_prepare_init(l,&acquire_prepare) == 0 ){
+    if ( uv_prepare_start(&acquire_prepare,my_enter_blocking_section) == 0 ){
+      uv_unref((uv_handle_t*)&acquire_prepare);
+      abort = false;
+    }
+  }
+  if ( abort ){
+    fputs("fatal error in uwt, can't register prepare handle\n",stderr);
+    exit(2);
   }
 }
