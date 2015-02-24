@@ -169,6 +169,9 @@ val atomic : ('a channel -> 'b Lwt.t) -> ('a channel -> 'b Lwt.t)
       - the channel passed to [f] is invalid after [f] terminates
       - [atomic] can be called inside another [atomic] *)
 
+val file_length : string -> int64 Lwt.t
+  (** Returns the length of a file *)
+
 val buffered : 'a channel -> int
   (** [buffered oc] returns the number of bytes in the buffer *)
 
@@ -363,6 +366,16 @@ val open_file :
       @raise Uwt.Uwt_error on error.
   *)
 
+val with_file :
+  ?buffer_size : int ->
+  ?flags : Uwt.Fs.open_flag list ->
+  ?perm : Unix.file_perm ->
+  mode : 'a mode ->
+  file_name -> ('a channel -> 'b Lwt.t) -> 'b Lwt.t
+  (** [with_file ?buffer_size ?flags ?perm ~mode filename f] opens a
+      file and passes the channel to [f]. It is ensured that the
+      channel is closed when [f ch] terminates (even if it fails). *)
+
 val open_connection :
   ?buffer_size : int -> Uwt.sockaddr -> (input_channel * output_channel) Lwt.t
 (** [open_connection ?buffer_size addr] opens a connection to the
@@ -374,16 +387,11 @@ val open_connection :
     @raise Uwt.Uwt_error on error.
 *)
 
-
-val with_file :
+val with_connection :
   ?buffer_size : int ->
-  ?flags : Uwt.Fs.open_flag list ->
-  ?perm : Unix.file_perm ->
-  mode : 'a mode ->
-  file_name -> ('a channel -> 'b Lwt.t) -> 'b Lwt.t
-  (** [with_file ?buffer_size ?flags ?perm ~mode filename f] opens a
-      file and passes the channel to [f]. It is ensured that the
-      channel is closed when [f ch] terminates (even if it fails). *)
+  Uwt.sockaddr -> (input_channel * output_channel -> 'a Lwt.t) -> 'a Lwt.t
+(** [with_connection ?fd ?buffer_size addr f] opens a connection to
+      the given address and passes the channels to [f] *)
 
 val lines_of_file : file_name -> string Lwt_stream.t
   (** [lines_of_file name] returns a stream of all lines of the file

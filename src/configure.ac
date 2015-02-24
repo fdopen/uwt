@@ -115,4 +115,35 @@ Define to 1 if compiler supports __builtin_expect)
 AC_MSG_RESULT([yes])],
 [AC_MSG_RESULT([no])])
 
+
+AC_SEARCH_LIBS(gethostbyname_r, [socket nsl])
+AC_SEARCH_LIBS(getservbyname_r, [socket nsl])
+
+AH_TEMPLATE([HAVE_GETxxxxBYyyyy_R_POSIX], [Define if POSIX-style getXXXXbyYYYY_r functions are available.])
+AC_MSG_CHECKING([for POSIX-style gethostbyXXXX_r and getservbyXXXX_r])
+AC_TRY_LINK([
+#define _POSIX_PTHREAD_SEMANTICS
+#include <netdb.h>
+#include <stddef.h>
+],
+[
+struct hostent *he;
+struct servent *se;
+he = gethostbyname_r((const char *)NULL, (struct hostent *)NULL,
+(char *)NULL, (int)0, (struct hostent **)NULL, (int *)NULL);
+he = gethostbyaddr_r((const char *)NULL, (int)0, (int)0,
+(struct hostent *)NULL, (char *)NULL, (int)0, (struct hostent **)NULL,
+(int *)NULL);
+se = getservbyname_r((const char *)NULL, (const char *)NULL,
+(struct servent *)NULL, (char *)NULL, (int)0, (struct servent **)NULL);
+se = getservbyport_r((int)0, (const char *)NULL,
+(struct servent *)NULL, (char *)NULL, (int)0, (struct servent **)NULL);
+],
+AC_DEFINE(HAVE_GETxxxxBYyyyy_R_POSIX)
+AC_MSG_RESULT(yes),
+AC_MSG_RESULT(no)
+)
+
+
+
 AC_OUTPUT

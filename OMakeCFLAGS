@@ -5,7 +5,7 @@ DEVCFLAGS+=-O0
 DEVCFLAGS+=-Waggregate-return
 DEVCFLAGS+=-Wbad-function-cast
 DEVCFLAGS+=-Wcast-align
-DEVCFLAGS+=-Wcast-qual
+#DEVCFLAGS+=-Wcast-qual
 DEVCFLAGS+=-Wdate-time
 DEVCFLAGS+=-Wendif-labels
 DEVCFLAGS+=-Werror=overflow

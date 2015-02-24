@@ -10,4 +10,5 @@ PKG ppx_import
 PKG unix
 PKG bigarray
 PKG threads
+PKG oUnit
 B +threads

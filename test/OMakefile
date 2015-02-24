@@ -1,0 +1,22 @@
+.DEFAULT: all
+.PHONY: all clean
+
+OCAMLPACKS+= lwt bigarray unix threads lwt.log oUnit
+OCAMLFLAGS+= -thread
+OCAMLINCLUDES[]+= $(dir ../src)
+OCAML_LIBS+= $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preemptive)
+
+section
+	FILES[]= main common t_unix t_preemptive t_fs t_tcp t_spawn
+	Repeat_targets($(FILES))
+	TEST_PROG=$(OCamlProgram test,$(FILES))
+	all:: $(TEST_PROG)
+	clean::
+		rm -f $(TEST_PROG)$(EXE)
+
+clean::
+	clean-helper()
+	rm -f oUnit*.log setup.data setup.log *.tar*
+
+distclean:: clean
+	rm -f *~ .*~

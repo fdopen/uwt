@@ -75,7 +75,6 @@ P2(uwt_get_buffer_size_common_na);
 P3(uwt_set_buffer_size_common_na);
 P1(uwt_close_noerr);
 P1(uwt_is_active_na);
-P1(uwt_is_closing_na);
 
 P1(uwt_is_readable_na);
 P1(uwt_is_writable_na);
@@ -182,6 +181,12 @@ P1(uwt_of_sockaddr);
 P1(uwt_sun_path);
 
 P5(uwt_getservbyname);
+P5(uwt_getservbyport);
+P4(uwt_gethostbyname);
+P4(uwt_gethostbyaddr);
+P3(uwt_gethostname);
+P4(uwt_getprotobyname);
+P4(uwt_getprotobynumber);
 P6(uwt_lseek_native);
 BY(uwt_lseek_byte);
 

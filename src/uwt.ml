@@ -294,7 +294,7 @@ module Fs = struct
 
   external link:
     string -> string -> loop -> Req.t -> unit_cb -> unit Result.t = "uwt_fs_link"
-  let link ~target ~link_name =
+  let link ~target link_name =
     Req.qlu ~typ ~f:(link target link_name) ~name:"uv_fs_link" ~param:target
 
   external fsync: file -> loop -> Req.t -> unit_cb -> unit Result.t = "uwt_fs_fsync"
@@ -361,7 +361,7 @@ module Fs = struct
   external symlink:
     string -> string -> symlink_mode -> loop -> Req.t -> unit_cb -> unit Result.t =
     "uwt_fs_symlink_byte" "uwt_fs_symlink_native"
-  let symlink ?(mode=S_Default) ~target ~link_name =
+  let symlink ?(mode=S_Default) ~target link_name =
     Req.qlu ~typ ~f:(symlink target link_name mode) ~name:"uv_fs_symlink" ~param:target
 
   external mkdtemp:
@@ -499,7 +499,6 @@ module Handle = struct
 
   external close_noerr: t -> unit = "uwt_close_noerr"
   external is_active: t -> bool = "uwt_is_active_na" "noalloc"
-  external is_closing: t -> bool = "uwt_is_closing_na" "noalloc"
 end
 
 external get_buffer_size_common:
@@ -957,7 +956,9 @@ module Timer = struct
     let cb (_:t) = Lwt.wakeup waker () in
     match start ~repeat:0 ~timeout:s ~cb with
     | Error x -> Lwt.fail (Uwt_error(x,"uv_timer_start",param))
-    | Ok _ -> sleeper
+    | Ok t ->
+      Lwt.on_cancel sleeper ( fun () -> close_noerr t );
+      sleeper
 end
 
 module Signal = struct
@@ -1335,6 +1336,7 @@ module Misc = struct
     minor: int;
     patch: int;
   }
+
   external version_raw: unit -> int = "uwt_version_na" "noalloc"
   let version () =
     let n = version_raw () in
@@ -1359,6 +1361,41 @@ end
 
 module Unix = struct
 
+  external gethostname:
+    loop -> Req.t -> string cb -> unit Result.t
+    = "uwt_gethostname"
+
+  let gethostname () =
+    Req.ql
+      ~typ:Req.Work
+      ~f:gethostname
+      ~name:"uwt_gethostname"
+      ~param
+
+  type host_entry = Unix.host_entry
+  external gethostbyname:
+    string -> loop -> Req.t -> host_entry cb -> unit Result.t
+    = "uwt_gethostbyname"
+
+  let gethostbyname p =
+    Req.ql
+      ~typ:Req.Work
+      ~f:(gethostbyname p)
+      ~name:"uwt_gethostbyname"
+      ~param
+
+  external gethostbyaddr:
+    string -> loop -> Req.t -> host_entry cb -> unit Result.t
+    = "uwt_gethostbyaddr"
+
+  let gethostbyaddr p =
+    let p = Unix.string_of_inet_addr p in
+    Req.ql
+      ~typ:Req.Work
+      ~f:(gethostbyaddr p)
+      ~name:"uwt_gethostbyaddr"
+      ~param
+
   type service_entry = Unix.service_entry
 
   external getservbyname:
@@ -1370,6 +1407,17 @@ module Unix = struct
       ~typ:Req.Work
       ~f:(getservbyname name protocol)
       ~name:"uwt_getservbyname"
+      ~param
+
+  external getservbyport:
+    int -> string -> loop -> Req.t ->  service_entry cb -> unit Result.t =
+    "uwt_getservbyport"
+
+  let getservbyport port protocol =
+    Req.ql
+      ~typ:Req.Work
+      ~f:(getservbyport port protocol)
+      ~name:"uwt_getservbyport"
       ~param
 
   let getaddrinfo host service (options:Unix.getaddrinfo_option list) =
@@ -1384,6 +1432,28 @@ module Unix = struct
     in
     Lwt.return (List.map f l)
 
+  external getprotobyname:
+    string -> loop -> Req.t -> Unix.protocol_entry cb -> unit Result.t
+    = "uwt_getprotobyname"
+
+  let getprotobyname p =
+    Req.ql
+      ~typ:Req.Work
+      ~f:(getprotobyname p)
+      ~name:"uwt_getprotobyname"
+      ~param
+
+  external getprotobynumber:
+    int -> loop -> Req.t -> Unix.protocol_entry cb -> unit Result.t
+    = "uwt_getprotobynumber"
+
+  let getprotobynumber p =
+    Req.ql
+      ~typ:Req.Work
+      ~f:(getprotobynumber p)
+      ~name:"uwt_getprotobynumber"
+      ~param
+
   external lseek:
     file -> int64 -> Unix.seek_command -> loop -> Req.t -> int64 cb ->
     unit Result.t = "uwt_lseek_byte" "uwt_lseek_native"
@@ -1394,7 +1464,6 @@ module Unix = struct
       ~f:(lseek f o m)
       ~name:"uwt_lseek"
       ~param
-
 end
 
 module Valgrind = struct
@@ -1425,6 +1494,7 @@ module Valgrind = struct
     let () = Main.run (Main.call_hooks ()) in
     lwt_cleanup ();
     global_cleanup ()
+
 end
 let valgrind_happy = Valgrind.valgrind_happy
 

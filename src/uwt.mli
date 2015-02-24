@@ -71,10 +71,7 @@
  **)
 
 
-(** UWT_- error codes are introduced by uwt.
-    All other error codes are always from libuv (beside [ENOMEM] which is
-    used by the wrapper and libuv.)
-*)
+(** UWT_- error codes are introduced by uwt. *)
 
 type error =
   | E2BIG
@@ -396,7 +393,7 @@ module Fs : sig
   val lstat : string -> stats Lwt.t
   val fstat : file -> stats Lwt.t
   val rename : src:string -> dst:string -> unit Lwt.t
-  val link : target:string -> link_name:string -> unit Lwt.t
+  val link : target:string -> string -> unit Lwt.t
 
   type symlink_mode =
     | S_Default
@@ -405,7 +402,7 @@ module Fs : sig
 
   (** @param mode default [S_Default] *)
   val symlink :
-    ?mode:symlink_mode -> target:string -> link_name:string -> unit Lwt.t
+    ?mode:symlink_mode -> target:string -> string -> unit Lwt.t
   val mkdtemp : string -> string Lwt.t
 
   (** @param pos default 0
@@ -429,7 +426,6 @@ module Handle : sig
   val close : t -> unit Lwt.t
   val close_noerr : t -> unit
   val is_active : t -> bool
-  val is_closing : t -> bool
 end
 
 module Handle_ext : sig
@@ -950,11 +946,22 @@ module Compat : sig
 end
 
 module Unix : sig
+  val gethostname : unit -> string Lwt.t
+
+  type host_entry = Unix.host_entry
+  val gethostbyname: string -> host_entry Lwt.t
+  val gethostbyaddr: Unix.inet_addr -> host_entry Lwt.t
+
   type service_entry = Unix.service_entry
+
   val getservbyname: name:string -> protocol:string -> service_entry Lwt.t
+  val getservbyport: int -> string -> service_entry Lwt.t
   val lseek: file -> int64 -> Unix.seek_command -> int64 Lwt.t
   val getaddrinfo:
     string -> string -> Unix.getaddrinfo_option list -> Unix.addr_info list Lwt.t
+
+  val getprotobyname: string -> Unix.protocol_entry Lwt.t
+  val getprotobynumber: int -> Unix.protocol_entry Lwt.t
 end
 
 (**/**)

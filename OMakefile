@@ -27,13 +27,13 @@ static.=
 	else
 		export
 		OCAMLFLAGS= -g -bin-annot -safe-string
-		CFLAGS= -g
+		CFLAGS= -O2 -g
 	export OCAMLFLAGS CFLAGS
 
 ConfReplace(_oasis)
 
 .DEFAULT: all
-.SUBDIRS: src examples
+.SUBDIRS: src examples test
 
 ConfReplace(_oasis)
 

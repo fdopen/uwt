@@ -1358,7 +1358,7 @@ let with_file ?buffer_size ?flags ?perm ~mode filename f =
     (fun () -> f ic)
     (fun () -> close ic)
 
-(*let file_length filename = with_file ~mode:input filename length*)
+let file_length filename = with_file ~mode:input filename length
 
 external get_sun_path: Uwt.sockaddr -> string option = "uwt_sun_path"
 let invalid_path="\x00"
@@ -1414,47 +1414,14 @@ let open_connection ?buffer_size sockaddr =
         in
         Lwt.return (a,b)
       ) ( fun exn -> Uwt.Stream.close_noerr stream; Lwt.fail exn)
-(*
-let open_connection ?fd ?buffer_size sockaddr =
-  let fd = match fd with
-    | None -> Lwt_unix.socket (Unix.domain_of_sockaddr sockaddr) Unix.SOCK_STREAM 0
-    | Some fd -> fd
-  in
-  let close = lazy begin
-    Lwt.finalize
-      (fun () ->
-        Lwt.catch
-          (fun () ->
-            Lwt_unix.shutdown fd Unix.SHUTDOWN_ALL;
-            Lwt.return_unit)
-          (function
-          | Unix.Unix_error(Unix.ENOTCONN, _, _) ->
-            (* This may happen if the server closed the connection before us *)
-            Lwt.return_unit
-          | exn -> Lwt.fail exn))
-      (fun () ->
-        Lwt_unix.close fd)
-  end in
-  Lwt.catch
-    (fun () ->
-      Lwt_unix.connect fd sockaddr >>= fun () ->
-      (try Lwt_unix.set_close_on_exec fd with Invalid_argument _ -> ());
-      Lwt.return (make ?buffer_size
-                ~close:(fun _ -> Lazy.force close)
-                ~mode:input (Uwt_bytes.read fd),
-              make ?buffer_size
-                ~close:(fun _ -> Lazy.force close)
-                ~mode:output (Uwt_bytes.write fd)))
-    (fun exn ->
-      Lwt_unix.close fd >>= fun () ->
-      Lwt.fail exn)
 
-let with_connection ?fd ?buffer_size sockaddr f =
-  open_connection ?fd ?buffer_size sockaddr >>= fun (ic, oc) ->
+let with_connection ?buffer_size sockaddr f =
+  open_connection ?buffer_size sockaddr >>= fun (ic, oc) ->
   Lwt.finalize
     (fun () -> f (ic, oc))
     (fun () -> close ic <&> close oc)
 
+(*
 type server = {
   shutdown : unit Lazy.t;
 }
