@@ -9,7 +9,10 @@ let () = Random.self_init ()
    Then, we compare the result *)
 let cat_test () =
   let len = 16_777_211 in (* 16MB, limit for 32-bit OCaml *)
-  let b = Bytes.init len ( fun _ -> Random.int 256 |> Char.chr ) in
+  let b = Bytes.create len in
+  for i = 0 to pred len do
+    Bytes.unsafe_set b i (Char.chr (i land 255))
+  done;
   let stdin = Uwt.Pipe.init_exn () in
   let stdout = Uwt.Pipe.init_exn () in
   let p =

@@ -7,7 +7,7 @@ OCAMLINCLUDES[]+= $(dir ../src)
 OCAML_LIBS+= $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preemptive)
 
 section
-	FILES[]= main common t_unix t_preemptive t_fs t_tcp t_spawn
+	FILES[]= main common t_unix t_preemptive t_fs t_tcp t_spawn t_fs_event
 	Repeat_targets($(FILES))
 	TEST_PROG=$(OCamlProgram test,$(FILES))
 	all:: $(TEST_PROG)

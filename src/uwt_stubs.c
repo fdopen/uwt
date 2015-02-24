@@ -69,6 +69,7 @@
 #include <netdb.h>
 #endif
 
+#define CAML_NAME_SPACE 1
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -149,7 +150,24 @@ static unsigned int log2_help(unsigned int v)
 }
 #endif
 
-#define GR_ROOT_INIT_SIZE 32 /*always to 2^x */
+/* libuv somtimes return NULL pointers instead of c strings, without any hint
+   in the documentation. */
+static value
+csafe_copy_string(const char * x)
+{
+  value ret;
+  if ( x == NULL ){
+    ret = caml_alloc_string(0);
+  }
+  else {
+    size_t l = strlen(x);
+    ret = caml_alloc_string(l);
+    memcpy(String_val(ret),x,l);
+  }
+  return ret;
+}
+
+#define GR_ROOT_INIT_SIZE 32
 static value gr_root = Val_unit;
 static unsigned int gr_root_size = 0;
 static unsigned int gr_root_n = 0;
@@ -324,7 +342,6 @@ union all_sockaddr {
 #define SOCKADDR_WOSIZE (CEIL((sizeof(union all_sockaddr)),(sizeof(intnat))))
 
 #ifdef _WIN32
-
 /*
   TODO: are they really always a multiple of 2?
   http://blogs.msdn.com/b/oldnewthing/archive/2005/01/21/358109.aspx
@@ -1687,7 +1704,7 @@ fs_scandir_cb(uv_req_t * r)
     ar = caml_alloc(result,0);
     while ( UV_EOF != uv_fs_scandir_next(req, &dent) ){
       intnat d;
-      s = caml_copy_string(dent.name);
+      s = csafe_copy_string(dent.name);
       t = caml_alloc_small(2,0);
       Field(t,1) = s;
       switch (dent.type){
@@ -1738,7 +1755,7 @@ fs_mkdtemp_cb(uv_req_t * r)
     Field(param,0) =  VAL_UV_UWT_EFATAL;
   }
   else {
-    value s = caml_copy_string(req->path);
+    value s = csafe_copy_string(req->path);
     Begin_roots1(s);
     param = caml_alloc_small(1,Ok_tag);
     Field(param,0) = s;
@@ -1769,7 +1786,7 @@ fs_readlink_cb(uv_req_t * r)
   }
   else {
     /* libuv has added the trailing zero for us */
-    value s = caml_copy_string(req->ptr);
+    value s = csafe_copy_string(req->ptr);
     Begin_roots1(s);
     param = caml_alloc_small(1,Ok_tag);
     Field(param,0) = s;
@@ -2313,7 +2330,7 @@ CAMLprim value
 uwt_timer_start(value o_loop, value o_cb,
                 value o_timeout, value o_repeat)
 {
-  CAMLparam1(o_loop);
+  CAMLparam2(o_loop,o_cb);
   CAMLlocal2(ret,v);
   struct loop * l;
   intnat l_timeout = Long_val(o_timeout);
@@ -2897,7 +2914,6 @@ uwt_write(value a,value b,value c,value d,value e){
   return(uwt_udp_send_native(a,b,c,d,Val_unit,e));
 }
 
-
 static void
 cb_uwt_write2(uv_write_t* req, int status)
 {
@@ -2972,11 +2988,11 @@ uwt_write2_native(value o_stream,
 BYTE_WRAP6(uwt_write2)
 
 CAMLprim value
-uwt_udp_try_send(value o_stream,value o_buf,value o_pos,
-                 value o_len,value o_sock)
+uwt_udp_try_send_na(value o_stream,value o_buf,value o_pos,
+                    value o_len,value o_sock)
 {
   HANDLE_NO_UNINIT_RESULT(o_stream);
-  HANDLE_NINIT(s,o_stream,o_sock);
+  HANDLE_NINIT_NA(s,o_stream);
   uv_buf_t buf = {
     .base = String_val(o_buf) + Long_val(o_pos),
     .len = Long_val(o_len) };
@@ -2987,13 +3003,13 @@ uwt_udp_try_send(value o_stream,value o_buf,value o_pos,
   else {
     ret = uv_udp_try_send((uv_udp_t*)s->handle,&buf,1,SOCKADDR_VAL(o_sock));
   }
-  CAMLreturn(VAL_LONG_UV_RESULT(ret));
+  return (VAL_LONG_UV_RESULT(ret));
 }
 
 CAMLprim value
-uwt_try_write(value o_stream,value o_buf,value o_pos,value o_len)
+uwt_try_write_na(value o_stream,value o_buf,value o_pos,value o_len)
 {
-  return(uwt_udp_try_send(o_stream,o_buf,o_pos,o_len,Val_unit));
+  return(uwt_udp_try_send_na(o_stream,o_buf,o_pos,o_len,Val_unit));
 }
 
 UV_HANDLE_BOOL(uv_stream_t,is_readable)
@@ -3130,7 +3146,6 @@ uwt_pipe_open(value o_loop, value o_fd,value o_ipc)
         erg = uv_pipe_open(p,Long_val(o_fd));
         if ( erg < 0 ){
           h->finalize_called = 1;
-          Field(ret,0) = Val_error(erg);
           handle_finalize_close(h);
         }
       }
@@ -3197,11 +3212,11 @@ uwt_pipe_getsockname(value o_pipe)
   }
   else {
     char * ms = lname ? lname : name;
-#if (UV_VERSION_MAJOR > 1) || ( UV_VERSION_MINOR > 2 )
+#if UV_VERSION_MAJOR < 1
+#error "libuv too old"
+#elif (UV_VERSION_MAJOR > 1) || ( UV_VERSION_MINOR > 2 )
     o_str = caml_alloc_string(s);
     memcpy(String_val(o_str),ms,s);
-#elif UV_VERSION_MAJOR < 1
-#error "libuv too old"
 #else
     --s;
     assert(ms[s] == '\0');
@@ -3387,18 +3402,22 @@ static int udp_bin_flag_table[2] = {
 static value
 uwt_tcp_udp_bind(value o_tcp, value o_sock, value o_flags, bool tcp)
 {
-  unsigned int flags =
-    tcp ?
-    (o_flags == Val_unit ? 0 : UV_TCP_IPV6ONLY) :
-    caml_convert_flag_list(o_flags,udp_bin_flag_table);
   HANDLE_NINIT_NA(t,o_tcp);
   struct sockaddr* addr = SOCKADDR_VAL(o_sock);
+  unsigned int flags;
   int ret ;
-  if ( tcp ){
-    ret = uv_tcp_bind((uv_tcp_t *)t->handle,addr,flags);
+  if ( tcp == false ){
+    flags = caml_convert_flag_list(o_flags,udp_bin_flag_table);
+    ret = uv_udp_bind((uv_udp_t *)t->handle,addr,flags);
   }
   else {
-    ret = uv_udp_bind((uv_udp_t *)t->handle,addr,flags);
+    if ( o_flags == Val_unit ){
+      flags = 0;
+    }
+    else {
+      flags = UV_TCP_IPV6ONLY;
+    }
+    ret = uv_tcp_bind((uv_tcp_t *)t->handle,addr,flags);
   }
   if ( ret >= 0 ){
     t->initialized = 1 ;
@@ -4068,9 +4087,7 @@ event_cb(uv_fs_event_t* handle,
         Field(tup,1) = list;
         list = tup ;
       }
-      size_t str_len = strlen(filename);
-      str = caml_alloc_string(str_len);
-      memcpy( String_val(str) , filename , str_len );
+      str = csafe_copy_string(filename);
       tup = caml_alloc_small(2,0);
       Field(tup,0) = str;
       Field(tup,1) = list;
@@ -4192,6 +4209,10 @@ fs_poll_cb(uv_fs_poll_t* handle,
       param = caml_alloc_small(1,Error_tag);
       Field(param,0) = Val_error(status);
     }
+    else if ( prev == NULL || curr == NULL ){
+      param = caml_alloc_small(1,Error_tag);
+      Field(param,0) = UV_UWT_EFATAL;
+    }
     else {
       value s2 = Val_unit;
       value tup = Val_unit;
@@ -4306,7 +4327,7 @@ CAMLprim value
 uwt_version_string(value unit)
 {
   (void)unit;
-  return(caml_copy_string(uv_version_string()));
+  return(csafe_copy_string(uv_version_string()));
 }
 
 CAMLprim value
@@ -4478,7 +4499,7 @@ uwt_cpu_info(value unit)
     for ( i = 0 ; i < n_cpu ; ++i ){
       uv_cpu_info_t * c = &cpu_infos[i];
       tup = caml_alloc(3,0);
-      tmp = caml_copy_string(c->model);
+      tmp = csafe_copy_string(c->model);
       Store_field(tup,0,tmp);
       Field(tup,1)=Val_long(c->speed);
 
@@ -4526,7 +4547,7 @@ uwt_interface_addresses(value unit)
     for ( i = 0 ; i < n_addresses ; ++i ){
       uv_interface_address_t *  c = &addresses[i];
       ar_in = caml_alloc(5,0);
-      tmp = caml_copy_string( c->name );
+      tmp = csafe_copy_string(c->name);
       Store_field(ar_in,0,tmp);
 
       tmp = caml_alloc_string(6);
@@ -4636,8 +4657,8 @@ convert_addrinfo(struct addrinfo * a)
          a->ai_addr,
          len);
 
-  vcanonname = copy_string(a->ai_canonname == NULL ? "" : a->ai_canonname);
-  vres = alloc_small(5, 0);
+  vcanonname = csafe_copy_string(a->ai_canonname);
+  vres = caml_alloc_small(5, 0);
   Field(vres, 0) = cst_to_constr(a->ai_family, socket_domain_table, 3, 0);
   Field(vres, 1) = cst_to_constr(a->ai_socktype, socket_type_table, 4, 0);
   Field(vres, 2) = Val_int(a->ai_protocol);
@@ -4828,10 +4849,8 @@ ret_getnameinfo(uv_req_t * rdd)
     value tmp2 = Val_unit;
     ifo = Val_unit ;
     Begin_roots3(tmp1,tmp2,ifo);
-    tmp1 = caml_copy_string(wp->c.c.void1.c_cvoid == NULL ? "" :
-                            wp->c.c.void1.c_cvoid);
-    tmp2 = caml_copy_string(wp->c.c.void2.c_cvoid == NULL ? "" :
-                            wp->c.c.void2.c_cvoid);
+    tmp1 = csafe_copy_string(wp->c.c.void1.c_cvoid);
+    tmp2 = csafe_copy_string(wp->c.c.void2.c_cvoid);
     ifo = caml_alloc_small(2,0);
     Field(ifo,0) = tmp1;
     Field(ifo,1) = tmp2;
@@ -4927,20 +4946,18 @@ spawn_exit_cb(uv_process_t*t, int64_t exit_status, int term_signal)
   HANDLE_CB_INIT(t);
   value exn = Val_unit;
   struct handle * h = t->data;
-  if ( likely(h) ){
-    if ( h->cb_read != CB_INVALID && h->cb_listen != CB_INVALID ){
-      value callback = GET_CB_VAL(h->cb_read);
-      value process = GET_CB_VAL(h->cb_listen);
-      gr_root_unregister(&h->cb_read);
-      gr_root_unregister(&h->cb_listen);
-      exn=caml_callback3_exn(callback,
-                             process,
-                             Val_long(exit_status),
-                             Val_long(term_signal));
-    }
-    if (h->in_use_cnt){
-      --h->in_use_cnt;
-    }
+  if ( h->cb_read != CB_INVALID && h->cb_listen != CB_INVALID ){
+    value callback = GET_CB_VAL(h->cb_read);
+    value process = GET_CB_VAL(h->cb_listen);
+    gr_root_unregister(&h->cb_read);
+    gr_root_unregister(&h->cb_listen);
+    exn=caml_callback3_exn(callback,
+                           process,
+                           Val_long(exit_status),
+                           Val_long(term_signal));
+  }
+  if (h->in_use_cnt){
+    --h->in_use_cnt;
   }
   HANDLE_CB_RET(exn);
 }
@@ -5455,9 +5472,9 @@ getserv_cb(uv_req_t * req)
       value res;
       value name = Val_unit, aliases = Val_unit, proto = Val_unit;
       Begin_roots3(name, aliases, proto);
-       name = caml_copy_string(entry->s_name);
+       name = csafe_copy_string(entry->s_name);
        aliases = caml_copy_string_array((const char **)entry->s_aliases);
-       proto = caml_copy_string(entry->s_proto);
+       proto = csafe_copy_string(entry->s_proto);
        res = caml_alloc_small(4, 0);
        Field(res,0) = name;
        Field(res,1) = aliases;
@@ -5716,7 +5733,7 @@ gethostent_cb(uv_req_t * req)
       value addr_list = Val_unit, adr = Val_unit;
 
       Begin_roots4 (name, aliases, addr_list, adr);
-      name = caml_copy_string((char *)(entry->h_name));
+      name = csafe_copy_string(entry->h_name);
       /* PR#4043: protect against buggy implementations of gethostbyname()
          that return a NULL pointer in h_aliases */
       if (entry->h_aliases)
@@ -5729,7 +5746,7 @@ gethostent_cb(uv_req_t * req)
         addr_list = caml_alloc_array(alloc_one_addr6,(const char**)entry->h_addr_list);
       else
         addr_list = caml_alloc_array(alloc_one_addr,(const char**)entry->h_addr_list);
-      res = alloc_small(4, 0);
+      res = caml_alloc_small(4, 0);
       Field(res, 0) = name;
       Field(res, 1) = aliases;
       switch (entry->h_addrtype) {
@@ -5930,7 +5947,7 @@ gethostname_cb(uv_req_t * req){
       Field(ret,0) = VAL_UV_ENOENT;
     }
     else {
-      value name = caml_copy_string(p);
+      value name = csafe_copy_string(p);
       Begin_roots1(name);
       ret = caml_alloc_small(1,Ok_tag);
       Field(ret,0) = name;
@@ -6114,9 +6131,9 @@ getprotoent_cb(uv_req_t * req)
     else {
       value name = Val_unit, aliases = Val_unit;
       Begin_roots2 (aliases, name);
-      name = caml_copy_string(entry->p_name);
+      name = csafe_copy_string(entry->p_name);
       aliases = caml_copy_string_array((const char**)entry->p_aliases);
-      ret = alloc_small(3, 0);
+      ret = caml_alloc_small(3, 0);
       Field(ret,0) = name;
       Field(ret,1) = aliases;
       Field(ret,2) = Val_int(entry->p_proto);

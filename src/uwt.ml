@@ -616,7 +616,7 @@ module Stream = struct
       qsu5 ~name:"uv_write2" ~f:write2 s send buf pos len
 
   external try_write:
-    t -> Bytes.t -> int -> int -> int Result.t = "uwt_try_write"
+    t -> Bytes.t -> int -> int -> int Result.t = "uwt_try_write_na" "noalloc"
 
   let try_write ?(pos=0) ?len s ~buf =
     let dim = Bytes.length buf in
@@ -903,7 +903,8 @@ module Udp = struct
     send ~dim ?pos ?len ~buf t addr
 
   external try_send:
-    t -> Bytes.t -> int -> int -> sockaddr -> int Result.t = "uwt_udp_try_send"
+    t -> Bytes.t -> int -> int -> sockaddr -> int Result.t =
+    "uwt_udp_try_send_na" "noalloc"
 
   let try_send ?(pos=0) ?len ~buf t s =
     let dim = Bytes.length buf in

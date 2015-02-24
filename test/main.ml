@@ -8,6 +8,7 @@ let tests =
     T_preemptive.l;
     T_tcp.l;
     T_spawn.l;
+    T_fs_event.l;
   ]
 
 exception Do_exit of int

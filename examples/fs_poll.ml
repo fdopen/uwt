@@ -25,6 +25,10 @@ let observe fln timeout =
   let l = UP.start_exn fln timeout ~cb in
   Lwt.finalize Help.wait ( fun () -> UP.close l )
 
-let () = U.Main.run (observe "/tmp" 2_000)
+let () =
+  let tmp_dir = Filename.get_temp_dir_name () in
+  let t1 = observe tmp_dir 2_000 in
+  let t2 = Help.write_something tmp_dir in
+  U.Main.run (Lwt.pick [t1;t2])
 
 let () = Help.clean ()

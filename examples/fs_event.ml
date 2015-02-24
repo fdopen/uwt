@@ -1,22 +1,21 @@
-module U = Uwt
-module UE = U.Fs_event
-
 let print_event_list l =
   let f = function
-  | UE.Rename -> "Rename"
-  | UE.Change -> "Change"
+  | Uwt.Fs_event.Rename -> "Rename"
+  | Uwt.Fs_event.Change -> "Change"
   in
   let s = List.map f l |> String.concat ", "  in
   "[ " ^ s ^ " ]"
 
 let cb _t = function
-| U.Error x -> U.strerror x |> Uwt_io.printf "error: %s\n" |> ignore
-| U.Ok(fln,events) ->
+| Uwt.Error x -> Uwt.strerror x |> Uwt_io.printf "error: %s\n" |> ignore
+| Uwt.Ok(fln,events) ->
   print_event_list events |> Uwt_io.printf "%s: %s\n%!" fln |> ignore
 
 let () =
-  let l = UE.start_exn "/tmp" [] ~cb in
-  let t = Lwt.finalize Help.wait (fun () -> UE.close l) in
-  U.Main.run t
+  let tmp_dir = Filename.get_temp_dir_name () in
+  let l = Uwt.Fs_event.start_exn tmp_dir [] ~cb in
+  let t = Lwt.finalize Help.wait (fun () -> Uwt.Fs_event.close l) in
+  let t2 = Help.write_something tmp_dir in
+  Uwt.Main.run (Lwt.pick [t ; t2])
 
 let () = Help.clean ()

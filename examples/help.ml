@@ -1,3 +1,6 @@
+let () = Random.self_init ()
+
+open Lwt.Infix
 let timeout =
   let rec f = function
   | [] -> None
@@ -24,5 +27,30 @@ let wait () =
     ( fun () -> Lwt.pick ts )
     ( fun () -> close_all () )
 
-
 let clean () = Uwt.valgrind_happy ()
+let chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+let chars_len = String.length chars
+
+let write_something tmp_dir =
+  let x = Bytes.of_string "uwt.fs_event.XXXXXX.log" in
+  let rec iter n =
+    Uwt.Timer.sleep (n * 1_000 )  >>= fun () ->
+    for i = 13 to 18 do
+      let c = Random.int chars_len in
+      Bytes.set x i chars.[c]
+    done;
+    Lwt.catch ( fun () ->
+        let fln = Filename.concat tmp_dir (Bytes.to_string x) in
+        Uwt_io.printf "will write to %s\n" fln >>= fun () ->
+        Uwt_io.flush Uwt_io.stdout >>= fun () ->
+        let open Uwt.Fs in
+        openfile ~mode:([O_WRONLY; O_CREAT; O_EXCL]) fln >>= fun fd ->
+        write_string ~buf:"Hello World!" fd >>= fun _ ->
+        close fd >>= fun () -> Uwt.Timer.sleep 1_000 >>= fun () ->
+        Uwt.Fs.unlink fln >>= fun () -> Lwt.return_unit
+      ) ( function
+      | Uwt.Uwt_error(Uwt.EEXIST,_,_) -> Lwt.return_unit
+      | x -> Lwt.fail x )
+    >>= fun () -> iter (succ n)
+  in
+  iter 0
