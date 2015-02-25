@@ -167,6 +167,7 @@ csafe_copy_string(const char * x)
   return ret;
 }
 
+static bool caml_exception_caught = false;
 #define GR_ROOT_INIT_SIZE 32
 static value gr_root = Val_unit;
 static unsigned int gr_root_size = 0;
@@ -1015,6 +1016,7 @@ uwt_run_loop(value o_loop,value o_mode)
     }
     wp->in_use = 1;
     assert ( runtime_locked == false );
+    caml_exception_caught = false;
     erg = uv_run(loop, m);
     if ( runtime_locked == true ){
       runtime_locked = false;
@@ -1137,6 +1139,7 @@ add_exception(value e)
     DEBUG_PF("uwt.add_exception not found!");
   }
   else {
+    caml_exception_caught = true;
     caml_callback_exn(*e_handle,Extract_exception(e));
   }
 }
@@ -6448,6 +6451,11 @@ my_enter_blocking_section(uv_prepare_t *x)
   (void)x;
   runtime_locked = true;
   caml_enter_blocking_section();
+  if ( caml_exception_caught && x->loop == &default_loop_uv ){
+    /* This way, the loop won't block for I/O, so we can handle exceptions
+       sooner. */
+    uv_stop(x->loop);
+  }
 }
 
 static void

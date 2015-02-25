@@ -312,6 +312,37 @@ module Main : sig
       doesn't report any result and libuv reports, that there are no
       pending tasks.  *)
   exception Main_error of error * string
+
+
+  (** You shouldn't raise exceptions, if you are using lwt. Always use
+      {!Lwt.fail}. If you throw exceptions nevertheless, uwt can
+      usually not propagate the exceptions to the OCaml runtime
+      immediately. The exceptions are stored internally an are
+      rethrown as soon as possible ([Deferred]). You can catch these
+      exceptions below [run].
+
+      However, uwt cannot catch all exceptions at the right
+      moment. These exceptions are wrapped inside [Fatal]. Don't call
+      any uwt function (especially {!run}) again, if you catch such an
+      exception below {!run}. A workaround is currently not
+      implemented, because only rare exceptions like [Out_of_memory]
+      are 'fatal' under certain circumstances - and they usually mean
+      you are in unrecoverable trouble anyway.
+
+      {[
+        let rec main t1  =
+          match Uwt.Main.run t1 with
+          | result -> let y = ... (* no error *)
+          | exception Uwt.Main.Deferred(l) ->
+            log_deferred l ; main t2 (* safe *)
+          | exception Uwt.Main.Fatal(e,p) -> (* fatal, restart your process *)
+            log_fatal e p ; cleanup () ; exit 2
+          | exception x -> log_normal x ; main t3 (* safe *)
+      ]}
+  *)
+  exception Deferred of (exn * Printexc.raw_backtrace) list
+  exception Fatal of exn * Printexc.raw_backtrace
+
   val enter_iter_hooks : (unit -> unit) Lwt_sequence.t
   val leave_iter_hooks : (unit -> unit) Lwt_sequence.t
   val yield : unit -> unit Lwt.t

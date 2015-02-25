@@ -1172,15 +1172,18 @@ end
 
 module Main = struct
 
-  let exceptions = Queue.create ()
+  let exceptions = ref []
+  let fatal_found = ref false (* information for exit_hook and run *)
 
-  (* should I pass them to Lwt.async_exception_hook directly? *)
   let add_exception (e:exn) =
-    Queue.push e exceptions
+    let bt = Printexc.get_raw_backtrace () in
+    exceptions := (e,bt)::!exceptions
 
   let () = Callback.register "uwt.add_exception" add_exception
 
   exception Main_error of error * string
+  exception Deferred of (exn * Printexc.raw_backtrace) list
+  exception Fatal of exn * Printexc.raw_backtrace
 
   let enter_iter_hooks = Lwt_sequence.create ()
   let leave_iter_hooks = Lwt_sequence.create ()
@@ -1188,9 +1191,6 @@ module Main = struct
   let yield () = Lwt.add_task_r yielded
 
   let rec run ~nothing_cnt task =
-    if Queue.is_empty exceptions = false then (
-      raise (Queue.take exceptions);
-    );
     Lwt.wakeup_paused ();
     match Lwt.poll task with
     | Some x -> x
@@ -1209,11 +1209,28 @@ module Main = struct
           else
             Run_nowait
         in
-        let lr = uv_run_loop loop mode in
+        let lr = match uv_run_loop loop mode with
+        | lr -> lr
+        | exception e ->
+          fatal_found := true;
+          let bt = Printexc.get_raw_backtrace () in
+          raise (Fatal(e,bt))
+        in
+        (match !exceptions with
+         | [] -> ()
+         | l ->
+           exceptions:= [];
+           let l = List.rev l in
+           let l =
+             if Result.is_error lr then
+               (Main_error(Result.to_error lr,"run"),
+                Printexc.get_callstack 0)::l
+             else
+               l
+           in
+           raise (Deferred l));
         if Result.is_error lr then
           raise (Main_error(Result.to_error lr,"run"));
-        if Queue.is_empty exceptions = false then
-          raise (Queue.take exceptions);
         let nothing_cnt =
           if (lr :> int) = 0 && mode = Run_once then
             nothing_cnt + 1
@@ -1232,7 +1249,10 @@ module Main = struct
         run ~nothing_cnt task
       )
 
-  let run (t:'a Lwt.t) : 'a = run ~nothing_cnt:0 t
+  let run (t:'a Lwt.t) : 'a =
+    if !fatal_found then
+      failwith "uwt loop unusuable";
+    run ~nothing_cnt:0 t
 
   let exit_hooks = Lwt_sequence.create ()
 
@@ -1246,7 +1266,7 @@ module Main = struct
         (fun _  -> Lwt.return_unit) >>= fun () ->
       call_hooks ()
 
-  let () = at_exit (fun () -> run (call_hooks ()))
+  let () = at_exit (fun () -> if !fatal_found then () else run (call_hooks ()))
   let at_exit f = ignore (Lwt_sequence.add_l f exit_hooks)
 
 
@@ -1505,4 +1525,20 @@ let () =
     | Uwt_error (e, s, s') ->
       let msg = err_name e in
       Some (Printf.sprintf "Uwt.Uwt_error(Uwt.%s, %S, %S)" msg s s')
+    | Main.Deferred(l) ->
+      let l =
+        List.map ( fun (exn,bt) ->
+            "(" ^ (Printexc.to_string exn) ^ ",\n" ^
+            (Printexc.raw_backtrace_to_string bt) ^ ");")
+          l
+      in
+      let s = "Uwt.Main.Deferred([\n" ^ String.concat "\n" l ^ "\n])" in
+      Some s
+    | Main.Fatal(e,bt) ->
+      let s =
+        "Uwt.Main.Fatal(" ^
+        (Printexc.to_string e) ^ ",\n" ^
+        (Printexc.raw_backtrace_to_string bt) ^ ")"
+      in
+      Some s
     | _ -> None)
