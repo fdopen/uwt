@@ -31,7 +31,7 @@
 #
 open build/C
 open build/OCaml
-open build/LaTeX
+# open build/LaTeX
 
 #
 # The command-line variables are defined *after* the
