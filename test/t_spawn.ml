@@ -26,12 +26,14 @@ let cat_test () =
   let rec read i =
     Uwt.Pipe.read ~buf:out_bytes stdout >>= fun n ->
     match n with
-    | 0 -> Uwt.Pipe.close stdout
+    | 0 -> Uwt.Pipe.close_wait stdout
     | n -> Buffer.add_subbytes out_buf out_bytes 0 n ; read (succ i)
   in
-  let write = Uwt.Pipe.write stdin ~buf:b >>= fun () -> Uwt.Pipe.close stdin in
+  let write =
+    Uwt.Pipe.write stdin ~buf:b >>= fun () -> Uwt.Pipe.close_wait stdin
+  in
   Lwt.join [ write ; read 0 ] >>= fun () ->
-  P.close p >>= fun () ->
+  P.close_wait p >>= fun () ->
   let blen = Buffer.length out_buf in
   if blen <> len then (
     Uwt_io.eprintf "different lengths! written:%d vs. read:%d\n" len blen

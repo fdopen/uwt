@@ -28,7 +28,7 @@ P1(uwt_strerror);
 
 P1(uwt_default_loop);
 P2(uwt_run_loop);
-P1(uwt_loop_close_na);
+P1(uwt_loop_close);
 
 P2(uwt_req_create);
 P1(uwt_req_cancel_noerr_na);
@@ -70,10 +70,10 @@ P4(uwt_fs_stat);
 P4(uwt_fs_lstat);
 P4(uwt_fs_fstat);
 
-P2(uwt_close);
+P2(uwt_close_wait);
 P2(uwt_get_buffer_size_common_na);
 P3(uwt_set_buffer_size_common_na);
-P1(uwt_close_noerr);
+P1(uwt_close_nowait);
 P1(uwt_is_active_na);
 
 P1(uwt_is_readable_na);
@@ -130,6 +130,7 @@ P2(uwt_udp_set_broadcast_na);
 P2(uwt_udp_set_ttl_na);
 P2(uwt_udp_recv_start);
 P1(uwt_udp_recv_stop);
+P5(uwt_udp_recv_own);
 P1(uwt_udp_send_queue_size_na);
 P1(uwt_udp_send_queue_count_na);
 

@@ -155,7 +155,8 @@ type syslog_connection_type = STREAM | DGRAM
 
 let shutdown fd =
   Uwt.Pipe.shutdown fd >>= fun () ->
-  Uwt.Pipe.close fd
+  Uwt.Pipe.close_noerr fd;
+  Lwt.return_unit
 
 (* Try to find a socket in [paths]. For each path it check that the
    file is a socket and try to establish connection in DGRAM mode then in

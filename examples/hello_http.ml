@@ -22,7 +22,7 @@ let output_dummy c =
   Lwt.finalize ( fun () ->
       T.read ~buf:b c >>= fun _n ->
       T.write c ~buf:message
-    ) ( fun () -> T.close c )
+    ) ( fun () -> T.close_noerr c ; Lwt.return_unit )
 
 let on_listen server x =
   if Uwt.Result.is_error x then
@@ -39,7 +39,7 @@ let hello_server () =
       T.bind_exn server sock;
       let () = T.listen_exn server ~back:server_backlog ~cb:on_listen in
       Help.wait ()
-    ) ( fun () -> T.close server )
+    ) ( fun () -> T.close_noerr server; Lwt.return_unit )
 
 let () = U.Main.run (hello_server ())
 

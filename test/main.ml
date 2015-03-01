@@ -1,4 +1,6 @@
 let () = Random.self_init ()
+let () = if Sys.unix then Sys.set_signal Sys.sigpipe Sys.Signal_ignore
+
 open OUnit2
 
 let tests =
@@ -9,6 +11,9 @@ let tests =
     T_tcp.l;
     T_spawn.l;
     T_fs_event.l;
+    T_udp.l;
+    T_compat.l;
+    T_pipe.l;
   ]
 
 exception Do_exit of int

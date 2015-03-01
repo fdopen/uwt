@@ -159,7 +159,7 @@ let l = [
      m_equal () (unlink (!tmpdir // "d")));
   ("link">::
    fun _ctx ->
-     skip_if Sys.win32 "win32";
+     no_win ();
      m_equal () (link ~target:(!tmpdir // "a") (!tmpdir // "f"));
      m_equal () (unlink (!tmpdir // "f")));
   ("scandir">::
@@ -171,7 +171,7 @@ let l = [
                     return s));
   ("symlink/lstat">::
    fun _ctx ->
-     skip_if Sys.win32 "win32";
+     no_win ();
      let a = !tmpdir // "a"
      and d = !tmpdir // "d" in
      m_equal () (symlink ~target:a d);
@@ -204,13 +204,13 @@ let l = [
               return ( d1 < 10. && d2 < 10. ) ));
   ("chmod">::
    fun _ctx ->
-     skip_if Sys.win32 "win32";
+     no_win ();
      let z = !tmpdir // "z" in
      m_true (chmod z ~perm:0o751 >>= fun () ->
              stat z >>= fun s -> return (s.st_perm = 0o751)));
   ("fchmod">::
    fun _ctx ->
-     skip_if Sys.win32 "win32";
+     no_win ();
      let z = !tmpdir // "z" in
      m_true (openfile ~mode:[O_WRONLY] z >>= fun fd ->
              fchmod fd ~perm:0o621 >>= fun () ->
@@ -223,7 +223,7 @@ let l = [
      m_raises (Uwt.ENOENT,"uv_fs_access",x) (access x [Read]);
      m_equal () (access z [Read]);
      m_equal () (access Sys.executable_name [Exec]);
-     skip_if Sys.win32 "win32";
+     no_win ();
      skip_if (Unix.getuid () = 0) "not for root";
      let invalid = "\000" in
      let shadow =

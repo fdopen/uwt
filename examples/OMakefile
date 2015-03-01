@@ -29,6 +29,7 @@ example_h(f)=
 example(copy)
 example(spawn)
 example_h(echo_tcp)
+example_h(echo_udp)
 example_h(hello_http)
 example_h(fs_event)
 example(timer)

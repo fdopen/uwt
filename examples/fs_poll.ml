@@ -23,7 +23,7 @@ let cb _t = function
 
 let observe fln timeout =
   let l = UP.start_exn fln timeout ~cb in
-  Lwt.finalize Help.wait ( fun () -> UP.close l )
+  Lwt.finalize Help.wait ( fun () -> UP.close_noerr l ; Lwt.return_unit )
 
 let () =
   let tmp_dir = Filename.get_temp_dir_name () in

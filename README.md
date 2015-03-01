@@ -40,6 +40,7 @@ Build dependencies:
 * cppo
 * ppx_deriving
 * ppx_import
+* ounit
 
 ```
 $ omake all

@@ -14,7 +14,7 @@ let cb _t = function
 let () =
   let tmp_dir = Filename.get_temp_dir_name () in
   let l = Uwt.Fs_event.start_exn tmp_dir [] ~cb in
-  let t = Lwt.finalize Help.wait (fun () -> Uwt.Fs_event.close l) in
+  let t = Lwt.finalize Help.wait (fun () -> Uwt.Fs_event.close_noerr l; Lwt.return_unit) in
   let t2 = Help.write_something tmp_dir in
   Uwt.Main.run (Lwt.pick [t ; t2])
 

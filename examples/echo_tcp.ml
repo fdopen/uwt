@@ -17,7 +17,7 @@ let echo_client c =
       T.write ~buf ~len c >>= fun () ->
       iter ()
   in
-  Lwt.finalize iter ( fun () -> T.close c )
+  Lwt.finalize iter ( fun () -> T.close_noerr c; Lwt.return_unit )
 
 let on_listen server x =
   if Uwt.Result.is_error x then
@@ -34,7 +34,7 @@ let echo_server () =
       T.bind_exn server sock;
       let () = T.listen_exn server ~back:server_backlog ~cb:on_listen in
       Help.wait ()
-    ) ( fun () -> T.close server )
+    ) ( fun () -> T.close_noerr server; Lwt.return_unit )
 
 let () = U.Main.run (echo_server ())
 

@@ -494,10 +494,12 @@ module Handle = struct
 
   type t = u
 
-  external close: t -> unit_cb -> unit Result.t = "uwt_close"
-  let close t = qsu1 ~f:close ~name:"uv_close" t
+  external close_wait: t -> unit_cb -> unit Result.t = "uwt_close_wait"
+  let close_wait t = qsu1 ~f:close_wait ~name:"uv_close" t
 
-  external close_noerr: t -> unit = "uwt_close_noerr"
+  external close: t -> unit Result.t = "uwt_close_nowait"
+  let close_noerr t = let _ = close t  in ()
+
   external is_active: t -> bool = "uwt_is_active_na" "noalloc"
 end
 
@@ -544,16 +546,70 @@ module Stream = struct
     t -> 'a -> int -> int -> unit_cb -> unit Result.t =
     "uwt_write"
 
-  let write ?(pos=0) ?len s ~buf ~dim =
+  let write_raw ?(pos=0) ?len s ~buf ~dim =
+    let len =
+      match len with
+      | None -> dim - pos
+      | Some x -> x
+    in
+    let name = "uv_write" in
+    if pos < 0 || len < 0 || pos > dim - len then
+      Lwt.fail (Invalid_argument name)
+    else
+      qsu4 ~name ~f:write s buf pos len
+
+  let write_raw_ba ?pos ?len t ~(buf:buf) =
+    let dim = Bigarray.Array1.dim buf in
+    write_raw ~dim ?pos ?len t ~buf
+
+  let write_raw_string ?pos ?len t ~buf =
+    let dim = String.length buf in
+    write_raw ~dim ?pos ?len t ~buf
+
+  let write_raw ?pos ?len t ~buf =
+    let dim = Bytes.length buf in
+    write_raw ~dim ?pos ?len t ~buf
+
+  external try_write:
+    t -> 'a -> int -> int -> int Result.t = "uwt_try_write_na" "noalloc"
+
+  let try_write ?(pos=0) ?len s ~buf ~dim =
     let len =
       match len with
       | None -> dim - pos
       | Some x -> x
     in
     if pos < 0 || len < 0 || pos > dim - len then
-      Lwt.fail (Invalid_argument "uv_write")
+      Result.uwt_einval
     else
-      qsu4 ~name:"uv_write" ~f:write s buf pos len
+      try_write s buf pos len
+
+  let write ?(pos=0) ?len s ~buf ~dim =
+    let len =
+      match len with
+      | None -> dim - pos
+      | Some x -> x
+    in
+    let name = "uv_write" in
+    if pos < 0 || len < 0 || pos > dim - len then
+      Lwt.fail (Invalid_argument name)
+    else
+      (* always us try_write first, perhaps we don't need to create
+         a sleeping thread at all. It's faster for small write requests *)
+      let x = try_write ~pos ~len s ~buf ~dim in
+      if x < 0 then
+        if x = Result.eagain then
+          qsu4 ~name ~f:write s buf pos len
+        else
+          Result.mfail ~name ~param x
+      else if x = len then
+        Lwt.return_unit
+      else if x > len then
+        Lwt.fail(Uwt_error(UWT_EFATAL,name,""))
+      else
+        let pos = pos + x
+        and len = len - x in
+        qsu4 ~name ~f:write s buf pos len
 
   let write_ba ?pos ?len t ~(buf:buf) =
     let dim = Bigarray.Array1.dim buf in
@@ -566,6 +622,18 @@ module Stream = struct
   let write ?pos ?len t ~buf =
     let dim = Bytes.length buf in
     write ~dim ?pos ?len t ~buf
+
+  let try_write_ba ?pos ?len t ~(buf:buf) =
+    let dim = Bigarray.Array1.dim buf in
+    try_write ~dim ?pos ?len t ~buf
+
+  let try_write_string ?pos ?len t ~buf =
+    let dim = String.length buf in
+    try_write ~dim ?pos ?len t ~buf
+
+  let try_write ?pos ?len t ~buf =
+    let dim = Bytes.length buf in
+    try_write ~dim ?pos ?len t ~buf
 
   external read:
     t -> 'a -> int -> int -> int_cb -> unit Result.t = "uwt_read_own"
@@ -614,24 +682,6 @@ module Stream = struct
       Lwt.fail (Invalid_argument "uv_write2")
     else
       qsu5 ~name:"uv_write2" ~f:write2 s send buf pos len
-
-  external try_write:
-    t -> Bytes.t -> int -> int -> int Result.t = "uwt_try_write_na" "noalloc"
-
-  let try_write ?(pos=0) ?len s ~buf =
-    let dim = Bytes.length buf in
-    let len =
-      match len with
-      | None -> dim - pos
-      | Some x -> x
-    in
-    if pos < 0 || len < 0 || pos > dim - len then
-      Obj.magic Result.uwt_einval
-    else
-      try_write s buf pos len
-
-  let try_write_exn ?pos ?len s ~buf =
-    try_write ?pos ?len ~buf s |> to_exni "uv_try_write"
 
   external is_readable : t -> bool = "uwt_is_readable_na" "noalloc"
   external is_writable : t -> bool = "uwt_is_writable_na" "noalloc"
@@ -879,50 +929,102 @@ module Udp = struct
   let set_ttl_exn a b =
     set_ttl a b |> to_exnu "uv_udp_set_ttl"
 
+  external try_send:
+    t -> 'a -> int -> int -> sockaddr -> int Result.t =
+    "uwt_udp_try_send_na" "noalloc"
+
+  let try_send ?(pos=0) ?len ~buf ~dim t s =
+    let len = match len with
+    | None -> dim - pos
+    | Some x -> x
+    in
+    if pos < 0 || len < 0 || pos > dim - len then
+      Result.uwt_einval
+    else
+      try_send t buf pos len s
+
   external send:
     t -> 'a -> int -> int -> sockaddr -> unit_cb -> unit Result.t =
     "uwt_udp_send_byte" "uwt_udp_send_native"
 
-  let send ?(pos=0) ?len ~buf ~dim s addr =
+  let send_raw ?(pos=0) ?len ~buf ~dim s addr =
+    let name = "uv_udp_send" in
     let len =
       match len with
       | None -> dim - pos
       | Some x -> x
     in
     if pos < 0 || len < 0 || pos > dim - len then
-      Lwt.fail (Invalid_argument "uv_udp_send")
+      Lwt.fail (Invalid_argument name)
     else
-      qsu5 ~name:"uv_udp_send" ~f:send s buf pos len addr
+      qsu5 ~name ~f:send s buf pos len addr
+
+  let send_raw_ba ?pos ?len ~(buf:buf) t addr =
+    let dim = Bigarray.Array1.dim buf in
+    send_raw ~dim ?pos ?len ~buf t addr
+
+  let send_raw_string ?pos ?len ~buf t addr =
+    let dim = String.length buf in
+    send_raw ~dim ?pos ?len ~buf t addr
+
+  let send_raw ?pos ?len ~buf t addr =
+    let dim = Bytes.length buf in
+    send_raw ~dim ?pos ?len ~buf t addr
+
+  let send ?(pos=0) ?len ~buf ~dim s addr =
+    let name = "uv_udp_send" in
+    let len =
+      match len with
+      | None -> dim - pos
+      | Some x -> x
+    in
+    if pos < 0 || len < 0 || pos > dim - len then
+      Lwt.fail (Invalid_argument name)
+    else if Sys.win32 then (* windows doesn't support try_send *)
+      qsu5 ~name ~f:send s buf pos len addr
+    else
+      let x = try_send ~pos ~len ~buf ~dim s addr in
+      if x < 0 then
+        if x = Result.eagain || x = Result.enosys then
+          qsu5 ~name ~f:send s buf pos len addr
+        else
+          Result.mfail ~name ~param x
+      else if x = len then
+        Lwt.return_unit
+      else if x > len then
+        Lwt.fail(Uwt_error(UWT_EFATAL,name,""))
+      else
+        let pos = pos + x
+        and len = len - x in
+        qsu5 ~name ~f:send s buf pos len addr
 
   let send_ba ?pos ?len ~(buf:buf) t addr =
     let dim = Bigarray.Array1.dim buf in
+    send ~dim ?pos ?len ~buf t addr
+
+  let send_string ?pos ?len ~buf t addr =
+    let dim = String.length buf in
     send ~dim ?pos ?len ~buf t addr
 
   let send ?pos ?len ~buf t addr =
     let dim = Bytes.length buf in
     send ~dim ?pos ?len ~buf t addr
 
-  external try_send:
-    t -> Bytes.t -> int -> int -> sockaddr -> int Result.t =
-    "uwt_udp_try_send_na" "noalloc"
+  let try_send_string ?pos ?len ~buf t s =
+    let dim = String.length buf in
+    try_send ?pos ?len ~buf t s ~dim
 
-  let try_send ?(pos=0) ?len ~buf t s =
+  let try_send_ba ?pos ?len ~buf t s =
+    let dim = Bigarray.Array1.dim buf in
+    try_send ?pos ?len ~buf t s ~dim
+
+  let try_send ?pos ?len ~buf t s =
     let dim = Bytes.length buf in
-    let len = match len with
-    | None -> dim - pos
-    | Some x -> x
-    in
-    if pos < 0 || len < 0 || pos > dim - len then
-      Obj.magic Result.uwt_einval
-    else
-      try_send t buf pos len s
-
-  let try_send_exn ?pos ?len ~buf t s =
-    try_send ?pos ?len ~buf t s |> to_exni "uv_udp_try_send"
+    try_send ?pos ?len ~buf t s ~dim
 
   type recv_result =
-    | Data of ( Bytes.t * sockaddr option )
-    | Partial_data of ( Bytes.t * sockaddr option )
+    | Data of Bytes.t * sockaddr option
+    | Partial_data of Bytes.t * sockaddr option
     | Empty_from of sockaddr
     | Transmission_error of error
 
@@ -932,6 +1034,44 @@ module Udp = struct
 
   external recv_stop: t -> unit Result.t = "uwt_udp_recv_stop"
   let recv_stop_exn a = recv_stop a |> to_exnu "uv_udp_recv_stop"
+
+  type recv = {
+    recv_len: int;
+    is_partial: bool;
+    sockaddr: sockaddr option;
+  }
+
+  external recv:
+    t -> 'a -> int -> int -> recv cb
+    -> unit Result.t = "uwt_udp_recv_own"
+
+  let recv ?(pos=0) ?len ~buf ~dim t =
+    let name = "uwt_udp_recv" in
+    let len = match len with
+    | None -> dim - pos
+    | Some x -> x
+    in
+    if pos < 0 || len < 0 || pos > dim - len then
+      Lwt.fail (Invalid_argument "Uwt.Udp.recv")
+    else
+      let sleeper,waker = Lwt.task () in
+      let x = recv t buf pos len waker in
+      if Result.is_error x then
+        Result.fail ~name ~param x
+      else
+        let () = Lwt.on_cancel sleeper ( fun () -> recv_stop t |> ignore ) in
+        sleeper >>= function
+        | Ok x -> Lwt.return x
+        | Error x -> Lwt.fail (Uwt_error(x,name,param))
+
+  let recv_ba ?pos ?len ~(buf:buf) t =
+    let dim = Bigarray.Array1.dim buf in
+    recv ~dim ?pos ?len ~buf t
+
+  let recv ?pos ?len ~buf t =
+    let dim = Bytes.length buf in
+    recv ~dim ?pos ?len ~buf t
+
 end
 
 module Timer = struct

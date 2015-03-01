@@ -53,4 +53,5 @@
 /examples/work
 /examples/log
 /examples/preemptive
+/examples/echo_udp
 /test/test

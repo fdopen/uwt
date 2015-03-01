@@ -454,8 +454,20 @@ end
 
 module Handle : sig
   type t
-  val close : t -> unit Lwt.t
+
+  val close : t -> unit Result.t
   val close_noerr : t -> unit
+
+  (** Prefer {!close} or {!close_noerr} to {!close_wait}. {!close} or
+      {!close_noerr} return immediately (there are no useful error
+      messages, beside perhaps a notice, that you've already closed that
+      handle).
+
+      {!close_wait} is only useful, if you intend to wait until all
+      concurrent write and read threads related to this handle are
+      canceled.
+   **)
+  val close_wait : t -> unit Lwt.t
   val is_active : t -> bool
 end
 
@@ -497,14 +509,27 @@ module Stream : sig
 
   val write_queue_size : t -> int
 
+  val try_write : ?pos:int -> ?len:int -> t -> buf:bytes -> int Result.t
+  val try_write_ba: ?pos:int -> ?len:int -> t -> buf:buf -> int Result.t
+  val try_write_string: ?pos:int -> ?len:int -> t -> buf:string -> int Result.t
+
   val write : ?pos:int -> ?len:int -> t -> buf:bytes -> unit Lwt.t
   val write_string : ?pos:int -> ?len:int -> t -> buf:string -> unit Lwt.t
   val write_ba : ?pos:int -> ?len:int -> t -> buf:buf -> unit Lwt.t
 
-  val write2 : ?pos:int -> ?len:int -> buf:bytes -> send:t -> t -> unit Lwt.t
+  (** {!write} is always eager. It first calls try_write internally to
+      check if it can return immediately (without the overhead of
+      creating a sleeping thread and weaking up later). If it can't
+      write everything instantly, it will call write_raw
+      internally. {!write_raw} is exposed here mainly in order to write
+      unit tests for it. But you can also use it, if you your [buf] is
+      very large or you know for another reason, that try_write will
+      fail.  **)
+  val write_raw : ?pos:int -> ?len:int -> t -> buf:bytes -> unit Lwt.t
+  val write_raw_string : ?pos:int -> ?len:int -> t -> buf:string -> unit Lwt.t
+  val write_raw_ba : ?pos:int -> ?len:int -> t -> buf:buf -> unit Lwt.t
 
-  val try_write : ?pos:int -> ?len:int -> t -> buf:bytes -> int Result.t
-  val try_write_exn : ?pos:int -> ?len:int -> t -> buf:bytes -> int
+  val write2 : ?pos:int -> ?len:int -> buf:bytes -> send:t -> t -> unit Lwt.t
 
   val listen:
     t -> back:int -> cb:( t -> unit Result.t -> unit ) -> unit Result.t
@@ -647,17 +672,29 @@ module Udp : sig
   val send : ?pos:int -> ?len:int -> buf:bytes -> t -> sockaddr -> unit Lwt.t
   val send_ba :
     ?pos:int -> ?len:int -> buf:buf -> t -> sockaddr -> unit Lwt.t
+  val send_string :
+    ?pos:int -> ?len:int -> buf:string -> t -> sockaddr -> unit Lwt.t
+
+  (** See comment to {!Stream.write_raw} **)
+  val send_raw :
+    ?pos:int -> ?len:int -> buf:bytes -> t -> sockaddr -> unit Lwt.t
+  val send_raw_ba :
+    ?pos:int -> ?len:int -> buf:buf -> t -> sockaddr -> unit Lwt.t
+  val send_raw_string :
+    ?pos:int -> ?len:int -> buf:string -> t -> sockaddr -> unit Lwt.t
 
   val try_send :
     ?pos:int -> ?len:int -> buf:bytes -> t -> sockaddr -> int Result.t
-  val try_send_exn :
-    ?pos:int -> ?len:int -> buf:bytes -> t -> sockaddr -> int
+  val try_send_ba :
+    ?pos:int -> ?len:int -> buf:buf -> t -> sockaddr -> int Result.t
+  val try_send_string :
+    ?pos:int -> ?len:int -> buf:string -> t -> sockaddr -> int Result.t
 
   (** The type definition will likely be changed.
       Don't use fragile pattern matching for it *)
   type recv_result =
-    | Data of (Bytes.t * sockaddr option)
-    | Partial_data of (Bytes.t * sockaddr option)
+    | Data of Bytes.t * sockaddr option
+    | Partial_data of Bytes.t * sockaddr option
     | Empty_from of sockaddr
     | Transmission_error of error
 
@@ -666,6 +703,17 @@ module Udp : sig
 
   val recv_stop : t -> unit Result.t
   val recv_stop_exn : t -> unit
+
+  type recv = {
+    recv_len: int;
+    is_partial: bool;
+    sockaddr: sockaddr option;
+  }
+  (** Wrappers around {!recv_start} and {!recv_stop} for you convenience,
+      no callback soup. **)
+  val recv : ?pos:int -> ?len:int -> buf:bytes -> t -> recv Lwt.t
+  val recv_ba : ?pos:int -> ?len:int -> buf:buf -> t -> recv Lwt.t
+
 end
 
 module Tty : sig
@@ -968,6 +1016,11 @@ module Misc : sig
 end
 
 module Compat : sig
+  (** be careful in case of [Unix.ADDR_UNIX path]. If path is very long,
+      {!of_unix_sockaddr} willl raise an exception ([Unix.Unix_error]) and
+      {!to_unix_sockaddr] might return a truncated string.
+      [Unix.ADDR_UNIX] is not supported on windows, {!of_unix_sockaddr} will
+      also raise an exception in this case. *)
   val of_unix_sockaddr: Unix.sockaddr -> sockaddr
   val to_unix_sockaddr: sockaddr -> Unix.sockaddr
 

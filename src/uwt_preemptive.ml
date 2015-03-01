@@ -77,7 +77,8 @@ let notification_read, notification_write_fd =
 let () =
   Uwt.Main.at_exit ( fun () ->
       (try Unix.close notification_write_fd with | _ -> () );
-      Uwt.Pipe.close notification_read;
+      Uwt.Pipe.close_noerr notification_read;
+      Lwt.return_unit
     )
 
 let dummy_s = Bytes.of_string "!"

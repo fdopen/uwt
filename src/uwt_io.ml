@@ -562,7 +562,13 @@ let of_stream : type m. ?buffer_size : int -> ?close : (unit -> unit Lwt.t) -> m
     ?buffer_size
     ~close:(match close with
               | Some f -> f
-              | None -> (fun () -> Uwt.Stream.close fd))
+              | None -> (fun () ->
+                  let merr = Uwt.Stream.close fd in
+                  if Uwt.Result.is_ok merr then
+                    Lwt.return_unit
+                  else
+                    Uwt.Result.fail ~name:"of_stream_close" merr
+                ))
     ~mode
     perform_io
 
@@ -1390,7 +1396,7 @@ let open_connection ?buffer_size sockaddr =
               | x -> Lwt.fail x )
           else
             Lwt.return_unit
-        ) ( fun () -> Uwt.Stream.close stream )
+        ) ( fun () -> Uwt.Stream.close_noerr stream; Lwt.return_unit )
     end in
     Lwt.catch (fun () ->
         let t =
