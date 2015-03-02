@@ -1,4 +1,4 @@
-.PHONY: clean all distclean install uninstall #lib 
+.PHONY: clean all distclean install uninstall lib test examples
 
 VERSION=0.0.1
 PROJNAME=uwt

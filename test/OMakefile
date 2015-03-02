@@ -1,5 +1,5 @@
-.DEFAULT: all
-.PHONY: all clean
+.PHONY: test clean build-tests btest all
+.DEFAULT: build-tests
 
 OCAMLPACKS+= lwt bigarray unix threads lwt.log oUnit
 OCAMLFLAGS+= -thread
@@ -10,13 +10,19 @@ section
 	FILES[]= main common t_unix t_preemptive t_fs t_tcp t_spawn t_fs_event t_udp t_compat t_pipe
 	Repeat_targets($(FILES))
 	TEST_PROG=$(OCamlProgram test,$(FILES))
-	all:: $(TEST_PROG)
+	build-tests:: $(TEST_PROG)
 	clean::
 		rm -f $(TEST_PROG)$(EXE)
+	test:: $(TEST_PROG)
+		./test$(EXE)
+	btest: $(TEST_PROG)
+		./test.run
 
 clean::
 	clean-helper()
-	rm -f oUnit*.log setup.data setup.log *.tar*
+	rm -f *.tar* *.cache *.log *.data
 
 distclean:: clean
 	rm -f *~ .*~
+
+all:: build-tests

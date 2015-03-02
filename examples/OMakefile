@@ -1,4 +1,5 @@
-.DEFAULT: all
+.PHONY: all examples
+.DEFAULT: examples
 
 OCAMLPACKS+= ppx_import lwt bigarray unix ppx_deriving.show threads lwt.log
 OCAMLFLAGS+= -thread
@@ -16,7 +17,7 @@ example_r(f,x)=
 		export
 	Repeat_targets($(f))
 	TEST_PROG=$(OCamlProgram $(f),$(f))
-	all:: $(TEST_PROG)
+	examples:: $(TEST_PROG)
 	clean::
 		rm -f $(f)$(EXE)
 
@@ -46,3 +47,5 @@ clean::
 
 distclean:: clean
 	rm -f *~ .*~
+
+all: examples

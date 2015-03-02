@@ -1,5 +1,5 @@
-.DEFAULT: all
-.PHONY: clean all distclean doc #lib
+.DEFAULT: lib
+.PHONY: clean all distclean doc lib
 
 CC= $(OCAMLC_CC)
 CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS)
@@ -51,7 +51,7 @@ section
 	LDFLAGS+=$(LDFLAGS_LIBUV)
 	Repeat_targets($(MLFILES))
 	UWT_CORE=$(MixedLibrary uwt, $(MLFILES), $(CFILES))
-	all:: $(UWT_CORE)
+	lib:: $(UWT_CORE)
 	export UWT_CORE
 
 section
@@ -59,8 +59,8 @@ section
 	OCAML_LIBS+= $(file uwt)
 	FILES= uwt_log
 	Repeat_targets($(FILES))
-	UWT_LOG=$(OCamlLibrary uwt_log, $(FILES)) $(addsuffix .cmi,$(FILES))
-	all:: $(UWT_LOG)
+	UWT_LOG=$(MOCamlLibrary uwt_log, $(FILES)) $(addsuffix .cmi,$(FILES))
+	lib:: $(UWT_LOG)
 	export UWT_LOG
 
 section
@@ -69,8 +69,8 @@ section
 	OCAMLFLAGS+= -thread
 	FILES= uwt_preemptive
 	Repeat_targets($(FILES))
-	UWT_PREEMPTIVE=$(OCamlLibrary uwt_preemptive,$(FILES)) $(addsuffix .cmi,$(FILES))
-	all:: $(UWT_PREEMPTIVE)
+	UWT_PREEMPTIVE=$(MOCamlLibrary uwt_preemptive,$(FILES)) $(addsuffix .cmi,$(FILES))
+	lib:: $(UWT_PREEMPTIVE)
 	export UWT_PREEMPTIVE
 
 section
@@ -78,8 +78,8 @@ section
 	OCAML_LIBS+= $(file uwt) $(file uwt_log)
 	FILES= uwt_compat
 	Repeat_targets($(FILES))
-	UWT_COMPAT=$(OCamlLibrary uwt_compat,$(FILES)) $(addsuffix .cmi,$(FILES))
-	all:: $(UWT_COMPAT)
+	UWT_COMPAT=$(MOCamlLibrary uwt_compat,$(FILES)) $(addsuffix .cmi,$(FILES))
+	lib:: $(UWT_COMPAT)
 	export UWT_COMPAT
 
 section
@@ -108,3 +108,5 @@ clean::
 
 distclean:: clean
 	rm -f *~
+
+all:: lib

@@ -137,6 +137,18 @@ MixedLibrary(name,mlfiles,cfiles)=
 		  $(C_OBJS) \
 		)
 
+MOCamlLibrary(name,files)=
+	x=$(OCamlLibrary $(name),$(files))
+	if $(equal $(HAVE_NATIVE_DYNLINK),false)
+		return $(x)
+	elseif $(not $(equal $(filter %.cmxs, $(x)), $(EMPTY)))
+		return $(x)
+	else
+		section
+			$(name).cmxs: $(name).cmxa
+				$(OCAMLFIND) ocamlopt -shared -linkall -o $@ -I . $(OCAML_LINK_FLAGS) $<
+		return $(x) $(name).cmxs
+
 clean-helper()=
 		rm(-f $(glob *$(EXT_OBJ) *$(EXT_DLL) *$(EXT_LIB) *.cmt *.annot *.cma \
 	     *.cmi *.cmti *.cmxa *.cmx *.cmxs *.cmo *.opt *.run *.exe))
