@@ -6442,6 +6442,7 @@ uwt_getprotobynumber(value o_number, value o_loop,value o_req, value o_cb)
   CAMLparam3(o_loop,o_req,o_cb);
   value ret;
   GR_ROOT_ENLARGE();
+  req->c.c.void1.c_void = NULL;
   req->c.c.void2.c_int = Long_val(o_number);
   int erg = uv_queue_work(loop->loop,
                           (uv_work_t*)req->req,
@@ -6453,7 +6454,6 @@ uwt_getprotobynumber(value o_number, value o_loop,value o_req, value o_cb)
   }
   else {
     gr_root_register(&req->cb,o_cb);
-    req->c.c.void1.c_void = NULL;
     req->clean_cb = getproto_clean_cb;
     req->c_cb = getprotoent_cb;
     req->in_use = 1;
