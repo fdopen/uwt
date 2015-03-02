@@ -28,5 +28,14 @@ let has_ip6 =
       Uwt.Compat.to_unix_sockaddr x.Uwt.Misc.address
       |> Unix.domain_of_sockaddr = Unix.PF_INET )
 
-let ip6_only () = OUnit2.skip_if (not has_ip6) "no ip6"
+let ip6_option =
+  OUnit2.Conf.make_bool "no_ip6" false "force ignoring of ip6 related tests"
+
+let ip6_only ctx =
+  let n = ip6_option ctx in
+  OUnit2.skip_if (not has_ip6 || n) "no ip6"
+
+let has_ip6 ctx =
+  has_ip6 && not (ip6_option ctx)
+
 let no_win () = OUnit2.skip_if Sys.win32 "no windows support (yet)"

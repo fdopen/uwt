@@ -141,11 +141,11 @@ open OUnit2
 let test_port = 8931
 let l = [
   ("echo_server">::
-   fun _ctx ->
+   fun ctx ->
      Lazy.force server_init |> ignore ;
      m_true ( Client.test true Server.sockaddr );
      m_true ( Client.test false Server.sockaddr );
-     ip6_only ();
+     ip6_only ctx;
      Lazy.force server6_init |> ignore ;
      m_true ( Client.test true Server6.sockaddr );
      m_true ( Client.test false Server6.sockaddr ));
@@ -161,7 +161,7 @@ let l = [
      in
      m_true (l (Uwt.Misc.ip4_addr_exn "8.8.8.8" 9999)));
   ("bind_error">::
-   fun _ctx ->
+   fun ctx ->
      let l sockaddr =
        let s1 = init_exn () in
        let s2 = init_exn () in
@@ -176,11 +176,11 @@ let l = [
      in
      let sockaddr = Uwt.Misc.ip4_addr_exn "0.0.0.0" test_port in
      m_raises (Uwt.EADDRINUSE,"uv_listen","") (l sockaddr);
-     ip6_only ();
+     ip6_only ctx;
      let sockaddr = Uwt.Misc.ip6_addr_exn "::0" test_port in
      m_raises (Uwt.EADDRINUSE,"uv_listen","") (l sockaddr));
   ("write_allot">::
-   fun _ctx ->
+   fun ctx ->
      let l addr =
        let client = init_exn () in
        try_finally ( fun () ->
@@ -231,7 +231,7 @@ let l = [
          ) ( fun () -> close_noerr client; Lwt.return_unit )
      in
      m_true (l Server.sockaddr);
-     ip6_only ();
+     ip6_only ctx;
      m_true (l Server6.sockaddr));
   ("write_abort">::
    fun _ctx ->

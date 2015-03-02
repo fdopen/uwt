@@ -18,7 +18,7 @@ let l = [
      let sock = Unix.ADDR_UNIX "/tmp/uwt" in
      assert_equal sock ( of_unix_sockaddr sock |> to_unix_sockaddr));
   ("socket_of_file_descr">::
-   fun _ctx ->
+   fun ctx ->
      let l = ref [] in
      let close_all do_raise =
        let rec iter accu = function
@@ -40,10 +40,10 @@ let l = [
      try
        for i = 0 to 32 do
          let x =
-           if Common.has_ip6 && i mod 2 = 0 then
-             Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0
-           else
+           if Common.has_ip6 ctx && i mod 2 = 0 then
              Unix.socket Unix.PF_INET6 Unix.SOCK_STREAM 0
+           else
+             Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0
          in
          l:= x::!l
        done;

@@ -110,7 +110,7 @@ let sockaddr6 = Uwt.Misc.ip6_addr_exn server6_ip server6_port
 open OUnit2
 let l = [
   ("echo_server">::
-   fun _ctx ->
+   fun ctx ->
      no_win ();
      let f addr =
        let f raw =
@@ -136,7 +136,7 @@ let l = [
        f false;
      in
      f sockaddr4;
-     ip6_only ();
+     ip6_only ctx;
      f sockaddr6);
   ("read_abort">::
    fun _ctx ->
