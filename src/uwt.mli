@@ -318,8 +318,8 @@ module Main : sig
       {!Lwt.fail}. If you throw exceptions nevertheless, uwt can
       usually not propagate the exceptions to the OCaml runtime
       immediately. The exceptions are stored internally an are
-      rethrown as soon as possible ([Deferred]). You can catch these
-      exceptions below [run].
+      re-thrown as soon as possible ([Deferred]). You can catch these
+      exceptions below {!run}.
 
       However, uwt cannot catch all exceptions at the right
       moment. These exceptions are wrapped inside [Fatal]. Don't call
@@ -552,7 +552,13 @@ module Pipe : sig
   val init : ?ipc:bool -> unit -> t ret
   val init_exn : ?ipc:bool -> unit -> t
 
-  (** @param ipc is false by default *)
+  (**
+     Be careful with open* functions. They exists, so you can re-use
+     system dependent libraries. But if you pass a file descriptor
+     to openpipe (or opentcp,...), that is not really a file descriptor of a
+     pipe (or tcp socket,...) you can trigger assert failures inside libuv.
+     @param ipc is false by default
+  *)
   val openpipe : ?ipc:bool -> file -> t ret
   val openpipe_exn : ?ipc:bool -> file -> t
 
@@ -590,6 +596,7 @@ module Tcp : sig
   type mode =
     | Ipv6_only
 
+  (** See comment to {!Pipe.openpipe} *)
   val opentcp : socket -> t ret
   val opentcp_exn : socket -> t
 
@@ -631,6 +638,7 @@ module Udp : sig
   val init : unit -> t ret
   val init_exn : unit -> t
 
+  (** See comment to {!Pipe.openpipe} *)
   val openudp : socket -> t ret
   val openudp_exn : socket -> t
 
@@ -891,8 +899,8 @@ module Process : sig
   val pid : t -> int Result.t
   val pid_exn : t -> int
 
-  val process_kill : t -> unit Result.t
-  val process_kill_exn : t -> unit
+  val process_kill : t -> int -> unit Result.t
+  val process_kill_exn : t -> int -> unit
 
   val kill : pid:int -> signum:int -> unit Result.t
   val kill_exn : pid:int -> signum:int -> unit

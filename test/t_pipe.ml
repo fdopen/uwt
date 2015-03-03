@@ -10,7 +10,7 @@ module Echo_server = struct
       Printf.sprintf "uwt_pipt_%d_%d" (Unix.getpid ()) (Unix.getuid ())
     in
     match Sys.win32 with
-    | true -> "\\\\.\\pipe\\" ^ name
+    | true -> "\\\\?\\pipe\\" ^ name
     | false -> Filename.concat (Filename.get_temp_dir_name ()) name
 
   let echo_client c =
@@ -40,6 +40,9 @@ module Echo_server = struct
     let server = init_exn () in
     try_finally ( fun () ->
         bind_exn server addr;
+        let addr2 = getsockname_exn server in
+        if addr2 <> addr then
+          failwith "pipe address differ";
         listen_exn server ~back:8 ~cb:on_listen;
         let s,_ = Lwt.task () in
         s
@@ -122,13 +125,14 @@ let l = [
      m_true ( Client.test true );
      m_true ( Client.test false ));
   ("write_allot">::
-   fun _ctx ->
+   fun ctx ->
      let l () =
        let client = init_exn () in
        try_finally ( fun () ->
            connect client Echo_server.addr >>= fun () ->
            let buf_len = 65536 in
-           let buf_cnt = 4096 in
+           let x = max 1 (multiplicand ctx) in
+           let buf_cnt = 64 * x in
            let bytes_read = ref 0 in
            let bytes_written = ref 0 in
            let buf = Uwt_bytes.create buf_len in

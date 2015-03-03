@@ -824,10 +824,10 @@ module Tcp = struct
   let simultaneous_accepts_exn t x =
     simultaneous_accepts t x |> to_exnu "uv_tcp_simultaneous_accepts"
 
-  external getsockname: t -> sockaddr ret = "uv_tcp_getsockname"
+  external getsockname: t -> sockaddr ret = "uwt_tcp_getsockname"
   let getsockname_exn t = getsockname t |> to_exn "tcp_getsockname"
 
-  external getpeername: t -> sockaddr ret = "uv_tcp_getpeername"
+  external getpeername: t -> sockaddr ret = "uwt_tcp_getpeername"
   let getpeername_exn t = getpeername t |> to_exn "tcp_getpeername"
 
   external connect:
@@ -888,7 +888,7 @@ module Udp = struct
   let bind_exn ?(mode=[]) t addr = bind t addr mode |> to_exnu "uv_udp_bind"
   let bind ?(mode=[]) t addr = bind t addr mode
 
-  external getsockname: t -> sockaddr ret = "uv_udp_getsockname"
+  external getsockname: t -> sockaddr ret = "uwt_udp_getsockname"
   let getsockname_exn t = getsockname t |> to_exn "udp_getsockname"
 
   type membership =
@@ -1303,10 +1303,10 @@ module Process = struct
   external pid: t -> int Result.t = "uwt_pid_na"
   let pid_exn t = pid t |> to_exni "uwt_pid" (* yes uwt, it's not a function
                                                 of libuv *)
-  external process_kill: t -> unit Result.t = "uwt_process_kill_na"
-  let process_kill_exn t = process_kill t |> to_exnu "uv_process_kill"
+  external process_kill: t -> int -> unit Result.t = "uwt_process_kill_na"
+  let process_kill_exn t s = process_kill t s |> to_exnu "uv_process_kill"
 
-  external kill: pid:int -> signum:int -> unit Result.t = "uwt_process_kill_na"
+  external kill: pid:int -> signum:int -> unit Result.t = "uwt_kill_na"
   let kill_exn ~pid ~signum = kill ~pid ~signum |> to_exnu "uv_kill"
 end
 

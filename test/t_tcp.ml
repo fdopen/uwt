@@ -52,6 +52,13 @@ module Echo_server (X: Sockaddr) = struct
     let server = init_exn () in
     try_finally ( fun () ->
         bind_exn server sockaddr;
+        let sockaddr2 = getsockname_exn server in
+        (* I'm sure about this test. Does the ocaml unix library
+           support equality compare for the abstract type
+           Unix.inet_addr ? *)
+        if Uwt.Compat.to_unix_sockaddr sockaddr <>
+           Uwt.Compat.to_unix_sockaddr sockaddr2 then
+          failwith "server sockaddr differ";
         listen_exn server ~back:server_backlog ~cb:on_listen;
         let s,_ = Lwt.task () in
         s
@@ -186,7 +193,8 @@ let l = [
        try_finally ( fun () ->
            connect client addr >>= fun () ->
            let buf_len = 65536 in
-           let buf_cnt = 4096 in
+           let x = max 1 (multiplicand ctx) in
+           let buf_cnt = 64 * x in
            let bytes_read = ref 0 in
            let bytes_written = ref 0 in
            let buf = Uwt_bytes.create buf_len in
@@ -264,6 +272,22 @@ let l = [
          Lwt.catch ( fun () -> read_thread )(function
            | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
            | x -> Lwt.fail x )
+       ) ( fun () -> close_noerr client; Lwt.return_unit )));
+  ("getpeername">::
+   fun _ctx ->
+     Lazy.force server_init |> ignore ;
+     let client = init_exn () in
+     m_true (try_finally ( fun () ->
+         Uwt.Tcp.connect client Server.sockaddr >>= fun () ->
+         match Uwt.Tcp.getpeername_exn client |> Uwt.Compat.to_unix_sockaddr with
+         | Unix.ADDR_INET(y,x) ->
+           if server_port = x &&
+              server_ip = Unix.string_of_inet_addr y
+           then
+             Lwt.return_true
+           else
+             Lwt.return_false
+         | Unix.ADDR_UNIX _ -> Lwt.return_false
        ) ( fun () -> close_noerr client; Lwt.return_unit )));
   (* The following test the same as 'write_abort' above (regarding TCP).
      The intention is to ensure, that lwt behaves as expected *)

@@ -6,7 +6,7 @@ let l _ctx = assert_equal 50 (
       let sec = (float_of_int ms) /. 1000. in
       ignore (Unix.select [] [] [] sec)
     in
-    let sleep_time = 75 in
+    let sleep_time = 25 in
     let cnt = ref 0 in
     let cnt_mutex = Mutex.create () in
     let incr_cnt () =

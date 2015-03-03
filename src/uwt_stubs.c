@@ -5203,10 +5203,11 @@ spawn_exit_cb(uv_process_t*t, int64_t exit_status, int term_signal)
     value process = GET_CB_VAL(h->cb_listen);
     gr_root_unregister(&h->cb_read);
     gr_root_unregister(&h->cb_listen);
+    int o_signal = caml_rev_convert_signal_number(term_signal);
     exn=caml_callback3_exn(callback,
                            process,
                            Val_long(exit_status),
-                           Val_long(term_signal));
+                           Val_long(o_signal));
   }
   if (h->in_use_cnt){
     --h->in_use_cnt;

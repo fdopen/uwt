@@ -3,6 +3,12 @@ open Lwt.Infix
 open Common
 open Uwt.Fs
 
+module D = struct
+  type file_kind = [%import: Uwt.Fs.file_kind] [@@deriving show]
+  type stats = [%import: Uwt.Fs.stats] [@@deriving show]
+end
+let qstat x = D.show_stats x |> String.length > 50
+
 let rec really_write ?(pos=0) ?len buf fd =
   let len = match len with
   | None -> Bytes.length buf
@@ -34,7 +40,6 @@ let file_to_bytes s =
   iter () >>= fun () ->
   assert ( file_len = Buffer.length b);
   return (Buffer.to_bytes b)
-
 
 let copy ~src ~dst =
   openfile ~mode:[ O_RDONLY ] src >>= fun fd_read ->
@@ -147,7 +152,8 @@ let l = [
    fun _ctx ->
      let fln = !tmpdir // "d" in
      m_true (stat fln >>= fun s -> Lwt.return (
-         s.st_kind = S_REG && s.st_size = Int64.of_int random_bytes_length )));
+         qstat s && s.st_kind = S_REG &&
+         s.st_size = Int64.of_int random_bytes_length )));
   ("mkdir">::
    fun _ctx ->
      m_equal () (mkdir (!tmpdir // "f")));
@@ -175,7 +181,8 @@ let l = [
      let a = !tmpdir // "a"
      and d = !tmpdir // "d" in
      m_equal () (symlink ~target:a d);
-     m_equal S_LNK (lstat d >>= fun s -> return s.st_kind );
+     m_equal true (lstat d >>= fun s -> return (
+         qstat s && s.st_kind = S_LNK));
      m_equal a (readlink d);
      m_equal () (unlink d));
   ("rename">::
@@ -201,7 +208,7 @@ let l = [
               fstat fd >>= fun s -> close fd >>= fun () ->
               let d1 = abs_float (s.st_atime -. time)
               and d2 = abs_float (s.st_mtime -. time) in
-              return ( d1 < 10. && d2 < 10. ) ));
+              return ( qstat s && d1 < 10. && d2 < 10. ) ));
   ("chmod">::
    fun _ctx ->
      no_win ();

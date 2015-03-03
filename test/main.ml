@@ -14,6 +14,9 @@ let tests =
     T_udp.l;
     T_compat.l;
     T_pipe.l;
+    T_dns.l;
+    T_misc.l;
+    T_signal.l;
   ]
 
 exception Do_exit of int

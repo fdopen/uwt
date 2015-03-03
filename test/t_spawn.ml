@@ -46,11 +46,36 @@ let cat_test () =
   else
     Lwt.return_true
 
+let kill_test t =
+  let s,w = Lwt.task () in
+  let exit_cb p ~exit_status:_ ~term_signal =
+    P.close_noerr p;
+    (* signals are emulated on windows. Term signal is not supported,
+       if kill is used instead of process_kill *)
+    if Sys.unix || t then
+      Lwt.wakeup w (term_signal = Sys.sigterm)
+    else
+      Lwt.wakeup w true
+  in
+  let p =
+    P.spawn_exn ~exit_cb
+      "sleep" [ "sleep" ; "20" ]
+  in
+  try_finally ( fun () ->
+      Uwt.Timer.sleep 10 >>= fun () ->
+      (match t with
+      | true -> P.process_kill_exn p Sys.sigterm;
+      | false ->
+        let pid = P.pid_exn p
+        and signum = Sys.sigterm in
+        P.kill_exn ~pid ~signum);
+      s
+    ) ( fun () -> P.close_noerr p ; Lwt.return_unit )
+
 let l = [
-  ("cat_test">::
-   fun _ctx ->
-     m_true (cat_test ()));
+  ("cat_test">:: fun _ctx -> m_true (cat_test ()));
+  ("process_kill">:: fun _ctx -> m_true (kill_test true));
+  ("kill">:: fun _ctx -> m_true (kill_test false));
 ]
 
 let l = "Spawn">:::l
-

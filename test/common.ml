@@ -31,6 +31,9 @@ let has_ip6 =
 let ip6_option =
   OUnit2.Conf.make_bool "no_ip6" false "force ignoring of ip6 related tests"
 
+let multiplicand =
+  OUnit2.Conf.make_int "multiplicand" 1 "control how much data is written in stress tests"
+
 let ip6_only ctx =
   let n = ip6_option ctx in
   OUnit2.skip_if (not has_ip6 || n) "no ip6"

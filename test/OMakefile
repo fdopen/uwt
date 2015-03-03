@@ -1,13 +1,14 @@
 .PHONY: test clean build-tests btest all
 .DEFAULT: build-tests
 
-OCAMLPACKS+= lwt bigarray unix threads lwt.log oUnit
+OCAMLPACKS+= lwt bigarray unix threads lwt.log oUnit ppx_import ppx_deriving.show
 OCAMLFLAGS+= -thread
 OCAMLINCLUDES[]+= $(dir ../src)
 OCAML_LIBS+= $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preemptive)
 
 section
-	FILES[]= main common t_unix t_preemptive t_fs t_tcp t_spawn t_fs_event t_udp t_compat t_pipe
+	FILES[]= main common t_unix t_preemptive t_fs t_tcp t_spawn t_fs_event \
+	 t_udp t_compat t_pipe t_dns t_misc t_signal
 	Repeat_targets($(FILES))
 	TEST_PROG=$(OCamlProgram test,$(FILES))
 	build-tests:: $(TEST_PROG)
