@@ -3134,7 +3134,7 @@ uwt_tty_init(value o_loop,value o_fd, value o_readable)
     dc = handle_create(UV_TTY,cb_type);
     h =  Handle_val(dc);
     h->close_executed = 1;
-    ret = caml_alloc_small(1,Error_tag);
+    ret = caml_alloc_small(1,Ok_tag);
     h->close_executed = 0;
     h->initialized = 1;
     Field(ret,0) = dc;
@@ -4568,6 +4568,23 @@ uwt_fs_poll_stop(value o_h)
 /* }}} Fs_poll end */
 
 /* {{{ Misc start */
+CAMLprim value
+uwt_guess_handle_na(value o_fd)
+{
+  value ret;
+  switch (uv_guess_handle(Long_val(o_fd))){
+  case UV_FILE: ret=Val_long(0); break;
+  case UV_TTY: ret=Val_long(1); break;
+  case UV_NAMED_PIPE: ret=Val_long(2); break;
+  case UV_TCP: ret=Val_long(3); break;
+  case UV_UDP: ret=Val_long(4); break;
+  default: /* fall */
+  case UV_UNKNOWN_HANDLE:
+    ret=Val_long(5);
+  }
+  return ret;
+}
+
 CAMLprim value
 uwt_version_na(value unit)
 {

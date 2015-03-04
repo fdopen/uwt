@@ -150,6 +150,7 @@ P1(uwt_fs_event_stop);
 P4(uwt_fs_poll_start);
 P1(uwt_fs_poll_stop);
 
+P1(uwt_guess_handle_na);
 P1(uwt_version_na);
 P1(uwt_version_string);
 P1(uwt_resident_set_memory);

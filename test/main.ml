@@ -1,5 +1,7 @@
-let () = Random.self_init ()
-let () = if Sys.unix then Sys.set_signal Sys.sigpipe Sys.Signal_ignore
+let () =
+  Random.self_init ();
+  if Sys.unix then Sys.set_signal Sys.sigpipe Sys.Signal_ignore;
+  Uwt.Process.disable_stdio_inheritance ()
 
 open OUnit2
 
@@ -17,6 +19,9 @@ let tests =
     T_dns.l;
     T_misc.l;
     T_signal.l;
+    T_poll.l;
+    T_fs_poll.l;
+    T_tty.l
   ]
 
 exception Do_exit of int

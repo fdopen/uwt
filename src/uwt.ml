@@ -1124,8 +1124,8 @@ module Poll = struct
 
   type event =
     | Readable
-    | Writeable
-    | Readable_writeable
+    | Writable
+    | Readable_writable
 
   external start:
     loop -> file -> event -> ( t -> event ret -> unit ) -> t ret
@@ -1457,6 +1457,17 @@ module Misc = struct
     address: sockaddr;
     netmask: sockaddr;
   }
+
+  type handle_type =
+    | File
+    | Tty
+    | Pipe
+    | Tcp
+    | Udp
+    | Unknown
+
+  external guess_handle:
+    file -> handle_type = "uwt_guess_handle_na" "noalloc"
 
   external resident_set_memory:
     unit -> nativeint ret = "uwt_resident_set_memory"

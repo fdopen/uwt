@@ -789,8 +789,8 @@ module Poll : sig
 
   type event =
     | Readable
-    | Writeable
-    | Readable_writeable
+    | Writable
+    | Readable_writable
 
   (** start and start_exn don't support windows *)
   val start : file -> event -> cb:(t -> event ret -> unit) -> t ret
@@ -980,6 +980,16 @@ module Misc : sig
     address: sockaddr;
     netmask: sockaddr;
   }
+
+  type handle_type =
+    | File
+    | Tty
+    | Pipe
+    | Tcp
+    | Udp
+    | Unknown
+
+  val guess_handle: file -> handle_type
 
   val resident_set_memory : unit -> nativeint ret
   val resident_set_memory_exn : unit -> nativeint

@@ -42,3 +42,9 @@ let has_ip6 ctx =
   has_ip6 && not (ip6_option ctx)
 
 let no_win () = OUnit2.skip_if Sys.win32 "no windows support (yet)"
+
+module Fs_t = struct
+  type file_kind = [%import: Uwt.Fs.file_kind] [@@deriving show]
+  type stats = [%import: Uwt.Fs.stats] [@@deriving show]
+  let qstat x = show_stats x |> String.length > 50
+end

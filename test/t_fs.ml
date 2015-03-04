@@ -3,11 +3,7 @@ open Lwt.Infix
 open Common
 open Uwt.Fs
 
-module D = struct
-  type file_kind = [%import: Uwt.Fs.file_kind] [@@deriving show]
-  type stats = [%import: Uwt.Fs.stats] [@@deriving show]
-end
-let qstat x = D.show_stats x |> String.length > 50
+let qstat = Fs_t.qstat
 
 let rec really_write ?(pos=0) ?len buf fd =
   let len = match len with

@@ -198,6 +198,8 @@ let l = [
                send_ba ~buf client addr >>= fun () ->
                if started = false then
                  recv_start_exn client ~cb:cb_read;
+               (* TODO: udp is unreliable and this test might fail. Make this
+                  and similar tests optional. *)
                Uwt.Main.yield () >>= fun () ->
                cb_write (pred i) true
            in
