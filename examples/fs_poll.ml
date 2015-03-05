@@ -8,12 +8,13 @@ let cb _t = function
 | U.Error x -> U.strerror x |> Uwt_io.printf "error: %s\n" |> ignore
 | U.Ok x ->
   let open UP in
+  let (-) = Int64.sub in
   let atime_diff =
-    Printf.sprintf "atime-diff: %f\n" (x.curr.st_atime -. x.prev.st_atime)
+    Printf.sprintf "atime-diff: %Ld\n" (x.curr.st_atime - x.prev.st_atime)
   and mtime_diff =
-    Printf.sprintf "mtime-diff: %f\n" (x.curr.st_mtime -. x.prev.st_mtime)
+    Printf.sprintf "mtime-diff: %Ld\n" (x.curr.st_mtime - x.prev.st_mtime)
   and ctime_diff =
-    Printf.sprintf "ctime-diff: %f\n" (x.curr.st_ctime -. x.prev.st_ctime)
+    Printf.sprintf "ctime-diff: %Ld\n" (x.curr.st_ctime - x.prev.st_ctime)
   in
   let msg =  "previous:\n" ^ (show_stats x.prev) ^ "\ncurrent:\n" ^
              (show_stats x.curr) ^ "\n" ^ atime_diff ^ mtime_diff ^

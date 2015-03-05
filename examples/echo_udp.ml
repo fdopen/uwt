@@ -4,7 +4,7 @@ let log s =
   Uwt_io.eprintl s |> ignore
 
 let start_server () =
-  let server = Uwt.Udp.init_exn () in
+  let server = Uwt.Udp.init () in
   let cb = function
   | Uwt.Udp.Data (_,None) ->
     log "data, but no address"
@@ -24,7 +24,8 @@ let start_server () =
         Uwt.Udp.bind_exn
           ~mode:[ Uwt.Udp.Reuse_addr ]
           server
-          addr
+          ~addr
+          ()
       in
       let () = Uwt.Udp.recv_start_exn server ~cb in
       Help.wait ()

@@ -14,12 +14,12 @@ let bind_exn s sockaddr =
   if  Unix.PF_INET6 = (Uwt.Compat.to_unix_sockaddr sockaddr
                        |> Unix.domain_of_sockaddr)
   then
-    bind_exn ~mode:[ Ipv6_only; Reuse_addr ] s sockaddr
+    bind_exn ~mode:[ Ipv6_only; Reuse_addr ] s ~addr:sockaddr ()
   else
-    bind_exn ~mode:[ Reuse_addr ] s sockaddr
+    bind_exn ~mode:[ Reuse_addr ] s ~addr:sockaddr ()
 
 let start_iter_server_bytes addr =
-  let server = Uwt.Udp.init_exn () in
+  let server = Uwt.Udp.init () in
   try_finally ( fun () ->
       let () = bind_exn server addr in
       let buf = Bytes.create 65536 in
@@ -40,7 +40,7 @@ let start_iter_server_bytes addr =
     ) ( fun () -> Uwt.Udp.close_wait server )
 
 let start_iter_server_ba addr =
-  let server = Uwt.Udp.init_exn () in
+  let server = Uwt.Udp.init () in
   try_finally ( fun () ->
       let () = bind_exn server addr in
       let buf = Uwt_bytes.create 65536 in
@@ -61,7 +61,7 @@ let start_iter_server_ba addr =
     ) ( fun () -> Uwt.Udp.close_wait server )
 
 let start_server_cb addr : bool Lwt.t =
-  let server = Uwt.Udp.init_exn () in
+  let server = Uwt.Udp.init () in
   let sleeper,waker = Lwt.task () in
   let e s = Lwt.wakeup_exn waker (Failure s) in
   let cb = function
@@ -82,7 +82,7 @@ let start_server_cb addr : bool Lwt.t =
     ) ( fun () -> Uwt.Udp.close_wait server )
 
 let start_client ~raw ~iter ~length addr =
-  let client = Uwt.Udp.init_exn () in
+  let client = Uwt.Udp.init () in
   let buf = Bytes.create length in
   let buf_recv = Bytes.create length in
   for i = 0 to pred length do
@@ -144,7 +144,7 @@ let l = [
   ("read_abort">::
    fun _ctx ->
      let server = start_iter_server_ba sockaddr4 in
-     let client = init_exn () in
+     let client = init () in
      m_true (try_finally ( fun () ->
          send_raw_string client ~buf:"PING" sockaddr4 >>= fun () ->
          let read_thread =
@@ -164,7 +164,7 @@ let l = [
    fun ctx ->
      let l addr : bool Lwt.t =
        let server = start_iter_server_ba addr in
-       let client = init_exn () in
+       let client = init () in
        try_finally ( fun () ->
            let buf_len = 1024 in
            let x = max 1 (multiplicand ctx) in

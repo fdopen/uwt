@@ -564,10 +564,10 @@ let of_stream : type m. ?buffer_size : int -> ?close : (unit -> unit Lwt.t) -> m
               | Some f -> f
               | None -> (fun () ->
                   let merr = Uwt.Stream.close fd in
-                  if Uwt.Result.is_ok merr then
+                  if Uwt.Int_result.is_ok merr then
                     Lwt.return_unit
                   else
-                    Uwt.Result.fail ~name:"of_stream_close" merr
+                    Uwt.Int_result.fail ~name:"of_stream_close" merr
                 ))
     ~mode
     perform_io
@@ -1376,9 +1376,9 @@ let open_connection ?buffer_size sockaddr =
       E.Ok(match get_sun_path sockaddr with
         | Some x ->
           path := x;
-          Uwt.Pipe.init_exn () |> Uwt.Pipe.to_stream
+          Uwt.Pipe.init () |> Uwt.Pipe.to_stream
         | None ->
-          Uwt.Tcp.init_exn () |> Uwt.Tcp.to_stream)
+          Uwt.Tcp.init () |> Uwt.Tcp.to_stream)
     with
     | s -> E.Exn s
   in
@@ -1401,9 +1401,9 @@ let open_connection ?buffer_size sockaddr =
     Lwt.catch (fun () ->
         let t =
           if !path != invalid_path then
-            Uwt.Pipe.connect (Obj.magic stream) !path
+            Uwt.Pipe.connect (Obj.magic stream) ~path:!path
           else
-            Uwt.Tcp.connect (Obj.magic stream) sockaddr
+            Uwt.Tcp.connect (Obj.magic stream) ~addr:sockaddr
         in
         t >>= fun () ->
         let io_in buf pos len =

@@ -151,7 +151,7 @@ MOCamlLibrary(name,files)=
 
 clean-helper()=
 		rm(-f $(glob *$(EXT_OBJ) *$(EXT_DLL) *$(EXT_LIB) *.cmt *.annot *.cma \
-	     *.cmi *.cmti *.cmxa *.cmx *.cmxs *.cmo *.opt *.run *.exe))
+	     *.cmi *.cmti *.cmxa *.cmx *.cmxs *.cmo *.opt *.run *.exe *.log *.cache *.core core))
 
 
 # useful functions from camlspotter

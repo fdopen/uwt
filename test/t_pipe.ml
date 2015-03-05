@@ -26,24 +26,24 @@ module Echo_server = struct
       ( fun () -> close_noerr c ; Lwt.return_unit )
 
   let on_listen server x =
-    if Uwt.Result.is_error x then
+    if Uwt.Int_result.is_error x then
       Uwt_io.printl "listen error" |> ignore
     else
-      let client = init_exn () in
+      let client = init () in
       let t = accept_raw ~server ~client in
-      if Uwt.Result.is_error t then
+      if Uwt.Int_result.is_error t then
         Uwt_io.printl "accept error" |> ignore
       else
         echo_client client |> ignore
 
   let start () =
-    let server = init_exn () in
+    let server = init () in
     try_finally ( fun () ->
-        bind_exn server addr;
+        bind_exn server ~path:addr;
         let addr2 = getsockname_exn server in
         if addr2 <> addr then
           failwith "pipe address differ";
-        listen_exn server ~back:8 ~cb:on_listen;
+        listen_exn server ~max:8 ~cb:on_listen;
         let s,_ = Lwt.task () in
         s
       ) ( fun () -> close_noerr server ; Lwt.return_unit )
@@ -55,8 +55,8 @@ module Client = struct
   let test raw =
     let buf_write = Buffer.create 128 in
     let buf_read = Buffer.create 128 in
-    let t = init_exn () in
-    connect t Echo_server.addr >>= fun () ->
+    let t = init () in
+    connect t ~path:Echo_server.addr >>= fun () ->
 
     let rec really_read len =
       let buf = Bytes.create len in
@@ -127,9 +127,9 @@ let l = [
   ("write_allot">::
    fun ctx ->
      let l () =
-       let client = init_exn () in
+       let client = init () in
        try_finally ( fun () ->
-           connect client Echo_server.addr >>= fun () ->
+           connect client ~path:Echo_server.addr >>= fun () ->
            let buf_len = 65536 in
            let x = max 1 (multiplicand ctx) in
            let buf_cnt = 64 * x in
@@ -179,9 +179,9 @@ let l = [
      m_true (l ()));
   ("write_abort">::
    fun _ctx ->
-     let client = init_exn () in
+     let client = init () in
      m_true (try_finally ( fun () ->
-         connect client Echo_server.addr >>= fun () ->
+         connect client ~path:Echo_server.addr >>= fun () ->
          let write_thread = write_much client in
          close_wait client >>= fun () ->
          Lwt.catch ( fun () -> write_thread )
@@ -191,9 +191,9 @@ let l = [
        ) ( fun () -> close_noerr client; Lwt.return_unit )));
   ("read_abort">::
    fun _ctx ->
-     let client = init_exn () in
+     let client = init () in
      m_true (try_finally ( fun () ->
-         connect client Echo_server.addr >>= fun () ->
+         connect client ~path:Echo_server.addr >>= fun () ->
          let read_thread =
            let buf = Bytes.create 128 in
            read client ~buf >>= fun _ ->

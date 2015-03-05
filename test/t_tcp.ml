@@ -17,13 +17,13 @@ sig
   val sockaddr : Uwt.sockaddr
 end
 
-let bind_exn s sockaddr =
-  if  Unix.PF_INET6 = (Uwt.Compat.to_unix_sockaddr sockaddr
+let bind_exn s addr =
+  if  Unix.PF_INET6 = (Uwt.Compat.to_unix_sockaddr addr
                        |> Unix.domain_of_sockaddr)
   then
-    bind_exn ~mode:[ Ipv6_only ] s sockaddr
+    bind_exn ~mode:[ Ipv6_only ] s ~addr ()
   else
-    bind_exn s sockaddr
+    bind_exn s ~addr ()
 
 module Echo_server (X: Sockaddr) = struct
   let sockaddr = X.sockaddr
@@ -41,7 +41,7 @@ module Echo_server (X: Sockaddr) = struct
       ( fun () -> close_noerr c ; Lwt.return_unit )
 
   let on_listen server x =
-    if Uwt.Result.is_error x then
+    if Uwt.Int_result.is_error x then
       Uwt_io.printl "listen error" |> ignore
     else
       match accept server with
@@ -49,7 +49,7 @@ module Echo_server (X: Sockaddr) = struct
       | U.Ok c -> echo_client c |> ignore
 
   let start () =
-    let server = init_exn () in
+    let server = init () in
     try_finally ( fun () ->
         bind_exn server sockaddr;
         let sockaddr2 = getsockname_exn server in
@@ -59,7 +59,7 @@ module Echo_server (X: Sockaddr) = struct
         if Uwt.Compat.to_unix_sockaddr sockaddr <>
            Uwt.Compat.to_unix_sockaddr sockaddr2 then
           failwith "server sockaddr differ";
-        listen_exn server ~back:server_backlog ~cb:on_listen;
+        listen_exn server ~max:server_backlog ~cb:on_listen;
         let s,_ = Lwt.task () in
         s
       ) ( fun () -> close_noerr server ; Lwt.return_unit )
@@ -70,8 +70,8 @@ module Client = struct
   let test raw addr =
     let buf_write = Buffer.create 128 in
     let buf_read = Buffer.create 128 in
-    let t = Uwt.Tcp.init_exn () in
-    Uwt.Tcp.connect t addr >>= fun () ->
+    let t = Uwt.Tcp.init () in
+    Uwt.Tcp.connect t ~addr >>= fun () ->
 
     let rec really_read len =
       let buf = Bytes.create len in
@@ -158,10 +158,10 @@ let l = [
      m_true ( Client.test false Server6.sockaddr ));
   ("connect_timeout">::
    fun _ctx -> (* an unreachable address should not block the event loop *)
-     let l sockaddr =
-       let t = init_exn () in
+     let l addr =
+       let t = init () in
        try_finally ( fun () ->
-           let p1 = connect t sockaddr >>= fun () -> Lwt.return_false in
+           let p1 = connect t ~addr >>= fun () -> Lwt.return_false in
            let p2 = Uwt.Timer.sleep 50 >>= fun () -> Lwt.return_true in
            Lwt.pick [ p1 ; p2 ] )
          ( fun () -> close_noerr t ; Lwt.return_unit )
@@ -170,14 +170,14 @@ let l = [
   ("bind_error">::
    fun ctx ->
      let l sockaddr =
-       let s1 = init_exn () in
-       let s2 = init_exn () in
+       let s1 = init () in
+       let s2 = init () in
        try_finally ( fun () ->
            let cb _ _ = () in
            bind_exn s1 sockaddr;
            bind_exn s2 sockaddr;
-           let () = listen_exn ~back:8 ~cb s1 in
-           let () = listen_exn ~back:8 ~cb s2 in
+           let () = listen_exn ~max:8 ~cb s1 in
+           let () = listen_exn ~max:8 ~cb s2 in
            Lwt.return_unit
          ) ( fun () -> close_noerr s1 ; close_noerr s2 ; Lwt.return_unit )
      in
@@ -189,9 +189,9 @@ let l = [
   ("write_allot">::
    fun ctx ->
      let l addr =
-       let client = init_exn () in
+       let client = init () in
        try_finally ( fun () ->
-           connect client addr >>= fun () ->
+           connect client ~addr >>= fun () ->
            let buf_len = 65536 in
            let x = max 1 (multiplicand ctx) in
            let buf_cnt = 64 * x in
@@ -243,9 +243,9 @@ let l = [
      m_true (l Server6.sockaddr));
   ("write_abort">::
    fun _ctx ->
-     let client = init_exn () in
+     let client = init () in
      m_true (try_finally ( fun () ->
-         Uwt.Tcp.connect client Server.sockaddr >>= fun () ->
+         Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
          let write_thread = write_much client in
          close_wait client >>= fun () ->
          Lwt.catch ( fun () -> write_thread )
@@ -257,9 +257,9 @@ let l = [
   ("read_abort">::
    fun _ctx ->
      Lazy.force server_init |> ignore ;
-     let client = init_exn () in
+     let client = init () in
      m_true (try_finally ( fun () ->
-         Uwt.Tcp.connect client Server.sockaddr >>= fun () ->
+         Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
          let read_thread =
            let buf = Bytes.create 128 in
            read client ~buf >>= fun _ ->
@@ -276,9 +276,9 @@ let l = [
   ("getpeername">::
    fun _ctx ->
      Lazy.force server_init |> ignore ;
-     let client = init_exn () in
+     let client = init () in
      m_true (try_finally ( fun () ->
-         Uwt.Tcp.connect client Server.sockaddr >>= fun () ->
+         Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
          match Uwt.Tcp.getpeername_exn client |> Uwt.Compat.to_unix_sockaddr with
          | Unix.ADDR_INET(y,x) ->
            if server_port = x &&
@@ -293,9 +293,9 @@ let l = [
      The intention is to ensure, that lwt behaves as expected *)
   ("write_abort_pick">::
    fun _ctx ->
-     let client = init_exn () in
+     let client = init () in
      m_true (try_finally ( fun () ->
-         Uwt.Tcp.connect client Server.sockaddr >>= fun () ->
+         Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
          let write_thread =
            Lwt.catch ( fun () ->
                write_much client
@@ -308,9 +308,9 @@ let l = [
   ("write_abort_pick2">::
    fun _ctx ->
      Lazy.force server_init |> ignore ;
-     let client = init_exn () in
+     let client = init () in
      m_true (try_finally ( fun () ->
-         Uwt.Tcp.connect client Server.sockaddr >>= fun () ->
+         Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
          let write_thread =
            Lwt.catch ( fun () ->
                write_much client

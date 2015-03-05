@@ -171,20 +171,26 @@ val strerror: error -> string
 (** error name for the given error code *)
 val err_name: error -> string
 
-type 'a ret =
+type 'a result =
   | Ok of 'a
   | Error of error
 
-module Result : sig
-  (** [Result.t] is used instead of ['a ret], if a function returns either an
+module Int_result : sig
+  (** [Int_result.t] is used instead of ['a result], if a function returns either an
       error or a non-negative integer (including unit/bool).
       This way, we can avoid an extra allocation. *)
   type 'a t = private int
+
+  type real_int = int
+  type real_unit = unit
+  type int = real_int t
+  type unit = real_unit t
+
   val is_ok : 'a t -> bool
   val is_error : 'a t -> bool
 
   (** will raise [Invalid_argument], if {!is_ok} is false *)
-  val to_int : int t -> int
+  val to_int : int -> real_int
 
   (** will raise [Invalid_argument], if {!is_error} is false *)
   val to_error: 'a t -> error
@@ -195,12 +201,12 @@ module Result : sig
 
   val raise_exn: ?name:string -> ?param:string -> 'a t -> 'b
 
-  (** You can use the following values to compare a Result.t value with an
+  (** You can use the following values to compare a Int_result.t value with an
       assumed error, e.g.
 
       {[
       let p = Uwt.Stream.try_write t ~buf in
-      if (p :> int) = Uwt.Result.eagain then
+      if (p :> int) = Uwt.Int_result.eagain then
         ...
       else
         ...
@@ -381,14 +387,14 @@ module Fs : sig
 
   val unlink : string -> unit Lwt.t
 
-  (** @param perm defaults are 0o755 *)
+  (** @param perm defaults are 0o777 *)
   val mkdir : ?perm:int -> string -> unit Lwt.t
 
   val rmdir : string -> unit Lwt.t
 
   val fsync : file -> unit Lwt.t
   val fdatasync : file -> unit Lwt.t
-  val ftruncate: file -> int64 -> unit Lwt.t
+  val ftruncate: file -> len:int64 -> unit Lwt.t
 
   type file_kind =
     | S_REG
@@ -401,30 +407,34 @@ module Fs : sig
     | S_UNKNOWN
 
   type stats = {
-    st_dev : int;
-    st_kind : file_kind;
-    st_perm : int;
-    st_nlink : int;
-    st_uid : int;
-    st_gid : int;
-    st_rdev : int;
-    st_ino : int;
-    st_size : int64;
-    st_blksize : int;
-    st_blocks : int;
-    st_flags : int;
-    st_gen : int;
-    st_atime : float;
-    st_mtime : float;
-    st_ctime : float;
-    st_birthtime : float;
+    st_dev: int;
+    st_kind: file_kind;
+    st_perm: int;
+    st_nlink: int;
+    st_uid: int;
+    st_gid: int;
+    st_rdev: int;
+    st_ino: int;
+    st_size: int64;
+    st_blksize: int;
+    st_blocks: int;
+    st_flags: int;
+    st_gen: int;
+    st_atime: int64;
+    st_atime_nsec: int;
+    st_mtime: int64;
+    st_mtime_nsec: int;
+    st_ctime: int64;
+    st_ctime_nsec: int;
+    st_birthtime: int64;
+    st_birthtime_nsec: int;
   }
 
   val stat : string -> stats Lwt.t
   val lstat : string -> stats Lwt.t
   val fstat : file -> stats Lwt.t
   val rename : src:string -> dst:string -> unit Lwt.t
-  val link : target:string -> string -> unit Lwt.t
+  val link : target:string -> link_name:string -> unit Lwt.t
 
   type symlink_mode =
     | S_Default
@@ -433,7 +443,7 @@ module Fs : sig
 
   (** @param mode default [S_Default] *)
   val symlink :
-    ?mode:symlink_mode -> target:string -> string -> unit Lwt.t
+    ?mode:symlink_mode -> src:string -> dst:string -> unit -> unit Lwt.t
   val mkdtemp : string -> string Lwt.t
 
   (** @param pos default 0
@@ -455,7 +465,35 @@ end
 module Handle : sig
   type t
 
-  val close : t -> unit Result.t
+  (** Handles are closed automatically, if they are not longer referenced from
+      the OCaml heap. Nevertheless, you should nearly always close them with
+      {!close}, because:
+
+      - if they wrap a file descriptor, you will sooner or later run
+        out of file descriptors. The OCaml garbage collector doesn't give any
+        guarantee, when orphaned memory blocks are removed.
+
+      - you might have registered some repeatingly called action (e.g. timeout,
+        read_start,...), that prevent that all references get removed from the
+        OCaml heap.
+
+      However, it's safe to write code in this manner:
+      {[
+        let s = Uwt.Tcp.init () in
+        let c = Uwt.Tcp.init () in
+        Uwt.Tcp.nodelay s false;
+        Uwt.Tcp.simultaneous_accepts true;
+        if foobar () then (* no file descriptor yet assigned, no need to worry
+                             about exceptions inside foobar,... *)
+          Lwt.return_unit (* no need to close *)
+        else
+          ...
+      ]}
+
+      If you want - for whatever reason - keep a file descriptor open
+      for the whole lifetime of your process, remember to keep a
+      reference to its handle.  *)
+  val close : t -> Int_result.unit
   val close_noerr : t -> unit
 
   (** Prefer {!close} or {!close_noerr} to {!close_wait}. {!close} or
@@ -465,24 +503,23 @@ module Handle : sig
 
       {!close_wait} is only useful, if you intend to wait until all
       concurrent write and read threads related to this handle are
-      canceled.
-   **)
+      canceled. **)
   val close_wait : t -> unit Lwt.t
   val is_active : t -> bool
 end
 
 module Handle_ext : sig
   type t
-  val get_send_buffer_size : t -> int Result.t
+  val get_send_buffer_size : t -> Int_result.int
   val get_send_buffer_size_exn : t -> int
 
-  val get_recv_buffer_size : t -> int Result.t
+  val get_recv_buffer_size : t -> Int_result.int
   val get_recv_buffer_size_exn : t -> int
 
-  val set_send_buffer_size : t -> int -> unit Result.t
+  val set_send_buffer_size : t -> int -> Int_result.unit
   val set_send_buffer_size_exn : t -> int -> unit
 
-  val set_recv_buffer_size : t -> int -> unit Result.t
+  val set_recv_buffer_size : t -> int -> Int_result.unit
   val set_recv_buffer_size_exn : t -> int -> unit
 end
 
@@ -494,10 +531,10 @@ module Stream : sig
   val is_readable : t -> bool
   val is_writable : t -> bool
 
-  val read_start : t -> cb:(Bytes.t ret -> unit) -> unit Result.t
-  val read_start_exn : t -> cb:(Bytes.t ret -> unit) -> unit
+  val read_start : t -> cb:(Bytes.t result -> unit) -> Int_result.unit
+  val read_start_exn : t -> cb:(Bytes.t result -> unit) -> unit
 
-  val read_stop : t -> unit Result.t
+  val read_stop : t -> Int_result.unit
   val read_stop_exn : t -> unit
 
   (** There is currently no uv_read function in libuv, just
@@ -509,9 +546,9 @@ module Stream : sig
 
   val write_queue_size : t -> int
 
-  val try_write : ?pos:int -> ?len:int -> t -> buf:bytes -> int Result.t
-  val try_write_ba: ?pos:int -> ?len:int -> t -> buf:buf -> int Result.t
-  val try_write_string: ?pos:int -> ?len:int -> t -> buf:string -> int Result.t
+  val try_write : ?pos:int -> ?len:int -> t -> buf:bytes -> Int_result.int
+  val try_write_ba: ?pos:int -> ?len:int -> t -> buf:buf -> Int_result.int
+  val try_write_string: ?pos:int -> ?len:int -> t -> buf:string -> Int_result.int
 
   val write : ?pos:int -> ?len:int -> t -> buf:bytes -> unit Lwt.t
   val write_string : ?pos:int -> ?len:int -> t -> buf:string -> unit Lwt.t
@@ -532,11 +569,11 @@ module Stream : sig
   val write2 : ?pos:int -> ?len:int -> buf:bytes -> send:t -> t -> unit Lwt.t
 
   val listen:
-    t -> back:int -> cb:( t -> unit Result.t -> unit ) -> unit Result.t
+    t -> max:int -> cb:( t -> Int_result.unit -> unit ) -> Int_result.unit
   val listen_exn :
-    t -> back:int -> cb:( t -> unit Result.t -> unit ) -> unit
+    t -> max:int -> cb:( t -> Int_result.unit -> unit ) -> unit
 
-  val accept_raw: server:t -> client:t -> unit Result.t
+  val accept_raw: server:t -> client:t -> Int_result.unit
   val accept_raw_exn: server:t -> client:t -> unit
 
   val shutdown: t -> unit Lwt.t
@@ -548,9 +585,12 @@ module Pipe : sig
   include module type of Handle_ext with type t := t
   val to_stream: t -> Stream.t
 
+  (** The only thing that can go wrong, is memory allocation.
+      In this case the ordinary exception [Out_of_memory] is thrown.
+      The function is not called init_exn, because this exception can
+      be thrown by nearly all functions. *)
   (** @param ipc is false by default *)
-  val init : ?ipc:bool -> unit -> t ret
-  val init_exn : ?ipc:bool -> unit -> t
+  val init : ?ipc:bool -> unit -> t
 
   (**
      Be careful with open* functions. They exists, so you can re-use
@@ -559,19 +599,19 @@ module Pipe : sig
      pipe (or tcp socket,...) you can trigger assert failures inside libuv.
      @param ipc is false by default
   *)
-  val openpipe : ?ipc:bool -> file -> t ret
+  val openpipe : ?ipc:bool -> file -> t result
   val openpipe_exn : ?ipc:bool -> file -> t
 
-  val bind: t -> string -> unit Result.t
-  val bind_exn : t -> string -> unit
+  val bind: t -> path:string -> Int_result.unit
+  val bind_exn : t -> path:string -> unit
 
-  val getsockname: t -> string ret
+  val getsockname: t -> string result
   val getsockname_exn : t -> string
 
-  val pending_instances: t -> int -> unit Result.t
+  val pending_instances: t -> int -> Int_result.unit
   val pending_instances_exn : t -> int -> unit
 
-  val pending_count: t -> int Result.t
+  val pending_count: t -> Int_result.int
   val pending_count_exn : t -> int
 
   type pending_type =
@@ -581,7 +621,7 @@ module Pipe : sig
     | Pipe
   val pending_type: t -> pending_type
 
-  val connect: t -> string -> unit Lwt.t
+  val connect: t -> path:string -> unit Lwt.t
 end
 
 module Tcp : sig
@@ -590,39 +630,39 @@ module Tcp : sig
   include module type of Handle_ext with type t := t
   val to_stream : t -> Stream.t
 
-  val init : unit -> t ret
-  val init_exn : unit -> t
+  (** See comment to {!Pipe.init} *)
+  val init : unit -> t
 
   type mode =
     | Ipv6_only
 
   (** See comment to {!Pipe.openpipe} *)
-  val opentcp : socket -> t ret
+  val opentcp : socket -> t result
   val opentcp_exn : socket -> t
 
   (** @param mode: default is the empty list *)
-  val bind : ?mode:mode list -> t -> sockaddr -> unit Result.t
-  val bind_exn : ?mode:mode list -> t -> sockaddr -> unit
+  val bind : ?mode:mode list -> t -> addr:sockaddr -> unit -> Int_result.unit
+  val bind_exn : ?mode:mode list -> t -> addr:sockaddr -> unit -> unit
 
-  val nodelay : t -> bool -> unit Result.t
+  val nodelay : t -> bool -> Int_result.unit
   val nodelay_exn : t -> bool -> unit
 
-  val keepalive : t -> bool -> unit Result.t
+  val keepalive : t -> bool -> Int_result.unit
   val keepalive_exn : t -> bool -> unit
 
-  val simultaneous_accepts : t -> bool -> unit Result.t
+  val simultaneous_accepts : t -> bool -> Int_result.unit
   val simultaneous_accepts_exn : t -> bool -> unit
 
-  val getsockname : t -> sockaddr ret
+  val getsockname : t -> sockaddr result
   val getsockname_exn : t -> sockaddr
 
-  val getpeername : t -> sockaddr ret
+  val getpeername : t -> sockaddr result
   val getpeername_exn : t -> sockaddr
 
-  val connect : t -> sockaddr -> unit Lwt.t
+  val connect : t -> addr:sockaddr -> unit Lwt.t
 
   (** initializes a new client and calls accept_raw with it *)
-  val accept: t -> t ret
+  val accept: t -> t result
   val accept_exn: t -> t
 end
 
@@ -635,11 +675,11 @@ module Udp : sig
   val send_queue_size: t -> int
   val send_queue_count: t -> int
 
-  val init : unit -> t ret
-  val init_exn : unit -> t
+  (** See comment to {!Pipe.init} *)
+  val init : unit -> t
 
   (** See comment to {!Pipe.openpipe} *)
-  val openudp : socket -> t ret
+  val openudp : socket -> t result
   val openudp_exn : socket -> t
 
   type mode =
@@ -647,10 +687,10 @@ module Udp : sig
     | Reuse_addr
 
   (** @param mode default mode is the empty list *)
-  val bind : ?mode:mode list -> t -> sockaddr -> unit Result.t
-  val bind_exn : ?mode:mode list -> t -> sockaddr -> unit
+  val bind : ?mode:mode list -> t -> addr:sockaddr -> unit -> Int_result.unit
+  val bind_exn : ?mode:mode list -> t -> addr:sockaddr -> unit -> unit
 
-  val getsockname : t -> sockaddr ret
+  val getsockname : t -> sockaddr result
   val getsockname_exn : t -> sockaddr
 
   type membership =
@@ -658,23 +698,23 @@ module Udp : sig
     | Join_group
 
   val set_membership :
-    t -> multicast:string -> interface:string -> membership -> unit Result.t
+    t -> multicast:string -> interface:string -> membership -> Int_result.unit
   val set_membership_exn :
     t -> multicast:string -> interface:string -> membership -> unit
 
-  val set_multicast_loop : t -> bool -> unit Result.t
+  val set_multicast_loop : t -> bool -> Int_result.unit
   val set_multicast_loop_exn : t -> bool -> unit
 
-  val set_multicast_ttl : t -> int -> unit Result.t
+  val set_multicast_ttl : t -> int -> Int_result.unit
   val set_multicast_ttl_exn : t -> int -> unit
 
-  val set_multicast_interface : t -> string -> unit Result.t
+  val set_multicast_interface : t -> string -> Int_result.unit
   val set_multicast_interface_exn : t -> string -> unit
 
-  val set_broadcast : t -> bool -> unit Result.t
+  val set_broadcast : t -> bool -> Int_result.unit
   val set_broadcast_exn : t -> bool -> unit
 
-  val set_ttl : t -> int -> unit Result.t
+  val set_ttl : t -> int -> Int_result.unit
   val set_ttl_exn : t -> int -> unit
 
   val send : ?pos:int -> ?len:int -> buf:bytes -> t -> sockaddr -> unit Lwt.t
@@ -692,11 +732,11 @@ module Udp : sig
     ?pos:int -> ?len:int -> buf:string -> t -> sockaddr -> unit Lwt.t
 
   val try_send :
-    ?pos:int -> ?len:int -> buf:bytes -> t -> sockaddr -> int Result.t
+    ?pos:int -> ?len:int -> buf:bytes -> t -> sockaddr -> Int_result.int
   val try_send_ba :
-    ?pos:int -> ?len:int -> buf:buf -> t -> sockaddr -> int Result.t
+    ?pos:int -> ?len:int -> buf:buf -> t -> sockaddr -> Int_result.int
   val try_send_string :
-    ?pos:int -> ?len:int -> buf:string -> t -> sockaddr -> int Result.t
+    ?pos:int -> ?len:int -> buf:string -> t -> sockaddr -> Int_result.int
 
   (** The type definition will likely be changed.
       Don't use fragile pattern matching for it *)
@@ -706,10 +746,10 @@ module Udp : sig
     | Empty_from of sockaddr
     | Transmission_error of error
 
-  val recv_start : t -> cb:(recv_result -> unit) -> unit Result.t
+  val recv_start : t -> cb:(recv_result -> unit) -> Int_result.unit
   val recv_start_exn : t -> cb:(recv_result -> unit) -> unit
 
-  val recv_stop : t -> unit Result.t
+  val recv_stop : t -> Int_result.unit
   val recv_stop_exn : t -> unit
 
   type recv = {
@@ -729,7 +769,7 @@ module Tty : sig
   include module type of Stream with type t := t
 
   val to_stream: t -> Stream.t
-  val init : file -> read:bool -> t ret
+  val init : file -> read:bool -> t result
   val init_exn : file -> read:bool -> t
 
   type mode =
@@ -737,17 +777,17 @@ module Tty : sig
     | Raw
     | Io
 
-  val set_mode : t -> mode:mode -> unit Result.t
+  val set_mode : t -> mode:mode -> Int_result.unit
   val set_mode_exn : t -> mode:mode -> unit
 
-  val reset_mode : unit -> unit Result.t
+  val reset_mode : unit -> Int_result.unit
   val reset_mode_exn : unit -> unit
 
   type winsize = {
     width: int;
     height: int;
   }
-  val get_winsize : t -> winsize ret
+  val get_winsize : t -> winsize result
   val get_winsize_exn : t -> winsize
 end
 
@@ -760,11 +800,11 @@ module Timer : sig
 
   (** Timers, that are executed only once (repeat=0), are automatically closed.
       After their callback have been executed, their handles are invalid.  *)
-  val start : repeat:int -> timeout:int -> cb:(t -> unit) -> t ret
+  val start : repeat:int -> timeout:int -> cb:(t -> unit) -> t result
   val start_exn : repeat:int -> timeout:int -> cb:(t -> unit) -> t
 
   (** a successful stop call will also close the handles *)
-  val stop : t -> unit Result.t
+  val stop : t -> Int_result.unit
   val stop_exn : t -> unit
 end
 
@@ -774,11 +814,11 @@ module Signal : sig
   val to_handle : t -> Handle.t
 
   (** use Sys.sigterm, Sys.sigstop, etc *)
-  val start : int -> cb:(t -> int -> unit) -> t ret
+  val start : int -> cb:(t -> int -> unit) -> t result
   val start_exn : int -> cb:(t -> int -> unit) -> t
 
   (** a successful stop call will also close the handles *)
-  val stop : t -> unit Result.t
+  val stop : t -> Int_result.unit
   val stop_exn : t -> unit
 end
 
@@ -793,14 +833,14 @@ module Poll : sig
     | Readable_writable
 
   (** start and start_exn don't support windows *)
-  val start : file -> event -> cb:(t -> event ret -> unit) -> t ret
-  val start_exn : file -> event -> cb:(t -> event ret -> unit) -> t
+  val start : file -> event -> cb:(t -> event result -> unit) -> t result
+  val start_exn : file -> event -> cb:(t -> event result -> unit) -> t
 
-  val start_socket : socket -> event -> cb:(t -> event ret -> unit) -> t ret
-  val start_socket_exn : socket -> event -> cb:(t -> event ret -> unit) -> t
+  val start_socket : socket -> event -> cb:(t -> event result -> unit) -> t result
+  val start_socket_exn : socket -> event -> cb:(t -> event result -> unit) -> t
 
   (** a successful stop call will also close the handles *)
-  val stop : t -> unit Result.t
+  val stop : t -> Int_result.unit
   val stop_exn : t -> unit
 end
 
@@ -818,13 +858,13 @@ module Fs_event : sig
     | Stat
     | Recursive
 
-  type cb = t -> (string * event list) ret -> unit
+  type cb = t -> (string * event list) result -> unit
 
-  val start : string -> flags list -> cb:cb -> t ret
+  val start : string -> flags list -> cb:cb -> t result
   val start_exn : string -> flags list -> cb:cb -> t
 
   (** a successful stop call will also close the handles *)
-  val stop : t -> unit Result.t
+  val stop : t -> Int_result.unit
   val stop_exn : t -> unit
 end
 
@@ -838,11 +878,11 @@ module Fs_poll : sig
     curr : Fs.stats;
   }
 
-  val start : string -> int -> cb:(t -> report ret -> unit) -> t ret
-  val start_exn : string -> int -> cb:(t -> report ret -> unit) -> t
+  val start : string -> int -> cb:(t -> report result -> unit) -> t result
+  val start_exn : string -> int -> cb:(t -> report result -> unit) -> t
 
   (** a successful stop call will also close the handles *)
-  val stop : t -> unit Result.t
+  val stop : t -> Int_result.unit
   val stop_exn : t -> unit
 end
 
@@ -876,7 +916,7 @@ module Process : sig
     ?exit_cb:exit_cb ->
     string ->
     string list ->
-    t ret
+    t result
 
   val spawn_exn :
     ?stdin:stdio ->
@@ -896,13 +936,13 @@ module Process : sig
 
   val disable_stdio_inheritance : unit -> unit
 
-  val pid : t -> int Result.t
+  val pid : t -> Int_result.int
   val pid_exn : t -> int
 
-  val process_kill : t -> int -> unit Result.t
+  val process_kill : t -> int -> Int_result.unit
   val process_kill_exn : t -> int -> unit
 
-  val kill : pid:int -> signum:int -> unit Result.t
+  val kill : pid:int -> signum:int -> Int_result.unit
   val kill_exn : pid:int -> signum:int -> unit
 end
 
@@ -991,33 +1031,33 @@ module Misc : sig
 
   val guess_handle: file -> handle_type
 
-  val resident_set_memory : unit -> nativeint ret
+  val resident_set_memory : unit -> nativeint result
   val resident_set_memory_exn : unit -> nativeint
 
-  val uptime : unit -> float ret
+  val uptime : unit -> float result
   val uptime_exn : unit -> float
 
-  val getrusage : unit -> rusage ret
+  val getrusage : unit -> rusage result
   val getrusage_exn : unit -> rusage
 
-  val cpu_info : unit -> cpu_info array ret
+  val cpu_info : unit -> cpu_info array result
   val cpu_info_exn : unit -> cpu_info array
 
-  val interface_addresses: unit -> interface_address array ret
+  val interface_addresses: unit -> interface_address array result
   val interface_addresses_exn: unit -> interface_address array
 
   val load_avg: unit -> float * float * float
 
-  val ip4_addr: string -> int -> sockaddr ret
+  val ip4_addr: string -> int -> sockaddr result
   val ip4_addr_exn: string -> int -> sockaddr
 
-  val ip4_name: sockaddr -> string ret
+  val ip4_name: sockaddr -> string result
   val ip4_name_exn: sockaddr -> string
 
-  val ip6_addr: string -> int -> sockaddr ret
+  val ip6_addr: string -> int -> sockaddr result
   val ip6_addr_exn: string -> int -> sockaddr
 
-  val ip6_name: sockaddr -> string ret
+  val ip6_name: sockaddr -> string result
   val ip6_name_exn: sockaddr -> string
 
   val get_total_memory: unit -> int64
@@ -1035,7 +1075,7 @@ end
 
 module Compat : sig
   (** be careful in case of [Unix.ADDR_UNIX path]. If path is very long,
-      {!of_unix_sockaddr} willl raise an exception ([Unix.Unix_error]) and
+      {!of_unix_sockaddr} will raise an exception ([Unix.Unix_error]) and
       {!to_unix_sockaddr] might return a truncated string.
       [Unix.ADDR_UNIX] is not supported on windows, {!of_unix_sockaddr} will
       also raise an exception in this case. *)

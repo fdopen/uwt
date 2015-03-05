@@ -13,8 +13,8 @@ let cat_test () =
   for i = 0 to pred len do
     Bytes.unsafe_set b i (Char.chr (i land 255))
   done;
-  let stdin = Uwt.Pipe.init_exn () in
-  let stdout = Uwt.Pipe.init_exn () in
+  let stdin = Uwt.Pipe.init () in
+  let stdout = Uwt.Pipe.init () in
   let p =
     P.spawn_exn
       ~stdin:(P.Pipe stdin)

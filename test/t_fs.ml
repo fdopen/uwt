@@ -162,7 +162,7 @@ let l = [
   ("link">::
    fun _ctx ->
      no_win ();
-     m_equal () (link ~target:(!tmpdir // "a") (!tmpdir // "f"));
+     m_equal () (link ~target:(!tmpdir // "a") ~link_name:(!tmpdir // "f"));
      m_equal () (unlink (!tmpdir // "f")));
   ("scandir">::
    fun _ctx ->
@@ -176,7 +176,7 @@ let l = [
      no_win ();
      let a = !tmpdir // "a"
      and d = !tmpdir // "d" in
-     m_equal () (symlink ~target:a d);
+     m_equal () (symlink ~src:a ~dst:d ());
      m_equal true (lstat d >>= fun s -> return (
          qstat s && s.st_kind = S_LNK));
      m_equal a (readlink d);
@@ -189,22 +189,26 @@ let l = [
   ("utime">::
    fun _ctx ->
      let z = !tmpdir // "z" in
-     let time = Unix.gettimeofday () -. 99_000. in
+     let itime = (int_of_float (Unix.time ())) - 99_000 in
+     let time = float_of_int itime in
      m_true (utime z ~access:time ~modif:time >>= fun () ->
              stat z >>= fun s ->
-             let d1 = abs_float (s.st_atime -. time)
-             and d2 = abs_float (s.st_mtime -. time) in
-             return ( d1 < 10. && d2 < 10. ) ));
+             let time = Int64.of_int itime in
+             let d1 = Int64.sub s.st_atime time |> Int64.abs
+             and d2 = Int64.sub s.st_mtime time |> Int64.abs in
+             return ( d1 = 0L && d2 = 0L ) ));
   ("futime/fstat">::
    fun _ctx ->
      let z = !tmpdir // "z" in
      m_true ( openfile ~mode:[O_RDWR] z >>= fun fd ->
-              let time = Unix.gettimeofday () +. 99_000. in
+              let itime = (int_of_float (Unix.time ())) + 99_000 in
+              let time = float_of_int itime in
               futime fd ~access:time ~modif:time >>= fun () ->
               fstat fd >>= fun s -> close fd >>= fun () ->
-              let d1 = abs_float (s.st_atime -. time)
-              and d2 = abs_float (s.st_mtime -. time) in
-              return ( qstat s && d1 < 10. && d2 < 10. ) ));
+              let time = Int64.of_float time in
+              let d1 = Int64.sub s.st_atime time |> Int64.abs
+              and d2 = Int64.sub s.st_mtime time |> Int64.abs in
+              return ( qstat s && d1 = 0L && d2 = 0L ) ));
   ("chmod">::
    fun _ctx ->
      no_win ();
@@ -243,7 +247,7 @@ let l = [
    fun _ctx ->
      let z = !tmpdir // "z" in
      m_true ( openfile ~mode:[O_RDWR] z >>= fun fd ->
-              ftruncate fd 777L >>= fun () ->
+              ftruncate fd ~len:777L >>= fun () ->
               fstat fd >>= fun s -> s.st_size = 777L |> return ));
 ]
 

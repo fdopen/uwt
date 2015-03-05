@@ -16,7 +16,7 @@ let poll_file () =
         let open Uwt.Fs_poll in
         if Fs_t.qstat x.curr &&
            Fs_t.qstat x.prev &&
-           x.curr.Uwt.Fs.st_mtime -. x.prev.Uwt.Fs.st_mtime > 0. then
+           Int64.sub x.curr.Uwt.Fs.st_mtime x.prev.Uwt.Fs.st_mtime > 0L then
           incr cb_called
         else
           abort t "unexpected change"
@@ -25,10 +25,10 @@ let poll_file () =
       try_finally ( fun () ->
           let rec iter i =
             if i = 0 then
-              Uwt.Timer.sleep 1_950 >>= fun () ->
+              Uwt.Timer.sleep 1_800 >>= fun () ->
               Lwt.return_unit
             else
-              Uwt.Timer.sleep 1_950 >>= fun () ->
+              Uwt.Timer.sleep 1_800 >>= fun () ->
               let t = Unix.gettimeofday () in
               Uwt.Fs.utime tmpfile ~access:t ~modif:t >>= fun () ->
               iter (pred i)

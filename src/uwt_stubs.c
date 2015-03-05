@@ -1953,8 +1953,15 @@ static value
 uv_stat_to_value(const uv_stat_t * sb)
 {
   CAMLparam0();
-  CAMLlocal2(s,t);
+  CAMLlocal5(atime,mtime,ctime,btime,size);
   value v;
+  value s;
+
+  size = caml_copy_int64(sb->st_size);
+  atime = caml_copy_int64(sb->st_atim.tv_sec);
+  mtime = caml_copy_int64(sb->st_mtim.tv_sec);
+  ctime = caml_copy_int64(sb->st_ctim.tv_sec);
+  btime = caml_copy_int64(sb->st_birthtim.tv_sec);
 
   switch ( sb->st_mode & S_IFMT ){
   case S_IFREG: v = Val_long(0); break;
@@ -1966,7 +1973,7 @@ uv_stat_to_value(const uv_stat_t * sb)
   case S_IFSOCK: v = Val_long(6); break;
   default: v = Val_long(7);
   }
-  s = caml_alloc(17,0);
+  s = caml_alloc_small(21,0);
   Field(s,1) = v;
   Field(s,2) = Val_long(sb->st_mode & 07777);
 
@@ -1982,20 +1989,19 @@ uv_stat_to_value(const uv_stat_t * sb)
   SET_INT(10,st_blocks);
   SET_INT(11,st_flags);
   SET_INT(12,st_gen);
+
+  SET_INT(14,st_atim.tv_nsec);
+  SET_INT(16,st_mtim.tv_nsec);
+  SET_INT(18,st_ctim.tv_nsec);
+  SET_INT(20,st_birthtim.tv_nsec);
 #undef SET_INT
 
-  t = caml_copy_int64((int64_t)sb->st_size);
-  Store_field(s,8,t);
+  Field(s,8)=size;
+  Field(s,13)=atime;
+  Field(s,15)=mtime;
+  Field(s,17)=ctime;
+  Field(s,19)=btime;
 
-#define SET_FLOAT(n,f)                          \
-  t = caml_copy_double((double)(sb->f));        \
-  Store_field(s,n,t)
-
-  SET_FLOAT(13,st_atim.tv_sec);
-  SET_FLOAT(14,st_mtim.tv_sec);
-  SET_FLOAT(15,st_ctim.tv_sec);
-  SET_FLOAT(16,st_birthtim.tv_sec);
-#undef SET_FLOAT
   CAMLreturn(s);
 }
 
@@ -2548,10 +2554,10 @@ uwt_listen(value o_stream,value o_backlog,value o_cb)
   uv_stream_t* stream =(uv_stream_t*)s->handle;
   ret = uv_listen(stream,Long_val(o_backlog),listen_cb);
   if ( ret >= 0 ){
-    if ( s->cb_listen_server != Val_unit){
+    if ( s->cb_listen_server != CB_INVALID ){
       gr_root_unregister(&s->cb_listen_server);
     }
-    if ( s->cb_listen != Val_unit){
+    if ( s->cb_listen != CB_INVALID ){
       gr_root_unregister(&s->cb_listen);
     }
     else {

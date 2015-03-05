@@ -25,7 +25,7 @@ let output_dummy c =
     ) ( fun () -> T.close_noerr c ; Lwt.return_unit )
 
 let on_listen server x =
-  if Uwt.Result.is_error x then
+  if Uwt.Int_result.is_error x then
     Uwt_io.printl "listen error" |> ignore
   else
     match T.accept server with
@@ -33,11 +33,11 @@ let on_listen server x =
     | U.Ok c -> output_dummy c |> ignore
 
 let hello_server () =
-  let server = T.init_exn () in
+  let server = T.init () in
   Lwt.finalize ( fun () ->
-      let sock = U.Misc.ip4_addr_exn server_ip4 server_port in
-      T.bind_exn server sock;
-      let () = T.listen_exn server ~back:server_backlog ~cb:on_listen in
+      let addr = U.Misc.ip4_addr_exn server_ip4 server_port in
+      T.bind_exn server ~addr ();
+      let () = T.listen_exn server ~max:server_backlog ~cb:on_listen in
       Help.wait ()
     ) ( fun () -> T.close_noerr server; Lwt.return_unit )
 
