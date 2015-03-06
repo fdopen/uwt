@@ -31,7 +31,7 @@ P2(uwt_run_loop);
 P1(uwt_loop_close);
 
 P2(uwt_req_create);
-P1(uwt_req_cancel_noerr_na);
+P1(uwt_req_cancel_noerr);
 
 P6(uwt_fs_open_native);
 BY(uwt_fs_open_byte);

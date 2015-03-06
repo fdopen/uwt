@@ -1285,7 +1285,11 @@ end
 module LE = MakeNumberIO(ByteOrder.LE)
 module BE = MakeNumberIO(ByteOrder.BE)
 
-#include "byte_order.ml"
+type byte_order = Little_endian | Big_endian
+let system_byte_order =
+  match Sys.big_endian with
+  | true -> Big_endian
+  | false -> Little_endian
 
 include (val (match system_byte_order with
                 | Little_endian -> (module LE : NumberIO)

@@ -537,10 +537,15 @@ module Stream : sig
   val read_stop : t -> Int_result.unit
   val read_stop_exn : t -> unit
 
-  (** There is currently no uv_read function in libuv, just
-   *  read_start and read_stop.
+  (** There is currently no uv_read function in libuv, just read_start and
+   *  read_stop.
    *  This is a wrapper for your convenience. It calls read_stop internally, if
-   *  you don't continue with reading immediately. Zero result indicates EOF  *)
+   *  you don't continue with reading immediately. Zero result indicates EOF.
+   *
+   *  There are currently plans to add [uv_read] and [uv_try_read] to libuv
+   *  itself. If these changes got merged, {!Stream.read} will wrap them -
+   *  even if there will be small semantic differences.
+   *)
   val read : ?pos:int -> ?len:int -> t -> buf:bytes -> int Lwt.t
   val read_ba : ?pos:int -> ?len:int -> t -> buf:buf -> int Lwt.t
 

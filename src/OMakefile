@@ -36,13 +36,13 @@ section
 	Repeat_ctargets($(CFILES))
 	T=$(CProgram emap_gen, $(CFILES))
 	clean::
-		rm -f emap_gen$(EXE) byte_order.ml error.ml error_val.ml error_val.mli map_error.h
-	byte_order.ml error.ml error_val.ml map_error.h: emap_gen$(EXE)
+		rm -f emap_gen$(EXE) error.ml error_val.ml error_val.mli map_error.h
+	error.ml error_val.ml map_error.h: emap_gen$(EXE)
 		./emap_gen$(EXE)
 
 section
 	.SCANNER: scan-c-%: map_error.h config.h
-	.SCANNER: scan-ocaml-%: error.ml byte_order.ml error_val.ml
+	.SCANNER: scan-ocaml-%: error.ml error_val.ml
 	OCAMLPACKS+= lwt bigarray unix
 	OCAMLFINDFLAGS+= -pp cppo
 	MLFILES= uwt uwt_bytes uwt_io

@@ -152,7 +152,7 @@ module Req = struct
   type t
 
   external create: loop -> type' -> t = "uwt_req_create"
-  external cancel_noerr: t -> unit = "uwt_req_cancel_noerr_na" "noalloc"
+  external cancel_noerr: t -> unit = "uwt_req_cancel_noerr"
 
   let ql ~typ ~f ~name ~param =
     let sleeper,waker = Lwt.task () in

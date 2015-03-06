@@ -324,6 +324,7 @@ int main(void)
     return 1;
   }
 
+#if 0
   ml = fopen("byte_order.ml","w");
   fputs("type byte_order = Little_endian | Big_endian\n",ml);
 #ifdef WORDS_BIGENDIAN
@@ -334,6 +335,7 @@ int main(void)
   if ( fclose(ml) ){
     fputs("i/o error\n",stderr);
   }
+#endif
 
   ml = fopen("error_val.ml","w");
   c = fopen("error_val.mli","w");
