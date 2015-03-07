@@ -41,7 +41,7 @@ module Notifiers = Hashtbl.Make(struct
                                   let hash (x : int) = x
                                 end)
 
-let notifiers = Notifiers.create 1024
+let notifiers = Notifiers.create 64
 let current_notification_id = ref 0
 
 let rec find_free_id id =
@@ -59,78 +59,55 @@ let make_notification ?(once=false) f =
 let notification_mutex = Mutex.create ()
 let notification_queue = Queue.create ()
 
-let to_exn = function
-| None ->
-  prerr_endline "uwt fatal: windows interface changed";
-  exit (2)
-| Some x -> x
+let rec call_notifications async_handle =
+  let module T = struct
+    type t =  | Non_s | Non_c | Ok_s of (unit -> unit) | Ok_c of (unit -> unit)
+              | Exn of exn end
+  in
+  let open T in
+  Mutex.lock notification_mutex;
+  let f =
+    try
+      if Queue.is_empty notification_queue then
+        Non_s
+      else
+        let id = Queue.pop notification_queue in
+        let stop = Queue.is_empty notification_queue in
+        match Notifiers.find notifiers id with
+        | notifier ->
+          if notifier.notify_once then
+            Notifiers.remove notifiers id;
+          if stop then
+            Ok_s notifier.notify_handler
+          else
+            Ok_c notifier.notify_handler
+        | exception Not_found -> if stop then Non_s else Non_c
+    with
+    | e -> Exn e
+  in
+  Mutex.unlock notification_mutex;
+  match f with
+  | Exn e -> raise e
+  | Non_s -> ()
+  | Non_c -> call_notifications async_handle
+  | Ok_s f -> f ()
+  | Ok_c f -> f (); call_notifications async_handle
 
-let conv x =
-  (try Unix.set_close_on_exec x with | Unix.Unix_error _ -> () );
-  Uwt.Pipe.openpipe_exn ( Uwt.Compat.file_of_file_descr x |> to_exn )
-
-let notification_read, notification_write_fd =
-  let a,b = Unix.pipe () in
-  conv a,
-  b
+let async_handle =
+  match Uwt.Async.create call_notifications with
+  | Uwt.Error _ -> failwith "can't create async handle for uwt_preemptive"
+  | Uwt.Ok x -> x
 
 let () =
-  Uwt.Main.at_exit ( fun () ->
-      (try Unix.close notification_write_fd with | _ -> () );
-      Uwt.Pipe.close_noerr notification_read;
-      Lwt.return_unit
-    )
+  Uwt.Main.at_exit ( fun () -> Uwt.Async.close_noerr async_handle;
+                     Lwt.return_unit )
 
-let dummy_s = Bytes.of_string "!"
-let rec really_inform ()=
-  match Unix.write notification_write_fd dummy_s 0 1 with
-  | _n -> ()
-  | exception(Unix.Unix_error((Unix.EAGAIN|Unix.EINTR),_,_)) ->
-    really_inform ()
-  | exception e ->
-    let s = Printexc.to_string e in
-    Printf.eprintf "fatal exception ignored:%s\n%!" s;
-    ()
 
 let send_notification (a:int) =
   Mutex.lock notification_mutex;
-  let notify = Queue.is_empty notification_queue in
   Queue.push a notification_queue;
-  if notify then
-    really_inform ();
+  Uwt.Async.send async_handle |> ignore;
   Mutex.unlock notification_mutex
-
-let rec call_notifications () =
-  Mutex.lock notification_mutex;
-  let stop,f =
-    if Queue.is_empty notification_queue then
-      true,call_notifications
-    else
-      let id = Queue.pop notification_queue in
-      let f =  match Notifiers.find notifiers id with
-      | notifier ->
-        if notifier.notify_once then
-          Notifiers.remove notifiers id;
-        notifier.notify_handler
-      | exception Not_found -> call_notifications
-      in
-      Queue.is_empty notification_queue,f
-  in
-  Mutex.unlock notification_mutex;
-  if f != call_notifications then
-    f ();
-  if stop then
-    ()
-  else
-    call_notifications ()
-
-let p_buf = Bytes.create 1
-let rec watch_notifications () =
-  Uwt.Pipe.read ~buf:p_buf notification_read >>= fun _i ->
-  let () = call_notifications () in
-  watch_notifications ()
-
-let watch_thread :(unit Lwt.t option ref)= ref None
 
 (* +-----------------------------------------------------------------+
    | Parameters                                                      |
@@ -272,40 +249,40 @@ let detach f args =
     with exn ->
       result := Lwt.make_error exn
   in
-  (match !watch_thread with
-   | None -> watch_thread:= Some(watch_notifications ());
-   | Some _ -> () );
-  incr detached_cnt;
-  get_worker () >>= fun worker ->
-  let waiter, wakener = Lwt.wait () in
-  let id =
-    make_notification ~once:true
-      (fun () -> Lwt.wakeup_result wakener !result)
-  in
-  Lwt.finalize
-    (fun () ->
-       (* Send the id and the task to the worker: *)
-       Event.sync (Event.send worker.task_channel (id, task));
-       waiter)
-    (fun () ->
-       if worker.reuse then
-         (* Put back the worker to the pool: *)
-         add_worker worker
-       else begin
-         decr threads_count;
-         (* Or wait for the thread to terminates, to free its associated
-            resources: *)
-         Thread.join worker.thread
-       end;
-       decr detached_cnt;
-       if !detached_cnt = 0 then (
-         match !watch_thread with
-         | None -> ()
-         | Some x ->
-           watch_thread:=None;
-           Lwt.cancel x;
-       );
-       Lwt.return_unit)
+  let x = Uwt.Async.start async_handle in
+  if Uwt.Int_result.is_error x then
+    Uwt.Int_result.fail ~name:"Uwt_preemptive.detach" x
+  else
+    get_worker () >>= fun worker ->
+    let waiter, wakener = Lwt.wait () in
+    let id =
+      make_notification ~once:true
+        (fun () -> Lwt.wakeup_result wakener !result)
+    in
+    Lwt.finalize
+      (fun () ->
+         (* Send the id and the task to the worker: *)
+         Event.sync (Event.send worker.task_channel (id, task));
+         waiter)
+      (fun () ->
+         if worker.reuse then
+           (* Put back the worker to the pool: *)
+           add_worker worker
+         else begin
+           decr threads_count;
+           (* Or wait for the thread to terminates, to free its associated
+              resources: *)
+           Thread.join worker.thread
+         end;
+         decr detached_cnt;
+         if !detached_cnt <> 0 then
+           Lwt.return_unit
+         else
+           let x = Uwt.Async.stop async_handle in
+           if Uwt.Int_result.is_error x then
+             Uwt.Int_result.fail ~name:"Uwt_preemptive.detach" x
+           else
+             Lwt.return_unit)
 
 (* +-----------------------------------------------------------------+
    | Running Lwt threads in the main thread                          |

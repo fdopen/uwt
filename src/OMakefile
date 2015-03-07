@@ -11,7 +11,7 @@ if $(equal $(OSTYPE),Win32)
 		else
 			touch configure config.h.in
 	config.h: config.h.in configure
-		bash.exe configure CC="$(OCAMLC_CC) $(OCAMLC_CC_CFLAGS)"
+		bash.exe configure CC="$(OCAMLC_CC)" CFLAGS="$(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS_LIBUV)"
 else
 	configure config.h.in: configure.ac
 		if $(or $(not $(file-exists configure)),$(not $(file-exists config.h.in)))
@@ -19,7 +19,7 @@ else
 		else
 			touch configure config.h.in
 	config.h: config.h.in configure
-		./configure CC="$(OCAMLC_CC) $(OCAMLC_CC_CFLAGS)"
+		./configure CC="$(OCAMLC_CC)" CFLAGS="$(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS_LIBUV)"
 
 clean::
 	rm -f config.log config.status

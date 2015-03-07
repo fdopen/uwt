@@ -28,7 +28,7 @@ change. Feel free to open an issue an make suggestions about it :)
 Dependencies:
 
 * OCaml 4.02.1 (earlier versions are not supported)
-* libuv 1.2 or later (0.x versions are not supported)
+* libuv 1.0 or later (0.x versions are not supported)
 * lwt 2.4.7 or later
 
 Build dependencies:

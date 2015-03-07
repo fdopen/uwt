@@ -1116,3 +1116,14 @@ end
    - Don't call it, while Main.run is active.
    - After you've called it, you can't run any uwt related functions *)
 val valgrind_happy : unit -> unit
+
+(* Don't use it. It's currently only intended for Uwt_preemptive. *)
+module Async : sig
+  type t
+  include module type of Handle with type t := t
+  val to_handle: t -> Handle.t
+  val create: ( t -> unit ) -> t result
+  val start: t -> Int_result.unit
+  val stop: t -> Int_result.unit
+  val send: t -> Int_result.unit
+end

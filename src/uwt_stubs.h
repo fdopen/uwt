@@ -150,6 +150,11 @@ P1(uwt_fs_event_stop);
 P4(uwt_fs_poll_start);
 P1(uwt_fs_poll_stop);
 
+P2(uwt_async_create);
+P1(uwt_async_start_na);
+P1(uwt_async_stop_na);
+P1(uwt_async_send_na);
+
 P1(uwt_guess_handle_na);
 P1(uwt_version_na);
 P1(uwt_version_string);

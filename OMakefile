@@ -17,7 +17,7 @@ static.=
 	x=$(pkg_config LIBUV,libuv)
 	if $(not $(x))
 		$(ConfMsgError $''libuv missing'')
-	x=$(pkg_config_between_vers LIBUV,libuv,1.2,2.0)
+	x=$(pkg_config_between_vers LIBUV,libuv,1.0,2.0)
 	if $(not $(x))
 		$(ConfMsgError $''libuv version not supported'')
 	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))

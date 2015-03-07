@@ -1329,6 +1329,20 @@ module Process = struct
   let kill_exn ~pid ~signum = kill ~pid ~signum |> to_exnu "uv_kill"
 end
 
+module Async = struct
+  type t = u
+  include (Handle: (module type of Handle) with type t := t )
+  external to_handle : t -> Handle.t = "%identity"
+
+  external create: loop -> ( t -> unit ) -> t result = "uwt_async_create"
+  let create cb = create loop cb
+
+  external start: t -> Int_result.unit = "uwt_async_start_na" "noalloc"
+  external stop: t -> Int_result.unit = "uwt_async_stop_na" "noalloc"
+
+  external send: t -> Int_result.unit = "uwt_async_send_na" "noalloc"
+end
+
 module Main = struct
 
   let exceptions = ref []
