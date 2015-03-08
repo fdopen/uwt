@@ -32,6 +32,7 @@ P1(uwt_loop_close);
 
 P2(uwt_req_create);
 P1(uwt_req_cancel_noerr);
+P1(uwt_req_finalize_na);
 
 P6(uwt_fs_open_native);
 BY(uwt_fs_open_byte);
@@ -135,20 +136,20 @@ P1(uwt_udp_send_queue_size_na);
 P1(uwt_udp_send_queue_count_na);
 
 P4(uwt_timer_start);
-P1(uwt_timer_stop);
+/* P1(uwt_timer_stop); */
 
 P3(uwt_signal_start);
-P1(uwt_signal_stop);
+/* P1(uwt_signal_stop); */
 
 P4(uwt_poll_start);
 P4(uwt_poll_start_socket);
-P1(uwt_poll_stop);
+/*`P1(uwt_poll_stop); */
 
 P4(uwt_fs_event_start);
 P1(uwt_fs_event_stop);
 
 P4(uwt_fs_poll_start);
-P1(uwt_fs_poll_stop);
+/* P1(uwt_fs_poll_stop); */
 
 P2(uwt_async_create);
 P1(uwt_async_start_na);

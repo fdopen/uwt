@@ -138,7 +138,8 @@ MixedLibrary(name,mlfiles,cfiles)=
 		)
 
 MOCamlLibrary(name,files)=
-	x=$(OCamlLibrary $(name),$(files))
+	to_add=$(addsuffix .cmi,$(files)) $(addsuffix .cmo,$(files)) $(if $(NATIVE_ENABLED),$(addsuffix .cmx,$(files)))
+	x=$(set $(OCamlLibrary $(name),$(files)) $(to_add))
 	if $(equal $(HAVE_NATIVE_DYNLINK),false)
 		return $(x)
 	elseif $(not $(equal $(filter %.cmxs, $(x)), $(EMPTY)))

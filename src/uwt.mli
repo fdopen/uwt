@@ -57,10 +57,10 @@
    change. Feel free to open an issue an make suggestions about it :)
 
 
-   Please notice, that there are subtile differences compared to
+   Please notice, that there are subtle differences compared to
    [lwt.unix]. Because all requests are accomplished by libuv
    (sometimes in parallel in different threads), you don't have that
-   kind of low level control, that you have with 'lwt.unix'.  For
+   kind of low level control, that you have with [lwt.unix].  For
    example it's not guaranteed that in the following example only one
    operation is executed:
 
@@ -68,7 +68,7 @@
      Lwt.pick [ op_timeout ; op_read ; op_write; op_xyz ]
    ]}
 
- **)
+*)
 
 
 (** UWT_- error codes are introduced by uwt. *)
@@ -151,7 +151,7 @@ type error =
   | EMLINK
   | UWT_UNKNOWN (** Can't translate the error code. Perhaps your libuv version
                     is too new or too old *)
-  | UWT_EFATAL (** something happend that the author of uwt didn't expect.
+  | UWT_EFATAL (** something happened that the author of uwt didn't expect.
                    Probably a bug or a the api of libuv has changed in the
                    meanwhile *)
   | UWT_EBADF  (** you've already closed this handle/request *)
@@ -312,7 +312,7 @@ val stdout : file
 val stderr : file
 
 module Main : sig
-  (** Analogous to [Lwt_main] *)
+  (** Analogue to [Lwt_main] *)
 
   (** Main_error is thrown, when uv_run returns an error - or if lwt
       doesn't report any result and libuv reports, that there are no
@@ -352,6 +352,28 @@ module Main : sig
   val enter_iter_hooks : (unit -> unit) Lwt_sequence.t
   val leave_iter_hooks : (unit -> unit) Lwt_sequence.t
   val yield : unit -> unit Lwt.t
+
+  (** Unlike {!Lwt_main.run}, it's not allowed to nest calls to Uwt.Main.run.
+      The following code is invalid, an exception [Main_error] will be thrown:
+      {[
+        let help () =
+           let () = Uwt.Main.run foo in
+           Lwt.return_unit
+        in
+        Uwt.Main.run (help ())
+      ]}
+
+      And {!Uwt.Main.run} will complain about missing work ([Main_error] again):
+      {|
+        let s,t = Lwt.task () in
+        Uwt.Main.run s
+      |}
+
+      With [lwt.unix] the code above could lead to a busy loop (wasting your cpu
+      time - but it's dependend on the selected  Lwt_engine).
+      If you really want your process to run forever, without waiting for any
+      i/o, you can create a [Uwt.Timer.t] that gets called repeatedly, but does
+      nothing. *)
   val run : 'a Lwt.t -> 'a
   val exit_hooks : (unit -> unit Lwt.t) Lwt_sequence.t
   val at_exit : (unit -> unit Lwt.t) -> unit
@@ -362,17 +384,29 @@ module Fs : sig
     | O_RDONLY
     | O_WRONLY
     | O_RDWR
-    | O_NONBLOCK
+    | O_NONBLOCK (** *nix only, ignored otherwise *)
     | O_CREAT
     | O_EXCL
     | O_TRUNC
     | O_APPEND
+    | O_NOCTTY (** *nix only, ignored otherwise *)
+    | O_DSYNC (** only supported on some *nix platforms, ignored otherwise *)
+    | O_SYNC (** only supported on some *nix platforms, ignored otherwise *)
+    | O_RSYNC (** only supported on some *nix platforms, ignored otherwise *)
+    | O_TEMPORARY (** windows only, ignored on *nix *)
+    | O_SHORT_LIVED (** windows only, ignored on *nix *)
+    | O_SEQUENTIAL (** windows only, ignored on *nix *)
+    | O_RANDOM (** windows only, ignored on *nix *)
+  (** [O_CLOEXEC] and [O_SHARE_DELETE], [O_SHARE_WRITE],
+      [O_SHARE_READ] don't exist, because these flags are
+      unconditionally added by libuv, if the platform supports
+      them. *)
 
   (** @param perm defaults are 0o644 *)
   val openfile : ?perm:int -> mode:open_flag list -> string -> file Lwt.t
 
   (** @param pos default is always zero
-      @param len default is always the length ofthe string / array, etc. *)
+      @param len default is always the length of the string / array / Bytes.t *)
   val read : ?pos:int -> ?len:int -> file -> buf:bytes -> int Lwt.t
 
   (** _ba function are unsafe. Bigarrays are passed directly to libuv (no
@@ -473,7 +507,7 @@ module Handle : sig
         out of file descriptors. The OCaml garbage collector doesn't give any
         guarantee, when orphaned memory blocks are removed.
 
-      - you might have registered some repeatingly called action (e.g. timeout,
+      - you might have registered some repeatedly called action (e.g. timeout,
         read_start,...), that prevent that all references get removed from the
         OCaml heap.
 
@@ -503,7 +537,7 @@ module Handle : sig
 
       {!close_wait} is only useful, if you intend to wait until all
       concurrent write and read threads related to this handle are
-      canceled. **)
+      canceled. *)
   val close_wait : t -> unit Lwt.t
   val is_active : t -> bool
 end
@@ -561,12 +595,12 @@ module Stream : sig
 
   (** {!write} is always eager. It first calls try_write internally to
       check if it can return immediately (without the overhead of
-      creating a sleeping thread and weaking up later). If it can't
+      creating a sleeping thread and waking it up later). If it can't
       write everything instantly, it will call write_raw
       internally. {!write_raw} is exposed here mainly in order to write
       unit tests for it. But you can also use it, if you your [buf] is
       very large or you know for another reason, that try_write will
-      fail.  **)
+      fail.  *)
   val write_raw : ?pos:int -> ?len:int -> t -> buf:bytes -> unit Lwt.t
   val write_raw_string : ?pos:int -> ?len:int -> t -> buf:string -> unit Lwt.t
   val write_raw_ba : ?pos:int -> ?len:int -> t -> buf:buf -> unit Lwt.t
@@ -728,7 +762,7 @@ module Udp : sig
   val send_string :
     ?pos:int -> ?len:int -> buf:string -> t -> sockaddr -> unit Lwt.t
 
-  (** See comment to {!Stream.write_raw} **)
+  (** See comment to {!Stream.write_raw} *)
   val send_raw :
     ?pos:int -> ?len:int -> buf:bytes -> t -> sockaddr -> unit Lwt.t
   val send_raw_ba :
@@ -763,7 +797,7 @@ module Udp : sig
     sockaddr: sockaddr option;
   }
   (** Wrappers around {!recv_start} and {!recv_stop} for you convenience,
-      no callback soup. **)
+      no callback soup. *)
   val recv : ?pos:int -> ?len:int -> buf:bytes -> t -> recv Lwt.t
   val recv_ba : ?pos:int -> ?len:int -> buf:buf -> t -> recv Lwt.t
 
@@ -804,13 +838,10 @@ module Timer : sig
   val sleep : int -> unit Lwt.t
 
   (** Timers, that are executed only once (repeat=0), are automatically closed.
-      After their callback have been executed, their handles are invalid.  *)
+      After their callback have been executed, their handles are invalid.
+      Call {!close} to stop a repeating timer *)
   val start : repeat:int -> timeout:int -> cb:(t -> unit) -> t result
   val start_exn : repeat:int -> timeout:int -> cb:(t -> unit) -> t
-
-  (** a successful stop call will also close the handles *)
-  val stop : t -> Int_result.unit
-  val stop_exn : t -> unit
 end
 
 module Signal : sig
@@ -821,10 +852,6 @@ module Signal : sig
   (** use Sys.sigterm, Sys.sigstop, etc *)
   val start : int -> cb:(t -> int -> unit) -> t result
   val start_exn : int -> cb:(t -> int -> unit) -> t
-
-  (** a successful stop call will also close the handles *)
-  val stop : t -> Int_result.unit
-  val stop_exn : t -> unit
 end
 
 module Poll : sig
@@ -843,10 +870,6 @@ module Poll : sig
 
   val start_socket : socket -> event -> cb:(t -> event result -> unit) -> t result
   val start_socket_exn : socket -> event -> cb:(t -> event result -> unit) -> t
-
-  (** a successful stop call will also close the handles *)
-  val stop : t -> Int_result.unit
-  val stop_exn : t -> unit
 end
 
 module Fs_event : sig
@@ -867,10 +890,6 @@ module Fs_event : sig
 
   val start : string -> flags list -> cb:cb -> t result
   val start_exn : string -> flags list -> cb:cb -> t
-
-  (** a successful stop call will also close the handles *)
-  val stop : t -> Int_result.unit
-  val stop_exn : t -> unit
 end
 
 module Fs_poll : sig
@@ -885,10 +904,6 @@ module Fs_poll : sig
 
   val start : string -> int -> cb:(t -> report result -> unit) -> t result
   val start_exn : string -> int -> cb:(t -> report result -> unit) -> t
-
-  (** a successful stop call will also close the handles *)
-  val stop : t -> Int_result.unit
-  val stop_exn : t -> unit
 end
 
 module Process : sig
@@ -906,7 +921,7 @@ module Process : sig
   (** @param verbatim_arguments default false
       @param detach default false
       @param hide default true
-   **)
+   *)
   val spawn :
     ?stdin:stdio ->
     ?stdout:stdio ->
@@ -1081,13 +1096,13 @@ end
 module Compat : sig
   (** be careful in case of [Unix.ADDR_UNIX path]. If path is very long,
       {!of_unix_sockaddr} will raise an exception ([Unix.Unix_error]) and
-      {!to_unix_sockaddr] might return a truncated string.
+      {!to_unix_sockaddr} might return a truncated string.
       [Unix.ADDR_UNIX] is not supported on windows, {!of_unix_sockaddr} will
       also raise an exception in this case. *)
   val of_unix_sockaddr: Unix.sockaddr -> sockaddr
   val to_unix_sockaddr: sockaddr -> Unix.sockaddr
 
-  (** the following functions always succeeds on *nix - but not on windows **)
+  (** the following functions always succeeds on *nix - but not on windows *)
   val file_of_file_descr : Unix.file_descr -> file option
   val socket_of_file_descr : Unix.file_descr -> socket option
 end

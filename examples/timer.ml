@@ -22,7 +22,7 @@ let three_times () =
     Uwt_io.printf "%d\n%!" ic |> Lwt.ignore_result;
     decr i;
     if ic = 0 then (
-      T.stop_exn t;
+      T.close_noerr t;
       Lwt.wakeup waker ()
     )
   in

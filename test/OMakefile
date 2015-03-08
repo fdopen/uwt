@@ -8,7 +8,7 @@ OCAML_LIBS+= $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preempt
 
 section
 	FILES[]= main common t_unix t_preemptive t_fs t_tcp t_spawn t_fs_event \
-	 t_udp t_compat t_pipe t_dns t_misc t_signal t_poll t_fs_poll t_tty
+	 t_udp t_compat t_pipe t_dns t_misc t_signal t_poll t_fs_poll t_tty t_gc
 	Repeat_targets($(FILES))
 	TEST_PROG=$(OCamlProgram test,$(FILES))
 	build-tests:: $(TEST_PROG)

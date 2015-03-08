@@ -472,7 +472,7 @@ static void req_finalize(value v)
 {
   struct req * wp = Req_val(v);
   if ( wp != NULL ){
-    if ( wp->in_use == 0 ){
+    if ( wp->in_use == 0 && wp->in_cb == 0 ){
       if ( wp->cb != CB_INVALID ||
            wp->sbuf != CB_INVALID ){
         DEBUG_PF("fatal: request handle still in use, even though marked otherwise");
@@ -789,10 +789,8 @@ cleanup_uv_req_t(struct req * wp)
 }
 
 static void
-req_free(struct req * wp){
-  if ( ! wp ){
-    return;
-  }
+req_free_common(struct req * wp)
+{
   if (wp->clean_req){
     cleanup_uv_req_t(wp);
   }
@@ -805,10 +803,24 @@ req_free(struct req * wp){
   if (wp->buf.base != NULL && wp->buf_contains_ba == 0){
     free_uv_buf_t(&wp->buf);
   }
+  wp->buf.base = NULL;
+  wp->buf.len = 0;
   if ( wp->req ){
     free_uv_req_t(wp->req);
+    wp->req = NULL;
   }
-  free_struct_req(wp);
+  if ( wp->clean_cb != NULL){
+    wp->clean_cb(wp);
+    wp->clean_cb = NULL;
+  }
+}
+
+static void
+req_free(struct req * wp){
+  if (  wp ){
+    req_free_common(wp);
+    free_struct_req(wp);
+  }
 }
 
 /*
@@ -819,37 +831,13 @@ req_free(struct req * wp){
 static void
 req_free_most(struct req * wp)
 {
-  if ( ! wp ){
-    return;
-  }
-  if ( wp->finalize_called ){
-    req_free(wp);
-    return;
-  }
-  if (wp->clean_req){
-    cleanup_uv_req_t(wp);
-  }
-  if (wp->cb != CB_INVALID){
-    gr_root_unregister(&wp->cb);
-  }
-  if (wp->sbuf != CB_INVALID){
-    gr_root_unregister(&wp->sbuf);
-  }
-  if (wp->buf.base != NULL ){
-    if (wp->buf_contains_ba == 0){
-      free_uv_buf_t(&wp->buf);
+  if (  wp ){
+    req_free_common(wp);
+    wp->in_use = 0;
+    if ( wp->finalize_called ){
+      free_struct_req(wp);
     }
-    wp->buf.base = NULL;
   }
-  if ( wp->clean_cb != NULL){
-    wp->clean_cb(wp);
-    wp->clean_cb = NULL;
-  }
-  if ( wp->req ){
-    free_uv_req_t(wp->req);
-    wp->req = NULL;
-  }
-  wp->in_use = 0;
 }
 
 static value
@@ -947,7 +935,6 @@ handle_finalize(value p)
 {
   struct handle * s = Handle_val(p);
   if ( !s ){
-    /* memory allocation in handle_create failed */
     return;
   }
   s->finalize_called = 1;
@@ -1024,8 +1011,13 @@ uwt_run_loop(value o_loop,value o_mode)
   struct loop * wp;
   wp = Loop_val(o_loop);
   value ret;
-  if ( unlikely( !wp || wp->in_use != 0 ) ){
-    ret = VAL_RESULT_UV_UWT_EBADF;
+  if ( unlikely( !wp || !wp->loop || wp->in_use != 0 ) ){
+    if ( wp->in_use != 0 ){
+      ret = VAL_RESULT_UV_UWT_EBUSY;
+    }
+    else {
+      ret = VAL_RESULT_UV_UWT_EBADF;
+    }
   }
   else {
     uv_loop_t * loop = wp->loop;
@@ -1034,10 +1026,10 @@ uwt_run_loop(value o_loop,value o_mode)
     switch (Long_val(o_mode)){
     case 0: m = UV_RUN_ONCE; break;
     case 1: m = UV_RUN_NOWAIT; break;
-    case 2: /*fall*/
     default:
-      m = UV_RUN_DEFAULT;
       assert( Long_val(o_mode) == 2 );
+    case 2: /*fall*/
+      m = UV_RUN_DEFAULT;
     }
     wp->in_use = 1;
     assert ( runtime_locked == false );
@@ -1068,7 +1060,7 @@ uwt_loop_close(value o_loop)
   struct loop * wp;
   wp = Loop_val(o_loop);
 
-  if (!wp){
+  if ( !wp || !wp->loop ){
     ret = VAL_RESULT_UV_UWT_EBADF;
   }
   else if ( wp->in_use ){
@@ -1177,49 +1169,40 @@ universal_callback(uv_req_t * req)
 {
   GET_RUNTIME();
   struct req * wp_req = req->data;
-  if (unlikely( !req->data )){
+  if (unlikely( !wp_req || wp_req->cb == CB_INVALID || wp_req->c_cb == NULL )){
     DEBUG_PF("no data in callback!");
   }
   else {
-    value exn = Val_unit;
-    wp_req->clean_req = 1;
+    wp_req->clean_req = req->type == UV_GETADDRINFO || req->type == UV_FS;
     assert( wp_req->in_use == 1 );
     if ( wp_req->cancel != 1 ){
-      if ( unlikely (wp_req->cb == CB_INVALID )){
-        DEBUG_PF("no ocaml callback");
+      value exn;
+      wp_req->in_cb = 1;
+      if ( wp_req->c_cb == ret_unit_cparam ){
+        exn = VAL_UNIT_UV_RESULT(wp_req->c_param);
       }
-      else if ( unlikely (wp_req->c_cb == NULL )){
-        DEBUG_PF("no c-callback");
+      else if ( wp_req->c_cb == ret_uv_result_unit ){
+        exn = VAL_UNIT_UV_RESULT(((uv_fs_t*)req)->result);
       }
       else {
-        wp_req->in_cb = 1;
-        if ( wp_req->c_cb == ret_unit_cparam ){
-          exn = VAL_UNIT_UV_RESULT(wp_req->c_param);
-        }
-        else if ( wp_req->c_cb == ret_uv_result_unit ){
-          exn = VAL_UNIT_UV_RESULT(((uv_fs_t*)req)->result);
-        }
-        else {
-          exn = wp_req->c_cb(req);
-        }
-        exn = CAML_CALLBACK1(wp_req,cb,exn);
-        wp_req->in_cb = 0;
+        exn = wp_req->c_cb(req);
+      }
+      exn = CAML_CALLBACK1(wp_req,cb,exn);
+      wp_req->in_cb = 0;
+      if ( Is_exception_result(exn) ){
+        add_exception(exn);
       }
     }
-    req_free_most(wp_req);
-    if ( Is_exception_result(exn) ){
-      add_exception(exn);
-    }
   }
+  req_free_most(wp_req);
 }
-
 
 CAMLprim value
 uwt_req_create(value o_loop, value o_type)
 {
   CAMLparam1(o_loop);
   struct loop * l = Loop_val(o_loop);
-  if ( l == NULL ){
+  if ( l == NULL || l->loop == NULL ){
     /* not yet exposed in the interface, therefore not possible */
     caml_failwith("invalid loop in req_create");
   }
@@ -1253,7 +1236,21 @@ uwt_req_cancel_noerr(value res)
     Field(res,1) = 0;
     wp->finalize_called = 1;
     wp->cancel = 1;
+    /* we can't cancel everything, but if uv_cancel
+       fails, we will at least ignore the result inside
+       universal_callback */
     uv_cancel(wp->req);
+  }
+  return Val_unit;
+}
+
+CAMLprim value
+uwt_req_finalize_na(value res)
+{
+  struct req * wp = Req_val(res);
+  if ( wp && wp->in_use ){
+    wp->finalize_called = 1;
+    Field(res,1) = 0 ;
   }
   return Val_unit;
 }
@@ -1321,26 +1318,23 @@ uwt_req_cancel_noerr(value res)
   value o_ret ;                                           \
   struct loop * wp_loop ;                                 \
   uv_loop_t *loop;                                        \
-  struct req * wp_req = NULL ;                            \
+  struct req * wp_req;                                    \
   uv_fs_t * req;                                          \
-  int ret = INT_MIN;                                      \
   if (unlikely((wp_loop = Loop_val(o_loop)) == NULL ||    \
-                 (wp_req = Req_val(o_req)) == NULL ||     \
+               (wp_req = Req_val(o_req)) == NULL ||       \
                (loop = wp_loop->loop) == NULL ||          \
                (req = (uv_fs_t*)wp_req->req) == NULL )){  \
     o_ret = VAL_RESULT_UV_UWT_EFATAL;                     \
   }                                                       \
   else {                                                  \
+    int ret = INT_MIN;                                    \
     const int callback_type = wp_loop->loop_type;         \
     uv_fs_cb cb ;                                         \
-    assert(callback_type == CB_SYNC ||                    \
-           callback_type == CB_LWT ||                     \
-           callback_type == CB_CB);                       \
     wp_req->c_cb = tz;                                    \
     wp_req->cb_type = callback_type;                      \
-    GR_ROOT_ENLARGE();                                    \
     cb = callback_type == CB_SYNC ? NULL :                \
       ((uv_fs_cb)universal_callback);                     \
+    GR_ROOT_ENLARGE();                                    \
     do                                                    \
       code                                                \
         while(0);                                         \
@@ -1350,20 +1344,18 @@ uwt_req_cancel_noerr(value res)
         gr_root_register(&wp_req->cb,o_cb);               \
         wp_req->in_use = 1;                               \
       }                                                   \
+      o_ret = Val_int(0);                                 \
     }                                                     \
-    if ( ret < 0 ){                                       \
+    else {                                                \
       o_ret = Val_uv_result(ret);                         \
   nomem:                                                  \
     ATTR_UNUSED;                                          \
       Field(o_req,1) = 0;                                 \
       req_free(wp_req);                                   \
     }                                                     \
-    else {                                                \
-      o_ret = Val_int(0);                                 \
-    }                                                     \
   }                                                       \
   CAMLreturn( o_ret );                                    \
-}                                                         \
+}
 
 #define RSTART_5(name,tz,a,b,c,d,code)                                  \
   CAMLprim value                                                        \
@@ -1483,11 +1475,27 @@ ret_int64(uv_req_t * r)
   return param;
 }
 
-static int open_flag_table[9] = {
+static int open_flag_table[16] = {
 #ifdef _WIN32
-  _O_RDONLY, _O_WRONLY, _O_RDWR, 0, _O_CREAT , _O_EXCL , _O_TRUNC, _O_APPEND
+  _O_RDONLY, _O_WRONLY, _O_RDWR, 0, _O_CREAT , _O_EXCL , _O_TRUNC, _O_APPEND,
+  0, 0, 0, 0,
+  _O_TEMPORARY, _O_SHORT_LIVED, _O_SEQUENTIAL, _O_RANDOM
 #else
-  O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_CREAT , O_EXCL , O_TRUNC, O_APPEND
+#ifndef O_NONBLOCK
+#define O_NONBLOCK O_NDELAY
+#endif
+#ifndef O_DSYNC
+#define O_DSYNC 0
+#endif
+#ifndef O_SYNC
+#define O_SYNC 0
+#endif
+#ifndef O_RSYNC
+#define O_RSYNC 0
+#endif
+  O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_CREAT , O_EXCL , O_TRUNC, O_APPEND,
+  O_NOCTTY, O_DSYNC, O_SYNC, O_RSYNC,
+  0, 0, 0, 0
 #endif
 };
 
@@ -1512,13 +1520,11 @@ fs_read_cb(uv_req_t * r)
   value param;
   ssize_t result = req->result;
   struct req * wp = r->data;
-  if ( result < 0){
-    if ( result == UV_EOF ){
-      param = Val_long(0);
-    }
-    else {
-      param = Val_uv_result(result);
-    }
+  if ( result == UV_EOF ){
+    param = Val_long(0);
+  }
+  else if ( result < 0 ) {
+    param = Val_uv_result(result);
   }
   else if ( (size_t)result > wp->buf.len ||
             (result && wp->buf.len && wp->buf.base == NULL) ||
@@ -1838,7 +1844,6 @@ FSSTART(fs_readlink,o_path,{
       });
 })
 
-
 static int
 access_permission_table[] = {
   R_OK, W_OK, X_OK, F_OK
@@ -2124,7 +2129,6 @@ FSSTART(fs_fstat,o_file,{
     MAYBE_CLOSE_HANDLE(h_);                     \
   } while (0)
 
-
 #define HANDLE_IS_INVALID(_xs)                          \
   (unlikely(!_xs || !_xs->handle || _xs->close_called))
 
@@ -2160,8 +2164,7 @@ FSSTART(fs_fstat,o_file,{
       Field(ret,0) = VAL_UV_UWT_EBADF;                \
       return ret;                                     \
     }                                                 \
-  }while(0)
-
+  } while(0)
 
 #define HANDLE_NO_UNINIT_NA(_xs)                \
   do {                                          \
@@ -2397,12 +2400,10 @@ uwt_timer_start(value o_loop, value o_cb,
 {
   CAMLparam2(o_loop,o_cb);
   CAMLlocal2(ret,v);
-  struct loop * l;
+  struct loop * l = Loop_val(o_loop);
   intnat l_timeout = Long_val(o_timeout);
   intnat l_repeat = Long_val(o_repeat);
-  l = Loop_val(o_loop);
-  ret = Val_unit;
-  if ( unlikely(!l) ){
+  if ( unlikely( !l || !l->loop )){
     ret = caml_alloc_small(1,Error_tag);
     Field(ret,0) = VAL_UV_UWT_EFATAL;
   }
@@ -2451,7 +2452,7 @@ uwt_timer_start(value o_loop, value o_cb,
   }
   CAMLreturn(ret);
 }
-
+#if 0
 CAMLprim value
 uwt_timer_stop(value o_handle)
 {
@@ -2479,6 +2480,7 @@ uwt_timer_stop(value o_handle)
   }
   CAMLreturn(erg);
 }
+#endif
 /* }}} Timer end */
 
 /* {{{ Stream start */
@@ -2502,11 +2504,11 @@ static void
 shutdown_cb(uv_shutdown_t* req, int status)
 {
   struct handle * s = req->handle->data;
-  if ( ! s ){
+  struct req * r = req->data;
+  if ( !s || !r ){
     DEBUG_PF("leaking data");
   }
   else {
-    struct req * r = req->data;
     ++s->in_callback_cnt;
     --s->in_use_cnt;
     r->c_param = status;
@@ -2574,6 +2576,8 @@ uwt_listen(value o_stream,value o_backlog,value o_cb)
   uv_stream_t* stream =(uv_stream_t*)s->handle;
   ret = uv_listen(stream,Long_val(o_backlog),listen_cb);
   if ( ret >= 0 ){
+    /* Should I allow this? Is it possible at all?
+       There is no unlisten. */
     if ( s->cb_listen_server != CB_INVALID ){
       gr_root_unregister(&s->cb_listen_server);
     }
@@ -2595,7 +2599,8 @@ uwt_accept_raw_na(value o_serv,
 {
   struct handle * serv = Handle_val(o_serv);
   struct handle * client = Handle_val(o_client);
-  if (HANDLE_IS_INVALID(serv) || HANDLE_IS_INVALID(client)){
+  if (HANDLE_IS_INVALID(serv) || HANDLE_IS_INVALID(client) ||
+      serv->initialized == 0 ){
     return VAL_RESULT_UV_UWT_EBADF;
   }
   int ret = uv_accept((uv_stream_t*)serv->handle,
@@ -2796,17 +2801,13 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
       value cb;
       bool finished;
       h->read_waiting = 0;
-      if ( nread < 0 ){
-        if ( nread == UV_EOF ){
+      if ( nread <= 0 ){
+        if ( nread == 0 || nread == UV_EOF ){
           o = Val_long(0);
         }
         else {
           o = Val_uv_result(nread);
         }
-        finished = true;
-      }
-      else if ( nread == 0 ){
-        o = Val_long(0);
         finished = true;
       }
       else {
@@ -2851,7 +2852,6 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
   HANDLE_CB_RET(ret);
 }
 
-
 static void
 alloc_cb_ba(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
 {
@@ -2863,9 +2863,8 @@ alloc_cb_ba(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
     buf->base = NULL;
   }
   else {
-    size_t len = h->c_read_size;
     buf->base = h->ba_read;
-    buf->len = len;
+    buf->len = h->c_read_size;
   }
 }
 
@@ -2946,7 +2945,7 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
   }
   HANDLE_NINIT(s,o_stream,o_buf,o_sock,o_cb);
   intnat len = Long_val(o_len);
-  int ba = Tag_val(o_buf) != String_tag;
+  int ba = len > 0 && Tag_val(o_buf) != String_tag;
   struct req * wp ;
   wp = req_create( o_sock == Val_unit ? UV_WRITE : UV_UDP_SEND,
                    s->cb_type );
@@ -2957,20 +2956,22 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
     wp->buf.base = Ba_buf_val(o_buf) + Long_val(o_pos);
     wp->buf.len = len;
   }
+  else if ( len == 0 ){
+    wp->buf.base = NULL;
+    wp->buf.len = 0;
+  }
   else {
     malloc_uv_buf_t(&wp->buf,len);
-    if ( len ){
-      if (wp->buf.base != NULL  ){
-        memcpy(wp->buf.base,
-               String_val(o_buf) + Long_val(o_pos),
-               len);
-      }
-      else {
-        erg = VAL_RESULT_UV_ENOMEM;
-        ok = false;
-        free_uv_req_t(wp->req);
-        free_struct_req(wp);
-      }
+    if (wp->buf.base != NULL  ){
+      memcpy(wp->buf.base,
+             String_val(o_buf) + Long_val(o_pos),
+             len);
+    }
+    else {
+      erg = VAL_RESULT_UV_ENOMEM;
+      ok = false;
+      free_uv_req_t(wp->req);
+      free_struct_req(wp);
     }
   }
   if ( ok ) {
@@ -3007,7 +3008,6 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
   }
   CAMLreturn(erg);
 }
-
 BYTE_WRAP6(uwt_udp_send)
 
 CAMLprim value
@@ -3020,11 +3020,11 @@ cb_uwt_write2(uv_write_t* req, int status)
 {
   struct handle * s1 = req->handle->data;
   struct handle * s2 = req->send_handle->data;
-  if ( !s1 || !s2 ){
+  struct req * r = req->data;
+  if ( !s1 || !s2 || !r ){
     DEBUG_PF("leaking data");
   }
   else {
-    struct req * r = req->data;
     ++s1->in_callback_cnt;
     ++s2->in_callback_cnt;
     --s1->in_use_cnt;
@@ -3390,11 +3390,11 @@ static void
 pipe_connect_cb(uv_connect_t* req, int status)
 {
   struct handle * s = req->handle->data;
-  if ( !s ){
+  struct req * r = req->data;
+  if ( !s || !r ){
     DEBUG_PF("leaking data");
   }
   else {
-    struct req * r = req->data;
     ++s->in_callback_cnt;
     --s->in_use_cnt;
     r->c_param = status;
@@ -3433,9 +3433,8 @@ uwt_tcp_udp_init(value o_loop, bool tcp)
 {
   CAMLparam1(o_loop);
   CAMLlocal1(v);
-  struct loop * l;
+  struct loop * l = Loop_val(o_loop);
   value ret;
-  l = Loop_val(o_loop);
   if ( !l || !l->loop ){
     ret = caml_alloc_small(1,Error_tag);
     Field(ret,0) = VAL_UV_UWT_EFATAL;
@@ -3510,7 +3509,6 @@ CAMLprim value
 uwt_udp_open_na(value a, value b) {
   return (uwt_tcp_udp_open(a,b,false));
 }
-
 
 static int udp_bin_flag_table[2] = {
   UV_UDP_IPV6ONLY,  UV_UDP_REUSEADDR
@@ -4127,7 +4125,7 @@ uwt_signal_start(value o_loop,
   }
   CAMLreturn(ret);
 }
-
+#if 0
 CAMLprim value
 uwt_signal_stop(value o_h)
 {
@@ -4152,6 +4150,7 @@ uwt_signal_stop(value o_h)
   }
   CAMLreturn(erg);
 }
+#endif
 /* }}} Signal end */
 
 /* {{{ Poll start */
@@ -4289,7 +4288,7 @@ uwt_poll_start_socket(value o_loop,
 {
   return(uwt_poll_start_both(o_loop,o_socket,o_event,o_cb,true));
 }
-
+#if 0
 CAMLprim value
 uwt_poll_stop(value o_h)
 {
@@ -4314,6 +4313,7 @@ uwt_poll_stop(value o_h)
   }
   CAMLreturn(erg);
 }
+#endif
 /* }}} Poll End */
 
 /* {{{ Fs_event start */
@@ -4427,7 +4427,7 @@ uwt_fs_event_start(value o_loop,
   }
   CAMLreturn(ret);
 }
-
+#if 0
 CAMLprim value
 uwt_fs_event_stop(value o_h)
 {
@@ -4452,6 +4452,7 @@ uwt_fs_event_stop(value o_h)
   }
   CAMLreturn(erg);
 }
+#endif
 /* }}} Fs_event end */
 
 
@@ -4555,6 +4556,7 @@ uwt_fs_poll_start(value o_loop,
   CAMLreturn(ret);
 }
 
+#if 0
 CAMLprim value
 uwt_fs_poll_stop(value o_h)
 {
@@ -4579,6 +4581,7 @@ uwt_fs_poll_stop(value o_h)
   }
   CAMLreturn(erg);
 }
+#endif
 /* }}} Fs_poll end */
 
 /* {{{ Async start */
@@ -6796,7 +6799,7 @@ cache_cleaner_init(uv_loop_t * l)
 {
   bool abort = true;
   if ( uv_timer_init(l,&timer_cache_cleaner) == 0 ){
-    if (uv_timer_start(&timer_cache_cleaner,clean_caches,45000,45000) == 0){
+    if (uv_timer_start(&timer_cache_cleaner,clean_caches,90000,90000) == 0){
       uv_unref((uv_handle_t*)&timer_cache_cleaner);
       abort = false;
     }
