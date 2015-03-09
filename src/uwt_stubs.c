@@ -172,7 +172,7 @@ csafe_copy_string(const char * x)
 }
 
 static bool caml_exception_caught = false;
-#define GR_ROOT_INIT_SIZE 32
+#define GR_ROOT_INIT_SIZE 128
 static value gr_root = Val_unit;
 static unsigned int gr_root_size = 0;
 static unsigned int gr_root_n = 0;
@@ -198,72 +198,75 @@ typedef unsigned int cb_t;
 #define GET_CB_VAL(cb) Field(gr_root,(cb))
 
 static void
-gr_root_enlarge(void)
+gr_root_enlarge__(void)
 {
   CAMLparam0();
   CAMLlocal1(nroot);
-  if ( gr_root_n + 4 >= gr_root_size ){
-    unsigned int nsize;
-    unsigned int osize;
-    unsigned int i;
-    unsigned int * t;
-    if (gr_root == Val_unit){
-      osize = 0;
-      nsize = GR_ROOT_INIT_SIZE;
-    }
-    else {
-      assert ( Wosize_val(gr_root) == gr_root_size );
-      osize = gr_root_size;
-      nsize = osize*2;
-    }
-    nroot = caml_alloc(nsize,0);
-    for ( i = 0 ; i< nsize; ++i ){
-      Field(nroot,i) = Val_unit;
-    }
-    t = realloc(gr_root_free_pos,nsize * sizeof(*t));
-    if ( t == NULL ){
-      caml_raise_out_of_memory();
-    }
-    gr_root_free_pos=t;
-    for ( i = osize ; i < nsize ; ++i ){
-      gr_root_free_pos[i]=i;
-    }
-    if ( gr_root == Val_unit ){
-      gr_root = nroot;
-      caml_register_generational_global_root(&gr_root);
-    }
-    else {
-      for ( i = 0; i < osize ; ++i ){
-        value tmp = Field(gr_root,i);
-        if ( tmp != Val_unit ){
-          Store_field(nroot,i,tmp);
-        }
-      }
-      caml_modify_generational_global_root(&gr_root,nroot);
-    }
-    gr_root_size = nsize;
+  unsigned int nsize;
+  unsigned int osize;
+  unsigned int i;
+  unsigned int * t;
+  if (gr_root == Val_unit){
+    osize = 0;
+    nsize = GR_ROOT_INIT_SIZE;
   }
+  else {
+    assert ( Wosize_val(gr_root) == gr_root_size );
+    osize = gr_root_size;
+    nsize = osize*2;
+  }
+  nroot = caml_alloc(nsize,0);
+  for ( i = 0 ; i< nsize; ++i ){
+    Field(nroot,i) = Val_unit;
+  }
+  t = realloc(gr_root_free_pos,nsize * sizeof(*t));
+  if ( t == NULL ){
+    caml_raise_out_of_memory();
+  }
+  gr_root_free_pos=t;
+  for ( i = osize ; i < nsize ; ++i ){
+    gr_root_free_pos[i]=i;
+  }
+  if ( gr_root == Val_unit ){
+    gr_root = nroot;
+    caml_register_generational_global_root(&gr_root);
+  }
+  else {
+    for ( i = 0; i < osize ; ++i ){
+      value tmp = Field(gr_root,i);
+      if ( tmp != Val_unit ){
+        Store_field(nroot,i,tmp);
+      }
+    }
+    caml_modify_generational_global_root(&gr_root,nroot);
+  }
+  gr_root_size = nsize;
   CAMLreturn0;
 }
 
-#define GR_ROOT_ENLARGE()                               \
-  do {                                                  \
-    if ( unlikely (gr_root_n + 4 >=  gr_root_size ) ){  \
-      gr_root_enlarge();                                \
-    }                                                   \
-  } while(0)
-
 static void
-gr_root_register(unsigned int *a,value x)
+gr_root_register__(unsigned int *a,value x)
 {
   unsigned int pos;
-  GR_ROOT_ENLARGE();
+  if ( gr_root_n >= gr_root_size ){
+    gr_root_enlarge__();
+  }
   pos = gr_root_free_pos[gr_root_n];
   gr_root_n++;
   assert(Field(gr_root,pos) == Val_unit);
   Store_field(gr_root,pos,x);
   *a = pos;
 }
+
+#define GR_ROOT_ENLARGE()                                     \
+  ATTR_UNUSED                                                 \
+  void (* const gr_root_register)(unsigned int *a,value x) =  \
+    gr_root_register__;                                       \
+  do {                                                        \
+    if ( unlikely (gr_root_n + 4 >=  gr_root_size ) ){        \
+      gr_root_enlarge__();                                    \
+    }                                                         \
+  } while(0)
 
 static void
 gr_root_unregister(unsigned int *a)
@@ -278,7 +281,7 @@ gr_root_unregister(unsigned int *a)
   }
 }
 
-#define STACK_START_SIZE 16 /* todo: increase */
+#define STACK_START_SIZE 256
 struct stack {
     void ** s;
     unsigned int pos; /* position in s */
@@ -373,7 +376,7 @@ union all_sockaddr {
 
 struct req;
 typedef value (*req_c_cb)(uv_req_t*);
-typedef void (*clean_cb)(struct req*);
+typedef void (*clean_cb)(uv_req_t*);
 
 union uparam {
     void * c_void;
@@ -406,7 +409,6 @@ struct ATTR_PACKED req {
                                         that it can be freed */
     unsigned int cb_type : 2 ; /* 0: sync, 1: lwt, 2: normal callback */
     unsigned int cancel : 1;
-    unsigned int clean_req: 1;
     unsigned int buf_contains_ba: 1;
     unsigned int in_cb: 1;
     unsigned int work_cb_called: 1;
@@ -472,17 +474,18 @@ static void req_finalize(value v)
 {
   struct req * wp = Req_val(v);
   if ( wp != NULL ){
-    if ( wp->in_use == 0 && wp->in_cb == 0 ){
+    if ( wp->in_use != 0 || wp->in_cb != 0 ){
+      wp->finalize_called = 1;
+    }
+    else {
       if ( wp->cb != CB_INVALID ||
            wp->sbuf != CB_INVALID ){
-        DEBUG_PF("fatal: request handle still in use, even though marked otherwise");
+        DEBUG_PF("fatal: request handle still in use,"
+                 " even though marked otherwise");
         wp->cb = CB_INVALID;
         wp->sbuf = CB_INVALID;
       }
       req_free(wp);
-    }
-    else {
-      wp->finalize_called = 1;
     }
   }
 }
@@ -549,7 +552,7 @@ static struct custom_operations ops_handle = {
 static void loop_finalize(value);
 static struct custom_operations uwt_loop = {
   (char*)"uwt.loop",
-  loop_finalize, // uwt_wp_finalize,
+  loop_finalize,
   pointer_cmp,
   pointer_hash,
   custom_serialize_default,
@@ -765,35 +768,8 @@ free_uv_handle_t(uv_handle_t * handle)
 }
 
 static void
-cleanup_uv_req_t(struct req * wp)
-{
-  uv_req_t * req = wp->req;
-  assert(wp->clean_req);
-  if ( req ){
-    switch (req->type){
-    case UV_FS:
-      uv_fs_req_cleanup((uv_fs_t*)req);
-      break;
-    case UV_GETADDRINFO:
-      if ( wp->c.c.void1.c_void != NULL ){
-        uv_freeaddrinfo(wp->c.c.void1.c_void);
-        wp->c.c.void1.c_void = NULL;
-      }
-      break;
-    default:
-      /* nothing */
-      break;
-    }
-  }
-  wp->clean_req = 0;
-}
-
-static void
 req_free_common(struct req * wp)
 {
-  if (wp->clean_req){
-    cleanup_uv_req_t(wp);
-  }
   if (wp->cb != CB_INVALID ){
     gr_root_unregister(&wp->cb);
   }
@@ -806,12 +782,12 @@ req_free_common(struct req * wp)
   wp->buf.base = NULL;
   wp->buf.len = 0;
   if ( wp->req ){
+    if ( wp->clean_cb != NULL){
+      wp->clean_cb(wp->req);
+      wp->clean_cb = NULL;
+    }
     free_uv_req_t(wp->req);
     wp->req = NULL;
-  }
-  if ( wp->clean_cb != NULL){
-    wp->clean_cb(wp);
-    wp->clean_cb = NULL;
   }
 }
 
@@ -988,7 +964,6 @@ req_create(uv_req_type typ, enum cb_type cb_type)
   wp->c_param = 0;
   wp->in_use = 0;
   wp->cancel = 0;
-  wp->clean_req = 0;
   wp->finalize_called = 0;
   wp->buf_contains_ba = 0;
   wp->in_cb = 0;
@@ -1173,7 +1148,6 @@ universal_callback(uv_req_t * req)
     DEBUG_PF("no data in callback!");
   }
   else {
-    wp_req->clean_req = req->type == UV_GETADDRINFO || req->type == UV_FS;
     assert( wp_req->in_use == 1 );
     if ( wp_req->cancel != 1 ){
       value exn;
@@ -1330,16 +1304,16 @@ uwt_req_finalize_na(value res)
     int ret = INT_MIN;                                    \
     const int callback_type = wp_loop->loop_type;         \
     uv_fs_cb cb ;                                         \
-    wp_req->c_cb = tz;                                    \
-    wp_req->cb_type = callback_type;                      \
     cb = callback_type == CB_SYNC ? NULL :                \
       ((uv_fs_cb)universal_callback);                     \
     GR_ROOT_ENLARGE();                                    \
     do                                                    \
       code                                                \
         while(0);                                         \
-    assert( ret != INT_MIN );                             \
     if ( ret >= 0  ){                                     \
+      wp_req->c_cb = tz;                                  \
+      wp_req->cb_type = callback_type;                    \
+      wp_req->clean_cb = (clean_cb)uv_fs_req_cleanup;     \
       if (callback_type != CB_SYNC ){                     \
         gr_root_register(&wp_req->cb,o_cb);               \
         wp_req->in_use = 1;                               \
@@ -2132,12 +2106,7 @@ FSSTART(fs_fstat,o_file,{
 #define HANDLE_IS_INVALID(_xs)                          \
   (unlikely(!_xs || !_xs->handle || _xs->close_called))
 
-#define HANDLE_NINIT_END()                              \
-  do {                                                  \
-    if ( unlikely (gr_root_n + 4 >=  gr_root_size ) ){  \
-      gr_root_enlarge();                                \
-    }                                                   \
-  } while (0)
+#define HANDLE_NINIT_END GR_ROOT_ENLARGE
 
 #define HANDLE_NCHECK(_xs)                      \
   do {                                          \
@@ -2657,10 +2626,9 @@ read_start_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
       }
       else {
         assert(buf->len >= (size_t)nread);
-        ret = caml_alloc_string(nread);
-        memcpy( String_val(ret),
-                buf->base,
-                nread);
+        size_t len = MIN(buf->len,(size_t)nread);
+        ret = caml_alloc_string(len);
+        memcpy( String_val(ret), buf->base, len);
         finished = 0;
         tag = Ok_tag;
       }
@@ -2816,10 +2784,11 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
         if ( read_ba == 0 ){
           o = GET_CB_VAL(h->obuf);
           assert( Tag_val(o) == String_tag );
-          assert ( caml_string_length(o) >= h->obuf_offset + (size_t)nread );
+          size_t len = MIN(buf->len,h->c_read_size);
+          len = MIN(len,(size_t)nread);
           memcpy(String_val(o) + h->obuf_offset,
                  buf->base,
-                 nread );
+                 len );
         }
         finished = false;
         o = Val_long(nread);
@@ -3233,8 +3202,7 @@ uwt_pipe_open(value o_loop, value o_fd,value o_ipc)
 {
   CAMLparam1(o_loop);
   CAMLlocal1(dc);
-  struct loop * l;
-  l = Loop_val(o_loop);
+  struct loop * l = Loop_val(o_loop);
   value ret;
   if ( !l || !l->loop ){
     ret = caml_alloc_small(1,Error_tag);
@@ -3488,7 +3456,7 @@ uwt_tcp_udp_open(value o_tcp, value o_sock, bool tcp)
   assert(Is_long(o_sock));
   int ret;
   if ( tcp ){
-     ret = uv_tcp_open((uv_tcp_t*)t->handle,s);
+    ret = uv_tcp_open((uv_tcp_t*)t->handle,s);
   }
   else {
     ret = uv_udp_open((uv_udp_t*)t->handle,s);
@@ -3940,10 +3908,10 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
           if ( nread != 0 && read_ba == 0 ){
             value o = GET_CB_VAL(uh->obuf);
             assert( Tag_val(o) == String_tag );
-            assert( caml_string_length(o) >= uh->obuf_offset + (size_t)nread );
+            size_t len = MIN(uh->c_read_size,nread);
             memcpy(String_val(o) + uh->obuf_offset,
                    buf->base,
-                   nread);
+                   len);
             buf_not_cleaned = false;
             free_uv_buf_t_const(buf);
           }
@@ -4107,7 +4075,6 @@ uwt_signal_start(value o_loop,
       erg = uv_signal_start(t,signal_cb,signum);
       if ( erg < 0 ){
         h->finalize_called = 1;
-        Field(ret,0) = Val_error(erg);
         handle_finalize_close(h);
       }
       else {
@@ -4209,7 +4176,7 @@ uwt_poll_start_both(value o_loop,
   struct loop * l;
   l = Loop_val(o_loop);
   ret = Val_unit;
-  if ( unlikely (!l || !l->loop )){
+  if ( unlikely ( !l || !l->loop )){
     ret = caml_alloc_small(1,Error_tag);
     Field(ret,0) = VAL_UV_UWT_EFATAL;
   }
@@ -4409,7 +4376,6 @@ uwt_fs_event_start(value o_loop,
       erg = uv_fs_event_start(f,event_cb,String_val(o_path),flags);
       if ( erg < 0 ){
         h->finalize_called = 1;
-        Field(ret,0) = Val_unit;
         handle_finalize_close(h);
       }
       else {
@@ -4537,7 +4503,6 @@ uwt_fs_poll_start(value o_loop,
                              Long_val(o_interval));
       if ( erg < 0 ){
         h->finalize_called = 1;
-        Field(ret,0) = Val_unit;
         handle_finalize_close(h);
       }
       else {
@@ -4617,6 +4582,7 @@ uwt_async_create(value o_loop, value o_cb)
     uv_async_t * a;
     struct handle *h;
     int erg;
+    GR_ROOT_ENLARGE();
     v = handle_create(UV_ASYNC,l->loop_type);
     h = Handle_val(v);
     h->close_executed = 1;
@@ -5072,11 +5038,18 @@ ret_addrinfo_list(uv_req_t * rdd)
     ifo = caml_alloc_small(1,Ok_tag);
     Field(ifo,0) = list_head;
     End_roots();
-    uv_freeaddrinfo( wp->c.c.void1.c_void );
-    wp->c.c.void1.c_void = NULL;
-    wp->clean_req = 0;
   }
   return ifo;
+}
+
+static void
+clean_addrinfo(uv_req_t * r)
+{
+  struct req * wp = r->data;
+  if ( wp && wp->c.c.void1.c_void != NULL ){
+    uv_freeaddrinfo(wp->c.c.void1.c_void);
+    wp->c.c.void1.c_void = NULL;
+  }
 }
 
 static void
@@ -5181,6 +5154,7 @@ uwt_getaddrinfo_native(value o_node,
     gr_root_register(&req->cb,o_cb);
     req->in_use = 1 ;
     req->c_cb = ret_addrinfo_list;
+    req->clean_cb = clean_addrinfo;
   }
   value ret = VAL_UNIT_UV_RESULT(erg);
   CAMLreturn(ret);
@@ -5690,8 +5664,9 @@ c_free_string_array(char ** src)
 }
 
 static void
-getserv_clean_cb(struct req * r)
+getserv_clean_cb(uv_req_t * req)
 {
+  struct req * r = req->data;
   if ( r->work_cb_called == 0 ){
     free(r->c.c.void1.c_void);
     free(r->c.c.void2.c_void);
@@ -6057,8 +6032,9 @@ gethostbyname_work_cb(uv_work_t *req)
 }
 
 static void
-gethost_clean_cb(struct req * r)
+gethost_clean_cb(uv_req_t *req)
 {
+  struct req * r = req->data;
   if ( r->work_cb_called == 0 ){
     free(r->c.c.void1.c_void);
   }
@@ -6291,16 +6267,23 @@ gethostname_work_cb(uv_work_t *req)
 {
   struct req * r = req->data;
   r->work_cb_called = 1;
-  char buf[ALLOCA_SIZE];
+  char buf[ALLOCA_SIZE+1];
+  errno=0;
   int ret_code = gethostname(buf,ALLOCA_SIZE);
   if ( ret_code == 0 ){
+    buf[ALLOCA_SIZE]='\0';
     r->c.c.void1.c_void = strdup(buf);
+  }
+  else {
+    r->c.c.void1.c_void = NULL;
+    r->c.c.void2.c_int = -errno;
   }
 }
 
 static void
-gethostname_clean_cb(struct req * r)
+gethostname_clean_cb(uv_req_t * req)
 {
+  struct req * r = req->data;
   if ( r->work_cb_called == 1 && r->c.c.void1.c_void ){
     free(r->c.c.void1.c_void);
   }
@@ -6317,8 +6300,12 @@ gethostname_cb(uv_req_t * req){
   else {
     char * p =  r->c.c.void1.c_void;
     if ( p == NULL ){
+      value x = Val_error(r->c.c.void2.c_int);
+      if ( x == VAL_UV_UWT_UNKNOWN ){
+        x = VAL_UV_ENOENT;
+      }
       ret = caml_alloc_small(1,Error_tag);
-      Field(ret,0) = VAL_UV_ENOENT;
+      Field(ret,0) = x;
     }
     else {
       value name = csafe_copy_string(p);
@@ -6389,8 +6376,9 @@ nomem1:
 }
 
 static void
-getproto_clean_cb(struct req * r)
+getproto_clean_cb(uv_req_t * req)
 {
+  struct req *r = req->data;
   if ( r->work_cb_called == 0 ){
     free(r->c.c.void1.c_void);
   }
@@ -6601,7 +6589,7 @@ lseek_work_cb(uv_work_t *req)
 #else
   r->c.c_int64_t = lseek(fd,offset,whence);
 #endif
-  r->offset = errno;
+  r->offset = -errno;
 }
 
 static value
@@ -6614,17 +6602,8 @@ lseek_cb(uv_req_t * req)
     Field(ret,0) = Val_error(r->c_param);
   }
   else if ( r->c.c_int64_t == -1 ){
-    value e;
-    switch ((int)r->offset){
-    case EINVAL: e = VAL_UV_EINVAL; break;
-    case EOVERFLOW: e =  VAL_UV_EAI_OVERFLOW; break;
-    case ESPIPE: e = VAL_UV_ESPIPE; break;
-    case ENXIO: e = VAL_UV_ENXIO ; break;
-    default: /* fall */
-    case EBADF: e = VAL_UV_EBADF ; break;
-    }
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = e;
+    Field(ret,0) = Val_error(r->offset);
   }
   else {
     value p = caml_copy_int64(r->c.c_int64_t);
@@ -6717,12 +6696,12 @@ uwt_free_all_memory(value unit)
       gr_root_n = 0;
       caml_remove_generational_global_root(&gr_root);
       gr_root = Val_unit;
+      free(gr_root_free_pos);
+      gr_root_free_pos=NULL;
     }
     else {
       DEBUG_PF("gr_root still in use, found %d elements\n",found);
     }
-    free(gr_root_free_pos);
-    gr_root_free_pos=NULL;
   }
 
   stack_clean(&stack_struct_req);
@@ -6754,7 +6733,7 @@ uwt_free_all_memory(value unit)
   - make it configurable for the user
 */
 static void
-clean_cache( struct stack * s)
+clean_cache(struct stack * s)
 {
   if ( s->pos < 256 || s->pos_min < ( s->created / 2 ) ){
     s->gc_n = 0 ;

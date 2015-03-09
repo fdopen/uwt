@@ -36,9 +36,14 @@ section
 	Repeat_ctargets($(CFILES))
 	T=$(CProgram emap_gen, $(CFILES))
 	clean::
-		rm -f emap_gen$(EXE) error.ml error_val.ml error_val.mli map_error.h
+		rm -f emap_gen$(EXE)
+	distclean::
+		rm -f error.ml error_val.ml error_val.mli map_error.h
 	error.ml error_val.ml map_error.h: emap_gen$(EXE)
-		./emap_gen$(EXE)
+		if $(or $(not $(file-exists error.ml)),$(or $(not $(file-exists error_val.ml)), $(not $(file-exists map_error.h))))
+			./emap_gen$(EXE)
+		else
+			touch error.ml error_val.ml map_error.h
 
 section
 	.SCANNER: scan-c-%: map_error.h config.h

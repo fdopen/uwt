@@ -162,6 +162,7 @@ let l = [
          Lwt.return_unit )));
   ("write_allot">::
    fun ctx ->
+     is_contingent ctx;
      let l addr : bool Lwt.t =
        let server = start_iter_server_ba addr in
        let client = init () in

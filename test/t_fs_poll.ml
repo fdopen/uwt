@@ -46,7 +46,9 @@ let poll_file () =
 
 open OUnit2
 let l = [
-  ("poll_file">:: fun _ctx -> m_true ( poll_file () ));
+  ("poll_file">:: fun ctx ->
+      is_contingent ctx;
+      m_true ( poll_file () ));
 ]
 
 let l = "Fs_poll">:::l

@@ -32,11 +32,33 @@ let ip6_option =
   OUnit2.Conf.make_bool "no_ip6" false "force ignoring of ip6 related tests"
 
 let multiplicand =
-  OUnit2.Conf.make_int "multiplicand" 1 "control how much data is written in stress tests"
+  OUnit2.Conf.make_int
+    "multiplicand"
+    1
+    "control how much data is written in stress tests"
+
+let contingent =
+  OUnit2.Conf.make_bool
+    "skip_contingent"
+    true
+    "skip test cases which results are highly contingent"
+
+let all =
+  OUnit2.Conf.make_bool
+    "all"
+    false
+    "enable all possible test cases"
+
+let is_contingent ctx =
+  OUnit2.skip_if
+    ( contingent ctx && all ctx = false )
+    "skip contingent test"
 
 let ip6_only ctx =
   let n = ip6_option ctx in
-  OUnit2.skip_if (not has_ip6 || n) "no ip6"
+  OUnit2.skip_if
+    ((not has_ip6 || n) && all ctx = false )
+    "no ip6"
 
 let has_ip6 ctx =
   has_ip6 && not (ip6_option ctx)

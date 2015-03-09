@@ -7,7 +7,6 @@ curdir="$(readlink -f "$0")"
 curdir="$(dirname "$curdir")"
 cd "$curdir"
 omake distclean
-omake setup.ml src/configure
 pkg="$(omake -s echo-pkg)"
 find . -type f \( -name '*~' -o -name '*.omc' -o -name '.omakedb*' \) -delete
 
@@ -23,7 +22,11 @@ fi
 stash="$(git stash create)"
 git archive --format=tar ${stash:-HEAD} | ( cd "$mtmpf" ; tar -xf- )
 
-cp -p src/config.h.in src/configure "${mtmpf}/src"
+cd src
+omake error.ml error_val.ml map_error.h configure
+cp -p config.h.in configure error.ml error_val.ml map_error.h "${mtmpf}/src"
+cd ..
+omake setup.ml _oasis
 cp -p setup.ml _oasis "$mtmpf"
 
 if which gfind >/dev/null 2>&1 ; then
@@ -32,11 +35,11 @@ else
     find=find
 fi
 
-$find "$mtmpf" -type f ! -executable ! -perm 644 -exec chmod 644 {} \+
-$find "$mtmpf" -type f -executable ! -perm 755 -exec chmod 755 {} \+
-$find "$mtmpf" -type d ! -perm 755 -exec chmod 755 {} \+
-
 cd "$mtmpf"
+
+$find . -type f ! -executable ! -perm 644 -exec chmod 644 {} \+
+$find . -type f -executable ! -perm 755 -exec chmod 755 {} \+
+$find . -type d ! -perm 755 -exec chmod 755 {} \+
 
 $tar --transform "s|^.|${pkg}|" --format=ustar --numeric-owner -cf- . | \
     gzip -9 > "${curdir}/${pkg}.tar.gz"
