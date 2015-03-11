@@ -19,6 +19,7 @@ depends: [
   "base-unix"
   "base-bigarray"
   "base-threads"
+  "base-bytes"
   "lwt" {>= "2.4.7"}
   "ocamlfind" {build}
   "cppo" {build}

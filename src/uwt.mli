@@ -171,6 +171,7 @@ val strerror: error -> string
 (** error name for the given error code *)
 val err_name: error -> string
 
+(** The official [result] type will be used in the future *)
 type 'a result =
   | Ok of 'a
   | Error of error
