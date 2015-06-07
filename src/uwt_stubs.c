@@ -6363,7 +6363,7 @@ dup_protoent(const struct protoent * proto)
     goto nomem1;
   }
   p->p_aliases = c_copy_string_array( proto->p_aliases );
-  if ( p->p_aliases == NULL ){
+  if ( p->p_aliases == NULL && proto->p_aliases != NULL){
     goto nomem2;
   }
   p->p_proto = proto->p_proto;

@@ -23,6 +23,7 @@ depends: [
   "lwt" {>= "2.4.7"}
   "ocamlfind" {build}
   "cppo" {build}
+  "omake" {build}
   "ounit" {test & >= "2.0"}
   "ppx_deriving" {test & >= "2.0"}
   "ppx_import" {test & >= "1.0"}
