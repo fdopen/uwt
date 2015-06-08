@@ -20,6 +20,7 @@
 #define UV_UWT_ENOTACTIVE (int16_t)(INT16_MAX + 20)
 #define UV_UWT_EBUSY (int16_t)(INT16_MAX + 21)
 #define UV_UWT_ENOENT (int16_t)(INT16_MAX + 22)
+#define UV_UWT_WRONGUV (int16_t)(INT16_MAX + 23)
 
 static const char *
 get_er_msg(unsigned int d)
@@ -32,6 +33,7 @@ get_er_msg(unsigned int d)
   case UV_UWT_ENOTACTIVE: return "handle not active";
   case UV_UWT_EBUSY: return "handle busy";
   case UV_UWT_ENOENT: return "entry not found";
+  case UV_UWT_WRONGUV: return "libuv version too old or too recent";
   default: assert(0);
   }
   return "unknown uv error";
@@ -121,6 +123,7 @@ int er_map [] = {
   UV_UWT_ENOTACTIVE,
   UV_UWT_EBUSY,
   UV_UWT_ENOENT,
+  UV_UWT_WRONGUV
 };
 
 static const char *
@@ -134,6 +137,7 @@ err_name(int i)
   case UV_UWT_ENOTACTIVE: return "UWT_ENOTACTIVE";
   case UV_UWT_EBUSY: return "UWT_EBUSY";
   case UV_UWT_ENOENT: return "UWT_ENOENT";
+  case UV_UWT_WRONGUV: return "UWT_WRONGUV";
   default: return (uv_err_name(i));
   }
 }

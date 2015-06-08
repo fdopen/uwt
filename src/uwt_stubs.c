@@ -3224,7 +3224,7 @@ uwt_tty_init(value o_loop,value o_fd, value o_readable)
   CAMLreturn(ret);
 }
 
-#if (UV_VERSION_MAJOR > 1) || ( UV_VERSION_MINOR >= 2 )
+#if HAVE_DECL_UV_TTY_MODE_IO && HAVE_DECL_UV_TTY_MODE_NORMAL && HAVE_DECL_UV_TTY_MODE_RAW
 static int tty_mode_list[] =
   {UV_TTY_MODE_NORMAL,UV_TTY_MODE_RAW,UV_TTY_MODE_IO};
 #endif
@@ -3234,7 +3234,7 @@ uwt_tty_set_mode_na(value o_tty,value o_mode)
 {
   HANDLE_NINIT_NA(s,o_tty);
   HANDLE_NO_UNINIT_NA(s);
-#if (UV_VERSION_MAJOR > 1) || ( UV_VERSION_MINOR >= 2 )
+#if HAVE_DECL_UV_TTY_MODE_IO && HAVE_DECL_UV_TTY_MODE_NORMAL && HAVE_DECL_UV_TTY_MODE_RAW
   int mode = tty_mode_list[Long_val(o_mode)];
 #else
   int mode = Long_val(o_mode) == 0 ? 0 : 1 ;
@@ -5035,6 +5035,39 @@ uwt_hrtime(value unit)
   return(caml_copy_int64(uv_hrtime()));
 }
 
+CAMLprim value
+uwt_os_homedir(value unit)
+{
+#if HAVE_DECL_UV_OS_HOMEDIR
+  CAMLparam0();
+  CAMLlocal1(p);
+  value ret;
+  char buffer[8192];
+  size_t size;
+  int r;
+  int tag;
+  (void)unit;
+  size = sizeof(buffer);
+  buffer[0] = '\0';
+  r=uv_os_homedir(buffer,&size);
+  if ( r == 0 && size > 0 && buffer[0] != '\0' ){
+    p = caml_copy_string(buffer);
+    tag = Ok_tag;
+  }
+  else {
+    p = Val_error(r);
+    tag = Error_tag;
+  }
+  ret = caml_alloc_small(1,tag);
+  Field(ret,0) = p;
+  CAMLreturn(ret);
+#else
+  (void)unit;
+  value ret = caml_alloc_small(1,Error_tag);
+  Field(ret,0) = VAL_UV_UWT_WRONGUV;
+  return ret;
+#endif
+}
 /* }}} Misc end */
 
 /* {{{ DNS start */

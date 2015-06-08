@@ -124,6 +124,8 @@ type error =
                   while you've already registered another callback for this
                   event *)
   | UWT_ENOENT (** entry not found, [Not_found] message for callbacks *)
+  | UWT_WRONGUV (** you've tried to call a function, that is not supported,
+                       by your libuv installation *)
 
 exception Uv_error of error * string * string
 
@@ -263,6 +265,7 @@ module Int_result : sig
   val uwt_enotactive : int
   val uwt_ebusy : int
   val uwt_enoent: int
+  val uwt_wronguv: int
 end
 
 type file (** abstract type for a file descriptor *)

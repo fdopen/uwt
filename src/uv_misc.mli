@@ -95,3 +95,4 @@ type version = {
 val version: unit -> version
 val version_raw: unit -> int
 val version_string: unit -> string
+val os_homedir: unit -> string result

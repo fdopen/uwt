@@ -173,6 +173,7 @@ P1(uwt_load_avg);
 P1(uwt_get_total_memory);
 P1(uwt_hrtime);
 P1(uwt_getrusage);
+P1(uwt_os_homedir);
 
 P6(uwt_getaddrinfo_native);
 BY(uwt_getaddrinfo_byte);

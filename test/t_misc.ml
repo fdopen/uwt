@@ -51,6 +51,20 @@ let l = [
   ("version_string">:: fun _ ->
       let p = version_string () |> String.length > 3 in
       assert_equal true p );
+  ("os_homedir">:: fun _ ->
+      let open Uv in
+      let p = match os_homedir () with
+      | Ok "" -> false
+      | Error UWT_WRONGUV ->
+        let {major;minor;_} = version () in
+        if major > 1 || minor >= 6 then
+          false
+        else
+          true
+      | Ok _ -> true
+      | Error _ -> false
+      in
+      assert_equal true p);
 ]
 
 let l = "Misc">:::l
