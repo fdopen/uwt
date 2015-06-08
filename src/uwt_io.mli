@@ -104,16 +104,24 @@ val null : output_channel
 (** {2 Channels creation/manipulation} *)
 
 val make :
-  ?buffer_size : int ->
+  ?buffer : Uv_bytes.t ->
   ?close : (unit -> unit Lwt.t) ->
   ?seek : (int64 -> Unix.seek_command -> int64 Lwt.t) ->
   mode : 'mode mode ->
   (Uv_bytes.t -> int -> int -> int Lwt.t) -> 'mode channel
-  (** [make ?buffer_size ?close ~mode perform_io] is the
+  (** [make ?buffer ?close ~mode perform_io] is the
       main function for creating new channels.
 
-      @param buffer_size size of the internal buffer. It must be
-      between 16 and [Sys.max_string_length]
+      @param buffer user-supplied buffer. When this argument is
+      present, its value will be used as the buffer for created
+      channel. Size of buffer must conform to limitations described
+      in {!set_default_buffer_size}.
+      When this argument is not present, a new internal buffer of default
+      size will be allocated for this channel.
+      Warning: do not use the same buffer for simultaneous work with
+      more than one channel.
+      There are other functions in this module that take [buffer]
+      argument, their semantics agrees with the described above.
 
       @param close close function of the channel. It defaults to
       [Lwt.return]
@@ -133,15 +141,15 @@ val of_bytes : mode : 'mode mode -> Uv_bytes.t -> 'mode channel
 
 
 val of_file :
-  ?buffer_size:int ->
+  ?buffer : Uv_bytes.t ->
   ?close:(unit -> unit Lwt.t) -> mode:'m mode -> Uv.file -> 'm channel
-  (** [of_file ?buffer_size ?close ~mode fd] creates a channel from a
+  (** [of_file ?buffer ?close ~mode fd] creates a channel from a
       file descriptor.
 
       @param close defaults to closing the file descriptor. *)
 
 val of_stream :
-  ?buffer_size:int ->
+  ?buffer : Uv_bytes.t ->
   ?close:(unit -> unit Lwt.t) -> mode:'m mode -> Uwt.Stream.t -> 'm channel
 
 
@@ -354,12 +362,12 @@ type file_name = string
     (** Type of file names *)
 
 val open_file :
-  ?buffer_size : int ->
+  ?buffer : Uv_bytes.t ->
   ?flags : Uv.Fs.open_flag list ->
   ?perm : Unix.file_perm ->
   mode : 'a mode ->
   file_name -> 'a channel Lwt.t
-  (** [open_file ?buffer_size ?flags ?perm ~mode filename] opens the
+  (** [open_file ?buffer ?flags ?perm ~mode filename] opens the
       file with name [filename] and returns a channel for
       reading/writing it.
 
@@ -367,18 +375,19 @@ val open_file :
   *)
 
 val with_file :
-  ?buffer_size : int ->
+  ?buffer : Uv_bytes.t ->
   ?flags : Uv.Fs.open_flag list ->
   ?perm : Unix.file_perm ->
   mode : 'a mode ->
   file_name -> ('a channel -> 'b Lwt.t) -> 'b Lwt.t
-  (** [with_file ?buffer_size ?flags ?perm ~mode filename f] opens a
+  (** [with_file ?buffer ?flags ?perm ~mode filename f] opens a
       file and passes the channel to [f]. It is ensured that the
       channel is closed when [f ch] terminates (even if it fails). *)
 
 val open_connection :
-  ?buffer_size : int -> Uv.sockaddr -> (input_channel * output_channel) Lwt.t
-(** [open_connection ?buffer_size addr] opens a connection to the
+  ?in_buffer : Uv_bytes.t -> ?out_buffer : Uv_bytes.t ->
+  Uv.sockaddr -> (input_channel * output_channel) Lwt.t
+(** [open_connection ?in_buffer ?out_buffer addr] opens a connection to the
     given address and returns two channels for using it.
 
     The connection is completly closed when you close both
@@ -388,9 +397,9 @@ val open_connection :
 *)
 
 val with_connection :
-  ?buffer_size : int ->
+  ?in_buffer : Uv_bytes.t -> ?out_buffer : Uv_bytes.t ->
   Uv.sockaddr -> (input_channel * output_channel -> 'a Lwt.t) -> 'a Lwt.t
-(** [with_connection ?fd ?buffer_size addr f] opens a connection to
+(** [with_connection ?fd ?in_buffer ?out_buffer addr f] opens a connection to
       the given address and passes the channels to [f] *)
 
 val lines_of_file : file_name -> string Lwt_stream.t
@@ -496,7 +505,7 @@ val direct_access : 'a channel -> (direct_access -> 'b Lwt.t) -> 'b Lwt.t
 
 val default_buffer_size : unit -> int
   (** Return the default size for buffers. Channels that are created
-      without a specific size use this one. *)
+      without a specific buffer use new buffer of this size. *)
 
 val set_default_buffer_size : int -> unit
   (** Change the default buffer size.
