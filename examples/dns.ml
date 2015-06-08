@@ -1,10 +1,10 @@
 open Lwt.Infix
 module U = Uwt
-module M = U.Misc
+module M = Uv_misc
 
 (* boilerplate for output *)
 let show_sockaddr s =
-  let open U in
+  let open Uv in
   let open M in
   match ip4_name s with
   | Ok ("0.0.0.0" as x) ->
@@ -17,13 +17,17 @@ let show_sockaddr s =
     | Ok s -> s
     | Error _ -> "(unknown)"
 
-let pp_sockaddr fmt s = show_sockaddr s |> Format.fprintf fmt "%s"
+
+module Uv = struct
+  include Uv
+  let pp_sockaddr fmt s = show_sockaddr s |> Format.fprintf fmt "%s"
+end
 
 type socket_domain = [%import: Unix.socket_domain] [@@deriving show]
 type socket_type = [%import: Unix.socket_type] [@@deriving show]
 type getaddrinfo_option = [%import: Unix.getaddrinfo_option] [@@deriving show]
 
-type sockaddr = [%import: Uwt.sockaddr]
+type sockaddr = [%import: Uv.sockaddr]
 type addr_info = [%import: Uwt.Dns.addr_info] [@@deriving show]
 type name_info = [%import: Uwt.Dns.name_info] [@@deriving show]
 
@@ -50,7 +54,7 @@ let get_infos (hosts:string list) =
         Lwt.return_unit )
       (function (* not all domains have ip6 entries. error codes differs
                    from operating system to operating system, ... *)
-      | U.Uwt_error((U.EAI_NONAME|U.ENOENT|U.EAI_NODATA),_,_)
+      | Uv.Uv_error((Uv.EAI_NONAME|Uv.ENOENT|Uv.EAI_NODATA),_,_)
         when ip6 = true ->
         Lwt.return_unit
       | x -> Lwt.fail x )

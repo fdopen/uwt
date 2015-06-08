@@ -14,11 +14,11 @@ open Common
 
 module type Sockaddr =
 sig
-  val sockaddr : Uwt.sockaddr
+  val sockaddr : Uv.sockaddr
 end
 
 let bind_exn s addr =
-  if  Unix.PF_INET6 = (Uwt.Compat.to_unix_sockaddr addr
+  if  Unix.PF_INET6 = (Uv.Conv.unix_sockaddr_of_sockaddr addr
                        |> Unix.domain_of_sockaddr)
   then
     bind_exn ~mode:[ Ipv6_only ] s ~addr ()
@@ -29,7 +29,7 @@ module Echo_server (X: Sockaddr) = struct
   let sockaddr = X.sockaddr
 
   let echo_client c =
-    let buf = Uwt_bytes.create 65_536 in
+    let buf = Uv_bytes.create 65_536 in
     let rec iter () =
       read_ba ~buf c >>= function
       | 0 -> close_wait c
@@ -41,12 +41,12 @@ module Echo_server (X: Sockaddr) = struct
       ( fun () -> close_noerr c ; Lwt.return_unit )
 
   let on_listen server x =
-    if Uwt.Int_result.is_error x then
+    if Uv.Int_result.is_error x then
       Uwt_io.printl "listen error" |> ignore
     else
       match accept server with
-      | U.Error _ -> Uwt_io.printl "accept error" |> Lwt.ignore_result
-      | U.Ok c -> echo_client c |> ignore
+      | Uv.Error _ -> Uwt_io.printl "accept error" |> Lwt.ignore_result
+      | Uv.Ok c -> echo_client c |> ignore
 
   let start () =
     let server = init () in
@@ -56,8 +56,8 @@ module Echo_server (X: Sockaddr) = struct
         (* I'm sure about this test. Does the ocaml unix library
            support equality compare for the abstract type
            Unix.inet_addr ? *)
-        if Uwt.Compat.to_unix_sockaddr sockaddr <>
-           Uwt.Compat.to_unix_sockaddr sockaddr2 then
+        if Uv.Conv.unix_sockaddr_of_sockaddr sockaddr <>
+           Uv.Conv.unix_sockaddr_of_sockaddr sockaddr2 then
           failwith "server sockaddr differ";
         listen_exn server ~max:server_backlog ~cb:on_listen;
         let s,_ = Lwt.task () in
@@ -112,12 +112,12 @@ end
 
 module Server = Echo_server (
   struct
-    let sockaddr = U.Misc.ip4_addr_exn server_ip server_port
+    let sockaddr = Uv_misc.ip4_addr_exn server_ip server_port
   end)
 
 module Server6 = Echo_server (
   struct
-    let sockaddr = U.Misc.ip6_addr_exn server6_ip server6_port
+    let sockaddr = Uv_misc.ip6_addr_exn server6_ip server6_port
   end)
 
 let server_init = lazy (
@@ -129,9 +129,9 @@ let server6_init = lazy (
   Uwt.Main.at_exit ( fun () -> Lwt.cancel server_thread; Lwt.return_unit ))
 
 let write_much client =
-  let buf = Uwt_bytes.create 32768 in
+  let buf = Uv_bytes.create 32768 in
   for i = 0 to pred 32768 do
-    Uwt_bytes.set buf i (Char.chr (i land 255))
+    Uv_bytes.set buf i (Char.chr (i land 255))
   done;
   let rec iter n =
     if n = 0 then
@@ -166,7 +166,7 @@ let l = [
            Lwt.pick [ p1 ; p2 ] )
          ( fun () -> close_noerr t ; Lwt.return_unit )
      in
-     m_true (l (Uwt.Misc.ip4_addr_exn "8.8.8.8" 9999)));
+     m_true (l (Uv_misc.ip4_addr_exn "8.8.8.8" 9999)));
   ("bind_error">::
    fun ctx ->
      let l sockaddr =
@@ -181,11 +181,11 @@ let l = [
            Lwt.return_unit
          ) ( fun () -> close_noerr s1 ; close_noerr s2 ; Lwt.return_unit )
      in
-     let sockaddr = Uwt.Misc.ip4_addr_exn "0.0.0.0" test_port in
-     m_raises (Uwt.EADDRINUSE,"uv_listen","") (l sockaddr);
+     let sockaddr = Uv_misc.ip4_addr_exn "0.0.0.0" test_port in
+     m_raises (Uv.EADDRINUSE,"uv_listen","") (l sockaddr);
      ip6_only ctx;
-     let sockaddr = Uwt.Misc.ip6_addr_exn "::0" test_port in
-     m_raises (Uwt.EADDRINUSE,"uv_listen","") (l sockaddr));
+     let sockaddr = Uv_misc.ip6_addr_exn "::0" test_port in
+     m_raises (Uv.EADDRINUSE,"uv_listen","") (l sockaddr));
   ("write_allot">::
    fun ctx ->
      let l addr =
@@ -197,20 +197,20 @@ let l = [
            let buf_cnt = 64 * x in
            let bytes_read = ref 0 in
            let bytes_written = ref 0 in
-           let buf = Uwt_bytes.create buf_len in
+           let buf = Uv_bytes.create buf_len in
            for i = 0 to pred buf_len do
              buf.{i} <- Char.chr (i land 255);
            done;
            let sleeper,waker = Lwt.task () in
            let cb_read = function
-           | Uwt.Ok b ->
+           | Uv.Ok b ->
              for i = 0 to Bytes.length b - 1 do
                if Bytes.unsafe_get b i <> Char.chr (!bytes_read land 255) then
                  Lwt.wakeup_exn waker (Failure "read wrong content");
                incr bytes_read;
              done
-           | Uwt.Error Uwt.EOF -> Lwt.wakeup waker ()
-           | Uwt.Error _ -> Lwt.wakeup_exn waker (Failure "fatal error!")
+           | Uv.Error Uv.EOF -> Lwt.wakeup waker ()
+           | Uv.Error _ -> Lwt.wakeup_exn waker (Failure "fatal error!")
            in
            let cb_write () =
              bytes_written := buf_len + !bytes_written;
@@ -250,7 +250,7 @@ let l = [
          close_wait client >>= fun () ->
          Lwt.catch ( fun () -> write_thread )
            ( function
-           | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+           | Uv.Uv_error(Uv.ECANCELED,_,_) -> Lwt.return_true
            | x -> Lwt.fail x )
        ) ( fun () -> close_noerr client; Lwt.return_unit ));
   );
@@ -270,7 +270,7 @@ let l = [
            close_noerr client ; Lwt.return_unit
          in
          Lwt.catch ( fun () -> read_thread )(function
-           | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+           | Uv.Uv_error(Uv.ECANCELED,_,_) -> Lwt.return_true
            | x -> Lwt.fail x )
        ) ( fun () -> close_noerr client; Lwt.return_unit )));
   ("getpeername">::
@@ -279,7 +279,8 @@ let l = [
      let client = init () in
      m_true (try_finally ( fun () ->
          Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
-         match Uwt.Tcp.getpeername_exn client |> Uwt.Compat.to_unix_sockaddr with
+         match Uwt.Tcp.getpeername_exn client
+               |> Uv.Conv.unix_sockaddr_of_sockaddr with
          | Unix.ADDR_INET(y,x) ->
            if server_port = x &&
               server_ip = Unix.string_of_inet_addr y
@@ -315,7 +316,7 @@ let l = [
            Lwt.catch ( fun () ->
                write_much client
              ) ( function
-             | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+             | Uv.Uv_error(Uv.ECANCELED,_,_) -> Lwt.return_true
              | x -> Lwt.fail x )
          in
          let close_thread = close_wait client >>= fun () -> Lwt.return_false in

@@ -1,25 +1,4 @@
-module D = struct
-  let show_sockaddr s =
-    let open Uwt in
-    match Misc.ip4_name s with
-    | Ok ("0.0.0.0" as x) ->
-      (match Misc.ip6_name s with
-       | Ok s -> s
-       | Error _ -> x)
-    | Ok s -> s
-    | Error _ ->
-      match Misc.ip6_name s with
-      | Ok s -> s
-      | Error _ -> "(unknown)"
-
-  let pp_sockaddr fmt s = show_sockaddr s |> Format.fprintf fmt "%s"
-
-  type socket_domain = [%import: Unix.socket_domain] [@@deriving show]
-  type socket_type = [%import: Unix.socket_type] [@@deriving show]
-
-  type sockaddr = [%import: Uwt.sockaddr]
-  type addr_info = [%import: Uwt.Dns.addr_info] [@@deriving show]
-end
+open Common
 
 open Lwt.Infix
 let dnstest host =
@@ -51,17 +30,16 @@ let dnstest host =
         Lwt.return_false
 
 open OUnit2
-open Common
 
 let l = [
   ("getaddrinfo/getnameinfo">::
    fun _ctx ->
-     let open Uwt in
+     let open Uv in
      m_true ( dnstest "google.com" );
      m_true ( Lwt.catch ( fun () -> dnstest "asdfli4uqoi5tukjgakjlhadfkogle.com"
                           >>= fun _ -> Lwt.return_false )
                 (function
-                | Uwt_error((EAI_NONAME|ENOENT|EAI_NODATA),_,_) ->
+                | Uv_error((EAI_NONAME|ENOENT|EAI_NODATA),_,_) ->
                   Lwt.return_true
                 | x -> Lwt.fail x )));
 ]

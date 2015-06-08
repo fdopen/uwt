@@ -15,14 +15,15 @@ let tests =
     T_spawn.l;
     T_fs_event.l;
     T_udp.l;
-    T_compat.l;
+    T_conv.l;
     T_pipe.l;
     T_dns.l;
     T_misc.l;
     T_signal.l;
     T_poll.l;
     T_fs_poll.l;
-    T_tty.l
+    T_tty.l;
+    T_fs_sync.l
   ]
 
 exception Do_exit of int

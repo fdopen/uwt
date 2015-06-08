@@ -1,8 +1,8 @@
 module U = Uwt
-module M = U.Misc
+module M = Uv_misc
 
 let show_sockaddr s =
-  let open U in
+  let open Uv in
   let open M in
   match ip4_name s with
   | Ok s -> s
@@ -11,23 +11,26 @@ let show_sockaddr s =
     | Ok s -> s
     | Error _ -> "(unknown)"
 
-let pp_sockaddr fmt s =
-  show_sockaddr s |> Format.fprintf fmt "%s"
+type sockaddr = Uv.sockaddr
+module Uv = struct
+  include Uv
+  let pp_sockaddr fmt s =
+    show_sockaddr s |> Format.fprintf fmt "%s"
+end
 
-type timeval = [%import: Uwt.Misc.timeval] [@@deriving show]
-type rusage = [%import: Uwt.Misc.rusage] [@@deriving show]
-type cpu_times = [%import: Uwt.Misc.cpu_times] [@@deriving show]
-type cpu_info = [%import: Uwt.Misc.cpu_info] [@@deriving show]
-type sockaddr = Uwt.sockaddr
-type interface_address = [%import: Uwt.Misc.interface_address] [@@deriving show]
+type timeval = [%import: Uv_misc.timeval] [@@deriving show]
+type rusage = [%import: Uv_misc.rusage] [@@deriving show]
+type cpu_times = [%import: Uv_misc.cpu_times] [@@deriving show]
+type cpu_info = [%import: Uv_misc.cpu_info] [@@deriving show]
+type interface_address = [%import: Uv_misc.interface_address] [@@deriving show]
 
 let show_sockaddr s =
   match M.ip4_name s with
-  | U.Ok s -> s
-  | U.Error _ ->
+  | Uv.Ok s -> s
+  | Uv.Error _ ->
     match M.ip6_name s with
-    | U.Ok s -> s
-    | U.Error _ -> "(unknown)"
+    | Uv.Ok s -> s
+    | Uv.Error _ -> "(unknown)"
 
 let () =
   M.hrtime () |> Printf.printf "Hrtime(start): %Ld\n";

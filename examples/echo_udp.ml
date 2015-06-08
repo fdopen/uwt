@@ -19,7 +19,7 @@ let start_server () =
     Uwt.Udp.send server ~buf:b x |> ignore
   in
   Lwt.finalize ( fun () ->
-      let addr = Uwt.Misc.ip4_addr_exn "127.0.0.1" server_port in
+      let addr = Uv_misc.ip4_addr_exn "127.0.0.1" server_port in
       let () =
         Uwt.Udp.bind_exn
           ~mode:[ Uwt.Udp.Reuse_addr ]

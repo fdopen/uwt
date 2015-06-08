@@ -25,17 +25,17 @@ let output_dummy c =
     ) ( fun () -> T.close_noerr c ; Lwt.return_unit )
 
 let on_listen server x =
-  if Uwt.Int_result.is_error x then
+  if Uv.Int_result.is_error x then
     Uwt_io.printl "listen error" |> ignore
   else
     match T.accept server with
-    | U.Error _ -> Uwt_io.printl "accept error" |> ignore
-    | U.Ok c -> output_dummy c |> ignore
+    | Uv.Error _ -> Uwt_io.printl "accept error" |> ignore
+    | Uv.Ok c -> output_dummy c |> ignore
 
 let hello_server () =
   let server = T.init () in
   Lwt.finalize ( fun () ->
-      let addr = U.Misc.ip4_addr_exn server_ip4 server_port in
+      let addr = Uv_misc.ip4_addr_exn server_ip4 server_port in
       T.bind_exn server ~addr ();
       let () = T.listen_exn server ~max:server_backlog ~cb:on_listen in
       Help.wait ()

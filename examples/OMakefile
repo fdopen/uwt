@@ -1,17 +1,29 @@
 .PHONY: all examples
 .DEFAULT: examples
 
-OCAMLPACKS+= ppx_import lwt bigarray unix ppx_deriving.show threads lwt.log
-OCAMLFLAGS+= -thread
-OCAMLINCLUDES[]+= $(dir ../src)
-OCAML_LIBS+= $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preemptive)
-
 section
+	OCAMLPACKS+= lwt
+	OCAMLINCLUDES[]+= $(dir ../src)
+	OCAML_LIBS+= $(file ../src/uv_base)
 	f=help
 	Repeat_targets($(f))
 	TEST_PROG=$(OCamlLibrary $(f),$(f))
 
+example_s(f)=
+	OCAMLPACKS+= ppx_import ppx_deriving.show bigarray unix
+	OCAMLINCLUDES[]+= $(dir ../src)
+	OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uv_fs_sync)
+	Repeat_targets($(f))
+	TEST_PROG=$(OCamlProgram $(f),$(f))
+	examples:: $(TEST_PROG)
+	clean::
+		rm -f $(f)$(EXE)
+
 example_r(f,x)=
+	OCAMLPACKS+= ppx_import lwt bigarray unix ppx_deriving.show threads lwt.log
+	OCAMLFLAGS+= -thread
+	OCAMLINCLUDES[]+= $(dir ../src)
+	OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preemptive)
 	if $(equal $(x),true)
 		OCAML_LIBS+= $(file help)
 		export
@@ -40,6 +52,7 @@ example(dns)
 example(work)
 example(preemptive)
 example(log)
+example_s(copy_sync)
 
 clean::
 	clean-helper()

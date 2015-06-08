@@ -34,6 +34,8 @@ P2(uwt_req_create);
 P1(uwt_req_cancel_noerr);
 P1(uwt_req_finalize_na);
 
+P1(uwt_fs_free_na);
+P1(uwt_get_fs_result);
 P6(uwt_fs_open_native);
 BY(uwt_fs_open_byte);
 P7(uwt_fs_read_native);
@@ -184,6 +186,7 @@ P2(uwt_kill_na);
 
 P1(uwt_get_fd);
 P1(uwt_get_socket);
+P1(uwt_get_file_descriptor);
 P1(uwt_to_sockaddr);
 P1(uwt_of_sockaddr);
 P1(uwt_sun_path);

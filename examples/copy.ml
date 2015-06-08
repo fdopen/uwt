@@ -1,11 +1,12 @@
 open Lwt.Infix
 module UF = Uwt.Fs
+open Uv.Fs
 
 let copy ~src ~dst =
-  UF.openfile ~mode:[ UF.O_RDONLY ] src >>= fun fd_read ->
+  UF.openfile ~mode:[ O_RDONLY ] src >>= fun fd_read ->
   Lwt.finalize ( fun () ->
       UF.openfile
-        ~mode:[ UF.O_WRONLY ; UF.O_CREAT ; UF.O_TRUNC ] dst >>= fun fd_write ->
+        ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst >>= fun fd_write ->
       Lwt.finalize ( fun () ->
           let b_len = 65_536 in
           let buf = Bytes.create b_len in
@@ -28,13 +29,13 @@ let copy ~src ~dst =
     ) ( fun () -> UF.close fd_read )
 
 let copy_ba ~src ~dst =
-  UF.openfile ~mode:[ UF.O_RDONLY ] src >>= fun fd_read ->
+  UF.openfile ~mode:[ O_RDONLY ] src >>= fun fd_read ->
   Lwt.finalize ( fun () ->
       Uwt.Fs.openfile
-        ~mode:[ UF.O_WRONLY ; UF.O_CREAT ; UF.O_TRUNC ] dst >>= fun fd_write ->
+        ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst >>= fun fd_write ->
       Lwt.finalize ( fun () ->
           let b_len = 65_536 in
-          let buf = Uwt_bytes.create b_len in
+          let buf = Uv_bytes.create b_len in
           let rec read () =
             Uwt.Fs.read_ba fd_read ~buf ~pos:0 ~len:b_len >>= fun n ->
             if n = 0 then
@@ -54,10 +55,10 @@ let copy_ba ~src ~dst =
     ) ( fun () -> Uwt.Fs.close fd_read )
 
 let copy_sendfile ~src ~dst =
-  UF.openfile ~mode:[ UF.O_RDONLY ] src >>= fun fd_read ->
+  UF.openfile ~mode:[ O_RDONLY ] src >>= fun fd_read ->
   Lwt.finalize ( fun () ->
       Uwt.Fs.openfile
-        ~mode:[ UF.O_WRONLY ; UF.O_CREAT ; UF.O_TRUNC ] dst >>= fun fd_write ->
+        ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst >>= fun fd_write ->
       Lwt.finalize ( fun () ->
           Uwt.Fs.sendfile ~dst:fd_write ~src:fd_read () >>= fun _i ->
           Lwt.return_unit

@@ -14,7 +14,7 @@ module Echo_server = struct
     | false -> Filename.concat (Filename.get_temp_dir_name ()) name
 
   let echo_client c =
-    let buf = Uwt_bytes.create 4096 in
+    let buf = Uv_bytes.create 4096 in
     let rec iter () =
       read_ba ~buf c >>= function
       | 0 -> close_wait c
@@ -26,12 +26,12 @@ module Echo_server = struct
       ( fun () -> close_noerr c ; Lwt.return_unit )
 
   let on_listen server x =
-    if Uwt.Int_result.is_error x then
+    if Uv.Int_result.is_error x then
       Uwt_io.printl "listen error" |> ignore
     else
       let client = init () in
       let t = accept_raw ~server ~client in
-      if Uwt.Int_result.is_error t then
+      if Uv.Int_result.is_error t then
         Uwt_io.printl "accept error" |> ignore
       else
         echo_client client |> ignore
@@ -101,9 +101,9 @@ let server_init = lazy (
 
 
 let write_much client =
-  let buf = Uwt_bytes.create 32768 in
+  let buf = Uv_bytes.create 32768 in
   for i = 0 to pred 32768 do
-    Uwt_bytes.set buf i (Char.chr (i land 255))
+    Uv_bytes.set buf i (Char.chr (i land 255))
   done;
   let rec iter n =
     if n = 0 then
@@ -135,20 +135,20 @@ let l = [
            let buf_cnt = 64 * x in
            let bytes_read = ref 0 in
            let bytes_written = ref 0 in
-           let buf = Uwt_bytes.create buf_len in
+           let buf = Uv_bytes.create buf_len in
            for i = 0 to pred buf_len do
              buf.{i} <- Char.chr (i land 255);
            done;
            let sleeper,waker = Lwt.task () in
            let cb_read = function
-           | Uwt.Ok b ->
+           | Uv.Ok b ->
              for i = 0 to Bytes.length b - 1 do
                if Bytes.unsafe_get b i <> Char.chr (!bytes_read land 255) then
                  Lwt.wakeup_exn waker (Failure "read wrong content");
                incr bytes_read;
              done
-           | Uwt.Error Uwt.EOF -> Lwt.wakeup waker ()
-           | Uwt.Error _ -> Lwt.wakeup_exn waker (Failure "fatal error!")
+           | Uv.Error Uv.EOF -> Lwt.wakeup waker ()
+           | Uv.Error _ -> Lwt.wakeup_exn waker (Failure "fatal error!")
            in
            let cb_write () =
              bytes_written := buf_len + !bytes_written;
@@ -186,7 +186,7 @@ let l = [
          close_wait client >>= fun () ->
          Lwt.catch ( fun () -> write_thread )
            ( function
-           | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+           | Uv.Uv_error(Uv.ECANCELED,_,_) -> Lwt.return_true
            | x -> Lwt.fail x )
        ) ( fun () -> close_noerr client; Lwt.return_unit )));
   ("read_abort">::
@@ -204,7 +204,7 @@ let l = [
            close_noerr client ; Lwt.return_unit
          in
          Lwt.catch ( fun () -> read_thread )(function
-           | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+           | Uv.Uv_error(Uv.ECANCELED,_,_) -> Lwt.return_true
            | x -> Lwt.fail x )
        ) ( fun () -> close_noerr client; Lwt.return_unit )));
 ]

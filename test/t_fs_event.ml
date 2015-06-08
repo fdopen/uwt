@@ -9,7 +9,7 @@ let write_something tmp_dir =
       Lwt.return_false
     else
       let fln = Filename.concat tmp_dir (string_of_int n) in
-      let open Uwt.Fs in
+      let open Uwt.Fs in let open Uv.Fs in
       openfile ~mode:([O_WRONLY; O_CREAT]) fln >>= fun fd ->
       close fd >>= fun () -> iter (succ n)
   in
@@ -20,11 +20,11 @@ let test () =
   let error = ref false in
   let sleep,waker = Lwt.task () in
   let cb t = function
-  | Uwt.Error _ ->
+  | Uv.Error _ ->
     Uwt.Fs_event.close_noerr t;
     error:= true;
     Lwt.wakeup waker ()
-  | Uwt.Ok _  -> (* I don't test the content, because it is not provided by
+  | Uv.Ok _  -> (* I don't test the content, because it is not provided by
                     all platforms *)
     incr cnt;
     if !cnt > 3 then (

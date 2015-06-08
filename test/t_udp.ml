@@ -11,7 +11,7 @@ open Uwt.Udp
 open Common
 
 let bind_exn s sockaddr =
-  if  Unix.PF_INET6 = (Uwt.Compat.to_unix_sockaddr sockaddr
+  if  Unix.PF_INET6 = (Uv.Conv.unix_sockaddr_of_sockaddr sockaddr
                        |> Unix.domain_of_sockaddr)
   then
     bind_exn ~mode:[ Ipv6_only; Reuse_addr ] s ~addr:sockaddr ()
@@ -43,14 +43,14 @@ let start_iter_server_ba addr =
   let server = Uwt.Udp.init () in
   try_finally ( fun () ->
       let () = bind_exn server addr in
-      let buf = Uwt_bytes.create 65536 in
+      let buf = Uv_bytes.create 65536 in
       let rec iter () =
         recv_ba ~buf server >>= fun x ->
         if x.recv_len > 0 then (
           match x.sockaddr with
           | None -> Lwt.return_false
           | Some sockaddr ->
-            let b = Uwt_bytes.extract buf 0 x.recv_len in
+            let b = Uv_bytes.extract buf 0 x.recv_len in
             send_ba server ~buf:b sockaddr |> ignore;
             iter ()
         )
@@ -74,8 +74,8 @@ let start_server_cb addr : bool Lwt.t =
   try_finally ( fun () ->
       let () = bind_exn server addr in
       let addr2 = Uwt.Udp.getsockname_exn server in
-      if Uwt.Compat.to_unix_sockaddr addr <>
-         Uwt.Compat.to_unix_sockaddr addr2 then
+      if Uv.Conv.unix_sockaddr_of_sockaddr addr <>
+         Uv.Conv.unix_sockaddr_of_sockaddr addr2 then
         failwith "udp server sockaddr differ";
       let () = Uwt.Udp.recv_start_exn server ~cb in
       sleeper
@@ -108,8 +108,8 @@ let start_client ~raw ~iter ~length addr =
   in
   try_finally ( fun () -> f iter ) ( fun () -> close_wait client )
 
-let sockaddr4 = Uwt.Misc.ip4_addr_exn server_ip server_port
-let sockaddr6 = Uwt.Misc.ip6_addr_exn server6_ip server6_port
+let sockaddr4 = Uv_misc.ip4_addr_exn server_ip server_port
+let sockaddr6 = Uv_misc.ip6_addr_exn server6_ip server6_port
 
 open OUnit2
 let l = [
@@ -126,7 +126,7 @@ let l = [
              let server = server addr in
              let client = start_client ~raw ~iter:100 ~length:999 addr in
              Lwt.pick [ server ; client ]);
-           m_raises (Uwt.EMSGSIZE,"uv_udp_send","") (
+           m_raises (Uv.EMSGSIZE,"uv_udp_send","") (
              let server = server addr in
              let client = start_client ~raw ~iter:2 ~length:65536 addr in
              Lwt.pick [ server ; client ]);
@@ -154,7 +154,7 @@ let l = [
          in
          close_noerr client;
          Lwt.catch ( fun () -> read_thread ) (function
-           | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+           | Uv.Uv_error(Uv.ECANCELED,_,_) -> Lwt.return_true
            | x -> Lwt.fail x )
        ) ( fun () ->
          close_noerr client;
@@ -171,7 +171,7 @@ let l = [
            let x = max 1 (multiplicand ctx) in
            let buf_cnt = 4096 * x in
            let bytes_read = ref 0 in
-           let buf = Uwt_bytes.create buf_len in
+           let buf = Uv_bytes.create buf_len in
            for i = 0 to pred buf_len do
              buf.{i} <- Char.chr (i land 255);
            done;

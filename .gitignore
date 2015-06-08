@@ -46,6 +46,7 @@
 /examples/echo_tcp
 /examples/fs_event
 /examples/fs_poll
+/examples/copy_sync
 /examples/hello_http
 /examples/spawn
 /examples/timer

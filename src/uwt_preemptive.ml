@@ -95,8 +95,8 @@ let rec call_notifications async_handle =
 
 let async_handle =
   match Uwt.Async.create call_notifications with
-  | Uwt.Error _ -> failwith "can't create async handle for uwt_preemptive"
-  | Uwt.Ok x -> x
+  | Uv.Error _ -> failwith "can't create async handle for uwt_preemptive"
+  | Uv.Ok x -> x
 
 let () =
   Uwt.Main.at_exit ( fun () -> Uwt.Async.close_noerr async_handle;
@@ -250,8 +250,8 @@ let detach f args =
       result := Lwt.make_error exn
   in
   let x = Uwt.Async.start async_handle in
-  if Uwt.Int_result.is_error x then
-    Uwt.Int_result.fail ~name:"Uwt_preemptive.detach" x
+  if Uv.Int_result.is_error x then
+    Lwt.fail(Uv.Int_result.to_exn ~name:"Uwt_preemptive.detach" x)
   else
     get_worker () >>= fun worker ->
     let waiter, wakener = Lwt.wait () in
@@ -279,8 +279,8 @@ let detach f args =
            Lwt.return_unit
          else
            let x = Uwt.Async.stop async_handle in
-           if Uwt.Int_result.is_error x then
-             Uwt.Int_result.fail ~name:"Uwt_preemptive.detach" x
+           if Uv.Int_result.is_error x then
+             Lwt.fail(Uv.Int_result.to_exn ~name:"Uwt_preemptive.detach" x)
            else
              Lwt.return_unit)
 

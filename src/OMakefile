@@ -45,51 +45,68 @@ section
 		else
 			touch error.ml error_val.ml map_error.h
 
+OCAMLPACKS+= bigarray unix
 section
 	.SCANNER: scan-c-%: map_error.h config.h
 	.SCANNER: scan-ocaml-%: error.ml error_val.ml
-	OCAMLPACKS+= lwt bigarray unix
 	OCAMLFINDFLAGS+= -pp cppo
-	MLFILES= uwt uwt_bytes uwt_io
-	CFILES= uwt_stubs uwt_bytes_stubs
+	MLFILES= uv uv_bytes uv_misc
+	CFILES= uwt_stubs uv_bytes_stubs
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+=$(LDFLAGS_LIBUV)
 	Repeat_targets($(MLFILES))
-	UWT_CORE=$(MixedLibrary uwt, $(MLFILES), $(CFILES))
+	UV_BASE=$(MixedLibrary uv_base, $(MLFILES), $(CFILES))
+	lib:: $(UV_BASE)
+	export UV_BASE
+
+section
+	MLFILES= uv_fs_sync
+	OCAML_LIBS+= $(file uv_base)
+	Repeat_targets($(MLFILES))
+	UV_SYNC=$(MOCamlLibrary uv_fs_sync, $(MLFILES))
+	lib:: $(UV_SYNC)
+	export UV_SYNC
+
+section
+	OCAMLPACKS+= lwt
+	MLFILES= uwt uwt_io
+	OCAML_LIBS+= $(file uv_base)
+	Repeat_targets($(MLFILES))
+	UWT_CORE=$(MOCamlLibrary uwt, $(MLFILES))
 	lib:: $(UWT_CORE)
 	export UWT_CORE
 
 section
-	OCAMLPACKS+= lwt bigarray unix lwt.log
-	OCAML_LIBS+= $(file uwt)
+	OCAMLPACKS+= lwt
+	OCAML_LIBS+= $(file uv_base) $(file uwt)
 	FILES= uwt_log
 	Repeat_targets($(FILES))
-	UWT_LOG=$(MOCamlLibrary uwt_log, $(FILES)) $(addsuffix .cmi,$(FILES))
+	UWT_LOG=$(MOCamlLibrary uwt_log, $(FILES))
 	lib:: $(UWT_LOG)
 	export UWT_LOG
 
 section
-	OCAMLPACKS+= lwt bigarray unix lwt.log threads
-	OCAML_LIBS+= $(file uwt) $(file uwt_log)
+	OCAMLPACKS+= lwt
+	OCAML_LIBS+= $(file uv_base) $(file uwt) $(file uwt_log)
 	OCAMLFLAGS+= -thread
 	FILES= uwt_preemptive
 	Repeat_targets($(FILES))
-	UWT_PREEMPTIVE=$(MOCamlLibrary uwt_preemptive,$(FILES)) $(addsuffix .cmi,$(FILES))
+	UWT_PREEMPTIVE=$(MOCamlLibrary uwt_preemptive,$(FILES))
 	lib:: $(UWT_PREEMPTIVE)
 	export UWT_PREEMPTIVE
 
 section
-	OCAMLPACKS+= lwt bigarray unix lwt.log
-	OCAML_LIBS+= $(file uwt) $(file uwt_log)
+	OCAMLPACKS+= lwt lwt.log
+	OCAML_LIBS+= $(file uv_base) $(file uwt) $(file uwt_log)
 	FILES= uwt_compat
 	Repeat_targets($(FILES))
-	UWT_COMPAT=$(MOCamlLibrary uwt_compat,$(FILES)) $(addsuffix .cmi,$(FILES))
+	UWT_COMPAT=$(MOCamlLibrary uwt_compat,$(FILES))
 	lib:: $(UWT_COMPAT)
 	export UWT_COMPAT
 
 section
-	OCAMLPACKS+= lwt bigarray unix
-	x=$(CreateDoc uwt,html,uwt.mli uwt_io.mli)
+	OCAMLPACKS+= lwt
+	x=$(CreateDoc uwt,html,uv_base.mli uv_sync.mli uv_bytes.mli uwt.mli uwt_io.mli)
 
 ConfReplace(META)
 
@@ -98,7 +115,7 @@ clean::
 
 .PHONY: install uninstall
 section
-	UWT= $(UWT_CORE) $(UWT_COMPAT) $(UWT_LOG) $(UWT_PREEMPTIVE)
+	UWT= $(UV_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_LOG) $(UWT_PREEMPTIVE)
 	IFILES= $(filter-out %.o %.cmo, $(UWT))
 	CMTIFILES=$(replacesuffixes .cma, .cmti, $(filter %.cma, $(UWT)))
 	install: META $(UWT)

@@ -1,11 +1,33 @@
 version = "@VERSION@"
 description = "libuv bindings"
-requires = "lwt bigarray unix bytes"
+requires = "lwt uwt.base"
 archive(byte) = "uwt.cma"
 archive(byte, plugin) = "uwt.cma"
 archive(native) = "uwt.cmxa"
 archive(native, plugin) = "uwt.cmxs"
 exists_if = "uwt.cma"
+
+package "base" (
+ version = "@VERSION@"
+ description = "Base for uwt and uv_sync"
+ requires = "unix bytes bigarray"
+ archive(byte) = "uv_base.cma"
+ archive(byte, plugin) = "uv_base.cma"
+ archive(native) = "uv_base.cmxa"
+ archive(native, plugin) = "uv_base.cmxs"
+ exists_if = "uv_base.cma"
+)
+
+package "sync" (
+ version = "@VERSION@"
+ description = "Synchronous libuv functions"
+ requires = "uwt.base"
+ archive(byte) = "uv_sync.cma"
+ archive(byte, plugin) = "uv_sync.cma"
+ archive(native) = "uv_sync.cmxa"
+ archive(native, plugin) = "uv_sync.cmxs"
+ exists_if = "uv_sync.cma"
+)
 
 package "log" (
  version = "@VERSION@"

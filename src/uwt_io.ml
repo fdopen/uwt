@@ -88,7 +88,7 @@ and 'mode channel = {
 }
 
 and 'mode _channel = {
-  mutable buffer : Uwt_bytes.t;
+  mutable buffer : Uv_bytes.t;
   mutable length : int;
 
   mutable ptr : int;
@@ -123,7 +123,7 @@ and 'mode _channel = {
 }
 
 and typ =
-  | Type_normal of (Uwt_bytes.t -> int -> int -> int Lwt.t) * (int64 -> Unix.seek_command -> int64 Lwt.t)
+  | Type_normal of (Uv_bytes.t -> int -> int -> int Lwt.t) * (int64 -> Unix.seek_command -> int64 Lwt.t)
       (* The channel has been created with [make]. The first argument
          is the refill/flush function and the second is the seek
          function. *)
@@ -134,7 +134,7 @@ type input_channel = input channel
 type output_channel = output channel
 
 type direct_access = {
-  da_buffer : Uwt_bytes.t;
+  da_buffer : Uv_bytes.t;
   mutable da_ptr : int;
   mutable da_max : int;
   da_perform : unit -> int Lwt.t;
@@ -192,7 +192,7 @@ let perform_io : type mode. mode _channel -> int Lwt.t = fun ch -> match ch.main
                   (* Size of data in the buffer *)
                   let size = ch.max - ch.ptr in
                   (* If there are still data in the buffer, keep them: *)
-                  if size > 0 then Uwt_bytes.unsafe_blit ch.buffer ch.ptr ch.buffer 0 size;
+                  if size > 0 then Uv_bytes.unsafe_blit ch.buffer ch.ptr ch.buffer 0 size;
                   (* Update positions: *)
                   ch.ptr <- 0;
                   ch.max <- size;
@@ -224,7 +224,7 @@ let perform_io : type mode. mode _channel -> int Lwt.t = fun ch -> match ch.main
                 | Output ->
                     (* Shift remaining data: *)
                     let len = len - n in
-                    Uwt_bytes.unsafe_blit ch.buffer n ch.buffer 0 len;
+                    Uv_bytes.unsafe_blit ch.buffer n ch.buffer 0 len;
                     ch.ptr <- len
               end;
               Lwt.return n
@@ -477,7 +477,7 @@ let make :
     ?close : (unit -> unit Lwt.t) ->
     ?seek : (int64 -> Unix.seek_command -> int64 Lwt.t) ->
     mode : m mode ->
-    (Uwt_bytes.t -> int -> int -> int Lwt.t) ->
+    (Uv_bytes.t -> int -> int -> int Lwt.t) ->
     m channel = fun ?buffer_size ?(close=Lwt.return) ?(seek=no_seek) ~mode perform_io ->
   let size =
     match buffer_size with
@@ -487,7 +487,7 @@ let make :
           check_buffer_size "Lwt_io.make" size;
           size
   in
-  let buffer = Uwt_bytes.create size and abort_waiter, abort_wakener = Lwt.wait () in
+  let buffer = Uv_bytes.create size and abort_waiter, abort_wakener = Lwt.wait () in
   let rec ch = {
     buffer = buffer;
     length = size;
@@ -514,7 +514,7 @@ let make :
   wrapper
 
 let of_bytes ~mode bytes =
-  let length = Uwt_bytes.length bytes in
+  let length = Uv_bytes.length bytes in
   let abort_waiter, abort_wakener = Lwt.wait () in
   let rec ch = {
     buffer = bytes;
@@ -539,7 +539,7 @@ let of_bytes ~mode bytes =
   wrapper
 
 
-let of_file : type m. ?buffer_size : int -> ?close : (unit -> unit Lwt.t) -> mode : m mode -> Uwt.file -> m channel = fun ?buffer_size ?close ~mode fd ->
+let of_file : type m. ?buffer_size : int -> ?close : (unit -> unit Lwt.t) -> mode : m mode -> Uv.file -> m channel = fun ?buffer_size ?close ~mode fd ->
   let perform_io buf pos len = match mode with
     | Input -> Uwt.Fs.read_ba fd ~buf ~pos ~len
     | Output -> Uwt.Fs.write_ba fd ~buf ~pos ~len
@@ -564,10 +564,10 @@ let of_stream : type m. ?buffer_size : int -> ?close : (unit -> unit Lwt.t) -> m
               | Some f -> f
               | None -> (fun () ->
                   let merr = Uwt.Stream.close fd in
-                  if Uwt.Int_result.is_ok merr then
+                  if Uv.Int_result.is_ok merr then
                     Lwt.return_unit
                   else
-                    Uwt.Int_result.fail ~name:"of_stream_close" merr
+                    Lwt.fail(Uv.Int_result.to_exn ~name:"of_stream_close" merr)
                 ))
     ~mode
     perform_io
@@ -600,8 +600,8 @@ let resize_buffer : type m. m channel -> int -> unit Lwt.t = fun wrapper len ->
                 if len < unread_count then
                   Lwt.fail (Failure "Lwt_io.resize_buffer: cannot decrease buffer size")
                 else begin
-                  let buffer = Uwt_bytes.create len in
-                  Uwt_bytes.unsafe_blit ch.buffer ch.ptr buffer 0 unread_count;
+                  let buffer = Uv_bytes.create len in
+                  Uv_bytes.unsafe_blit ch.buffer ch.ptr buffer 0 unread_count;
                   ch.buffer <- buffer;
                   ch.length <- len;
                   ch.ptr <- 0;
@@ -619,8 +619,8 @@ let resize_buffer : type m. m channel -> int -> unit Lwt.t = fun wrapper len ->
                     Lwt.return_unit
                 in
                 loop () >>= fun () ->
-                let buffer = Uwt_bytes.create len in
-                Uwt_bytes.unsafe_blit ch.buffer 0 buffer 0 ch.ptr;
+                let buffer = Uv_bytes.create len in
+                Uv_bytes.unsafe_blit ch.buffer 0 buffer 0 ch.ptr;
                 ch.buffer <- buffer;
                 ch.length <- len;
                 ch.max <- len;
@@ -707,7 +707,7 @@ struct
         | _ -> read_char ic
     else begin
       ic.ptr <- ptr + 1;
-      Lwt.return (Uwt_bytes.unsafe_get ic.buffer ptr)
+      Lwt.return (Uv_bytes.unsafe_get ic.buffer ptr)
     end
 
   let read_char_opt ic =
@@ -754,13 +754,13 @@ struct
     let avail = ic.max - ic.ptr in
     if avail > 0 then begin
       let len = min len avail in
-      Uwt_bytes.unsafe_blit_to_bytes ic.buffer ic.ptr buf ofs len;
+      Uv_bytes.unsafe_blit_to_bytes ic.buffer ic.ptr buf ofs len;
       ic.ptr <- ic.ptr + len;
       Lwt.return len
     end else begin
       refill ic >>= fun n ->
         let len = min len n in
-        Uwt_bytes.unsafe_blit_to_bytes ic.buffer 0 buf ofs len;
+        Uv_bytes.unsafe_blit_to_bytes ic.buffer 0 buf ofs len;
         ic.ptr <- len;
         ic.max <- n;
         Lwt.return len
@@ -817,7 +817,7 @@ struct
   let rec read_all ic total_len acc =
     let len = ic.max - ic.ptr in
     let buf = Bytes.create len in
-    Uwt_bytes.unsafe_blit_to_bytes ic.buffer ic.ptr buf 0 len;
+    Uv_bytes.unsafe_blit_to_bytes ic.buffer ic.ptr buf 0 len;
     let str = Bytes.unsafe_to_string buf in
     ic.ptr <- ic.max;
     refill ic >>= function
@@ -859,7 +859,7 @@ struct
     let ptr = oc.ptr in
     if ptr < oc.length then begin
       oc.ptr <- ptr + 1;
-      Uwt_bytes.unsafe_set oc.buffer ptr ch;
+      Uv_bytes.unsafe_set oc.buffer ptr ch;
       Lwt.return_unit
     end else
       flush_partial oc >>= fun _ ->
@@ -868,11 +868,11 @@ struct
   let rec unsafe_write_from oc str ofs len =
     let avail = oc.length - oc.ptr in
     if avail >= len then begin
-      Uwt_bytes.unsafe_blit_from_bytes str ofs oc.buffer oc.ptr len;
+      Uv_bytes.unsafe_blit_from_bytes str ofs oc.buffer oc.ptr len;
       oc.ptr <- oc.ptr + len;
       Lwt.return 0
     end else begin
-      Uwt_bytes.unsafe_blit_from_bytes str ofs oc.buffer oc.ptr avail;
+      Uv_bytes.unsafe_blit_from_bytes str ofs oc.buffer oc.ptr avail;
       oc.ptr <- oc.length;
       flush_partial oc >>= fun _ ->
       let len = len - avail in
@@ -966,7 +966,7 @@ struct
       f oc.buffer ptr
     end
 
-  let block : type m. m _channel -> int -> (Uwt_bytes.t -> int -> 'a Lwt.t) -> 'a Lwt.t = fun ch size f ->
+  let block : type m. m _channel -> int -> (Uv_bytes.t -> int -> 'a Lwt.t) -> 'a Lwt.t = fun ch size f ->
     if size < 0 || size > min_buffer_size then
       Lwt.fail (Invalid_argument(Printf.sprintf "Uwt_io.block(size=%d)" size))
     else
@@ -1020,7 +1020,7 @@ struct
        | Reading numbers                                             |
        +-------------------------------------------------------------+ *)
 
-    let get buffer ptr = Char.code (Uwt_bytes.unsafe_get buffer ptr)
+    let get buffer ptr = Char.code (Uv_bytes.unsafe_get buffer ptr)
 
     let read_int ic =
       read_block_unsafe ic 4
@@ -1095,7 +1095,7 @@ struct
        | Writing numbers                                             |
        +-------------------------------------------------------------+ *)
 
-    let set buffer ptr x = Uwt_bytes.unsafe_set buffer ptr (Char.unsafe_chr x)
+    let set buffer ptr x = Uv_bytes.unsafe_set buffer ptr (Char.unsafe_chr x)
 
     let write_int oc v =
       write_block_unsafe oc 4
@@ -1196,7 +1196,7 @@ let read_char wrapper =
      increases performances by 10x. *)
   if wrapper.state = Idle && ptr < channel.max then begin
     channel.ptr <- ptr + 1;
-    Lwt.return (Uwt_bytes.unsafe_get channel.buffer ptr)
+    Lwt.return (Uv_bytes.unsafe_get channel.buffer ptr)
   end else
     primitive Primitives.read_char wrapper
 
@@ -1205,7 +1205,7 @@ let read_char_opt wrapper =
   let ptr = channel.ptr in
   if wrapper.state = Idle && ptr < channel.max then begin
     channel.ptr <- ptr + 1;
-    Lwt.return (Some(Uwt_bytes.unsafe_get channel.buffer ptr))
+    Lwt.return (Some(Uv_bytes.unsafe_get channel.buffer ptr))
   end else
     primitive Primitives.read_char_opt wrapper
 
@@ -1223,7 +1223,7 @@ let write_char wrapper x =
   let ptr = channel.ptr in
   if wrapper.state = Idle && ptr < channel.max then begin
     channel.ptr <- ptr + 1;
-    Uwt_bytes.unsafe_set channel.buffer ptr x;
+    Uv_bytes.unsafe_set channel.buffer ptr x;
     (* Fast launching of the auto flusher: *)
     if not channel.auto_flushing then begin
       channel.auto_flushing <- true;
@@ -1308,7 +1308,7 @@ let zero =
   make
     ~mode:input
     ~buffer_size:min_buffer_size
-    (fun str ofs len -> Uwt_bytes.fill str ofs len '\x00'; Lwt.return len)
+    (fun str ofs len -> Uv_bytes.fill str ofs len '\x00'; Lwt.return len)
 
 let null =
   make
@@ -1318,9 +1318,9 @@ let null =
 
 (* Do not close standard ios on close, otherwise uncaught exceptions
    will not be printed *)
-let stdin = of_file ~mode:input Uwt.stdin
-let stdout = of_file ~mode:output Uwt.stdout
-let stderr = of_file ~mode:output Uwt.stderr
+let stdin = of_file ~mode:input Uv.stdin
+let stdout = of_file ~mode:output Uv.stdout
+let stderr = of_file ~mode:output Uv.stderr
 
 let fprint oc txt = write oc txt
 let fprintl oc txt = write_line oc txt
@@ -1343,14 +1343,14 @@ let eprintlf fmt = Printf.ksprintf eprintl fmt
 
 type file_name = string
 
-let open_file : type m. ?buffer_size : int -> ?flags : Uwt.Fs.open_flag list -> ?perm : Unix.file_perm -> mode : m mode -> file_name -> m channel Lwt.t = fun ?buffer_size ?flags ?perm ~mode filename ->
+let open_file : type m. ?buffer_size : int -> ?flags : Uv.Fs.open_flag list -> ?perm : Unix.file_perm -> mode : m mode -> file_name -> m channel Lwt.t = fun ?buffer_size ?flags ?perm ~mode filename ->
   let flags = match flags, mode with
     | Some l, _ ->
         l
     | None, Input ->
-        [Uwt.Fs.O_RDONLY; Uwt.Fs.O_NONBLOCK]
+        [Uv.Fs.O_RDONLY; Uv.Fs.O_NONBLOCK]
     | None, Output ->
-        [Uwt.Fs.O_WRONLY; Uwt.Fs.O_CREAT; Uwt.Fs.O_TRUNC; Uwt.Fs.O_NONBLOCK]
+        [Uv.Fs.O_WRONLY; Uv.Fs.O_CREAT; Uv.Fs.O_TRUNC; Uv.Fs.O_NONBLOCK]
   and perm = match perm, mode with
     | Some p, _ ->
         p
@@ -1370,7 +1370,7 @@ let with_file ?buffer_size ?flags ?perm ~mode filename f =
 
 let file_length filename = with_file ~mode:input filename length
 
-external get_sun_path: Uwt.sockaddr -> string option = "uwt_sun_path"
+external get_sun_path: Uv.sockaddr -> string option = "uwt_sun_path"
 let invalid_path="\x00"
 let open_connection ?buffer_size sockaddr =
   let path = ref invalid_path in
@@ -1396,7 +1396,7 @@ let open_connection ?buffer_size sockaddr =
             Lwt.catch ( fun () ->
                 Uwt.Stream.shutdown stream
               ) ( function
-              | Uwt.Uwt_error(Uwt.ENOTCONN,_,_) -> Lwt.return_unit
+              | Uv.Uv_error(Uv.ENOTCONN,_,_) -> Lwt.return_unit
               | x -> Lwt.fail x )
           else
             Lwt.return_unit

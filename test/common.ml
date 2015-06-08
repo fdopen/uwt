@@ -5,10 +5,9 @@ let m_equal s t =
   assert_equal s (Uwt.Main.run t)
 let m_raises (a,b,c) t =
   assert_raises
-    (Uwt.Uwt_error(a,b,c))
+    (Uv.Uv_error(a,b,c))
     (fun () -> Uwt.Main.run t)
-let m_true t =
-  assert_equal true (Uwt.Main.run t)
+let m_true t = m_equal true t
 
 let try_finally fnormal finalizer =
   let module T = struct type 'a t = Ok of 'a | Error of exn end in
@@ -23,9 +22,9 @@ let try_finally fnormal finalizer =
 
 
 let has_ip6 =
-  Uwt.Misc.interface_addresses_exn () |> Array.to_list |>
+  Uv_misc.interface_addresses_exn () |> Array.to_list |>
   List.exists ( fun x ->
-      Uwt.Compat.to_unix_sockaddr x.Uwt.Misc.address
+      Uv.Conv.unix_sockaddr_of_sockaddr x.Uv_misc.address
       |> Unix.domain_of_sockaddr = Unix.PF_INET )
 
 let ip6_option =
@@ -65,8 +64,42 @@ let has_ip6 ctx =
 
 let no_win () = OUnit2.skip_if Sys.win32 "no windows support (yet)"
 
-module Fs_t = struct
-  type file_kind = [%import: Uwt.Fs.file_kind] [@@deriving show]
-  type stats = [%import: Uwt.Fs.stats] [@@deriving show]
+module D = struct
+  let show_sockaddr s =
+    let open Uv in
+    let open Uv_misc in
+    match ip4_name s with
+    | Ok ("0.0.0.0" as x) ->
+      (match ip6_name s with
+       | Ok s -> s
+       | Error _ -> x)
+    | Ok s -> s
+    | Error _ ->
+      match ip6_name s with
+      | Ok s -> s
+      | Error _ -> "(unknown)"
+
+  module Uv = struct
+    include Uv
+    let pp_sockaddr fmt s = show_sockaddr s |> Format.fprintf fmt "%s"
+  end
+  type sockaddr = [%import: Uv.sockaddr]
+  type timeval = [%import: Uv_misc.timeval] [@@deriving show]
+  type cpu_times = [%import: Uv_misc.cpu_times] [@@deriving show]
+  type cpu_info = [%import: Uv_misc.cpu_info] [@@deriving show]
+  type interface_address = [%import: Uv_misc.interface_address] [@@deriving show]
+  type rusage = [%import: Uv_misc.rusage] [@@deriving show]
+
+  type socket_domain = [%import: Unix.socket_domain] [@@deriving show]
+  type socket_type = [%import: Unix.socket_type] [@@deriving show]
+  type addr_info = [%import: Uwt.Dns.addr_info] [@@deriving show]
+  type file_kind = [%import: Uv.Fs.file_kind] [@@deriving show]
+  type stats = [%import: Uv.Fs.stats] [@@deriving show]
+
   let qstat x = show_stats x |> String.length > 50
 end
+(*
+module Fs_t = struct
+  let qstat x = D.show_stats x |> String.length > 50
+end
+*)

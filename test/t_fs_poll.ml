@@ -11,12 +11,12 @@ let poll_file () =
         Lwt.wakeup_exn waker (Failure msg)
       in
       let cb t = function
-      | Uwt.Error _ -> abort t "error in cb"
-      | Uwt.Ok x ->
+      | Uv.Error _ -> abort t "error in cb"
+      | Uv.Ok x ->
         let open Uwt.Fs_poll in
-        if Fs_t.qstat x.curr &&
-           Fs_t.qstat x.prev &&
-           Int64.sub x.curr.Uwt.Fs.st_mtime x.prev.Uwt.Fs.st_mtime > 0L then
+        if D.qstat x.curr &&
+           D.qstat x.prev &&
+           Int64.sub x.curr.Uv.Fs.st_mtime x.prev.Uv.Fs.st_mtime > 0L then
           incr cb_called
         else
           abort t "unexpected change"

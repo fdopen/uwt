@@ -1,28 +1,6 @@
-module D = struct
-  let show_sockaddr s =
-    let open Uwt in
-    match Misc.ip4_name s with
-    | Ok ("0.0.0.0" as x) ->
-      (match Misc.ip6_name s with
-       | Ok s -> s
-       | Error _ -> x)
-    | Ok s -> s
-    | Error _ ->
-      match Misc.ip6_name s with
-      | Ok s -> s
-      | Error _ -> "(unknown)"
-
-  let pp_sockaddr fmt s = show_sockaddr s |> Format.fprintf fmt "%s"
-  type sockaddr = [%import: Uwt.sockaddr]
-  type timeval = [%import: Uwt.Misc.timeval] [@@deriving show]
-  type cpu_times = [%import: Uwt.Misc.cpu_times] [@@deriving show]
-  type cpu_info = [%import: Uwt.Misc.cpu_info] [@@deriving show]
-  type interface_address = [%import: Uwt.Misc.interface_address] [@@deriving show]
-  type rusage = [%import: Uwt.Misc.rusage] [@@deriving show]
-end
-
+open Common
 open OUnit2
-open Uwt.Misc
+open Uv_misc
 (* Worthwile tests are not possible in most cases, because the
    functions are not implemented completely on all systems - and I
    don't know anything about the target system :) So I just access at

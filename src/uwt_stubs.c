@@ -341,7 +341,8 @@ mem_stack_pop(struct stack * x)
 enum cb_type {
   CB_SYNC = 0,
   CB_LWT = 1,
-  CB_CB = 2
+  CB_CB = 2,
+  CB_MAX = 3
 };
 
 /* TODO: better representation */
@@ -662,15 +663,16 @@ which_buf(unsigned int len)
 }
 
 static void
-malloc_uv_buf_t(uv_buf_t * buf, unsigned int len)
+malloc_uv_buf_t(uv_buf_t * buf, unsigned int len, enum cb_type cb_type)
 {
   if ( len == 0 ){
     buf->base = NULL;
     buf->len = 0;
   }
   else {
-    unsigned int buck = which_buf(len);
-    if ( buck == UINT_MAX ){
+    unsigned int buck ;
+    if ( cb_type != CB_LWT ||
+         (buck = which_buf(len)) == UINT_MAX ){
       buf->base = malloc(len);
     }
     else {
@@ -681,11 +683,12 @@ malloc_uv_buf_t(uv_buf_t * buf, unsigned int len)
 }
 
 static void
-free_uv_buf_t_const(const uv_buf_t * buf)
+free_uv_buf_t_const(const uv_buf_t * buf, enum cb_type cb_type)
 {
   if ( buf->base != NULL && buf->len != 0 ){
-    unsigned int buck = which_buf(buf->len);
-    if ( buck == UINT_MAX ){
+    unsigned int buck ;
+    if ( cb_type != CB_LWT ||
+         (buck = which_buf(buf->len)) == UINT_MAX ){
       free(buf->base);
     }
     else {
@@ -695,18 +698,23 @@ free_uv_buf_t_const(const uv_buf_t * buf)
 }
 
 static void
-free_uv_buf_t(uv_buf_t * buf)
+free_uv_buf_t(uv_buf_t * buf, enum cb_type cb_type)
 {
-  free_uv_buf_t_const(buf);
+  free_uv_buf_t_const(buf,cb_type);
   buf->len = 0;
   buf->base = NULL;
 }
 
-#define malloc_struct_req()                     \
-  mem_stack_pop(&stack_struct_req)
-
-#define free_struct_req(x)                      \
-  mem_stack_free(&stack_struct_req,x)
+static void
+free_struct_req(struct req *r)
+{
+  if ( r->cb_type == CB_LWT ){
+    mem_stack_free(&stack_struct_req,r);
+  }
+  else {
+    free(r);
+  }
+}
 
 static uv_req_t *
 malloc_uv_req_t(int type)
@@ -720,17 +728,22 @@ malloc_uv_req_t(int type)
 }
 
 static void
-free_uv_req_t(uv_req_t * req)
+free_mem_uv_req_t(struct req * wp)
 {
-  if ( req ){
-    if ( req->type <= UV_UNKNOWN_REQ ||
-         req->type >= UV_REQ_TYPE_MAX ){
+  uv_req_t * req;
+  if ( wp && ( req = wp->req ) != NULL ){
+    if ( wp->cb_type != CB_LWT ){
+      free(req);
+    }
+    else if ( req->type <= UV_UNKNOWN_REQ ||
+              req->type >= UV_REQ_TYPE_MAX ){
       DEBUG_PF("unknown type");
       free(req);
     }
     else {
       mem_stack_free(&stacks_req_t[req->type],req);
     }
+    wp->req = NULL;
   }
 }
 
@@ -753,17 +766,22 @@ malloc_uv_handle_t(int type)
 }
 
 static void
-free_uv_handle_t(uv_handle_t * handle)
+free_mem_uv_handle_t(struct handle * h)
 {
-  if ( handle ){
-    if ( handle->type <= UV_UNKNOWN_HANDLE ||
-         handle->type >= UV_HANDLE_TYPE_MAX ){
+  uv_handle_t * handle;
+  if ( h && (handle = h->handle ) != NULL ){
+    if ( h->cb_type != CB_LWT ){
+      free(handle);
+    }
+    else if ( handle->type <= UV_UNKNOWN_HANDLE ||
+              handle->type >= UV_HANDLE_TYPE_MAX ){
       DEBUG_PF("unknown type");
       free(handle);
     }
     else {
       mem_stack_free(&stacks_handle_t[handle->type],handle);
     }
+    h->handle = NULL;
   }
 }
 
@@ -777,7 +795,7 @@ req_free_common(struct req * wp)
     gr_root_unregister(&wp->sbuf);
   }
   if (wp->buf.base != NULL && wp->buf_contains_ba == 0){
-    free_uv_buf_t(&wp->buf);
+    free_uv_buf_t(&wp->buf,wp->cb_type);
   }
   wp->buf.base = NULL;
   wp->buf.len = 0;
@@ -786,8 +804,7 @@ req_free_common(struct req * wp)
       wp->clean_cb(wp->req);
       wp->clean_cb = NULL;
     }
-    free_uv_req_t(wp->req);
-    wp->req = NULL;
+    free_mem_uv_req_t(wp);
   }
 }
 
@@ -828,7 +845,13 @@ handle_create(int handle_type, enum cb_type cb_type)
   if (!wp){
     caml_raise_out_of_memory();
   }
-  wp->handle = malloc_uv_handle_t(handle_type);
+  wp->cb_type = cb_type;
+  if ( cb_type == CB_LWT ){
+    wp->handle = malloc_uv_handle_t(handle_type);
+  }
+  else {
+    wp->handle = malloc(sizeof *wp->handle);
+  }
   if (!wp->handle){
     free_struct_handle(wp);
     caml_raise_out_of_memory();
@@ -853,7 +876,6 @@ handle_create(int handle_type, enum cb_type cb_type)
   wp->can_reuse_cb_read = 0;
   wp->use_read_ba = 0;
   wp->read_waiting = 0;
-  wp->cb_type = cb_type;
   Field(res,1) = (intnat)wp;
   Field(res,2) = hcnt++;
   return res;
@@ -886,7 +908,7 @@ handle_finalize_close_cb(uv_handle_t *h)
 {
   GET_RUNTIME();
   struct handle * s = h->data;
-  free_uv_handle_t(h);
+  free_mem_uv_handle_t(s);
   s->handle = NULL;
   handle_free_common(s);
   free_struct_handle(s);
@@ -916,7 +938,7 @@ handle_finalize(value p)
   s->finalize_called = 1;
   if ( s->close_executed ){
     if ( s->handle ){
-      free_uv_handle_t(s->handle);
+      free_mem_uv_handle_t(s);
     }
     free_struct_handle(s);
     return;
@@ -937,15 +959,51 @@ handle_finalize(value p)
   return;
 }
 
+static size_t get_req_t_size(uv_req_type typ)
+{
+  switch (typ){
+  case UV_CONNECT: return(sizeof(uv_connect_t));
+  case UV_WRITE: return(sizeof(uv_write_t));
+  case UV_UDP_SEND: return(sizeof(uv_udp_send_t));
+  case UV_SHUTDOWN: return(sizeof(uv_shutdown_t));
+  case UV_FS: return(sizeof(uv_fs_t));
+  case UV_GETADDRINFO: return(sizeof(uv_getaddrinfo_t));
+  case UV_GETNAMEINFO: return(sizeof(uv_getnameinfo_t));
+  case UV_WORK: return(sizeof(uv_work_t));
+  default:
+    DEBUG_PF("fatal: unsupported req_t");
+    return
+    (MAX(sizeof(uv_connect_t),
+     MAX(sizeof(uv_write_t),
+     MAX(sizeof(uv_udp_send_t),
+     MAX(sizeof(uv_shutdown_t),
+     MAX(sizeof(uv_fs_t),
+     MAX(sizeof(uv_getaddrinfo_t),
+     MAX(sizeof(uv_getnameinfo_t),sizeof(uv_work_t)))))))));
+  }
+}
+
 static struct req *
 req_create(uv_req_type typ, enum cb_type cb_type)
 {
   struct req * wp;
-  wp = malloc_struct_req();
+
+  if ( cb_type == CB_LWT ){
+    wp = mem_stack_pop(&stack_struct_req);
+  }
+  else {
+    wp = malloc(sizeof *wp);
+  }
   if (wp == NULL){
     caml_raise_out_of_memory();
   }
-  wp->req=malloc_uv_req_t(typ);
+  wp->cb_type = cb_type;
+  if ( cb_type == CB_LWT ){
+    wp->req = malloc_uv_req_t(typ);
+  }
+  else {
+    wp->req = malloc(get_req_t_size(typ));
+  }
   if ( wp->req == NULL ){
     free_struct_req(wp);
     caml_raise_out_of_memory();
@@ -967,7 +1025,6 @@ req_create(uv_req_type typ, enum cb_type cb_type)
   wp->finalize_called = 0;
   wp->buf_contains_ba = 0;
   wp->in_cb = 0;
-  wp->cb_type = cb_type;
   wp->work_cb_called = 0;
   wp->req->data = wp;
   wp->req->type = typ;
@@ -1024,9 +1081,21 @@ uwt_run_loop(value o_loop,value o_mode)
   return ret;
 }
 
-static uv_loop_t default_loop_uv;
-static int default_loop_init_called = 0;
-static struct loop default_loop;
+static uv_loop_t default_loop_uv[CB_MAX];
+static int default_loop_init_called[CB_MAX];
+static struct loop default_loop[CB_MAX];
+
+static int
+in_default_loops(struct loop * l)
+{
+  int i;
+  for ( i = 0 ; i < CB_MAX ; ++i ){
+    if ( l == &default_loop[i] ){
+      return i;
+    }
+  }
+  return -1;
+}
 
 CAMLprim value
 uwt_loop_close(value o_loop)
@@ -1047,9 +1116,11 @@ uwt_loop_close(value o_loop)
     erg = uv_loop_close(loop);
     ret = VAL_UNIT_UV_RESULT(erg);
     if ( erg >= 0 ){
+      int x;
       Field(o_loop,1) = 0;
-      if ( wp == &default_loop ){
-        default_loop_init_called = 0;
+      x = in_default_loops(wp);
+      if (x >= 0 ){
+        default_loop_init_called[x] = 0;
       }
       else {
         free(wp);
@@ -1063,7 +1134,7 @@ static void
 loop_finalize(value v)
 {
   struct loop * x = Loop_val(v);
-  if ( x &&  x != &default_loop ){
+  if ( x &&  in_default_loops(x) < 0 ){
     if ( x->in_use == 1 ){
       x->do_clean = 1; /* TODO: handle this case */
     }
@@ -1085,29 +1156,36 @@ uwt_default_loop(value o_mode)
   CAMLparam0();
   CAMLlocal1(p);
   value ret = Val_unit;
-  if ( default_loop_init_called == 0 ){
-    int erg = uv_loop_init(&default_loop_uv);
-    if ( erg < 0 ){
-      ret = caml_alloc_small(1,Error_tag);
-      Field(ret,0) = Val_error(erg);
-    }
-    else {
-      default_loop_init_called = 1;
-      default_loop.loop = &default_loop_uv;
-      default_loop.in_use = 0;
-      cache_cleaner_init(&default_loop_uv);
-      runtime_acquire_prepare_init(&default_loop_uv);
+  int mode = Long_val(o_mode);
+  if ( mode < 0 || mode >= CB_MAX ){
+    ret = caml_alloc_small(1,Error_tag);
+    Field(ret,0) = VAL_UV_UWT_EFATAL;
+  }
+  else {
+    if ( default_loop_init_called[mode] == 0 ){
+      int erg = uv_loop_init(&default_loop_uv[mode]);
+      if ( erg < 0 ){
+        ret = caml_alloc_small(1,Error_tag);
+        Field(ret,0) = Val_error(erg);
+      }
+      else {
+        default_loop_init_called[mode] = 1;
+        default_loop[mode].loop = &default_loop_uv[mode];
+        default_loop[mode].in_use = 0;
+        if ( mode == CB_LWT ){ /* TODO CB_CB not support */
+          cache_cleaner_init(&default_loop_uv[mode]);
+          runtime_acquire_prepare_init(&default_loop_uv[mode]);
+        }
+      }
     }
   }
   if ( ret == Val_unit ){
-    unsigned int mode = Long_val(o_mode);
-    assert ( mode == CB_LWT || mode == CB_CB || mode == CB_SYNC );
     p = caml_alloc_custom(&uwt_loop,sizeof(intnat), 0, 1);
-    Field(p,1) = (intnat)&default_loop;
-    default_loop.loop_type = mode;
+    Field(p,1) = (intnat)&default_loop[mode];
+    default_loop[mode].loop_type = mode;
     ret = caml_alloc_small(1,Ok_tag);
     Field(ret,0) = p;
-    if ( mode == 1){
+    if ( mode == CB_LWT){
       if (uwt_wakeup == NULL ){
         uwt_wakeup = caml_named_value("uwt.wakeup");
         if ( uwt_wakeup == NULL ){
@@ -1246,14 +1324,14 @@ uwt_req_finalize_na(value res)
   do {                                          \
     char * x##_dup = NULL;                      \
     if ( callback_type == CB_SYNC ){            \
-      x ## _dup = strdup(String_val(x));        \
+      x ## _dup = s_strdup(String_val(x));      \
       if ( x ## _dup == NULL ) {                \
         o_ret = VAL_RESULT_UV_ENOMEM;           \
         goto nomem;                             \
       }                                         \
     }                                           \
     do code while(0);                           \
-    if ( callback_type == 0 ){                  \
+    if ( callback_type == CB_SYNC ){            \
       free( x##_dup);                           \
     }                                           \
   } while(0)
@@ -1263,12 +1341,12 @@ uwt_req_finalize_na(value res)
     char * x##_dup = NULL;                      \
     char * y##_dup = NULL;                      \
     if ( callback_type == CB_SYNC ){            \
-      x ## _dup = strdup(String_val(x));        \
+      x ## _dup = s_strdup(String_val(x));      \
       if ( x ## _dup == NULL ) {                \
         o_ret = VAL_RESULT_UV_ENOMEM;           \
         goto nomem;                             \
       }                                         \
-      y ## _dup = strdup(String_val(y));        \
+      y ## _dup = s_strdup(String_val(y));      \
       if ( y ## _dup == NULL ) {                \
         free(x ## _dup);                        \
         x ## _dup = NULL;                       \
@@ -1318,7 +1396,7 @@ uwt_req_finalize_na(value res)
         gr_root_register(&wp_req->cb,o_cb);               \
         wp_req->in_use = 1;                               \
       }                                                   \
-      o_ret = Val_int(0);                                 \
+      o_ret = Val_int(callback_type == CB_SYNC ? ret : 0);\
     }                                                     \
     else {                                                \
       o_ret = Val_uv_result(ret);                         \
@@ -1527,7 +1605,7 @@ FSSTART(fs_read,o_file,o_buf,o_offset,o_len,{
     wp->buf.base = Ba_buf_val(o_buf) + offset;
   }
   else {
-    malloc_uv_buf_t(&wp->buf,MIN(slen,MAX_BUF));
+    malloc_uv_buf_t(&wp->buf,MIN(slen,MAX_BUF),wp->cb_type);
   }
   if ( slen && wp->buf.base == NULL ){
     ret = UV_ENOMEM;
@@ -1549,7 +1627,7 @@ FSSTART(fs_read,o_file,o_buf,o_offset,o_len,{
     }
     else {
       if ( !ba ){
-        free_uv_buf_t(&wp->buf);
+        free_uv_buf_t(&wp->buf,wp->cb_type);
       }
       wp->offset = 0;
       wp->buf_contains_ba = 0;
@@ -1592,7 +1670,7 @@ FSSTART(fs_write,
     wp->buf.len = slen;
   }
   else {
-    malloc_uv_buf_t(&wp->buf,slen);
+    malloc_uv_buf_t(&wp->buf,slen,wp->cb_type);
   }
   if ( slen && wp->buf.base == NULL ){
     ret = UV_ENOMEM;
@@ -1620,7 +1698,7 @@ FSSTART(fs_write,
     }
     else {
       if ( ba == 0 ){
-        free_uv_buf_t(&wp->buf);
+        free_uv_buf_t(&wp->buf,wp->cb_type);
       }
       wp->buf_contains_ba = 0;
       wp->buf.base = NULL;
@@ -1918,27 +1996,36 @@ UFSSTART(fs_symlink,o_opath,o_npath,o_mode,{
     });
 })
 
-#if 0
 CAMLprim value
-uwt_get_result(value o_req)
+uwt_get_fs_result(value o_req)
 {
+  CAMLparam1(o_req);
   struct req * wp = Req_val(o_req);
   value ret = Val_unit;
   if ( wp == NULL || wp->req == NULL || wp->c_cb == NULL ){
-    caml_invalid_argument("return sync result");
+    caml_invalid_argument("uwt_get_fs_result");
   }
-  else if ( wp->c_cb != ret_unit ){
-    ret = wp->c_cb(wp,wp->req);
-    if ( ! Is_block(ret) || Wosize_val(ret) != 1 ){
-      caml_invalid_argument("return sync result2");
-    }
-    ret = Field(ret,0);
+  if ( wp->c_cb == ret_uv_result_unit ){
+    ret = VAL_UNIT_UV_RESULT(((uv_fs_t*)(wp->req))->result);
+  }
+  else {
+    ret = wp->c_cb(wp->req);
   }
   Field(o_req,1) = 0;
   req_free(wp);
-  return ret;
+  CAMLreturn(ret);
 }
-#endif
+
+CAMLprim value
+uwt_fs_free_na(value o_req)
+{
+  struct req * wp = Req_val(o_req);
+  if ( wp != NULL ){
+    Field(o_req,1) = 0;
+    req_free(wp);
+  }
+  return Val_unit;
+}
 
 static value
 uv_stat_to_value(const uv_stat_t * sb)
@@ -2201,7 +2288,7 @@ close_cb(uv_handle_t* handle)
     handle_free_common(s);
     s->close_executed = 1;
     if ( likely(s->in_callback_cnt == 0 ) ){
-      free_uv_handle_t(s->handle);
+      free_mem_uv_handle_t(s);
       s->handle = NULL;
       if ( s->finalize_called ){
         free_struct_handle(s);
@@ -2394,7 +2481,7 @@ uwt_timer_start(value o_loop, value o_cb,
     t = (uv_timer_t *)h->handle;
     erg = uv_timer_init(l->loop,t);
     if ( erg < 0 ){
-      free_uv_handle_t(h->handle);
+      free_mem_uv_handle_t(h);
       free_struct_handle(h);
     }
     else {
@@ -2502,7 +2589,7 @@ uwt_shutdown(value o_stream,value o_cb)
   req = (uv_shutdown_t*)wp->req;
   ret = uv_shutdown(req,stream,shutdown_cb);
   if ( ret < 0 ){
-    free_uv_req_t((uv_req_t*)req);
+    free_mem_uv_req_t(wp);
     free_struct_req(wp);
     erg = Val_uv_result(ret);
   }
@@ -2594,7 +2681,7 @@ read_start_alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
     unsigned int len;
     h = handle->data;
     len = MIN(suggested_size,h->c_read_size);
-    malloc_uv_buf_t(buf,len);
+    malloc_uv_buf_t(buf,len,h->cb_type);
   }
 }
 
@@ -2633,7 +2720,7 @@ read_start_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
         tag = Ok_tag;
       }
       buf_not_cleaned = false;
-      free_uv_buf_t_const(buf);
+      free_uv_buf_t_const(buf,h->cb_type);
       Begin_roots1(ret);
       o = caml_alloc_small(1,tag);
       Field(o,0) = ret;
@@ -2650,7 +2737,7 @@ read_start_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
     }
   }
   if ( buf_not_cleaned && buf->base ){
-    free_uv_buf_t_const(buf);
+    free_uv_buf_t_const(buf,h->cb_type);
   }
   HANDLE_CB_RET(ret);
 }
@@ -2795,7 +2882,7 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
       }
       if ( read_ba == 0 ){
         buf_not_cleaned = false;
-        free_uv_buf_t_const(buf);
+        free_uv_buf_t_const(buf,h->cb_type);
       }
       cb = GET_CB_VAL(h->cb_read);
       gr_root_unregister(&h->cb_read);
@@ -2816,7 +2903,7 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
     }
   }
   if ( buf_not_cleaned && read_ba == 0 && buf->base ){
-    free_uv_buf_t_const(buf);
+    free_uv_buf_t_const(buf,h->cb_type);
   }
   HANDLE_CB_RET(ret);
 }
@@ -2930,7 +3017,7 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
     wp->buf.len = 0;
   }
   else {
-    malloc_uv_buf_t(&wp->buf,len);
+    malloc_uv_buf_t(&wp->buf,len,wp->cb_type);
     if (wp->buf.base != NULL  ){
       memcpy(wp->buf.base,
              String_val(o_buf) + Long_val(o_pos),
@@ -2939,7 +3026,7 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
     else {
       erg = VAL_RESULT_UV_ENOMEM;
       ok = false;
-      free_uv_req_t(wp->req);
+      free_mem_uv_req_t(wp);
       free_struct_req(wp);
     }
   }
@@ -2955,9 +3042,9 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
     }
     if ( ret < 0 ){
       if ( ba == 0 ){
-        free_uv_buf_t(&wp->buf);
+        free_uv_buf_t(&wp->buf,wp->cb_type);
       }
-      free_uv_req_t(req);
+      free_mem_uv_req_t(wp);
       free_struct_req(wp);
     }
     else {
@@ -3024,7 +3111,7 @@ uwt_write2_native(value o_stream,
   intnat len = Long_val(o_len);
   struct req * wp = req_create(UV_WRITE,s1->cb_type);
   uv_write_t* req = (uv_write_t*)wp->req;
-  malloc_uv_buf_t(&wp->buf,len);
+  malloc_uv_buf_t(&wp->buf,len,wp->cb_type);
   if ( len && wp->buf.base == NULL ){
     erg = VAL_RESULT_UV_ENOMEM;
     wp->buf.base = NULL;
@@ -3039,8 +3126,8 @@ uwt_write2_native(value o_stream,
            len);
     ret = uv_write2(req,stream,&wp->buf,1,stream_send,cb_uwt_write2);
     if ( ret < 0 ){
-      free_uv_buf_t(&wp->buf);
-      free_uv_req_t((uv_req_t*)req);
+      free_uv_buf_t(&wp->buf,wp->cb_type);
+      free_mem_uv_req_t(wp);
       free_struct_req(wp);
     }
     else {
@@ -3127,7 +3214,7 @@ uwt_tty_init(value o_loop,value o_fd, value o_readable)
                       Long_val(o_fd),
                       Long_val(o_readable) == 1 );
     if (erg < 0 ){
-      free_uv_handle_t(h->handle);
+      free_mem_uv_handle_t(h);
       free_struct_handle(h);
       Field(dc,1) = 0;
       Field(ret,0) = Val_error(erg);
@@ -3221,7 +3308,7 @@ uwt_pipe_open(value o_loop, value o_fd,value o_ipc)
                        p,
                        Long_val(o_ipc) == 1);
     if ( erg < 0 ){
-      free_uv_handle_t(h->handle);
+      free_mem_uv_handle_t(h);
       free_struct_handle(h);
     }
     else {
@@ -3429,7 +3516,7 @@ uwt_tcp_udp_init(value o_loop, bool tcp)
     if (erg < 0){
       Field(v,1) = 0;
       Field(ret,0) = Val_error(erg);
-      free_uv_handle_t(h->handle);
+      free_mem_uv_handle_t(h);
       free_struct_handle(h);
     }
   }
@@ -3620,7 +3707,7 @@ uwt_tcp_connect(value o_tcp,value o_sock,value o_cb)
     ++s->in_use_cnt;
   }
   else {
-    free_uv_req_t(wp->req);
+    free_mem_uv_req_t(wp);
     free_struct_req(wp);
   }
   CAMLreturn(VAL_UNIT_UV_RESULT(ret));
@@ -3721,7 +3808,7 @@ alloc_recv_result(ssize_t nread,
                   unsigned flags)
 {
   CAMLparam0();
-  CAMLlocal3(param,sock_addr,bytes_t);
+  CAMLlocal3(param,msock_addr,bytes_t);
   if ( nread > 0 ){
     if ( (size_t)nread > buf->len ){
       param = caml_alloc_small(1,Transmission_error);
@@ -3732,13 +3819,13 @@ alloc_recv_result(ssize_t nread,
       bytes_t = caml_alloc_string(nread);
       memcpy(String_val(bytes_t),buf->base,nread);
       if ( addr == NULL ){
-        sock_addr = Val_unit;
+        msock_addr = Val_unit;
       }
       else {
         param = uwt_alloc_sockaddr();
         memcpy(SOCKADDR_VAL(param),addr,sizeof(struct sockaddr_storage));
-        sock_addr = caml_alloc_small(1,Some_tag);
-        Field(sock_addr,0) = param;
+        msock_addr = caml_alloc_small(1,Some_tag);
+        Field(msock_addr,0) = param;
       }
       if ( (flags & UV_UDP_PARTIAL ) != 0 ){
         tag = Partial_data;
@@ -3748,14 +3835,14 @@ alloc_recv_result(ssize_t nread,
       }
       param = caml_alloc_small(2,tag);
       Field(param,0) = bytes_t;
-      Field(param,1) = sock_addr;
+      Field(param,1) = msock_addr;
     }
   }
   else if (nread == 0 ){
-    sock_addr = uwt_alloc_sockaddr();
-    memcpy(SOCKADDR_VAL(sock_addr),addr,sizeof(struct sockaddr_storage));
+    msock_addr = uwt_alloc_sockaddr();
+    memcpy(SOCKADDR_VAL(msock_addr),addr,sizeof(struct sockaddr_storage));
     param = caml_alloc_small(1,Empty_from);
-    Field(param,0) = sock_addr;
+    Field(param,0) = msock_addr;
   }
   else {
     param = caml_alloc_small(1,Transmission_error);
@@ -3791,14 +3878,14 @@ uwt_udp_recv_cb(uv_udp_t* handle,
         exn = GET_CB_VAL(uh->cb_read);
         if ( nread > 0 ){
           buf_not_cleaned = false;
-          free_uv_buf_t_const(buf);
+          free_uv_buf_t_const(buf,uh->cb_type);
         }
         exn = caml_callback_exn(exn,p);
       }
     }
   }
   if (buf_not_cleaned && buf->base){
-    free_uv_buf_t_const(buf);
+    free_uv_buf_t_const(buf,uh->cb_type);
   }
   HANDLE_CB_RET(exn);
 }
@@ -3913,7 +4000,7 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
                    buf->base,
                    len);
             buf_not_cleaned = false;
-            free_uv_buf_t_const(buf);
+            free_uv_buf_t_const(buf,uh->cb_type);
           }
           triple = caml_alloc_small(3,0);
           Field(triple,0) = Val_long(nread);
@@ -3939,7 +4026,7 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
     }
   }
   if ( read_ba == 0 && buf_not_cleaned && buf->base ){
-    free_uv_buf_t_const(buf);
+    free_uv_buf_t_const(buf,uh->cb_type);
   }
   HANDLE_CB_RET(exn);
 }
@@ -4067,7 +4154,7 @@ uwt_signal_start(value o_loop,
     t = (uv_signal_t *)h->handle;
     erg = uv_signal_init(l->loop,t);
     if ( erg < 0 ){
-      free_uv_handle_t(h->handle);
+      free_mem_uv_handle_t(h);
       free_struct_handle(h);
     }
     else {
@@ -4213,7 +4300,7 @@ uwt_poll_start_both(value o_loop,
       erg = uv_poll_init(l->loop,p,Long_val(o_sock_or_fd));
     }
     if ( erg < 0 ){
-      free_uv_handle_t(h->handle);
+      free_mem_uv_handle_t(h);
       free_struct_handle(h);
     }
     else {
@@ -4369,7 +4456,7 @@ uwt_fs_event_start(value o_loop,
     f = (uv_fs_event_t*)h->handle;
     erg = uv_fs_event_init(l->loop,f);
     if ( erg < 0 ){
-      free_uv_handle_t(h->handle);
+      free_mem_uv_handle_t(h);
       free_struct_handle(h);
     }
     else {
@@ -4493,7 +4580,7 @@ uwt_fs_poll_start(value o_loop,
     f = (uv_fs_poll_t*)h->handle;
     erg = uv_fs_poll_init(l->loop,f);
     if ( erg < 0 ){
-      free_uv_handle_t(h->handle);
+      free_mem_uv_handle_t(h);
       free_struct_handle(h);
     }
     else {
@@ -4592,7 +4679,7 @@ uwt_async_create(value o_loop, value o_cb)
     a = (uv_async_t *)h->handle;
     erg = uv_async_init(l->loop,a,uwt_async_cb);
     if ( erg < 0 ){
-      free_uv_handle_t(h->handle);
+      free_mem_uv_handle_t(h);
       free_struct_handle(h);
       Field(ret,0) = Val_error(erg);
       Tag_val(ret) = Error_tag;
@@ -5429,7 +5516,7 @@ error_end:
   }
   if ( erg < 0 ){
     if ( spawn_called == false ){
-      free_uv_handle_t(handle->handle);
+      free_mem_uv_handle_t(handle);
       free_struct_handle(handle);
     }
     Field(op,1) = 0 ;
@@ -5532,6 +5619,32 @@ uwt_get_socket(value o_fd)
 }
 
 CAMLprim value
+uwt_get_file_descriptor(value o_fd)
+{
+#ifndef _WIN32
+  value oc = caml_alloc_small(1,Some_tag);
+  Field(oc,0) = o_fd;
+  return oc;
+#else
+  CAMLparam0();
+  CAMLlocal1(oh);
+  value ret;
+  int p = Int_val(o_fd);
+  HANDLE handle = (HANDLE)_get_osfhandle(p);
+  if ( handle == INVALID_HANDLE_VALUE ){
+      ret = Val_unit;
+  }
+  else {
+    oh = win_alloc_handle(handle);
+    CRT_fd_val(oh) = p;
+    ret = caml_alloc_small(1,Some_tag);
+    Field(ret,0) = oh;
+  }
+  CAMLreturn(ret);
+#endif
+}
+
+CAMLprim value
 uwt_of_sockaddr(value o_sock)
 {
   CAMLparam1(o_sock);
@@ -5560,6 +5673,7 @@ CAMLprim value
 uwt_sun_path(value o_sock)
 {
 #ifdef _WIN32
+  (void) o_sock;
   return Val_unit;
 #else
   struct sockaddr_un * addr_un = (struct sockaddr_un *)SOCKADDR_VAL(o_sock);
@@ -5862,7 +5976,7 @@ uwt_getservbyname(value o_name, value o_proto, value o_loop,
   CAMLparam5(o_name,o_proto,o_loop,o_req,o_cb);
   value ret;
   GR_ROOT_ENLARGE();
-  req->c.c.void1.c_void = strdup(String_val(o_name));
+  req->c.c.void1.c_void = s_strdup(String_val(o_name));
   char * oproto = String_val(o_proto);
   if ( oproto != NULL && *oproto != '\0' ){
     req->c.c.void2.c_void = strdup(oproto);
@@ -6272,7 +6386,7 @@ gethostname_work_cb(uv_work_t *req)
   int ret_code = gethostname(buf,ALLOCA_SIZE);
   if ( ret_code == 0 ){
     buf[ALLOCA_SIZE]='\0';
-    r->c.c.void1.c_void = strdup(buf);
+    r->c.c.void1.c_void = s_strdup(buf);
   }
   else {
     r->c.c.void1.c_void = NULL;
@@ -6717,11 +6831,13 @@ uwt_free_all_memory(value unit)
     stack_clean(&stacks_mem_buf[i]);
   }
 
-  if ( default_loop_init_called == 1 ){
-    assert(default_loop.in_use == 0 );
-    default_loop_init_called = 0;
-    uv_loop_close(&default_loop_uv);
-    default_loop.in_use = 0;
+  for ( i = 0 ; i < CB_MAX ; ++i ){
+    if ( default_loop_init_called[i] == 1 ){
+      assert(default_loop[i].in_use == 0 );
+      default_loop_init_called[i] = 0;
+      uv_loop_close(&default_loop_uv[i]);
+      default_loop[i].in_use = 0;
+    }
   }
   return Val_unit;
 }
@@ -6798,7 +6914,7 @@ my_enter_blocking_section(uv_prepare_t *x)
   (void)x;
   runtime_locked = true;
   caml_enter_blocking_section();
-  if ( caml_exception_caught && x->loop == &default_loop_uv ){
+  if ( caml_exception_caught && x->loop == &default_loop_uv[CB_LWT] ){
     /* This way, the loop won't block for I/O, so we can handle exceptions
        sooner. */
     uv_stop(x->loop);
