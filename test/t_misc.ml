@@ -9,7 +9,7 @@ open Uwt_base.Misc
 let l = [
   ("resident_set_memory">:: fun _ ->
       assert_equal true (resident_set_memory_exn () > 64n ));
-  ("uptime">:: fun _ -> assert_equal true (uptime_exn () > 120. ));
+  ("uptime">:: fun _ -> assert_equal true (uptime_exn () > 20. ));
   ("getrusage">:: fun _ ->
       let x = getrusage_exn () |> D.show_rusage |> String.length in
       assert_equal true ( x > 3 ));
