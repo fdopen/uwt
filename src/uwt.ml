@@ -1491,6 +1491,31 @@ module Valgrind = struct
     global_cleanup ()
 
 end
+
+module C_worker = struct
+
+  type t = unit Uv.Int_result.t
+  type 'a u = loop * Req.t * 'a result Lwt.u
+
+  let call (f: 'a -> 'b u -> t) (a:'a) : 'b Lwt.t =
+    let sleeper,waker = Lwt.task () in
+    let req = Req.create loop Req.Work in
+    match f a (loop,req,waker) with
+    | exception x ->
+      Req.finalize req;
+      Lwt.fail x
+    | x ->
+      if Int_result.is_error x then
+        LInt_result.mfail ~name:"C_worker.call" ~param:"" x
+      else
+        let () = Lwt.on_cancel sleeper ( fun () -> Req.cancel_noerr req ) in
+        sleeper >>= fun x ->
+        Req.finalize req;
+        match x with
+        | Ok x -> Lwt.return x
+        | Error x -> Lwt.fail (Uv_error(x,"",""))
+end
+
 let valgrind_happy = Valgrind.valgrind_happy
 
 let () =

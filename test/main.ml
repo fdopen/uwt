@@ -23,7 +23,8 @@ let tests =
     T_poll.l;
     T_fs_poll.l;
     T_tty.l;
-    T_fs_sync.l
+    T_fs_sync.l;
+    T_stub.l
   ]
 
 exception Do_exit of int

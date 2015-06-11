@@ -9,6 +9,30 @@ section
 	Repeat_targets($(f))
 	TEST_PROG=$(OCamlLibrary $(f),$(f))
 
+if $(not $(equal $(OSTYPE),Win32))
+	section
+		OCAMLPACKS+= lwt
+		OCAMLINCLUDES[]+= $(dir ../src)
+		OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uwt)
+		MLFILES= glob
+		CFILES= glob_stubs
+		CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
+		LDFLAGS+=$(LDFLAGS_LIBUV)
+		Repeat_targets($(MLFILES))
+		GLOB=$(MixedLibrary uwtglob, $(MLFILES), $(CFILES))
+		examples:: $(GLOB)
+
+	section
+		OCAMLINCLUDES[]+= $(dir ../src)
+		OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uwt) $(file uwtglob)
+		MLFILES = custom_c_worker
+		OCAMLPACKS+= lwt bigarray unix
+		TEST_PROG=$(OCamlProgram custom_c_worker,$(MLFILES))
+		Repeat_targets($(MLFILES))
+		examples:: $(TEST_PROG)
+		clean::
+			rm -f custom_c_worker$(EXE)
+
 example_s(f)=
 	OCAMLPACKS+= ppx_import ppx_deriving.show bigarray unix
 	OCAMLINCLUDES[]+= $(dir ../src)

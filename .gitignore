@@ -55,4 +55,5 @@
 /examples/log
 /examples/preemptive
 /examples/echo_udp
+/examples/custom_c_worker
 /test/test

@@ -732,3 +732,9 @@ module Async : sig
   val stop: t -> Int_result.unit
   val send: t -> Int_result.unit
 end
+
+module C_worker : sig
+  type t
+  type 'a u
+  val call: ('a -> 'b u -> t) -> 'a -> 'b Lwt.t
+end

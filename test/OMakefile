@@ -1,14 +1,26 @@
 .PHONY: test clean build-tests btest all
 .DEFAULT: build-tests
 
+section
+	OCAMLPACKS+= lwt
+	OCAMLINCLUDES[]+= $(dir ../src)
+	OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uwt)
+	MLFILES= t_lib
+	CFILES= t_lib_stubs
+	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
+	LDFLAGS+=$(LDFLAGS_LIBUV)
+	Repeat_targets($(MLFILES))
+	TLIB=$(MixedLibrary t_lib, $(MLFILES), $(CFILES))
+	export TLIB
+
 OCAMLPACKS+= lwt bigarray unix threads lwt.log oUnit ppx_import ppx_deriving.show
 OCAMLFLAGS+= -thread
 OCAMLINCLUDES[]+= $(dir ../src)
-OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uv_fs_sync) $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preemptive)
+OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uv_fs_sync) $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preemptive) $(file t_lib)
 
 section
 	FILES[]= main common t_unix t_preemptive t_fs t_fs_sync t_tcp t_spawn t_fs_event \
-	 t_udp t_conv t_pipe t_dns t_misc t_signal t_poll t_fs_poll t_tty t_gc
+	 t_udp t_conv t_pipe t_dns t_misc t_signal t_poll t_fs_poll t_tty t_gc t_stub
 	Repeat_targets($(FILES))
 	TEST_PROG=$(OCamlProgram test,$(FILES))
 	build-tests:: $(TEST_PROG)

@@ -54,6 +54,18 @@ struct bar {
     [AC_MSG_RESULT([no]);  AC_DEFINE(ATTR_PACKED,
 	[], ["packed" attribute.])])
 
+AC_MSG_CHECKING([attribute "always_inline"])
+AC_COMPILE_IFELSE(
+    [AC_LANG_SOURCE([[
+static inline __attribute__ ((always_inline)) int bar(int foo) {
+   return (foo*2);
+} ;
+]])],
+    [AC_MSG_RESULT([yes]); AC_DEFINE(FORCE_INLINE,
+        [inline __attribute__ ((always_inline))], ["always_inline" attribute.])],
+    [AC_MSG_RESULT([no]);  AC_DEFINE(FORCE_INLINE,
+       [], ["always_inline" attribute.])])
+
 AC_MSG_CHECKING([attribute "unused"])
 AC_COMPILE_IFELSE(
     [AC_LANG_SOURCE([[

@@ -120,7 +120,7 @@ section
 	CMTIFILES=$(replacesuffixes .cma, .cmti, $(filter %.cma, $(UWT)))
 	install: META $(UWT)
 		$(OCAMLFIND) remove uwt || true
-		$(OCAMLFIND) install uwt META $(IFILES) -optional $(CMTIFILES)
+		$(OCAMLFIND) install uwt uwt-worker.h META $(IFILES) -optional $(CMTIFILES)
 	uninstall:
 		$(OCAMLFIND) remove uwt
 

@@ -218,3 +218,6 @@
     assert ( argn == 6 );                                       \
     return (name##_native(a[0],a[1],a[2],a[3],a[4],a[5],a[6])); \
   }
+
+#define INT_TO_POINTER(i) ((void *) (long)(i))
+#define POINTER_TO_INT(p) ((int) (long) (p))

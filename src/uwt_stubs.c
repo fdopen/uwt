@@ -85,6 +85,7 @@
 #include <io.h>
 #endif
 
+#include "uwt-worker.h"
 #include "uwt_stubs.h"
 #include "macros.h"
 #include "map_error.h"
@@ -177,6 +178,7 @@ static value gr_root = Val_unit;
 static unsigned int gr_root_size = 0;
 static unsigned int gr_root_n = 0;
 static value *uwt_wakeup = NULL;
+#define UWT_WAKEUP_STRING "uwt.wakeup"
 static unsigned int * gr_root_free_pos = NULL;
 static bool runtime_locked = false;
 #define GET_RUNTIME()                           \
@@ -379,27 +381,11 @@ struct req;
 typedef value (*req_c_cb)(uv_req_t*);
 typedef void (*clean_cb)(uv_req_t*);
 
-union uparam {
-    void * c_void;
-    const void * c_cvoid;
-    int c_int;
-};
-
-struct cparam2 {
-    union uparam void1;
-    union uparam void2;
-};
-
-union u2param {
-    int64_t c_int64_t;
-    struct cparam2 c;
-};
-
-struct ATTR_PACKED req {
+struct req {
+    struct worker_params c;
     uv_req_t * req;
     req_c_cb c_cb;
     clean_cb clean_cb;
-    union u2param c;
     uv_buf_t buf;
     cb_t cb;
     cb_t sbuf;
@@ -1009,8 +995,8 @@ req_create(uv_req_type typ, enum cb_type cb_type)
     caml_raise_out_of_memory();
   }
 
-  wp->c.c.void1.c_void = NULL;
-  wp->c.c.void2.c_void = NULL;
+  wp->c.p1 = NULL;
+  wp->c.p2 = NULL;
 
   wp->c_cb = NULL;
   wp->clean_cb = NULL;
@@ -1187,7 +1173,7 @@ uwt_default_loop(value o_mode)
     Field(ret,0) = p;
     if ( mode == CB_LWT){
       if (uwt_wakeup == NULL ){
-        uwt_wakeup = caml_named_value("uwt.wakeup");
+        uwt_wakeup = caml_named_value(UWT_WAKEUP_STRING);
         if ( uwt_wakeup == NULL ){
           caml_failwith("can't find uwt.wakeup");
         }
@@ -5135,7 +5121,7 @@ ret_addrinfo_list(uv_req_t * rdd)
     Field(ifo,0) = Val_error(status);
   }
   else {
-    struct addrinfo* info = wp->c.c.void1.c_void;
+    struct addrinfo* info = wp->c.p1;
     struct addrinfo * r;
     value e = Val_int(0);
     value v = Val_int(0);
@@ -5166,9 +5152,9 @@ static void
 clean_addrinfo(uv_req_t * r)
 {
   struct req * wp = r->data;
-  if ( wp && wp->c.c.void1.c_void != NULL ){
-    uv_freeaddrinfo(wp->c.c.void1.c_void);
-    wp->c.c.void1.c_void = NULL;
+  if ( wp && wp->c.p1 != NULL ){
+    uv_freeaddrinfo(wp->c.p1);
+    wp->c.p1 = NULL;
   }
 }
 
@@ -5181,7 +5167,7 @@ cb_getaddrinfo (uv_getaddrinfo_t* req,
   struct req * r = req->data;
   if ( r ){
     r->c_param = status;
-    r->c.c.void1.c_void = res;
+    r->c.p1 = res;
   }
   universal_callback((void*)req);
 }
@@ -5293,8 +5279,8 @@ cb_getnameinfo(uv_getnameinfo_t* req, int status,
   struct req * r = req->data;
   if ( r ){ /* does not work synchronously */
     r->c_param = status;
-    r->c.c.void1.c_cvoid = hostname;
-    r->c.c.void2.c_cvoid = service;
+    r->c.p1 = (void *)hostname;
+    r->c.p2 = (void *)service;
   }
   universal_callback((void*)req);
 }
@@ -5314,8 +5300,8 @@ ret_getnameinfo(uv_req_t * rdd)
     value tmp2 = Val_unit;
     ifo = Val_unit;
     Begin_roots3(tmp1,tmp2,ifo);
-    tmp1 = csafe_copy_string(wp->c.c.void1.c_cvoid);
-    tmp2 = csafe_copy_string(wp->c.c.void2.c_cvoid);
+    tmp1 = csafe_copy_string(wp->c.p1);
+    tmp2 = csafe_copy_string(wp->c.p2);
     ifo = caml_alloc_small(2,0);
     Field(ifo,0) = tmp1;
     Field(ifo,1) = tmp2;
@@ -5815,11 +5801,11 @@ getserv_clean_cb(uv_req_t * req)
 {
   struct req * r = req->data;
   if ( r->work_cb_called == 0 ){
-    free(r->c.c.void1.c_void);
-    free(r->c.c.void2.c_void);
+    free(r->c.p1);
+    free(r->c.p2);
   }
   else {
-    struct servent * s = r->c.c.void1.c_void;
+    struct servent * s = r->c.p1;
     if ( s ){
       free(s->s_proto);
       free(s->s_name);
@@ -5827,8 +5813,8 @@ getserv_clean_cb(uv_req_t * req)
       free(s);
     }
   }
-  r->c.c.void1.c_void = NULL;
-  r->c.c.void2.c_void = NULL;
+  r->c.p1 = NULL;
+  r->c.p2 = NULL;
 }
 
 static struct servent *
@@ -5869,8 +5855,8 @@ static void
 getservbyname_work_cb(uv_work_t *req)
 {
   struct req * r = req->data;
-  char * name = r->c.c.void1.c_void;
-  char * proto = r->c.c.void2.c_void;
+  char * name = r->c.p1;
+  char * proto = r->c.p2;
   r->work_cb_called = 1;
 #ifdef HAVE_GETxxxxBYyyyy_R_POSIX
   struct servent result_buf;
@@ -5878,31 +5864,31 @@ getservbyname_work_cb(uv_work_t *req)
   char buf[ALLOCA_SIZE];
   int err = getservbyname_r(name,proto,&result_buf,&buf[0],ALLOCA_SIZE,&serv);
   if ( err != 0 || serv == NULL ){
-    r->c.c.void1.c_void = NULL;
+    r->c.p1 = NULL;
     if ( err == ENOENT || (err == 0 && serv == NULL) ){
-      r->c.c.void2.c_int = UV_ENOENT;
+      r->c.p2 = INT_TO_POINTER(UV_ENOENT);
     }
     else {
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
     serv = NULL;
   }
 #else
   struct servent * serv = getservbyname(name,proto);
   if ( serv == NULL ){
-    r->c.c.void1.c_void = NULL;
-    r->c.c.void2.c_int = UV_ENOENT;
+    r->c.p1 = NULL;
+    r->c.p2 = INT_TO_POINTER(UV_ENOENT);
   }
 #endif
   else {
     struct servent * s = dup_servent(serv);
     if ( s == NULL ){
-      r->c.c.void1.c_void = NULL;
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p1 = NULL;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
     else {
-      r->c.c.void1.c_void = s;
-      r->c.c.void2.c_void = NULL;
+      r->c.p1 = s;
+      r->c.p2 = NULL;
     }
   }
   free(name);
@@ -5914,7 +5900,7 @@ getservbyport_work_cb(uv_work_t *req)
 {
   struct req * r = req->data;
   int port = (int)r->offset;
-  char * proto = r->c.c.void2.c_void;
+  char * proto = r->c.p2;
   r->work_cb_called = 1;
 #ifdef HAVE_GETxxxxBYyyyy_R_POSIX
   struct servent result_buf;
@@ -5922,31 +5908,31 @@ getservbyport_work_cb(uv_work_t *req)
   char buf[ALLOCA_SIZE];
   int err = getservbyport_r(port,proto,&result_buf,&buf[0],ALLOCA_SIZE,&serv);
   if ( err != 0 || serv == NULL ){
-    r->c.c.void1.c_void = NULL;
+    r->c.p1 = NULL;
     if ( err == ENOENT || (err == 0 && serv == NULL) ){
-      r->c.c.void2.c_int = UV_ENOENT;
+      r->c.p2 = INT_TO_POINTER(UV_ENOENT);
     }
     else {
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
     serv = NULL;
   }
 #else
   struct servent * serv = getservbyport(port,proto);
   if ( serv == NULL ){
-    r->c.c.void1.c_void = NULL;
-    r->c.c.void2.c_int = UV_ENOENT;
+    r->c.p1 = NULL;
+    r->c.p2 = INT_TO_POINTER(UV_ENOENT);
   }
 #endif
   else {
     struct servent * s = dup_servent(serv);
     if ( s == NULL ){
-      r->c.c.void1.c_void = NULL;
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p1 = NULL;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
     else {
-      r->c.c.void1.c_void = s;
-      r->c.c.void2.c_void = NULL;
+      r->c.p1 = s;
+      r->c.p2 = NULL;
     }
   }
   free(proto);
@@ -5957,46 +5943,82 @@ getserv_cb(uv_req_t * req)
 {
   struct req * r = req->data;
   value ret;
-  if ( r->c_param < 0 ){
+  struct servent *entry = r->c.p1 ;
+  if ( entry == NULL ){
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_error(r->c_param);
+    Field(ret,0) = Val_error(POINTER_TO_INT(r->c.p2));
   }
   else {
-    struct servent *entry = r->c.c.void1.c_void ;
-    if ( entry == NULL ){
-      ret = caml_alloc_small(1,Error_tag);
-      Field(ret,0) = Val_error(r->c.c.void2.c_int);
-    }
-    else {
-      value res;
-      value name = Val_unit, aliases = Val_unit, proto = Val_unit;
-      Begin_roots3(name, aliases, proto);
-       name = csafe_copy_string(entry->s_name);
-       aliases = caml_copy_string_array((const char **)entry->s_aliases);
-       proto = csafe_copy_string(entry->s_proto);
-       res = caml_alloc_small(4, 0);
-       Field(res,0) = name;
-       Field(res,1) = aliases;
-       Field(res,2) = Val_int(ntohs(entry->s_port));
-       Field(res,3) = proto;
-       aliases = res;
-       name = caml_alloc_small(1,Ok_tag);
-       Field(name,0) = aliases;
-       ret = name;
-      End_roots();
-    }
+    value res;
+    value name = Val_unit, aliases = Val_unit, proto = Val_unit;
+    Begin_roots3(name, aliases, proto);
+    name = csafe_copy_string(entry->s_name);
+    aliases = caml_copy_string_array((const char **)entry->s_aliases);
+    proto = csafe_copy_string(entry->s_proto);
+    res = caml_alloc_small(4, 0);
+    Field(res,0) = name;
+    Field(res,1) = aliases;
+    Field(res,2) = Val_int(ntohs(entry->s_port));
+    Field(res,3) = proto;
+    aliases = res;
+    name = caml_alloc_small(1,Ok_tag);
+    Field(name,0) = aliases;
+    ret = name;
+    End_roots();
   }
   return ret;
 }
 
 static void
+common_after_work_cb_real(uv_work_t *req, int status, bool do_wrap)
+{
+  GET_RUNTIME();
+  struct req * r = NULL;
+  if ( !req || (r = req->data) == NULL ||
+       r->cb == CB_INVALID || r->c_cb == NULL ){
+    DEBUG_PF("fatal, no cb");
+    req_free_most(r);
+  }
+  else if ( r->cancel == 1 ) {
+    req_free_most(r);
+  }
+  else {
+    CAMLparam0();
+    CAMLlocal1(exn);
+    r = req->data;
+    r->in_cb = 1;
+    if ( status != 0 ){
+      exn = caml_alloc_small(1,Error_tag);
+      Field(exn,0) = Val_error(status);
+    }
+    else {
+      exn = r->c_cb((uv_req_t *)req);
+      if ( do_wrap ){
+        value t = caml_alloc_small(1,Ok_tag);
+        Field(t,0) = exn;
+        exn = t;
+      }
+    }
+    exn = CAML_CALLBACK1(r,cb,exn);
+    r->in_cb = 0;
+    if ( Is_exception_result(exn) ){
+      add_exception(exn);
+    }
+    req_free_most(r);
+    CAMLreturn0;
+  }
+}
+
+static void
 common_after_work_cb(uv_work_t *req, int status)
 {
-  struct req * r = req->data;
-  if ( r ){
-    r->c_param = status;
-  }
-  universal_callback((uv_req_t*)req);
+  common_after_work_cb_real(req,status,false);
+}
+
+static void
+common_after_work_cb_external(uv_work_t *req, int status)
+{
+  common_after_work_cb_real(req,status,true);
 }
 
 CAMLprim value
@@ -6009,19 +6031,19 @@ uwt_getservbyname(value o_name, value o_proto, value o_loop,
   CAMLparam5(o_name,o_proto,o_loop,o_req,o_cb);
   value ret;
   GR_ROOT_ENLARGE();
-  req->c.c.void1.c_void = s_strdup(String_val(o_name));
+  req->c.p1 = s_strdup(String_val(o_name));
   char * oproto = String_val(o_proto);
   if ( oproto != NULL && *oproto != '\0' ){
-    req->c.c.void2.c_void = strdup(oproto);
+    req->c.p2 = strdup(oproto);
   }
   else {
-    req->c.c.void2.c_void = NULL;
+    req->c.p2 = NULL;
     oproto = NULL;
   }
-  if ( req->c.c.void1.c_void == NULL ||
-       (oproto && req->c.c.void2.c_void == NULL )){
-    free(req->c.c.void1.c_void);
-    free(req->c.c.void2.c_void);
+  if ( req->c.p1 == NULL ||
+       (oproto && req->c.p2 == NULL )){
+    free(req->c.p1);
+    free(req->c.p2);
     ret = VAL_RESULT_UV_ENOMEM;
   }
   else {
@@ -6030,8 +6052,8 @@ uwt_getservbyname(value o_name, value o_proto, value o_loop,
                             getservbyname_work_cb,
                             common_after_work_cb);
     if ( erg < 0 ){
-      free(req->c.c.void1.c_void);
-      free(req->c.c.void2.c_void);
+      free(req->c.p1);
+      free(req->c.p2);
       Field(o_req,1) = 0;
       req_free(req);
     }
@@ -6058,16 +6080,16 @@ uwt_getservbyport(value o_port, value o_proto, value o_loop,
   GR_ROOT_ENLARGE();
   req->offset = htons(Long_val(o_port));
   char * ostrval = String_val(o_proto);
-  req->c.c.void1.c_void = NULL;
-  req->c.c.void2.c_void = NULL;
+  req->c.p1 = NULL;
+  req->c.p2 = NULL;
   if ( ostrval != NULL && *ostrval != '\0' ){
-    req->c.c.void2.c_void = strdup(ostrval);
+    req->c.p2 = strdup(ostrval);
   }
   else {
     ostrval = NULL;
   }
-  if ( ostrval && req->c.c.void2.c_void == NULL ){
-    free(req->c.c.void2.c_void);
+  if ( ostrval && req->c.p2 == NULL ){
+    free(req->c.p2);
     ret = VAL_RESULT_UV_ENOMEM;
   }
   else {
@@ -6076,7 +6098,7 @@ uwt_getservbyport(value o_port, value o_proto, value o_loop,
                             getservbyport_work_cb,
                             common_after_work_cb);
     if ( erg < 0 ){
-      free(req->c.c.void2.c_void);
+      free(req->c.p2);
       Field(o_req,1) = 0;
       req_free(req);
     }
@@ -6139,7 +6161,7 @@ static void
 gethostbyname_work_cb(uv_work_t *req)
 {
   struct req * r = req->data;
-  char *name = r->c.c.void1.c_void;
+  char *name = r->c.p1;
   r->work_cb_called = 1;
 #ifdef HAVE_GETxxxxBYyyyy_R_POSIX
   struct hostent result_buf;
@@ -6148,31 +6170,31 @@ gethostbyname_work_cb(uv_work_t *req)
   int hno;
   int err = gethostbyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&host,&hno);
   if ( err != 0 || host == NULL ){
-    r->c.c.void1.c_void = NULL;
+    r->c.p1 = NULL;
     host = NULL;
     if ( hno == HOST_NOT_FOUND ){
-      r->c.c.void2.c_int = UV_ENOENT;
+      r->c.p2 = INT_TO_POINTER(UV_ENOENT);
     }
     else {
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
   }
 #else
   struct hostent * host = gethostbyname(name);
   if ( host == NULL ){
-    r->c.c.void1.c_void = NULL;
-    r->c.c.void2.c_int = UV_ENOENT;
+    r->c.p1 = NULL;
+    r->c.p2 = INT_TO_POINTER(UV_ENOENT);
   }
 #endif
   else {
     struct hostent * h = dup_hostent(host);
     if ( h == NULL ){
-      r->c.c.void1.c_void = NULL;
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p1 = NULL;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
     else {
-      r->c.c.void1.c_void = h;
-      r->c.c.void2.c_void = NULL;
+      r->c.p1 = h;
+      r->c.p2 = NULL;
     }
   }
   free(name);
@@ -6183,10 +6205,10 @@ gethost_clean_cb(uv_req_t *req)
 {
   struct req * r = req->data;
   if ( r->work_cb_called == 0 ){
-    free(r->c.c.void1.c_void);
+    free(r->c.p1);
   }
   else {
-    struct hostent * h = r->c.c.void1.c_void;
+    struct hostent * h = r->c.p1;
     if ( h ){
       c_free_string_array(h->h_addr_list);
       c_free_string_array(h->h_aliases);
@@ -6194,8 +6216,8 @@ gethost_clean_cb(uv_req_t *req)
       free(h);
     }
   }
-  r->c.c.void1.c_void = NULL;
-  r->c.c.void2.c_void = NULL;
+  r->c.p1 = NULL;
+  r->c.p2 = NULL;
 }
 
 static value alloc_one_addr(char const *a)
@@ -6217,49 +6239,43 @@ gethostent_cb(uv_req_t * req)
 {
   struct req * r = req->data;
   value ret;
-  if ( r->c_param < 0 ){
+  struct hostent * entry =  r->c.p1;
+  if ( entry == NULL ){
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_error(r->c_param);
+    Field(ret,0) = Val_error(POINTER_TO_INT(r->c.p2));
   }
   else {
-    struct hostent * entry =  r->c.c.void1.c_void;
-    if ( entry == NULL ){
-      ret = caml_alloc_small(1,Error_tag);
-      Field(ret,0) = Val_error(r->c.c.void2.c_int);
-    }
-    else {
-      value res;
-      value name = Val_unit, aliases = Val_unit;
-      value addr_list = Val_unit, adr = Val_unit;
+    value res;
+    value name = Val_unit, aliases = Val_unit;
+    value addr_list = Val_unit, adr = Val_unit;
 
-      Begin_roots4 (name, aliases, addr_list, adr);
-      name = csafe_copy_string(entry->h_name);
-      /* PR#4043: protect against buggy implementations of gethostbyname()
-         that return a NULL pointer in h_aliases */
-      if (entry->h_aliases)
-        aliases = caml_copy_string_array((const char**)entry->h_aliases);
-      else
-        aliases = Atom(0);
-      if ( entry->h_addr_list == NULL )
-        addr_list = Atom(0);
-      else if (entry->h_length == 16)
-        addr_list = caml_alloc_array(alloc_one_addr6,(const char**)entry->h_addr_list);
-      else
-        addr_list = caml_alloc_array(alloc_one_addr,(const char**)entry->h_addr_list);
-      res = caml_alloc_small(4, 0);
-      Field(res, 0) = name;
-      Field(res, 1) = aliases;
-      switch (entry->h_addrtype) {
-      case PF_UNIX:          Field(res, 2) = Val_int(0); break;
-      case PF_INET:          Field(res, 2) = Val_int(1); break;
-      default: /*PF_INET6 */ Field(res, 2) = Val_int(2); break;
-      }
-      Field(res, 3) = addr_list;
-      name = caml_alloc_small(1,Ok_tag);
-      Field(name,0) = res;
-      ret = name;
-      End_roots();
+    Begin_roots4 (name, aliases, addr_list, adr);
+    name = csafe_copy_string(entry->h_name);
+    /* PR#4043: protect against buggy implementations of gethostbyname()
+       that return a NULL pointer in h_aliases */
+    if (entry->h_aliases)
+      aliases = caml_copy_string_array((const char**)entry->h_aliases);
+    else
+      aliases = Atom(0);
+    if ( entry->h_addr_list == NULL )
+      addr_list = Atom(0);
+    else if (entry->h_length == 16)
+      addr_list = caml_alloc_array(alloc_one_addr6,(const char**)entry->h_addr_list);
+    else
+      addr_list = caml_alloc_array(alloc_one_addr,(const char**)entry->h_addr_list);
+    res = caml_alloc_small(4, 0);
+    Field(res, 0) = name;
+    Field(res, 1) = aliases;
+    switch (entry->h_addrtype) {
+    case PF_UNIX:          Field(res, 2) = Val_int(0); break;
+    case PF_INET:          Field(res, 2) = Val_int(1); break;
+    default: /*PF_INET6 */ Field(res, 2) = Val_int(2); break;
     }
+    Field(res, 3) = addr_list;
+    name = caml_alloc_small(1,Ok_tag);
+    Field(name,0) = res;
+    ret = name;
+    End_roots();
   }
   return ret;
 }
@@ -6277,7 +6293,7 @@ uwt_gethostbyname(value o_name, value o_loop,value o_req, value o_cb)
   if ( mname == NULL || *mname == '\0' ){
     ret = VAL_RESULT_UV_EINVAL;
   }
-  else if ( (req->c.c.void1.c_void = strdup(mname)) == NULL ){
+  else if ( (req->c.p1 = strdup(mname)) == NULL ){
     ret = VAL_RESULT_UV_ENOMEM;
   }
   else {
@@ -6286,7 +6302,7 @@ uwt_gethostbyname(value o_name, value o_loop,value o_req, value o_cb)
                             gethostbyname_work_cb,
                             common_after_work_cb);
     if ( erg < 0 ){
-      free(req->c.c.void1.c_void);
+      free(req->c.p1);
       Field(o_req,1) = 0;
       req_free(req);
     }
@@ -6305,8 +6321,8 @@ static void
 gethostbyaddr_work_cb(uv_work_t *req)
 {
   struct req * r = req->data;
-  int j = r->c.c.void2.c_int;
-  void * addr = r->c.c.void1.c_void;
+  int j = POINTER_TO_INT(r->c.p2);
+  void * addr = r->c.p1;
   socklen_t len;
   int type;
   r->work_cb_called = 1;
@@ -6326,31 +6342,31 @@ gethostbyaddr_work_cb(uv_work_t *req)
   int err = gethostbyaddr_r(addr,len,type,&result_buf,&buf[0],ALLOCA_SIZE,
                             &host,&hno);
   if ( err != 0 || host == NULL ){
-    r->c.c.void1.c_void = NULL;
+    r->c.p1 = NULL;
     host = NULL;
     if ( hno == HOST_NOT_FOUND ){
-      r->c.c.void2.c_int = UV_ENOENT;
+      r->c.p2 = INT_TO_POINTER(UV_ENOENT);
     }
     else {
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
   }
 #else
   struct hostent * host = gethostbyaddr(addr,len,type);
   if ( host == NULL ){
-    r->c.c.void1.c_void = NULL;
-    r->c.c.void2.c_int = UV_ENOENT;
+    r->c.p1 = NULL;
+    r->c.p2 = INT_TO_POINTER(UV_ENOENT);
   }
 #endif
   else {
     struct hostent * h = dup_hostent(host);
     if ( h == NULL ){
-      r->c.c.void1.c_void = NULL;
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p1 = NULL;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
     else {
-      r->c.c.void1.c_void = h;
-      r->c.c.void2.c_void = NULL;
+      r->c.p1 = h;
+      r->c.p2 = NULL;
     }
   }
   free(addr);
@@ -6367,25 +6383,25 @@ uwt_gethostbyaddr(value o_ip, value o_loop,value o_req, value o_cb)
   GR_ROOT_ENLARGE();
   const char * ip = String_val(o_ip);
   int err = 0;
-  req->c.c.void1.c_void = NULL;
+  req->c.p1 = NULL;
   if ( strchr(ip,':') != NULL ){
-    req->c.c.void1.c_void = malloc(sizeof(struct in6_addr));
-    req->c.c.void2.c_int = 0;
-    if ( req->c.c.void1.c_void  ){
-      err = uv_inet_pton(AF_INET6,ip,req->c.c.void1.c_void);
+    req->c.p1 = malloc(sizeof(struct in6_addr));
+    req->c.p2 = INT_TO_POINTER(0);
+    if ( req->c.p1  ){
+      err = uv_inet_pton(AF_INET6,ip,req->c.p1);
     }
   }
   else {
-    req->c.c.void2.c_int = 1;
-    req->c.c.void1.c_void = malloc(sizeof(struct in_addr));
-    if ( req->c.c.void1.c_void  ){
-      err = uv_inet_pton(AF_INET,ip,req->c.c.void1.c_void);
+    req->c.p2 = INT_TO_POINTER(1);
+    req->c.p1 = malloc(sizeof(struct in_addr));
+    if ( req->c.p1  ){
+      err = uv_inet_pton(AF_INET,ip,req->c.p1);
     }
   }
   if ( err != 0 ){
     ret = Val_uv_result(err);
   }
-  else if ( req->c.c.void1.c_void == NULL ){
+  else if ( req->c.p1 == NULL ){
     ret = VAL_RESULT_UV_ENOMEM;
   }
   else {
@@ -6394,7 +6410,7 @@ uwt_gethostbyaddr(value o_ip, value o_loop,value o_req, value o_cb)
                             gethostbyaddr_work_cb,
                             common_after_work_cb);
     if ( erg < 0 ){
-      free(req->c.c.void1.c_void);
+      free(req->c.p1);
       Field(o_req,1) = 0;
       req_free(req);
     }
@@ -6419,11 +6435,11 @@ gethostname_work_cb(uv_work_t *req)
   int ret_code = gethostname(buf,ALLOCA_SIZE);
   if ( ret_code == 0 ){
     buf[ALLOCA_SIZE]='\0';
-    r->c.c.void1.c_void = s_strdup(buf);
+    r->c.p1 = s_strdup(buf);
   }
   else {
-    r->c.c.void1.c_void = NULL;
-    r->c.c.void2.c_int = -errno;
+    r->c.p1 = NULL;
+    r->c.p2 = INT_TO_POINTER(-errno);
   }
 }
 
@@ -6431,8 +6447,8 @@ static void
 gethostname_clean_cb(uv_req_t * req)
 {
   struct req * r = req->data;
-  if ( r->work_cb_called == 1 && r->c.c.void1.c_void ){
-    free(r->c.c.void1.c_void);
+  if ( r->work_cb_called == 1 && r->c.p1 ){
+    free(r->c.p1);
   }
 }
 
@@ -6440,27 +6456,21 @@ static value
 gethostname_cb(uv_req_t * req){
   struct req * r = req->data;
   value ret;
-  if ( r->c_param < 0 ){
+  char * p =  r->c.p1;
+  if ( p == NULL ){
+    value x = Val_error(POINTER_TO_INT(r->c.p2));
+    if ( x == VAL_UV_UWT_UNKNOWN ){
+      x = VAL_UV_ENOENT;
+    }
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_error(r->c_param);
+    Field(ret,0) = x;
   }
   else {
-    char * p =  r->c.c.void1.c_void;
-    if ( p == NULL ){
-      value x = Val_error(r->c.c.void2.c_int);
-      if ( x == VAL_UV_UWT_UNKNOWN ){
-        x = VAL_UV_ENOENT;
-      }
-      ret = caml_alloc_small(1,Error_tag);
-      Field(ret,0) = x;
-    }
-    else {
-      value name = csafe_copy_string(p);
-      Begin_roots1(name);
-      ret = caml_alloc_small(1,Ok_tag);
-      Field(ret,0) = name;
-      End_roots();
-    }
+    value name = csafe_copy_string(p);
+    Begin_roots1(name);
+    ret = caml_alloc_small(1,Ok_tag);
+    Field(ret,0) = name;
+    End_roots();
   }
   return ret;
 }
@@ -6474,14 +6484,14 @@ uwt_gethostname(value o_loop,value o_req, value o_cb)
   CAMLparam3(o_loop,o_req,o_cb);
   value ret;
   GR_ROOT_ENLARGE();
-  req->c.c.void1.c_void = NULL;
-  req->c.c.void2.c_void = NULL;
+  req->c.p1 = NULL;
+  req->c.p2 = NULL;
   int erg = uv_queue_work(loop->loop,
                           (uv_work_t*)req->req,
                           gethostname_work_cb,
                           common_after_work_cb);
   if ( erg < 0 ){
-    free(req->c.c.void1.c_void);
+    free(req->c.p1);
     Field(o_req,1) = 0;
     req_free(req);
   }
@@ -6527,25 +6537,25 @@ getproto_clean_cb(uv_req_t * req)
 {
   struct req *r = req->data;
   if ( r->work_cb_called == 0 ){
-    free(r->c.c.void1.c_void);
+    free(r->c.p1);
   }
   else {
-    struct protoent * p = r->c.c.void1.c_void;
+    struct protoent * p = r->c.p1;
     if ( p ){
       free(p->p_name);
       c_free_string_array(p->p_aliases);
       free(p);
     }
   }
-  r->c.c.void1.c_void = NULL;
-  r->c.c.void2.c_void = NULL;
+  r->c.p1 = NULL;
+  r->c.p2 = NULL;
 }
 
 static void
 getprotobyname_work_cb(uv_work_t * req)
 {
   struct req * r = req->data;
-  char * name = r->c.c.void1.c_void;
+  char * name = r->c.p1;
   r->work_cb_called = 1;
 #ifdef HAVE_GETxxxxBYyyyy_R_POSIX
   struct protoent result_buf;
@@ -6553,30 +6563,30 @@ getprotobyname_work_cb(uv_work_t * req)
   char buf[ALLOCA_SIZE];
   int err = getprotobyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&proto);
   if ( err != 0 || proto == NULL ){
-    r->c.c.void1.c_void = NULL;
+    r->c.p1 = NULL;
     if ( err == ENOENT || (err == 0 && proto == NULL )){
-      r->c.c.void2.c_int = UV_ENOENT;
+      r->c.p2 = INT_TO_POINTER(UV_ENOENT);
     }
     else {
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
   }
 #else
   struct protoent * proto = getprotobyname(name);
   if ( proto == NULL ){
-    r->c.c.void1.c_void = NULL;
-    r->c.c.void2.c_int = UV_ENOENT;
+    r->c.p1 = NULL;
+    r->c.p2 = INT_TO_POINTER(UV_ENOENT);
   }
 #endif
   else {
     struct protoent * p = dup_protoent(proto);
     if ( p == NULL ){
-      r->c.c.void1.c_void = NULL;
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p1 = NULL;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
     else {
-      r->c.c.void1.c_void = p;
-      r->c.c.void2.c_void = NULL;
+      r->c.p1 = p;
+      r->c.p2 = NULL;
     }
   }
   free(name);
@@ -6586,7 +6596,7 @@ static void
 getprotobynumber_work_cb(uv_work_t * req)
 {
   struct req * r = req->data;
-  int number = r->c.c.void2.c_int;
+  int number = POINTER_TO_INT(r->c.p2);
   r->work_cb_called = 1;
 #ifdef HAVE_GETxxxxBYyyyy_R_POSIX
   struct protoent result_buf;
@@ -6594,30 +6604,30 @@ getprotobynumber_work_cb(uv_work_t * req)
   char buf[ALLOCA_SIZE];
   int err = getprotobynumber_r(number,&result_buf,&buf[0],ALLOCA_SIZE,&proto);
   if ( err != 0 || proto == NULL ){
-    r->c.c.void1.c_void = NULL;
+    r->c.p1 = NULL;
     if ( err == ENOENT || ( err == 0 && proto == NULL ) ){
-      r->c.c.void2.c_int = UV_ENOENT;
+      r->c.p2 = INT_TO_POINTER(UV_ENOENT);
     }
     else {
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
   }
 #else
   struct protoent * proto = getprotobynumber(number);
   if ( proto == NULL ){
-    r->c.c.void1.c_void = NULL;
-    r->c.c.void2.c_int = UV_ENOENT;
+    r->c.p1 = NULL;
+    r->c.p2 = INT_TO_POINTER(UV_ENOENT);
   }
 #endif
   else {
     struct protoent * p = dup_protoent(proto);
     if ( p == NULL ){
-      r->c.c.void1.c_void = NULL;
-      r->c.c.void2.c_int = UV_ENOMEM;
+      r->c.p1 = NULL;
+      r->c.p2 = INT_TO_POINTER(UV_ENOMEM);
     }
     else {
-      r->c.c.void1.c_void = p;
-      r->c.c.void2.c_void = NULL;
+      r->c.p1 = p;
+      r->c.p2 = NULL;
     }
   }
 }
@@ -6627,30 +6637,24 @@ getprotoent_cb(uv_req_t * req)
 {
   struct req * r = req->data;
   value ret;
-  if ( r->c_param < 0 ){
+  struct protoent *entry = r->c.p1 ;
+  if ( entry == NULL ){
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_error(r->c_param);
+    Field(ret,0) = Val_error(POINTER_TO_INT(r->c.p2));
   }
   else {
-    struct protoent *entry = r->c.c.void1.c_void ;
-    if ( entry == NULL ){
-      ret = caml_alloc_small(1,Error_tag);
-      Field(ret,0) = Val_error(r->c.c.void2.c_int);
-    }
-    else {
-      value name = Val_unit, aliases = Val_unit;
-      Begin_roots2 (aliases, name);
-      name = csafe_copy_string(entry->p_name);
-      aliases = caml_copy_string_array((const char**)entry->p_aliases);
-      ret = caml_alloc_small(3, 0);
-      Field(ret,0) = name;
-      Field(ret,1) = aliases;
-      Field(ret,2) = Val_int(entry->p_proto);
-      aliases = ret;
-      ret = caml_alloc_small(1,0);
-      Field(ret,0) = aliases;
-      End_roots();
-    }
+    value name = Val_unit, aliases = Val_unit;
+    Begin_roots2 (aliases, name);
+    name = csafe_copy_string(entry->p_name);
+    aliases = caml_copy_string_array((const char**)entry->p_aliases);
+    ret = caml_alloc_small(3, 0);
+    Field(ret,0) = name;
+    Field(ret,1) = aliases;
+    Field(ret,2) = Val_int(entry->p_proto);
+    aliases = ret;
+    ret = caml_alloc_small(1,0);
+    Field(ret,0) = aliases;
+    End_roots();
   }
   return ret;
 }
@@ -6668,7 +6672,7 @@ uwt_getprotobyname(value o_name, value o_loop,value o_req, value o_cb)
   if (  mname == NULL || *mname == '\0' ){
     ret = VAL_RESULT_UV_EINVAL;
   }
-  else if ( (req->c.c.void1.c_void = strdup(mname)) == NULL ){
+  else if ( (req->c.p1 = strdup(mname)) == NULL ){
     ret = VAL_RESULT_UV_ENOMEM;
   }
   else {
@@ -6677,7 +6681,7 @@ uwt_getprotobyname(value o_name, value o_loop,value o_req, value o_cb)
                             getprotobyname_work_cb,
                             common_after_work_cb);
     if ( erg < 0 ){
-      free(req->c.c.void1.c_void);
+      free(req->c.p1);
       Field(o_req,1) = 0;
       req_free(req);
     }
@@ -6701,8 +6705,8 @@ uwt_getprotobynumber(value o_number, value o_loop,value o_req, value o_cb)
   CAMLparam3(o_loop,o_req,o_cb);
   value ret;
   GR_ROOT_ENLARGE();
-  req->c.c.void1.c_void = NULL;
-  req->c.c.void2.c_int = Long_val(o_number);
+  req->c.p1 = NULL;
+  req->c.p2 = INT_TO_POINTER(Long_val(o_number));
   int erg = uv_queue_work(loop->loop,
                           (uv_work_t*)req->req,
                           getprotobynumber_work_cb,
@@ -6721,21 +6725,52 @@ uwt_getprotobynumber(value o_number, value o_loop,value o_req, value o_cb)
   CAMLreturn(ret);
 }
 
+#ifdef ARCH_SIXTYFOUR
+static FORCE_INLINE int64_t voids_to_int64_t(struct worker_params * x)
+{
+  _Static_assert(sizeof(int64_t) == sizeof(void *),"wrong sizes");
+  return ((intptr_t)x->p1);
+}
+static FORCE_INLINE void int64_t_to_voids(int64_t val, struct worker_params * x)
+{
+  x->p1 = (void*)val;
+}
+#else
+union dummy_union {
+    int64_t i64;
+    struct worker_params p;
+};
+static FORCE_INLINE int64_t voids_to_int64_t(struct worker_params *x)
+{
+  union dummy_union y;
+  _Static_assert(sizeof(struct worker_params) >= sizeof(int64_t),"wrong sizes");
+  y.p = *x;
+  return y.i64;
+}
+static FORCE_INLINE void int64_t_to_voids(int64_t val, struct worker_params * x)
+{
+  union dummy_union y;
+  y.i64 = val;
+  *x = y.p;
+}
+#endif
+
 static void
 lseek_work_cb(uv_work_t *req)
 {
   struct req * r = req->data;
   int fd = r->c_param;
   int whence = r->offset;
-  int64_t offset = r->c.c_int64_t;
+  int64_t offset = voids_to_int64_t(&r->c);
   r->work_cb_called = 1;
   errno = 0;
 /* TODO: Does AC_SYS_LARGEFILE support windows? */
 #ifdef _WIN32
-  r->c.c_int64_t = _lseeki64(fd,offset,whence);
+  offset = _lseeki64(fd,offset,whence);
 #else
-  r->c.c_int64_t = lseek(fd,offset,whence);
+  offset = lseek(fd,offset,whence);
 #endif
+  int64_t_to_voids(offset,&r->c);
   r->offset = -errno;
 }
 
@@ -6744,16 +6779,13 @@ lseek_cb(uv_req_t * req)
 {
   struct req * r = req->data;
   value ret;
-  if ( r->c_param < 0 ){
-    ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_error(r->c_param);
-  }
-  else if ( r->c.c_int64_t == -1 ){
+  int64_t offset = voids_to_int64_t(&r->c);
+  if ( offset == -1 ){
     ret = caml_alloc_small(1,Error_tag);
     Field(ret,0) = Val_error(r->offset);
   }
   else {
-    value p = caml_copy_int64(r->c.c_int64_t);
+    value p = caml_copy_int64(offset);
     Begin_roots1(p);
     ret = caml_alloc_small(1,Ok_tag);
     Field(ret,0) = p;
@@ -6785,7 +6817,7 @@ uwt_lseek_native(value o_fd, value o_pos, value o_mode, value o_loop,
      before uv_queue_work is called */
   req->c_param = fd;
   req->offset = whence;
-  req->c.c_int64_t = offset;
+  int64_t_to_voids(offset,&req->c);
   int erg = uv_queue_work(loop->loop,
                           (uv_work_t*)req->req,
                           lseek_work_cb,
@@ -6968,4 +7000,47 @@ runtime_acquire_prepare_init(uv_loop_t *l)
     fputs("fatal error in uwt, can't register prepare handle\n",stderr);
     exit(2);
   }
+}
+
+int
+uwt_add_worker(value o_uwt,
+               cb_cleaner cleaner,
+               cb_worker worker,
+               cb_camlval camlval,
+               void * p1,
+               void * p2)
+{
+  CAMLparam1(o_uwt);
+  CAMLlocal1(o_cb);
+  struct req * req;
+  struct loop * loop;
+  int erg;
+  value ret;
+
+  GR_ROOT_ENLARGE();
+
+  loop = Loop_val(Field(o_uwt,0));
+  req =  Req_val(Field(o_uwt,1));
+  o_cb = Field(o_uwt,2);
+
+  req->c.p1 = p1;
+  req->c.p2 = p2;
+  erg = uv_queue_work(loop->loop,
+                      (uv_work_t*)req->req,
+                      worker,
+                      common_after_work_cb_external
+    );
+  if ( erg < 0 ){
+    if ( cleaner != NULL ){
+      cleaner((void*)req->req);
+    }
+  }
+  else {
+    gr_root_register(&req->cb,o_cb);
+    req->c_cb = camlval;
+    req->clean_cb = cleaner;
+    req->in_use = 1;
+  }
+  ret = VAL_UNIT_UV_RESULT(erg);
+  CAMLreturn(ret);
 }
