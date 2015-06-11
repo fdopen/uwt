@@ -26,7 +26,7 @@
 #include <caml/mlvalues.h>
 #include <caml/bigarray.h>
 
-#include "uv_bytes_stubs.h"
+#include "uwt_bytes_stubs.h"
 /* +-----------------------------------------------------------------+
    | Operation on bigarrays                                          |
    +-----------------------------------------------------------------+ */

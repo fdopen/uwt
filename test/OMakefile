@@ -3,8 +3,8 @@
 
 section
 	OCAMLPACKS+= lwt
-	OCAMLINCLUDES[]+= $(dir ../src)
-	OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uwt)
+	OCAMLINCLUDES[]+= ../src
+	OCAML_LIBS+= ../src/uwt_base ../src/uwt
 	MLFILES= t_lib
 	CFILES= t_lib_stubs
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
@@ -15,8 +15,8 @@ section
 
 OCAMLPACKS+= lwt bigarray unix threads lwt.log oUnit ppx_import ppx_deriving.show
 OCAMLFLAGS+= -thread
-OCAMLINCLUDES[]+= $(dir ../src)
-OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uv_fs_sync) $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preemptive) $(file t_lib)
+OCAMLINCLUDES[]+= ../src ../examples
+OCAML_LIBS+= ../src/uwt_base ../src/uv_fs_sync ../src/uwt ../src/uwt_log ../src/uwt_preemptive ../examples/show_uwt t_lib
 
 section
 	FILES[]= main common t_unix t_preemptive t_fs t_fs_sync t_tcp t_spawn t_fs_event \

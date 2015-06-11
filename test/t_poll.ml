@@ -39,17 +39,17 @@ let write_strings server client =
   iter test_strings
 
 let on_listen server x =
-  if Uv.Int_result.is_error x then
+  if Uwt.Int_result.is_error x then
     failwith "on_listen error"
   else
     match Uwt.Tcp.accept server with
-    | Uv.Error _ -> failwith "accept error"
-    | Uv.Ok c -> write_strings server c |> ignore
+    | Uwt.Error _ -> failwith "accept error"
+    | Uwt.Ok c -> write_strings server c |> ignore
 
 let poll_read () =
   let server = Uwt.Tcp.init () in
   let t = try_finally ( fun () ->
-      let addr = Uv_misc.ip4_addr_exn server_ip server_port in
+      let addr = Uwt_base.Misc.ip4_addr_exn server_ip server_port in
       Uwt.Tcp.bind_exn server ~addr ();
       let () = Uwt.Tcp.listen_exn server ~max:10 ~cb:on_listen in
       let fd = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
@@ -58,7 +58,7 @@ let poll_read () =
           let addr = Unix.inet_addr_of_string server_ip in
           let addr = Unix.ADDR_INET(addr,server_port) in
           Unix.connect fd addr;
-          let socket = match Uv.Conv.socket_of_file_descr fd with
+          let socket = match Uwt.Conv.socket_of_file_descr fd with
           | None -> failwith "Uwt.Compat.socket_of_file_descr"
           | Some x -> x
           in
@@ -71,8 +71,8 @@ let poll_read () =
           let buf = Buffer.create 128 in
           let cb_called = ref 0 in
           let cb s = function
-          | Uv.Error x -> abort s (Uv.err_name x)
-          | Uv.Ok x ->
+          | Uwt.Error x -> abort s (Uwt.err_name x)
+          | Uwt.Ok x ->
             match x with
             | Uwt.Poll.Readable_writable
             | Uwt.Poll.Writable -> abort s "writable not requested"

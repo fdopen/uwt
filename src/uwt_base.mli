@@ -127,7 +127,7 @@ type error =
   | UWT_WRONGUV (** you've tried to call a function, that is not supported,
                        by your libuv installation *)
 
-exception Uv_error of error * string * string
+exception Uwt_error of error * string * string
 
 (** error message for the given error code *)
 val strerror: error -> string
@@ -279,8 +279,8 @@ val stdin : file
 val stdout : file
 val stderr : file
 
-module Fs : sig
-  type open_flag =
+module Fs_types : sig
+  type uv_open_flag =
     | O_RDONLY
     | O_WRONLY
     | O_RDWR
@@ -348,6 +348,70 @@ module Fs : sig
   }
 end
 
+module type Fs_functions = sig
+  include module type of Fs_types
+  with type uv_open_flag = Fs_types.uv_open_flag
+  with type file_kind = Fs_types.file_kind
+  with type symlink_mode = Fs_types.symlink_mode
+  with type access_permission = Fs_types.access_permission
+  with type stats = Fs_types.stats
+
+  type 'a t
+  (** @param perm defaults are 0o644 *)
+  val openfile : ?perm:int -> mode:uv_open_flag list -> string -> file t
+
+  (** @param pos default is always zero
+      @param len default is always the length of the string / array / Bytes.t *)
+  val read : ?pos:int -> ?len:int -> file -> buf:bytes -> int t
+
+  (** _ba function are unsafe. Bigarrays are passed directly to libuv (no
+      copy to c heap or stack). *)
+  val read_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int t
+
+  val write : ?pos:int -> ?len:int -> file -> buf:bytes -> int t
+  val write_string : ?pos:int -> ?len:int -> file -> buf:string -> int t
+  val write_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int t
+
+  val close : file -> unit t
+
+  val unlink : string -> unit t
+
+  (** @param perm defaults are 0o777 *)
+  val mkdir : ?perm:int -> string -> unit t
+
+  val rmdir : string -> unit t
+
+  val fsync : file -> unit t
+  val fdatasync : file -> unit t
+  val ftruncate: file -> len:int64 -> unit t
+
+  val stat : string -> stats t
+  val lstat : string -> stats t
+  val fstat : file -> stats t
+  val rename : src:string -> dst:string -> unit t
+  val link : target:string -> link_name:string -> unit t
+
+  (** @param mode default [S_Default] *)
+  val symlink :
+    ?mode:symlink_mode -> src:string -> dst:string -> unit -> unit t
+  val mkdtemp : string -> string t
+
+  (** @param pos default 0
+      @param len [Int64.max_int] *)
+  val sendfile :
+    ?pos:int64 -> ?len:int64 -> dst:file -> src:file -> unit -> int64 t
+  val utime : string -> access:float -> modif:float -> unit t
+  val futime : file -> access:float -> modif:float -> unit t
+  val readlink : string -> string t
+
+  val access : string -> access_permission list -> unit t
+  val chmod : string -> perm:int -> unit t
+  val fchmod : file -> perm:int -> unit t
+  val chown : string -> uid:int -> gid:int -> unit t
+  val fchown : file -> uid:int -> gid:int -> unit t
+  val scandir : string -> (file_kind * string) array t
+end
+
 module Conv : sig
   (** be careful in case of [Unix.ADDR_UNIX path]. If path is very
         long, {!of_unix_sockaddr} will raise an exception
@@ -362,4 +426,103 @@ module Conv : sig
   val file_of_file_descr : Unix.file_descr -> file option
   val socket_of_file_descr : Unix.file_descr -> socket option
   val file_descr_of_file : file -> Unix.file_descr option
+end
+
+module Misc : sig
+  type timeval = {
+    sec: int; usec: int;
+  }
+
+  type rusage = {
+    utime: timeval;
+    stime: timeval;
+    maxrss: int64;
+    ixrss: int64;
+    idrss: int64;
+    isrss: int64;
+    minflt: int64;
+    majflt: int64;
+    nswap: int64;
+    inblock: int64;
+    outblock: int64;
+    msgsnd: int64;
+    msgrcv: int64;
+    nsignals: int64;
+    nvcsw: int64;
+    nivcsw: int64;
+  }
+
+  type cpu_times = {
+    user: int64;
+    nice: int64;
+    sys: int64;
+    idle: int64;
+    irq: int64;
+  }
+
+  type cpu_info = {
+    model: string;
+    speed: int;
+    cpu_times: cpu_times;
+  }
+
+  type interface_address = {
+    name: string;
+    phys_addr: string;
+    is_internal: bool;
+    address: sockaddr;
+    netmask: sockaddr;
+  }
+
+  type handle_type =
+    | File
+    | Tty
+    | Pipe
+    | Tcp
+    | Udp
+    | Unknown
+
+  val guess_handle: file -> handle_type
+
+  val resident_set_memory : unit -> nativeint result
+  val resident_set_memory_exn : unit -> nativeint
+
+  val uptime : unit -> float result
+  val uptime_exn : unit -> float
+
+  val getrusage : unit -> rusage result
+  val getrusage_exn : unit -> rusage
+
+  val cpu_info : unit -> cpu_info array result
+  val cpu_info_exn : unit -> cpu_info array
+
+  val interface_addresses: unit -> interface_address array result
+  val interface_addresses_exn: unit -> interface_address array
+
+  val load_avg: unit -> float * float * float
+
+  val ip4_addr: string -> int -> sockaddr result
+  val ip4_addr_exn: string -> int -> sockaddr
+
+  val ip4_name: sockaddr -> string result
+  val ip4_name_exn: sockaddr -> string
+
+  val ip6_addr: string -> int -> sockaddr result
+  val ip6_addr_exn: string -> int -> sockaddr
+
+  val ip6_name: sockaddr -> string result
+  val ip6_name_exn: sockaddr -> string
+
+  val get_total_memory: unit -> int64
+  val hrtime: unit -> int64
+
+  type version = {
+    major: int;
+    minor: int;
+    patch: int;
+  }
+  val version: unit -> version
+  val version_raw: unit -> int
+  val version_string: unit -> string
+  val os_homedir: unit -> string result
 end

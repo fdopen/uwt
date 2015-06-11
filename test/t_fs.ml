@@ -2,7 +2,6 @@ open OUnit2
 open Lwt.Infix
 open Common
 open Uwt.Fs
-open Uv.Fs
 
 let rec really_write ?(pos=0) ?len buf fd =
   let len = match len with
@@ -70,7 +69,7 @@ let copy_ba ~src ~dst =
         ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst >>= fun fd_write ->
       Lwt.finalize ( fun () ->
           let b_len = 65_536 in
-          let buf = Uv_bytes.create b_len in
+          let buf = Uwt_bytes.create b_len in
           let rec read () =
             Uwt.Fs.read_ba fd_read ~buf ~pos:0 ~len:b_len >>= fun n ->
             if n = 0 then
@@ -226,7 +225,7 @@ let l = [
    fun _ctx ->
      let z = !tmpdir // "z" in
      let x = !tmpdir // "zz" in
-     m_raises (Uv.ENOENT,"uv_fs_access",x) (access x [Read]);
+     m_raises (Uwt.ENOENT,"uv_fs_access",x) (access x [Read]);
      m_equal () (access z [Read]);
      m_equal () (access Sys.executable_name [Exec]);
      no_win ();
@@ -241,7 +240,7 @@ let l = [
          invalid
      in
      skip_if (shadow == invalid) "no shadow";
-     m_raises (Uv.EACCES,"uv_fs_access",shadow) (access shadow [Read]));
+     m_raises (Uwt.EACCES,"uv_fs_access",shadow) (access shadow [Read]));
   ("ftruncate">::
    fun _ctx ->
      let z = !tmpdir // "z" in

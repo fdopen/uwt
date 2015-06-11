@@ -1,6 +1,6 @@
 open Lwt.Infix
 module UF = Uwt.Fs
-open Uv.Fs
+open Uwt_base.Fs_types
 
 let copy ~src ~dst =
   UF.openfile ~mode:[ O_RDONLY ] src >>= fun fd_read ->
@@ -35,7 +35,7 @@ let copy_ba ~src ~dst =
         ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst >>= fun fd_write ->
       Lwt.finalize ( fun () ->
           let b_len = 65_536 in
-          let buf = Uv_bytes.create b_len in
+          let buf = Uwt_bytes.create b_len in
           let rec read () =
             Uwt.Fs.read_ba fd_read ~buf ~pos:0 ~len:b_len >>= fun n ->
             if n = 0 then

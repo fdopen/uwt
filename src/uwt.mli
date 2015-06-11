@@ -70,7 +70,25 @@
 
 *)
 
-open Uv
+include module type of Uwt_base
+  with type error = Uwt_base.error
+  with type 'a result = 'a Uwt_base.result
+  with type file = Uwt_base.file
+  with type sockaddr = Uwt_base.sockaddr
+  with type socket = Uwt_base.socket
+  with type 'a Int_result.t = 'a Uwt_base.Int_result.t
+  with type Fs_types.uv_open_flag = Uwt_base.Fs_types.uv_open_flag
+  with type Fs_types.file_kind = Uwt_base.Fs_types.file_kind
+  with type Fs_types.symlink_mode = Uwt_base.Fs_types.symlink_mode
+  with type Fs_types.access_permission = Uwt_base.Fs_types.access_permission
+  with type Fs_types.stats = Uwt_base.Fs_types.stats
+  with type Misc.timeval = Uwt_base.Misc.timeval
+  with type Misc.rusage = Uwt_base.Misc.rusage
+  with type Misc.cpu_times = Uwt_base.Misc.cpu_times
+  with type Misc.cpu_info = Uwt_base.Misc.cpu_info
+  with type Misc.interface_address = Uwt_base.Misc.interface_address
+  with type Misc.handle_type = Uwt_base.Misc.handle_type
+  with type Misc.version = Uwt_base.Misc.version
 
 module Main : sig
   (** Analogue to [Lwt_main] *)
@@ -141,60 +159,7 @@ module Main : sig
 end
 
 module Fs : sig
-  open Uv.Fs
-  (** @param perm defaults are 0o644 *)
-  val openfile : ?perm:int -> mode:Uv.Fs.open_flag list -> string -> file Lwt.t
-
-  (** @param pos default is always zero
-      @param len default is always the length of the string / array / Bytes.t *)
-  val read : ?pos:int -> ?len:int -> file -> buf:bytes -> int Lwt.t
-
-  (** _ba function are unsafe. Bigarrays are passed directly to libuv (no
-      copy to c heap or stack). *)
-  val read_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int Lwt.t
-
-  val write : ?pos:int -> ?len:int -> file -> buf:bytes -> int Lwt.t
-  val write_string : ?pos:int -> ?len:int -> file -> buf:string -> int Lwt.t
-  val write_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int Lwt.t
-
-  val close : file -> unit Lwt.t
-
-  val unlink : string -> unit Lwt.t
-
-  (** @param perm defaults are 0o777 *)
-  val mkdir : ?perm:int -> string -> unit Lwt.t
-
-  val rmdir : string -> unit Lwt.t
-
-  val fsync : file -> unit Lwt.t
-  val fdatasync : file -> unit Lwt.t
-  val ftruncate: file -> len:int64 -> unit Lwt.t
-
-  val stat : string -> stats Lwt.t
-  val lstat : string -> stats Lwt.t
-  val fstat : file -> stats Lwt.t
-  val rename : src:string -> dst:string -> unit Lwt.t
-  val link : target:string -> link_name:string -> unit Lwt.t
-
-  (** @param mode default [S_Default] *)
-  val symlink :
-    ?mode:symlink_mode -> src:string -> dst:string -> unit -> unit Lwt.t
-  val mkdtemp : string -> string Lwt.t
-
-  (** @param pos default 0
-      @param len [Int64.max_int] *)
-  val sendfile :
-    ?pos:int64 -> ?len:int64 -> dst:file -> src:file -> unit -> int64 Lwt.t
-  val utime : string -> access:float -> modif:float -> unit Lwt.t
-  val futime : file -> access:float -> modif:float -> unit Lwt.t
-  val readlink : string -> string Lwt.t
-
-  val access : string -> access_permission list -> unit Lwt.t
-  val chmod : string -> perm:int -> unit Lwt.t
-  val fchmod : file -> perm:int -> unit Lwt.t
-  val chown : string -> uid:int -> gid:int -> unit Lwt.t
-  val fchown : file -> uid:int -> gid:int -> unit Lwt.t
-  val scandir : string -> (file_kind * string) array Lwt.t
+  include Fs_functions with type 'a t := 'a Lwt.t
 end
 
 module Handle : sig
@@ -599,8 +564,8 @@ module Fs_poll : sig
   val to_handle : t -> Handle.t
 
   type report = {
-    prev : Uv.Fs.stats;
-    curr : Uv.Fs.stats;
+    prev : Fs.stats;
+    curr : Fs.stats;
   }
 
   val start : string -> int -> cb:(t -> report result -> unit) -> t result
@@ -716,6 +681,12 @@ module Unix : sig
   val getprotobynumber: int -> Unix.protocol_entry Lwt.t
 end
 
+module C_worker : sig
+  type t
+  type 'a u
+  val call: ('a -> 'b u -> t) -> 'a -> 'b Lwt.t
+end
+
 (**/**)
 (* Only for debugging.
    - Don't call it, while Main.run is active.
@@ -731,10 +702,4 @@ module Async : sig
   val start: t -> Int_result.unit
   val stop: t -> Int_result.unit
   val send: t -> Int_result.unit
-end
-
-module C_worker : sig
-  type t
-  type 'a u
-  val call: ('a -> 'b u -> t) -> 'a -> 'b Lwt.t
 end

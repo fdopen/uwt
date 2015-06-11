@@ -5,12 +5,12 @@ let try_finally f x finallly' y =
   res
 
 module US = Uv_fs_sync
-module UF = Uv.Fs
+module UF = Uwt_base.Fs_types
 
 let rexn s = function
-| Uv.Ok x -> x
-| Uv.Error r ->
-  Printf.eprintf "%s %s:%s\n%!" s (Uv.err_name r) (Uv.strerror r);
+| Uwt_base.Ok x -> x
+| Uwt_base.Error r ->
+  Printf.eprintf "%s %s:%s\n%!" s (Uwt_base.err_name r) (Uwt_base.strerror r);
   raise Exit
 
 let copy ~src ~dst =
@@ -49,7 +49,7 @@ let copy_ba ~src ~dst =
       in
       try_finally ( fun fdo ->
           let b_len = 65_536 in
-          let buf = Uv_bytes.create b_len in
+          let buf = Uwt_bytes.create b_len in
           let rec read () =
             let len = US.read_ba fdi ~buf ~pos:0 ~len:b_len |> rexn "read_ba" in
             if len = 0 then ()

@@ -104,11 +104,11 @@ val null : output_channel
 (** {2 Channels creation/manipulation} *)
 
 val make :
-  ?buffer : Uv_bytes.t ->
+  ?buffer : Uwt_bytes.t ->
   ?close : (unit -> unit Lwt.t) ->
   ?seek : (int64 -> Unix.seek_command -> int64 Lwt.t) ->
   mode : 'mode mode ->
-  (Uv_bytes.t -> int -> int -> int Lwt.t) -> 'mode channel
+  (Uwt_bytes.t -> int -> int -> int Lwt.t) -> 'mode channel
   (** [make ?buffer ?close ~mode perform_io] is the
       main function for creating new channels.
 
@@ -135,21 +135,21 @@ val make :
       flushed. *)
 
 
-val of_bytes : mode : 'mode mode -> Uv_bytes.t -> 'mode channel
+val of_bytes : mode : 'mode mode -> Uwt_bytes.t -> 'mode channel
   (** Create a channel from a byte array. Reading/writing is done
       directly on the provided array. *)
 
 
 val of_file :
-  ?buffer : Uv_bytes.t ->
-  ?close:(unit -> unit Lwt.t) -> mode:'m mode -> Uv.file -> 'm channel
+  ?buffer : Uwt_bytes.t ->
+  ?close:(unit -> unit Lwt.t) -> mode:'m mode -> Uwt.file -> 'm channel
   (** [of_file ?buffer ?close ~mode fd] creates a channel from a
       file descriptor.
 
       @param close defaults to closing the file descriptor. *)
 
 val of_stream :
-  ?buffer : Uv_bytes.t ->
+  ?buffer : Uwt_bytes.t ->
   ?close:(unit -> unit Lwt.t) -> mode:'m mode -> Uwt.Stream.t -> 'm channel
 
 
@@ -362,8 +362,8 @@ type file_name = string
     (** Type of file names *)
 
 val open_file :
-  ?buffer : Uv_bytes.t ->
-  ?flags : Uv.Fs.open_flag list ->
+  ?buffer : Uwt_bytes.t ->
+  ?flags : Uwt.Fs.uv_open_flag list ->
   ?perm : Unix.file_perm ->
   mode : 'a mode ->
   file_name -> 'a channel Lwt.t
@@ -375,8 +375,8 @@ val open_file :
   *)
 
 val with_file :
-  ?buffer : Uv_bytes.t ->
-  ?flags : Uv.Fs.open_flag list ->
+  ?buffer : Uwt_bytes.t ->
+  ?flags : Uwt.Fs.uv_open_flag list ->
   ?perm : Unix.file_perm ->
   mode : 'a mode ->
   file_name -> ('a channel -> 'b Lwt.t) -> 'b Lwt.t
@@ -385,8 +385,8 @@ val with_file :
       channel is closed when [f ch] terminates (even if it fails). *)
 
 val open_connection :
-  ?in_buffer : Uv_bytes.t -> ?out_buffer : Uv_bytes.t ->
-  Uv.sockaddr -> (input_channel * output_channel) Lwt.t
+  ?in_buffer : Uwt_bytes.t -> ?out_buffer : Uwt_bytes.t ->
+  Uwt.sockaddr -> (input_channel * output_channel) Lwt.t
 (** [open_connection ?in_buffer ?out_buffer addr] opens a connection to the
     given address and returns two channels for using it.
 
@@ -397,8 +397,8 @@ val open_connection :
 *)
 
 val with_connection :
-  ?in_buffer : Uv_bytes.t -> ?out_buffer : Uv_bytes.t ->
-  Uv.sockaddr -> (input_channel * output_channel -> 'a Lwt.t) -> 'a Lwt.t
+  ?in_buffer : Uwt_bytes.t -> ?out_buffer : Uwt_bytes.t ->
+  Uwt.sockaddr -> (input_channel * output_channel -> 'a Lwt.t) -> 'a Lwt.t
 (** [with_connection ?fd ?in_buffer ?out_buffer addr f] opens a connection to
       the given address and passes the channels to [f] *)
 
@@ -472,7 +472,7 @@ val system_byte_order : byte_order
 
 (** {2 Low-level access to the internal buffer} *)
 
-val block : 'a channel  -> int -> (Uv_bytes.t -> int -> 'b Lwt.t) -> 'b Lwt.t
+val block : 'a channel  -> int -> (Uwt_bytes.t -> int -> 'b Lwt.t) -> 'b Lwt.t
   (** [block ch size f] pass to [f] the internal buffer and an
       offset. The buffer contains [size] chars at [offset]. [f] may
       read or write these chars.  [size] must satisfy [0 <= size <=
@@ -481,7 +481,7 @@ val block : 'a channel  -> int -> (Uv_bytes.t -> int -> 'b Lwt.t) -> 'b Lwt.t
 (** Information for directly accessing the internal buffer of a
     channel *)
 type direct_access = {
-  da_buffer : Uv_bytes.t;
+  da_buffer : Uwt_bytes.t;
   (** The internal buffer *)
   mutable da_ptr : int;
   (** The pointer to:

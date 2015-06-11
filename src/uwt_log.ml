@@ -106,9 +106,9 @@ let _ = Lwt_log_core.default := channel ~close_mode:`Keep ~channel:Uwt_io.stderr
 let file ?(template="$(date): $(section): $(message)") ?(mode=`Append) ?(perm=0o640) ~file_name () =
   let mode = match mode with
     | `Append ->
-        [Uv.Fs.O_WRONLY; Uv.Fs.O_CREAT; Uv.Fs.O_APPEND; Uv.Fs.O_NONBLOCK]
+        [Uwt.Fs.O_WRONLY; Uwt.Fs.O_CREAT; Uwt.Fs.O_APPEND; Uwt.Fs.O_NONBLOCK]
     | `Truncate ->
-        [Uv.Fs.O_WRONLY; Uv.Fs.O_CREAT; Uv.Fs.O_TRUNC; Uv.Fs.O_NONBLOCK] in
+        [Uwt.Fs.O_WRONLY; Uwt.Fs.O_CREAT; Uwt.Fs.O_TRUNC; Uwt.Fs.O_NONBLOCK] in
   Uwt.Fs.openfile ~perm ~mode file_name >>= fun fd ->
   let oc = Uwt_io.of_file ~mode:Uwt_io.output fd in
   Lwt.return (channel ~template ~close_mode:`Close ~channel:oc ())
@@ -187,7 +187,7 @@ let syslog_connect paths =
                   Unix.connect fd (Unix.ADDR_UNIX path);
                   Unix.set_close_on_exec fd;
                   Unix.set_nonblock fd;
-                  let file = match Uv.Conv.file_of_file_descr fd with
+                  let file = match Uwt.Conv.file_of_file_descr fd with
                   | None -> failwith "windows not supported"
                   | Some x -> x
                   in
@@ -196,7 +196,7 @@ let syslog_connect paths =
                 )
                 (function
                 | Unix.Unix_error(Unix.EPROTOTYPE, _, _)
-                | Uv.Uv_error(Uv.EPROTOTYPE, _, _) ->
+                | Uwt.Uwt_error(Uwt.EPROTOTYPE, _, _) ->
                   (* Then try with a stream socket: *)
                   let fd = Unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
                   Lwt.catch
@@ -204,7 +204,7 @@ let syslog_connect paths =
                        Unix.connect fd (Unix.ADDR_UNIX path);
                        Unix.set_close_on_exec fd;
                        Unix.set_nonblock fd;
-                       let file = match Uv.Conv.file_of_file_descr fd with
+                       let file = match Uwt.Conv.file_of_file_descr fd with
                        | None -> failwith "windows not supported"
                        | Some x -> x
                        in

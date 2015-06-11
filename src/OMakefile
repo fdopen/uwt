@@ -50,18 +50,18 @@ section
 	.SCANNER: scan-c-%: map_error.h config.h
 	.SCANNER: scan-ocaml-%: error.ml error_val.ml
 	OCAMLFINDFLAGS+= -pp cppo
-	MLFILES= uv uv_bytes uv_misc
-	CFILES= uwt_stubs uv_bytes_stubs
+	MLFILES= uwt_base uwt_bytes
+	CFILES= uwt_stubs uwt_bytes_stubs
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+=$(LDFLAGS_LIBUV)
 	Repeat_targets($(MLFILES))
-	UV_BASE=$(MixedLibrary uv_base, $(MLFILES), $(CFILES))
-	lib:: $(UV_BASE)
-	export UV_BASE
+	UWT_BASE=$(MixedLibrary uwt_base, $(MLFILES), $(CFILES))
+	lib:: $(UWT_BASE)
+	export UWT_BASE
 
 section
 	MLFILES= uv_fs_sync
-	OCAML_LIBS+= $(file uv_base)
+	OCAML_LIBS+= uwt_base
 	Repeat_targets($(MLFILES))
 	UV_SYNC=$(MOCamlLibrary uv_fs_sync, $(MLFILES))
 	lib:: $(UV_SYNC)
@@ -70,7 +70,7 @@ section
 section
 	OCAMLPACKS+= lwt
 	MLFILES= uwt uwt_io
-	OCAML_LIBS+= $(file uv_base)
+	OCAML_LIBS+= uwt_base
 	Repeat_targets($(MLFILES))
 	UWT_CORE=$(MOCamlLibrary uwt, $(MLFILES))
 	lib:: $(UWT_CORE)
@@ -78,7 +78,7 @@ section
 
 section
 	OCAMLPACKS+= lwt
-	OCAML_LIBS+= $(file uv_base) $(file uwt)
+	OCAML_LIBS+= uwt_base uwt
 	FILES= uwt_log
 	Repeat_targets($(FILES))
 	UWT_LOG=$(MOCamlLibrary uwt_log, $(FILES))
@@ -87,7 +87,7 @@ section
 
 section
 	OCAMLPACKS+= lwt
-	OCAML_LIBS+= $(file uv_base) $(file uwt) $(file uwt_log)
+	OCAML_LIBS+= uwt_base uwt uwt_log
 	OCAMLFLAGS+= -thread
 	FILES= uwt_preemptive
 	Repeat_targets($(FILES))
@@ -97,7 +97,7 @@ section
 
 section
 	OCAMLPACKS+= lwt lwt.log
-	OCAML_LIBS+= $(file uv_base) $(file uwt) $(file uwt_log)
+	OCAML_LIBS+= uwt_base uwt uwt_log
 	FILES= uwt_compat
 	Repeat_targets($(FILES))
 	UWT_COMPAT=$(MOCamlLibrary uwt_compat,$(FILES))
@@ -106,7 +106,7 @@ section
 
 section
 	OCAMLPACKS+= lwt
-	x=$(CreateDoc uwt,html,uv_base.mli uv_sync.mli uv_bytes.mli uwt.mli uwt_io.mli)
+	x=$(CreateDoc uwt,html,uwt_base.mli uv_sync.mli uwt_bytes.mli uwt.mli uwt_io.mli)
 
 ConfReplace(META)
 
@@ -115,7 +115,7 @@ clean::
 
 .PHONY: install uninstall
 section
-	UWT= $(UV_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_LOG) $(UWT_PREEMPTIVE)
+	UWT= $(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_LOG) $(UWT_PREEMPTIVE)
 	IFILES= $(filter-out %.o %.cmo, $(UWT))
 	CMTIFILES=$(replacesuffixes .cma, .cmti, $(filter %.cma, $(UWT)))
 	install: META $(UWT)

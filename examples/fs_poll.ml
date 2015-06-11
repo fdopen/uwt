@@ -1,13 +1,11 @@
 module U = Uwt
 module UP = U.Fs_poll
 
-type file_kind = [%import: Uv.Fs.file_kind] [@@deriving show]
-type stats = [%import: Uv.Fs.stats] [@@deriving show]
-
 let cb _t = function
-| Uv.Error x -> Uv.strerror x |> Uwt_io.printf "error: %s\n" |> ignore
-| Uv.Ok x ->
+| Uwt.Error x -> Uwt.strerror x |> Uwt_io.printf "error: %s\n" |> ignore
+| Uwt.Ok x ->
   let open UP in
+  let open Show_uwt in
   let (-) = Int64.sub in
   let atime_diff =
     Printf.sprintf "atime-diff: %Ld\n" (x.curr.st_atime - x.prev.st_atime)

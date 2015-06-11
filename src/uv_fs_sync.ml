@@ -39,8 +39,8 @@ type loop_mode =
   | Cb
 *)
 
-open Uv
-open Uv.Fs
+open Uwt_base
+include Fs_types
 
 type loop
 external uv_default_loop: int -> loop result = "uwt_default_loop"
@@ -157,7 +157,7 @@ external fchown:
 let fchown fd ~uid ~gid = Req.qlu ~typ ~f:(fchown fd uid gid)
 
 external openfile:
-  string -> Uv.Fs.open_flag list -> int ->
+  string -> uv_open_flag list -> int ->
   loop -> Req.t -> unit ->
   Int_result.int =
   "uwt_fs_open_byte" "uwt_fs_open_native"

@@ -19,7 +19,7 @@ let l = [
      m_equal Unix.PF_INET (
        Uwt.Unix.gethostbyname "google.com" >>=
        fun s -> Lwt.return s.Unix.h_addrtype);
-     m_raises (Uv.ENOENT,"uwt_gethostbyname","")(
+     m_raises (Uwt.ENOENT,"uwt_gethostbyname","")(
        Uwt.Unix.gethostbyname "verylongandinvalidadzuarztgjbgf.com"));
   ("gethostbyaddr">::
    fun _ctx ->
@@ -32,14 +32,14 @@ let l = [
      m_equal Unix.PF_INET6 (
        Uwt.Unix.gethostbyaddr ip6 >>=
        fun s -> Lwt.return s.Unix.h_addrtype);
-     m_raises (Uv.ENOENT,"uwt_gethostbyaddr","")(
+     m_raises (Uwt.ENOENT,"uwt_gethostbyaddr","")(
        Uwt.Unix.gethostbyaddr ip6_invalid));
   ("getprotobyname">::
    fun _ctx ->
      m_equal 1 (
        Uwt.Unix.getprotobyname "icmp" >>= fun s ->
        return s.Unix.p_proto);
-     m_raises (Uv.ENOENT,"uwt_getprotobyname","")(
+     m_raises (Uwt.ENOENT,"uwt_getprotobyname","")(
        Uwt.Unix.getprotobyname "uwt" >>= fun s ->
        return s.Unix.p_proto));
   ("getprotobynumber">::
@@ -57,7 +57,7 @@ let l = [
      m_true (
        Uwt.Unix.getservbyname ~name:"www" ~protocol:"tcp" >>=
        fun s -> is_http s );
-     m_raises (Uv.ENOENT,"uwt_getservbyname","")(
+     m_raises (Uwt.ENOENT,"uwt_getservbyname","")(
        Uwt.Unix.getservbyname ~name:"uwt" ~protocol:"udp" >>=
        fun s -> return s.Unix.s_name));
   ("getservbyport">::
@@ -66,7 +66,7 @@ let l = [
        Uwt.Unix.getservbyport 80 "" >>= fun s -> is_http s);
      m_true (
        Uwt.Unix.getservbyport 80 "tcp" >>= fun s -> is_http s);
-     m_raises (Uv.ENOENT,"uwt_getservbyport","")(
+     m_raises (Uwt.ENOENT,"uwt_getservbyport","")(
        Uwt.Unix.getservbyport 54325 "udp" >>=
        fun s -> return s.Unix.s_name));
 ]

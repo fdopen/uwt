@@ -36,7 +36,7 @@ open Lwt.Infix
 external init_stacks : unit -> unit = "uwt_init_stacks_na" "noalloc"
 let () = init_stacks ()
 
-open Uv
+include Uwt_base
 
 module LInt_result = struct
 
@@ -109,7 +109,7 @@ module Req = struct
       finalize req;
       match x with
       | Ok x -> Lwt.return x
-      | Error x -> Lwt.fail (Uv_error(x,name,param))
+      | Error x -> Lwt.fail (Uwt_error(x,name,param))
 
   let qlu ~typ ~f ~name ~param =
     let sleeper,waker = Lwt.task () in
@@ -149,11 +149,12 @@ module Req = struct
 end
 
 module Fs = struct
-  open Uv.Fs
+  include Fs_types
+
   let typ = Req.Fs
 
   external openfile:
-    string -> Uv.Fs.open_flag list -> int ->
+    string -> uv_open_flag list -> int ->
     loop -> Req.t -> int_cb ->
     Int_result.unit =
     "uwt_fs_open_byte" "uwt_fs_open_native"
@@ -382,7 +383,7 @@ let qsu5 ~f ~name a b c d e =
 
 let to_exn n = function
 | Ok x -> x
-| Error x -> raise (Uv_error(x,n,param))
+| Error x -> raise (Uwt_error(x,n,param))
 
 let to_exni name (n: Int_result.int) =
   if Int_result.is_error n then
@@ -515,7 +516,7 @@ module Stream = struct
       else if x = len then
         Lwt.return_unit
       else if x > len then
-        Lwt.fail(Uv_error(UWT_EFATAL,name,""))
+        Lwt.fail(Uwt_error(UWT_EFATAL,name,""))
       else
         let pos = pos + x
         and len = len - x in
@@ -635,7 +636,7 @@ module Pipe = struct
          start - an will never be closed (UWT_EFATAL not possible).
          And uv_tcp_init always returns zero. But the libuv internals
          might change in future versions,... *)
-      raise (Uv_error(x,"uv_pipe_init",""))
+      raise (Uwt_error(x,"uv_pipe_init",""))
 
   external bind:
     t -> path:string -> Int_result.unit = "uwt_pipe_bind_na" "noalloc"
@@ -712,7 +713,7 @@ module Tcp = struct
     match init_raw loop with
     | Ok x -> x
     | Error ENOMEM -> raise Out_of_memory
-    | Error x -> raise (Uv_error(x,"uv_tcp_init",""))
+    | Error x -> raise (Uwt_error(x,"uv_tcp_init",""))
 
   external opentcp:
     t -> socket -> Int_result.unit = "uwt_tcp_open_na" "noalloc"
@@ -789,7 +790,7 @@ module Udp = struct
     match init_raw loop with
     | Ok x -> x
     | Error ENOMEM -> raise Out_of_memory
-    | Error x -> raise (Uv_error(x,"uv_init_tcp",""))
+    | Error x -> raise (Uwt_error(x,"uv_init_tcp",""))
 
   external openudp: t -> socket -> Int_result.unit = "uwt_udp_open_na" "noalloc"
   let openudp s =
@@ -919,7 +920,7 @@ module Udp = struct
       else if x = len then
         Lwt.return_unit
       else if x > len then
-        Lwt.fail(Uv_error(UWT_EFATAL,name,""))
+        Lwt.fail(Uwt_error(UWT_EFATAL,name,""))
       else
         let pos = pos + x
         and len = len - x in
@@ -989,7 +990,7 @@ module Udp = struct
         let () = Lwt.on_cancel sleeper ( fun () -> recv_stop t |> ignore ) in
         sleeper >>= function
         | Ok x -> Lwt.return x
-        | Error x -> Lwt.fail (Uv_error(x,name,param))
+        | Error x -> Lwt.fail (Uwt_error(x,name,param))
 
   let recv_ba ?pos ?len ~(buf:buf) t =
     let dim = Bigarray.Array1.dim buf in
@@ -1023,7 +1024,7 @@ module Timer = struct
     let sleeper,waker = Lwt.task () in
     let cb (_:t) = Lwt.wakeup waker () in
     match start ~repeat:0 ~timeout:s ~cb with
-    | Error x -> Lwt.fail (Uv_error(x,"uv_timer_start",param))
+    | Error x -> Lwt.fail (Uwt_error(x,"uv_timer_start",param))
     | Ok t ->
       Lwt.on_cancel sleeper ( fun () -> close_noerr t );
       sleeper
@@ -1106,8 +1107,8 @@ module Fs_poll = struct
   external to_handle : t -> Handle.t = "%identity"
 
   type report = {
-    prev: Uv.Fs.stats;
-    curr: Uv.Fs.stats
+    prev: Fs.stats;
+    curr: Fs.stats
   }
 
   external start:
@@ -1494,7 +1495,7 @@ end
 
 module C_worker = struct
 
-  type t = unit Uv.Int_result.t
+  type t = unit Int_result.t
   type 'a u = loop * Req.t * 'a result Lwt.u
 
   let call (f: 'a -> 'b u -> t) (a:'a) : 'b Lwt.t =
@@ -1513,7 +1514,7 @@ module C_worker = struct
         Req.finalize req;
         match x with
         | Ok x -> Lwt.return x
-        | Error x -> Lwt.fail (Uv_error(x,"",""))
+        | Error x -> Lwt.fail (Uwt_error(x,"",""))
 end
 
 let valgrind_happy = Valgrind.valgrind_happy
@@ -1521,9 +1522,9 @@ let valgrind_happy = Valgrind.valgrind_happy
 let () =
   Printexc.register_printer
     (function
-    | Uv_error (e, s, s') ->
+    | Uwt_error (e, s, s') ->
       let msg = err_name e in
-      Some (Printf.sprintf "Uwt.Uv_error(Uwt.%s, %S, %S)" msg s s')
+      Some (Printf.sprintf "Uwt.Uwt_error(Uwt.%s, %S, %S)" msg s s')
     | Main.Main_error(e,s) ->
       let msg = err_name e in
       Some (Printf.sprintf "Uwt.Main.Main_error(Uwt.%s, %S)" msg s)

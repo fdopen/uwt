@@ -3,17 +3,25 @@
 
 section
 	OCAMLPACKS+= lwt
-	OCAMLINCLUDES[]+= $(dir ../src)
-	OCAML_LIBS+= $(file ../src/uv_base)
+	OCAMLINCLUDES[]+= ../src
+	OCAML_LIBS+= ../src/uwt_base
 	f=help
 	Repeat_targets($(f))
 	TEST_PROG=$(OCamlLibrary $(f),$(f))
 
+section
+	OCAMLPACKS+= ppx_import unix ppx_deriving.show
+	OCAML_LIBS+= ../src/uwt_base ../src/uwt
+	OCAMLINCLUDES[]+= ../src
+	f=show_uwt
+	Repeat_targets($(f))
+	TEST_PROG=$(OCamlLibrary show_uwt,$(f))
+
 if $(not $(equal $(OSTYPE),Win32))
 	section
 		OCAMLPACKS+= lwt
-		OCAMLINCLUDES[]+= $(dir ../src)
-		OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uwt)
+		OCAMLINCLUDES[]+= ../src
+		OCAML_LIBS+= ../src/uwt_base ../src/uwt
 		MLFILES= glob
 		CFILES= glob_stubs
 		CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
@@ -23,8 +31,8 @@ if $(not $(equal $(OSTYPE),Win32))
 		examples:: $(GLOB)
 
 	section
-		OCAMLINCLUDES[]+= $(dir ../src)
-		OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uwt) $(file uwtglob)
+		OCAMLINCLUDES[]+= ../src
+		OCAML_LIBS+= ../src/uwt_base ../src/uwt uwtglob
 		MLFILES = custom_c_worker
 		OCAMLPACKS+= lwt bigarray unix
 		TEST_PROG=$(OCamlProgram custom_c_worker,$(MLFILES))
@@ -34,9 +42,9 @@ if $(not $(equal $(OSTYPE),Win32))
 			rm -f custom_c_worker$(EXE)
 
 example_s(f)=
-	OCAMLPACKS+= ppx_import ppx_deriving.show bigarray unix
-	OCAMLINCLUDES[]+= $(dir ../src)
-	OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uv_fs_sync)
+	OCAMLPACKS+= ppx_deriving.show bigarray unix
+	OCAMLINCLUDES[]+= ../src
+	OCAML_LIBS+= ../src/uwt_base ../src/uv_fs_sync
 	Repeat_targets($(f))
 	TEST_PROG=$(OCamlProgram $(f),$(f))
 	examples:: $(TEST_PROG)
@@ -44,12 +52,12 @@ example_s(f)=
 		rm -f $(f)$(EXE)
 
 example_r(f,x)=
-	OCAMLPACKS+= ppx_import lwt bigarray unix ppx_deriving.show threads lwt.log
+	OCAMLPACKS+= ppx_deriving.show lwt bigarray unix threads lwt.log
 	OCAMLFLAGS+= -thread
-	OCAMLINCLUDES[]+= $(dir ../src)
-	OCAML_LIBS+= $(file ../src/uv_base) $(file ../src/uwt) $(file ../src/uwt_log) $(file ../src/uwt_preemptive)
+	OCAMLINCLUDES[]+= ../src
+	OCAML_LIBS+= ../src/uwt_base ../src/uwt ../src/uwt_log ../src/uwt_preemptive show_uwt
 	if $(equal $(x),true)
-		OCAML_LIBS+= $(file help)
+		OCAML_LIBS+= help
 		export
 	Repeat_targets($(f))
 	TEST_PROG=$(OCamlProgram $(f),$(f))

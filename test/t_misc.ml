@@ -1,6 +1,6 @@
 open Common
 open OUnit2
-open Uv_misc
+open Uwt_base.Misc
 (* Worthwile tests are not possible in most cases, because the
    functions are not implemented completely on all systems - and I
    don't know anything about the target system :) So I just access at
@@ -52,7 +52,7 @@ let l = [
       let p = version_string () |> String.length > 3 in
       assert_equal true p );
   ("os_homedir">:: fun _ ->
-      let open Uv in
+      let open Uwt in
       let p = match os_homedir () with
       | Ok "" -> false
       | Error UWT_WRONGUV ->

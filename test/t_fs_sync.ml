@@ -1,9 +1,7 @@
 open OUnit2
-open Uv
-open Uv.Fs
-open Uv_fs_sync
+open Uwt_base
 module US = Uv_fs_sync
-
+open Uv_fs_sync
 
 let bind v f = match v with Ok v -> f v | Error _ as e -> e
 let ( >>= ) = bind
@@ -30,7 +28,7 @@ let rec really_write ?(pos=0) ?len buf fd =
 
 let file_to_bytes s =
   US.openfile ~mode:[ O_RDONLY ] s >>= fun fd ->
-  let fd' : Unix.file_descr = match Uv.Conv.file_descr_of_file fd with
+  let fd' : Unix.file_descr = match Uwt.Conv.file_descr_of_file fd with
   | None -> assert false;
   | Some ok -> ok
   in
@@ -86,7 +84,7 @@ let copy_ba ~src ~dst =
         ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst >>= fun fd_write ->
       finalize ( fun () ->
           let b_len = 65_536 in
-          let buf = Uv_bytes.create b_len in
+          let buf = Uwt_bytes.create b_len in
           let rec read () =
             US.read_ba fd_read ~buf ~pos:0 ~len:b_len >>= fun n ->
             if n = 0 then
@@ -125,7 +123,7 @@ let tmpdir = ref "/tmp/invalid/invalid/invalid/invalid"
 
 let to_exn = function
 | Ok x -> x
-| Error s -> raise (Uv_error(s,"",""))
+| Error s -> raise (Uwt_error(s,"",""))
 
 let return s = Ok s
 let m_equal s t =
@@ -134,7 +132,7 @@ let m_true t = m_equal true t
 
 let m_raises a (t: unit -> 'a) =
   assert_raises
-    (Uv.Uv_error(a,"",""))
+    (Uwt.Uwt_error(a,"",""))
     ( fun () -> t () |> to_exn )
 
 
@@ -259,7 +257,7 @@ let l = [
      let z = !tmpdir // "z" in
      let x = !tmpdir // "zz" in
      m_raises
-       Uv.ENOENT
+       Uwt.ENOENT
        (fun () -> access x [Read]);
      m_equal () (fun () -> access z [Read]);
      m_equal () (fun () -> access Sys.executable_name [Exec]);
@@ -276,7 +274,7 @@ let l = [
      in
      skip_if (shadow == invalid) "no shadow";
      m_raises
-       Uv.EACCES
+       Uwt.EACCES
        (fun () -> access shadow [Read]) );
   ("ftruncate">::
    fun _ctx ->

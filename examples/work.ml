@@ -1,11 +1,10 @@
 open Lwt.Infix
-type service_entry = [%import: Unix.service_entry] [@@deriving show]
 
 let () =
   let t =
     Uwt.Unix.getservbyname ~name:"www" ~protocol:"tcp" >>= fun s ->
-    show_service_entry s |> Uwt_io.printl >>= fun () ->
-    Uwt.Fs.openfile ~mode:[Uv.Fs.O_RDONLY] Sys.executable_name >>= fun fd ->
+    Show_uwt.show_service_entry s |> Uwt_io.printl >>= fun () ->
+    Uwt.Fs.openfile ~mode:[Uwt.Fs.O_RDONLY] Sys.executable_name >>= fun fd ->
     Uwt.Unix.lseek fd 0L Unix.SEEK_END >>= fun l ->
     Uwt_io.printf "%Ld\n" l >>= fun () ->
     Uwt.Unix.lseek fd 1_000L Unix.SEEK_SET >>= fun _l ->
@@ -17,8 +16,8 @@ let () =
         Uwt.Unix.lseek (Obj.magic 1000) 0L Unix.SEEK_END >>= fun _l ->
         Uwt_io.printl "magic seek ok!"
       ) ( function
-      | Uv.Uv_error(a,b,c) ->
-        Uwt_io.printf "Uwt_error(%s,%s,%s)\n" (Uv.strerror a) b c
+      | Uwt.Uwt_error(a,b,c) ->
+        Uwt_io.printf "Uwt_error(%s,%s,%s)\n" (Uwt.strerror a) b c
       | x -> Lwt.fail x )
   in
   Uwt.Main.run t

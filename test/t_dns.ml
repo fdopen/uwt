@@ -34,12 +34,12 @@ open OUnit2
 let l = [
   ("getaddrinfo/getnameinfo">::
    fun _ctx ->
-     let open Uv in
+     let open Uwt in
      m_true ( dnstest "google.com" );
      m_true ( Lwt.catch ( fun () -> dnstest "asdfli4uqoi5tukjgakjlhadfkogle.com"
                           >>= fun _ -> Lwt.return_false )
                 (function
-                | Uv_error((EAI_NONAME|ENOENT|EAI_NODATA),_,_) ->
+                | Uwt_error((EAI_NONAME|ENOENT|EAI_NODATA),_,_) ->
                   Lwt.return_true
                 | x -> Lwt.fail x )));
 ]
