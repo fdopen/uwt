@@ -75,7 +75,6 @@ include module type of Uwt_base
   with type 'a result = 'a Uwt_base.result
   with type file = Uwt_base.file
   with type sockaddr = Uwt_base.sockaddr
-  with type socket = Uwt_base.socket
   with type 'a Int_result.t = 'a Uwt_base.Int_result.t
   with type Fs_types.uv_open_flag = Uwt_base.Fs_types.uv_open_flag
   with type Fs_types.file_kind = Uwt_base.Fs_types.file_kind
@@ -206,6 +205,10 @@ module Handle : sig
       canceled. *)
   val close_wait : t -> unit Lwt.t
   val is_active : t -> bool
+
+  val ref': t -> unit
+  val unref: t -> unit
+  val has_ref: t -> bool
 end
 
 module Handle_ext : sig
@@ -221,6 +224,14 @@ module Handle_ext : sig
 
   val set_recv_buffer_size : t -> int -> Int_result.unit
   val set_recv_buffer_size_exn : t -> int -> unit
+end
+
+module Handle_fileno : sig
+  type t
+  (** Be careful. You must still keep your orginal handle around.
+      Otherwise uwt will close the handle .... *)
+  val fileno : t -> Unix.file_descr result
+  val fileno_exn : t -> Unix.file_descr
 end
 
 module Stream : sig
@@ -288,6 +299,7 @@ module Pipe : sig
   type t
   include module type of Stream with type t := t
   include module type of Handle_ext with type t := t
+  include module type of Handle_fileno with type t := t
   val to_stream: t -> Stream.t
 
   (** The only thing that can go wrong, is memory allocation.
@@ -304,8 +316,8 @@ module Pipe : sig
      pipe (or tcp socket,...) you can trigger assert failures inside libuv.
      @param ipc is false by default
   *)
-  val openpipe : ?ipc:bool -> file -> t result
-  val openpipe_exn : ?ipc:bool -> file -> t
+  val openpipe : ?ipc:bool -> Unix.file_descr -> t result
+  val openpipe_exn : ?ipc:bool -> Unix.file_descr -> t
 
   val bind: t -> path:string -> Int_result.unit
   val bind_exn : t -> path:string -> unit
@@ -333,6 +345,7 @@ module Tcp : sig
   type t
   include module type of Stream with type t := t
   include module type of Handle_ext with type t := t
+  include module type of Handle_fileno with type t := t
   val to_stream : t -> Stream.t
 
   (** See comment to {!Pipe.init} *)
@@ -342,8 +355,8 @@ module Tcp : sig
     | Ipv6_only
 
   (** See comment to {!Pipe.openpipe} *)
-  val opentcp : socket -> t result
-  val opentcp_exn : socket -> t
+  val opentcp : Unix.file_descr -> t result
+  val opentcp_exn : Unix.file_descr -> t
 
   (** @param mode: default is the empty list *)
   val bind : ?mode:mode list -> t -> addr:sockaddr -> unit -> Int_result.unit
@@ -375,6 +388,7 @@ module Udp : sig
   type t
   include module type of Handle with type t := t
   include module type of Handle_ext with type t := t
+  include module type of Handle_fileno with type t := t
   val to_handle : t -> Handle.t
 
   val send_queue_size: t -> int
@@ -384,8 +398,8 @@ module Udp : sig
   val init : unit -> t
 
   (** See comment to {!Pipe.openpipe} *)
-  val openudp : socket -> t result
-  val openudp_exn : socket -> t
+  val openudp : Unix.file_descr -> t result
+  val openudp_exn : Unix.file_descr -> t
 
   type mode =
     | Ipv6_only
@@ -472,7 +486,7 @@ end
 module Tty : sig
   type t
   include module type of Stream with type t := t
-
+  include module type of Handle_fileno with type t := t
   val to_stream: t -> Stream.t
   val init : file -> read:bool -> t result
   val init_exn : file -> read:bool -> t
@@ -523,6 +537,7 @@ end
 module Poll : sig
   type t
   include module type of Handle with type t := t
+  include module type of Handle_fileno with type t := t
   val to_handle : t -> Handle.t
 
   type event =
@@ -530,12 +545,10 @@ module Poll : sig
     | Writable
     | Readable_writable
 
-  (** start and start_exn don't support windows *)
-  val start : file -> event -> cb:(t -> event result -> unit) -> t result
-  val start_exn : file -> event -> cb:(t -> event result -> unit) -> t
-
-  val start_socket : socket -> event -> cb:(t -> event result -> unit) -> t result
-  val start_socket_exn : socket -> event -> cb:(t -> event result -> unit) -> t
+  (** start and start_exn are only supported under windows, if the
+      [Unix.file_descr] is a wrapper around a SOCKET, not a HANDLE *)
+  val start : Unix.file_descr -> event -> cb:(t -> event result -> unit) -> t result
+  val start_exn : Unix.file_descr -> event -> cb:(t -> event result -> unit) -> t
 end
 
 module Fs_event : sig

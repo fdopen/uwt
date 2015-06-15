@@ -9,6 +9,12 @@ let m_raises (a,b,c) t =
     (fun () -> Uwt.Main.run t)
 let m_true t = m_equal true t
 
+let nm_try_finally f x finallly' y =
+  let res =
+    try f x with exn -> finallly' y; raise exn in
+  finallly' y;
+  res
+
 let try_finally fnormal finalizer =
   let module T = struct type 'a t = Ok of 'a | Error of exn end in
   Lwt.catch ( fun () ->

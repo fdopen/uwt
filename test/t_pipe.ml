@@ -44,7 +44,7 @@ module Echo_server = struct
         if addr2 <> addr then
           failwith "pipe address differ";
         listen_exn server ~max:8 ~cb:on_listen;
-        let s,_ = Lwt.task () in
+        let (s:unit Lwt.t),_ = Lwt.task () in
         s
       ) ( fun () -> close_noerr server ; Lwt.return_unit )
 end
@@ -95,10 +95,21 @@ module Client = struct
     Lwt.return ((Buffer.contents buf_write) = (Buffer.contents buf_read))
 end
 
-let server_init = lazy (
-  let server_thread = Echo_server.start () in
-  Uwt.Main.at_exit ( fun () -> Lwt.cancel server_thread; Lwt.return_unit ))
+let server_thread = ref None
+let close_server () =
+  (match !server_thread with
+  | None -> ()
+  | Some t ->
+    server_thread := None;
+    Lwt.cancel t);
+  Lwt.return_unit
 
+let server_init () =
+  match !server_thread with
+  | Some _ -> ()
+  | None ->
+    server_thread := Some( Echo_server.start () );
+    Uwt.Main.at_exit close_server
 
 let write_much client =
   let buf = Uwt_bytes.create 32768 in
@@ -120,12 +131,13 @@ open OUnit2
 let l = [
   ("echo_server">::
    fun _ctx ->
-     Lazy.force server_init |> ignore ;
+     server_init ();
      m_true ( Uwt.Main.yield () >>= fun () -> Lwt.return_true );
      m_true ( Client.test true );
      m_true ( Client.test false ));
   ("write_allot">::
    fun ctx ->
+     server_init ();
      let l () =
        let client = init () in
        try_finally ( fun () ->
@@ -177,6 +189,34 @@ let l = [
          ) ( fun () -> close_noerr client; Lwt.return_unit)
      in
      m_true (l ()));
+  ("fileno">::
+   fun _ctx ->
+     let (fd1,fd2) = Unix.pipe () in
+     let conv x = match Uwt.Conv.file_of_file_descr x with
+     | None -> assert false
+     | Some t -> t
+     in
+     let file1 = conv fd1
+     and file2 = conv fd2 in
+     let p1 = Uwt.Pipe.openpipe_exn fd1
+     and p2 = Uwt.Pipe.openpipe_exn fd2 in
+     let fd1' = Uwt.Pipe.fileno_exn p1
+     and fd2' = Uwt.Pipe.fileno_exn p2 in
+     let file1' = conv fd1'
+     and file2' = conv fd2' in
+     assert_equal fd1 fd1';
+     assert_equal fd2 fd2';
+     assert_equal file1 file1';
+     assert_equal file2 file2';
+     assert_equal false (file1 = file2);
+     Uwt.Pipe.close_noerr p1;
+     Uwt.Pipe.close_noerr p2;
+     let open U in
+     let is_error = match Uwt.Pipe.fileno p1 with
+     | Error(EBADF|UWT_EBADF) -> true
+     | Ok _ | Error _ -> false
+     in
+     assert_equal true is_error );
   ("write_abort">::
    fun _ctx ->
      let client = init () in

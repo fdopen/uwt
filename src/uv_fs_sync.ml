@@ -156,6 +156,17 @@ external fchown:
   "uwt_fs_fchown_byte" "uwt_fs_fchown_native"
 let fchown fd ~uid ~gid = Req.qlu ~typ ~f:(fchown fd uid gid)
 
+external get_result: Req.t -> 'a = "uwt_get_fs_result"
+let cu f : 'a =
+  let req = Req.create loop typ in
+  let (x: Int_result.int) = f loop req () in
+  if Int_result.is_error x then
+    Error (Int_result.to_error x)
+  else
+    let r = get_result req in
+    Req.free req;
+    r
+
 external openfile:
   string -> uv_open_flag list -> int ->
   loop -> Req.t -> unit ->
@@ -163,15 +174,8 @@ external openfile:
   "uwt_fs_open_byte" "uwt_fs_open_native"
 
 let openfile ?(perm=0o644) ~mode fln : file result =
-  let req = Req.create loop typ in
-  let (x: Int_result.int) = openfile fln mode perm loop req () in
-  if Int_result.is_error x then
-    Error (Int_result.to_error x)
-  else
-    let () = Req.free req in
-    Ok (Obj.magic x)
+  cu (openfile fln mode perm)
 
-external get_result: Req.t -> 'a = "uwt_get_fs_result"
 
 external read:
   file -> 'a -> int -> int ->
@@ -242,16 +246,6 @@ let write_string ?pos ?len t ~buf =
 let write ?pos ?len t ~buf =
   let dim = Bytes.length buf in
   write ~dim ?pos ?len t ~buf
-
-let cu f : 'a =
-  let req = Req.create loop typ in
-  let (x: Int_result.int) = f loop req () in
-  if Int_result.is_error x then
-    Error (Int_result.to_error x)
-  else
-    let r = get_result req in
-    Req.free req;
-    r
 
 external sendfile:
   file -> file -> int64 -> int64 -> loop -> Req.t -> unit ->

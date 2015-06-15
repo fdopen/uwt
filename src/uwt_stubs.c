@@ -357,16 +357,6 @@ union all_sockaddr {
 
 #define SOCKADDR_WOSIZE (CEIL((sizeof(union all_sockaddr)),(sizeof(intnat))))
 
-#ifdef _WIN32
-/*
-  TODO: are they really always a multiple of 2?
-  http://blogs.msdn.com/b/oldnewthing/archive/2005/01/21/358109.aspx
-*/
-#define Uv_os_sock_t_val(x) (((uintptr_t)(x)) ^ 1u)
-#else
-#define Uv_os_sock_t_val(x) (Long_val(x))
-#endif
-
 #define uwt_alloc_sockaddr()                        \
   (SOCKADDR_WOSIZE < Max_young_wosize ?             \
    caml_alloc_small(SOCKADDR_WOSIZE,Abstract_tag) : \
@@ -414,6 +404,11 @@ struct ATTR_PACKED handle {
     cb_t obuf;
     unsigned int obuf_offset; /* for read_own */
     unsigned int c_read_size; /* passed to the alloc function */
+#ifdef _WIN32
+    int orig_fd; /* when converting to and back from Unix.file_descr, I have to
+                    save the original crt fd in order to avoid descriptor
+                    leaking. See mantis #5258 */
+#endif
     uint16_t in_use_cnt;
     uint16_t in_callback_cnt;
 
@@ -437,10 +432,12 @@ struct ATTR_PACKED handle {
     unsigned int read_waiting: 1;
 };
 
-#ifdef _WIN32
+#ifdef Handle_val
 #undef Handle_val
-#define OCAML_Handle_val(v) \
+#ifdef _WIN32
+#define OCAML_Handle_val(v)                               \
   (((struct filedescr *) Data_custom_val(v))->fd.handle)
+#endif
 #endif
 
 #define Handle_val(x)                           \
@@ -850,6 +847,9 @@ handle_create(int handle_type, enum cb_type cb_type)
   wp->ba_read = NULL;
   wp->handle->data = wp;
   wp->handle->type = handle_type;
+#ifdef _WIN32
+  wp->orig_fd = -1;
+#endif
 
   wp->initialized = 0;
   wp->in_use_cnt = 0;
@@ -1451,9 +1451,6 @@ uwt_req_finalize_na(value res)
 #define RSTART_u(n,...)                         \
   RSTART_x(n,ret_uv_result_unit,__VA_ARGS__)
 
-#define RSTART_i(n,...)                         \
-  RSTART_x(n,ret_uv_result_int,__VA_ARGS__)
-
 #define RSTART_c(n,...)                         \
   RSTART_x(n,n ## _cb,__VA_ARGS__)
 
@@ -1469,21 +1466,11 @@ uwt_req_finalize_na(value res)
 #define UFSSTART(...)                           \
   RSTART(u,__VA_ARGS__)
 
-#define IFSSTART(...)                           \
-  RSTART(i,__VA_ARGS__)
-
 static value
 ret_uv_result_unit(uv_req_t * r)
 {
   uv_fs_t* req = (uv_fs_t*)r;
   return (VAL_UNIT_UV_RESULT(req->result));
-}
-
-static value
-ret_uv_result_int(uv_req_t * r)
-{
-  uv_fs_t* req = (uv_fs_t*)r;
-  return (VAL_LONG_UV_RESULT(req->result));
 }
 
 static value
@@ -1536,8 +1523,56 @@ static int open_flag_table[16] = {
   0, 0, 0, 0
 #endif
 };
+#ifdef _WIN32
+static void
+fs_open_clean_cb(uv_fs_t* req)
+{
+  uv_fs_req_cleanup(req);
+  free(req);
+}
+#endif
 
-IFSSTART(fs_open,o_name,o_flag_list,o_perm,{
+static value
+fs_open_cb(uv_req_t * r)
+{
+  uv_fs_t* req = (uv_fs_t*)r;
+  value ret;
+  int fd = (int) req->result;
+  if ( fd < 0 ){
+    ret = caml_alloc_small(1,Error_tag);
+    Field(ret,0) = Val_error(fd);
+  }
+  else {
+#ifndef _WIN32
+    ret = caml_alloc_small(1,Ok_tag);
+    Field(ret,0) = Val_long(fd);
+#else
+    HANDLE handle = (HANDLE)_get_osfhandle(fd);
+    if ( handle == INVALID_HANDLE_VALUE ){
+      uv_fs_t* creq = calloc(1,sizeof *creq);
+      if ( creq ){
+        int cret = uv_fs_close(req->loop, creq, fd, fs_open_clean_cb);
+        if (cret < 0 ){
+          free(creq);
+        }
+      }
+      ret = caml_alloc_small(1,Error_tag);
+      Field(ret,0) = VAL_UV_UWT_UNKNOWN;
+    }
+    else {
+      value p = win_alloc_handle(handle);
+      CRT_fd_val(p) = fd;
+      Begin_roots1(p);
+      ret = caml_alloc_small(1,Ok_tag);
+      Field(ret,0) = p;
+      End_roots();
+    }
+#endif
+  }
+  return ret;
+}
+
+FSSTART(fs_open,o_name,o_flag_list,o_perm,{
   int flags = caml_convert_flag_list(o_flag_list,open_flag_table);
   COPY_STR1(o_name,{
       BLOCK({
@@ -1581,11 +1616,18 @@ fs_read_cb(uv_req_t * r)
   return param;
 }
 
+#ifndef _WIN32
+#define FD_VAL(x) (Long_val(x))
+#else
+#define FD_VAL(x) (CRT_fd_val(x))
+#endif
+
 FSSTART(fs_read,o_file,o_buf,o_offset,o_len,{
   size_t slen = (size_t)Long_val(o_len);
   struct req * wp = wp_req;
   unsigned int offset = Long_val(o_offset);
   int ba = slen && (Tag_val(o_buf) != String_tag);
+  int fd = FD_VAL(o_file);
   if ( ba ){
     wp->buf.len = slen;
     wp->buf.base = Ba_buf_val(o_buf) + offset;
@@ -1602,7 +1644,7 @@ FSSTART(fs_read,o_file,o_buf,o_offset,o_len,{
     BLOCK({
         ret = uv_fs_read(loop,
                          req,
-                         Long_val(o_file),
+                         fd,
                          &wp->buf,
                          1,
                          -1,
@@ -1651,6 +1693,7 @@ FSSTART(fs_write,
   unsigned int slen = (size_t)Long_val(o_len);
   struct req * wp = wp_req;
   int ba = slen && (Tag_val(o_buf) != String_tag);
+  int fd = FD_VAL(o_file);
   if (ba){
     wp->buf.base = Ba_buf_val(o_buf) + Long_val(o_pos);
     wp->buf.len = slen;
@@ -1671,7 +1714,7 @@ FSSTART(fs_write,
     BLOCK({
      ret = uv_fs_write(loop,
                       req,
-                      Long_val(o_file),
+                      fd,
                       &wp->buf,
                       1,
                       -1,
@@ -1694,8 +1737,9 @@ FSSTART(fs_write,
 })
 
 UFSSTART(fs_close,o_fd,{
+    int fd = FD_VAL(o_fd);
     BLOCK({
-        ret = uv_fs_close(loop,req,Long_val(o_fd),cb);
+        ret = uv_fs_close(loop,req,fd,cb);
       });
 })
 
@@ -1735,26 +1779,31 @@ UFSSTART(fs_link,o_old,o_new,{
 })
 
 UFSSTART(fs_fsync,o_fd,{
-    BLOCK({ret = uv_fs_fsync(loop,req,Long_val(o_fd),cb);});
+    int fd = FD_VAL(o_fd);
+    BLOCK({ret = uv_fs_fsync(loop,req,fd,cb);});
 })
 
 UFSSTART(fs_fdatasync,o_fd,{
-    BLOCK({ret = uv_fs_fdatasync(loop,req,Long_val(o_fd),cb);});
+    int fd = FD_VAL(o_fd);
+    BLOCK({ret = uv_fs_fdatasync(loop,req,fd,cb);});
 })
 
 UFSSTART(fs_ftruncate,o_fd,o_off,{
+  int fd = FD_VAL(o_fd);
   int64_t off = Int64_val(o_off);
-  BLOCK({ret = uv_fs_ftruncate(loop,req,Long_val(o_fd),off,cb);});
+  BLOCK({ret = uv_fs_ftruncate(loop,req,fd,off,cb);});
 })
 
 #define fs_sendfile_cb ret_int64
 FSSTART(fs_sendfile,o_outfd,o_infd,o_offset,o_len,{
+  int outfd = FD_VAL(o_outfd);
+  int infd = FD_VAL(o_infd);
   int64_t offset = Int64_val(o_offset);
   int64_t len = Int64_val(o_len);
   BLOCK({ret = uv_fs_sendfile(loop,
                               req,
-                              Long_val(o_outfd),
-                              Long_val(o_infd),
+                              outfd,
+                              infd,
                               offset,
                               len,
                               cb);});
@@ -1909,10 +1958,11 @@ UFSSTART(fs_chmod,o_path,o_mode,{
       });
 })
 
-UFSSTART(fs_fchmod,o_path,o_mode,{
+UFSSTART(fs_fchmod,o_fd,o_mode,{
+    int fd = FD_VAL(o_fd);
     BLOCK({ret = uv_fs_fchmod(loop,
                             req,
-                            Long_val(o_path),
+                            fd,
                             Long_val(o_mode),
                             cb);});
 })
@@ -1929,10 +1979,11 @@ UFSSTART(fs_chown,o_path,o_uid,o_gid,{
 })
 
 UFSSTART(fs_fchown,o_fd,o_uid,o_gid,{
+    int fd = FD_VAL(o_fd);
     BLOCK({
         ret = uv_fs_fchown(loop,
                            req,
-                           Long_val(o_fd),
+                           fd,
                            Long_val(o_uid),
                            Long_val(o_gid),
                            cb);
@@ -1956,9 +2007,10 @@ UFSSTART(fs_utime,o_p,o_atime,o_mtime,{
 UFSSTART(fs_futime,o_fd,o_atime,o_mtime,{
   double atime = Double_val(o_atime);
   double mtime = Double_val(o_mtime);
+  int fd = FD_VAL(o_fd);
   BLOCK({ret = uv_fs_futime(loop,
                             req,
-                            Long_val(o_fd),
+                            fd,
                             atime,
                             mtime,
                             cb);});
@@ -2108,8 +2160,9 @@ FSSTART(fs_lstat,o_file,{
 
 #define fs_fstat_cb fs_stat_cb
 FSSTART(fs_fstat,o_file,{
+    int fd = FD_VAL(o_file);
     BLOCK({
-        ret = uv_fs_fstat(loop,req,Long_val(o_file),cb);
+        ret = uv_fs_fstat(loop,req,fd,cb);
           });
 })
 #undef FSSTART
@@ -2334,21 +2387,37 @@ uwt_close_nowait(value o_stream)
   return ret;
 }
 
-#define UV_HANDLE_BOOL(type,fun)                \
-  CAMLprim value                                \
-  uwt_ ## fun ## _na(value o_stream)            \
-  {                                             \
-    value ret = Val_long(0);                    \
-    struct handle * s = Handle_val(o_stream);   \
-    if ( s && s->handle && s->initialized ){    \
-      type* stream =(type*)s->handle;           \
-      if ( uv_ ## fun(stream) ){                \
-        ret = Val_long(1);                      \
-      }                                         \
-    }                                           \
-    return ret;                                 \
+#define UV_HANDLE_BOOL(type,fun,uninit_ok)                  \
+  CAMLprim value                                            \
+  uwt_ ## fun ## _na(value o_stream)                        \
+  {                                                         \
+    value ret = Val_long(0);                                \
+    struct handle * s = Handle_val(o_stream);               \
+    if ( s && s->handle && (uninit_ok || s->initialized )){ \
+      type* stream =(type*)s->handle;                       \
+      if ( uv_ ## fun(stream) ){                            \
+        ret = Val_long(1);                                  \
+      }                                                     \
+    }                                                       \
+    return ret;                                             \
   }
-UV_HANDLE_BOOL(uv_handle_t,is_active)
+UV_HANDLE_BOOL(uv_handle_t,is_active,true)
+UV_HANDLE_BOOL(uv_handle_t,has_ref,true)
+
+
+#define UV_HANDLE_VOID(name)                    \
+  CAMLprim value                                \
+    uwt_ ## name ## _na(value o_stream)         \
+  {                                             \
+    struct handle * s = Handle_val(o_stream);   \
+    if ( s && s->handle ){                      \
+      uv_ ## name (s->handle);                  \
+    }                                           \
+    return Val_unit;                            \
+  }
+
+UV_HANDLE_VOID(ref)
+UV_HANDLE_VOID(unref)
 
 /* }}} Handle end */
 
@@ -3166,8 +3235,8 @@ uwt_try_write_na(value o_stream,value o_buf,value o_pos,value o_len)
   return(uwt_udp_try_send_na(o_stream,o_buf,o_pos,o_len,Val_unit));
 }
 
-UV_HANDLE_BOOL(uv_stream_t,is_readable)
-UV_HANDLE_BOOL(uv_stream_t,is_writable)
+UV_HANDLE_BOOL(uv_stream_t,is_readable,false)
+UV_HANDLE_BOOL(uv_stream_t,is_writable,false)
 
 /* }}} Stream end */
 
@@ -3179,6 +3248,7 @@ uwt_tty_init(value o_loop,value o_fd, value o_readable)
   CAMLlocal1(dc);
   value ret;
   struct loop * l;
+  int fd = FD_VAL(o_fd);
   l = Loop_val(o_loop);
   if ( !l || !l->loop ){
     ret = caml_alloc_small(1,Error_tag);
@@ -3197,7 +3267,7 @@ uwt_tty_init(value o_loop,value o_fd, value o_readable)
 
     erg = uv_tty_init(l->loop,
                       (uv_tty_t*)h->handle,
-                      Long_val(o_fd),
+                      fd,
                       Long_val(o_readable) == 1 );
     if (erg < 0 ){
       free_mem_uv_handle_t(h);
@@ -3268,6 +3338,24 @@ uwt_tty_get_winsize(value o_tty)
 }
 /* }}} Tty end */
 
+#ifdef _WIN32
+static bool
+set_crt_fd(value o_fd)
+{
+  bool ret = true;
+  if (CRT_fd_val(o_fd) == NO_CRT_FD){
+    int fd = _open_osfhandle((intptr_t)Handle_val(o_fd), _O_BINARY);
+    if ( fd == -1 ){
+      ret = false;
+    }
+    else {
+      CRT_fd_val(o_fd) = fd;
+    }
+  }
+  return ret;
+}
+#endif
+
 /* {{{ Pipe start */
 
 CAMLprim value
@@ -3277,12 +3365,20 @@ uwt_pipe_open(value o_loop, value o_fd,value o_ipc)
   CAMLlocal1(dc);
   struct loop * l = Loop_val(o_loop);
   value ret;
+#ifndef _WIN32
   if ( !l || !l->loop ){
+#else
+  if ( !l || !l->loop || (o_fd != 2 && set_crt_fd(o_fd) == false )){
+#endif
     ret = caml_alloc_small(1,Error_tag);
     Field(ret,0) = VAL_UV_UWT_EBADF;
   }
   else {
     int erg;
+    int fd ;
+    if ( o_fd != 2 ){
+      fd = FD_VAL(o_fd);
+    }
     dc = handle_create(UV_NAMED_PIPE,l->loop_type);
     struct handle * h = Handle_val(dc);
     h->close_executed = 1;
@@ -3299,8 +3395,11 @@ uwt_pipe_open(value o_loop, value o_fd,value o_ipc)
     }
     else {
       if ( o_fd != 2){
+#ifdef _WIN32
+        h->orig_fd = fd;
+#endif
         h->initialized = 1;
-        erg = uv_pipe_open(p,Long_val(o_fd));
+        erg = uv_pipe_open(p,fd);
         if ( erg < 0 ){
           h->finalize_called = 1;
           handle_finalize_close(h);
@@ -3522,12 +3621,22 @@ uwt_udp_init(value o_loop)
 }
 
 static value
-uwt_tcp_udp_open(value o_tcp, value o_sock, bool tcp)
+uwt_tcp_udp_open(value o_tcp, value o_fd, bool tcp)
 {
   HANDLE_NINIT_NA(t,o_tcp);
-  uv_os_sock_t s = Uv_os_sock_t_val(o_sock);
-  assert(Is_long(o_sock));
+  value erg;
   int ret;
+#ifndef _WIN32
+  uv_os_sock_t s = Long_val(o_fd);
+#else
+  uv_os_sock_t s ;
+  if ( Descr_kind_val(o_fd) != KIND_SOCKET ){
+    ret = UV_UWT_EBADF;
+    goto endp;
+  }
+  s = Socket_val(o_fd);
+  t->orig_fd = CRT_fd_val(o_fd);
+#endif
   if ( tcp ){
     ret = uv_tcp_open((uv_tcp_t*)t->handle,s);
   }
@@ -3537,7 +3646,10 @@ uwt_tcp_udp_open(value o_tcp, value o_sock, bool tcp)
   if ( ret >= 0 ){
     t->initialized = 1;
   }
-  value erg = VAL_UNIT_UV_RESULT(ret);
+#ifdef _WIN32
+ endp:
+#endif
+  erg = VAL_UNIT_UV_RESULT(ret);
   return (erg);
 }
 
@@ -4237,12 +4349,11 @@ poll_cb(uv_poll_t* handle, int status, int events)
   HANDLE_CB_RET(ret);
 }
 
-static value
-uwt_poll_start_both(value o_loop,
-                    value o_sock_or_fd,
-                    value o_event,
-                    value o_cb,
-                    bool is_sock)
+CAMLprim value
+uwt_poll_start(value o_loop,
+               value o_sock_or_fd,
+               value o_event,
+               value o_cb)
 {
   CAMLparam2(o_loop,o_cb);
   CAMLlocal2(ret,v);
@@ -4254,7 +4365,7 @@ uwt_poll_start_both(value o_loop,
     Field(ret,0) = VAL_UV_UWT_EFATAL;
   }
 #ifdef _WIN32
-  else if ( is_sock == false ){
+  else if ( Descr_kind_val(o_sock_or_fd) != KIND_SOCKET ){
     ret = caml_alloc_small(1,Error_tag);
     Field(ret,0) = VAL_UV_UWT_EINVAL;
   }
@@ -4263,6 +4374,12 @@ uwt_poll_start_both(value o_loop,
     uv_poll_t * p;
     int erg;
     int event;
+#ifdef _WIN32
+    uv_os_sock_t sock;
+    int orig_fd;
+    sock = Socket_val(o_sock_or_fd);
+    orig_fd = CRT_fd_val(o_sock_or_fd);
+#endif
     switch(Long_val(o_event)){
     case 0: event = UV_READABLE; break;
     case 1: event = UV_WRITABLE; break;
@@ -4279,12 +4396,12 @@ uwt_poll_start_both(value o_loop,
     Field(ret,0) = v;
     h->close_executed = 0;
     p = (uv_poll_t*)h->handle;
-    if ( is_sock ){
-      erg = uv_poll_init_socket(l->loop,p,Uv_os_sock_t_val(o_sock_or_fd));
-    }
-    else {
-      erg = uv_poll_init(l->loop,p,Long_val(o_sock_or_fd));
-    }
+#ifdef _WIN32
+    erg = uv_poll_init_socket(l->loop,p,sock);
+    h->orig_fd = orig_fd;
+#else
+    erg = uv_poll_init(l->loop,p,Long_val(o_sock_or_fd));
+#endif
     if ( erg < 0 ){
       free_mem_uv_handle_t(h);
       free_struct_handle(h);
@@ -4311,23 +4428,6 @@ uwt_poll_start_both(value o_loop,
   CAMLreturn(ret);
 }
 
-CAMLprim value
-uwt_poll_start(value o_loop,
-               value o_fd,
-               value o_event,
-               value o_cb)
-{
-  return(uwt_poll_start_both(o_loop,o_fd,o_event,o_cb,false));
-}
-
-CAMLprim value
-uwt_poll_start_socket(value o_loop,
-                      value o_socket,
-                      value o_event,
-                      value o_cb)
-{
-  return(uwt_poll_start_both(o_loop,o_socket,o_event,o_cb,true));
-}
 #if 0
 CAMLprim value
 uwt_poll_stop(value o_h)
@@ -4709,7 +4809,7 @@ CAMLprim value
 uwt_guess_handle_na(value o_fd)
 {
   value ret;
-  switch (uv_guess_handle(Long_val(o_fd))){
+  switch (uv_guess_handle(FD_VAL(o_fd))){
   case UV_FILE: ret=Val_long(0); break;
   case UV_TTY: ret=Val_long(1); break;
   case UV_NAMED_PIPE: ret=Val_long(2); break;
@@ -5458,7 +5558,7 @@ uwt_spawn(value p1, value p2, value p3, value p4)
       switch(tag){
       case 0:
         stdio[i].flags = UV_INHERIT_FD;
-        stdio[i].data.fd = Long_val(cur);
+        stdio[i].data.fd = FD_VAL(cur);
         break;
       default:
         h = get_handle(cur);
@@ -5584,83 +5684,43 @@ uwt_kill_na(value o_pid,value o_sig)
 
 /* }}} Process end */
 
-/* {{{ Compat start */
+/* {{{ Conv start */
 CAMLprim value
-uwt_get_fd(value o_fd)
-{
-#ifdef _WIN32
-  int ret;
-  if (CRT_fd_val(o_fd) != NO_CRT_FD) {
-    ret = CRT_fd_val(o_fd);
-  }
-  else {
-    ret = _open_osfhandle((intptr_t) Handle_val(o_fd), _O_BINARY);
-  }
-  if ( ret == -1 ){
-    return Val_unit;
-  }
-  else {
-    value oc = caml_alloc_small(1,Some_tag);
-    Field(oc,0) = Val_long(ret);
-    return oc;
-  }
-#else
-  value oc = caml_alloc_small(1,Some_tag);
-  Field(oc,0) = o_fd;
-  return oc;
-#endif
-}
-
-CAMLprim value
-uwt_get_socket(value o_fd)
-{
-#ifdef _WIN32
-  if ( Descr_kind_val(o_fd) != KIND_SOCKET ){
-    return Val_unit;
-  }
-  else {
-    uintptr_t up = Socket_val(o_fd);
-    if ( up & 1u ){
-      DEBUG_PF("Hugh! My source was wrong about Socket_vals");
-      return Val_unit;
-    }
-    else {
-      value oc = caml_alloc_small(1,Some_tag);
-      Field(oc,0) = (intnat)(up|1u);
-      return oc;
-    }
-  }
-#else
-  value oc = caml_alloc_small(1,Some_tag);
-  Field(oc,0) = o_fd;
-  return oc;
-#endif
-}
-
-CAMLprim value
-uwt_get_file_descriptor(value o_fd)
+uwt_set_crtfd_na(value o_fd)
 {
 #ifndef _WIN32
-  value oc = caml_alloc_small(1,Some_tag);
-  Field(oc,0) = o_fd;
-  return oc;
+  value ret = Val_long(1);
+  (void)o_fd;
 #else
-  CAMLparam0();
-  CAMLlocal1(oh);
-  value ret;
-  int p = Int_val(o_fd);
-  HANDLE handle = (HANDLE)_get_osfhandle(p);
-  if ( handle == INVALID_HANDLE_VALUE ){
-      ret = Val_unit;
+  value ret = Val_long(set_crt_fd(o_fd) == true);
+#endif
+  return ret;
+}
+
+CAMLprim value
+uwt_fileno(value ohandle)
+{
+  HANDLE_NO_UNINIT_WRAP(ohandle);
+  CAMLparam1(ohandle);
+  CAMLlocal2(ocont,ofd);
+  struct handle * s = Handle_val(ohandle);
+  uv_os_fd_t fd;
+  int r = uv_fileno(s->handle,&fd);
+  if ( r < 0 ){
+    ocont = caml_alloc_small(1,Error_tag);
+    Field(ocont,0) = Val_error(r);
   }
   else {
-    oh = win_alloc_handle(handle);
-    CRT_fd_val(oh) = p;
-    ret = caml_alloc_small(1,Some_tag);
-    Field(ret,0) = oh;
-  }
-  CAMLreturn(ret);
+#ifndef _WIN32
+    ofd = Val_long(fd);
+#else
+    ofd = win_alloc_handle(fd);
+    CRT_fd_val(ofd) = s->orig_fd;
 #endif
+    ocont = caml_alloc_small(1,Ok_tag);
+    Field(ocont,0) = ofd;
+  }
+  CAMLreturn(ocont);
 }
 
 CAMLprim value
@@ -5713,7 +5773,7 @@ uwt_sun_path(value o_sock)
 #endif
 }
 
-/* }}} Compat End */
+/* }}} Conv End */
 
 /* {{{ Unix start */
 
@@ -6802,7 +6862,7 @@ uwt_lseek_native(value o_fd, value o_pos, value o_mode, value o_loop,
   struct req * req = Req_val(o_req);
   RETURN_RESULT_T_INVALID_LOOP_REQ(loop,req);
   CAMLparam3(o_loop,o_req,o_cb);
-  int fd = Long_val(o_fd);
+  int fd = FD_VAL(o_fd);
   int64_t offset = Int64_val(o_pos);
   int whence;
   switch (Long_val(o_mode)){

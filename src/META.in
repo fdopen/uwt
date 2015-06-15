@@ -43,7 +43,7 @@ package "log" (
 package "preemptive" (
  version = "@VERSION@"
  description = "Preemptive threads support for Uwt"
- requires = "uwt uwt.logt threads"
+ requires = "uwt uwt.log threads"
  archive(byte) = "uwt_preemptive.cma"
  archive(byte, plugin) = "uwt_preemptive.cma"
  archive(native) = "uwt_preemptive.cmxa"

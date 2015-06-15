@@ -106,7 +106,7 @@ let () =
 let send_notification (a:int) =
   Mutex.lock notification_mutex;
   Queue.push a notification_queue;
-  Uwt.Async.send async_handle |> ignore;
+  Uwt.Async.send async_handle |> ignore; (* TODO: Failing? *)
   Mutex.unlock notification_mutex
 
 (* +-----------------------------------------------------------------+
@@ -261,28 +261,35 @@ let detach f args =
     in
     Lwt.finalize
       (fun () ->
+         incr detached_cnt;
          (* Send the id and the task to the worker: *)
          Event.sync (Event.send worker.task_channel (id, task));
          waiter)
       (fun () ->
-         if worker.reuse then
-           (* Put back the worker to the pool: *)
-           add_worker worker
-         else begin
-           decr threads_count;
-           (* Or wait for the thread to terminates, to free its associated
-              resources: *)
-           Thread.join worker.thread
-         end;
+         let erg =
+           try
+             if worker.reuse then
+               (* Put back the worker to the pool: *)
+               add_worker worker
+             else begin
+               decr threads_count;
+               (* Or wait for the thread to terminates, to free its associated
+                  resources: *)
+               Thread.join worker.thread
+             end;
+             Lwt.return_unit
+           with
+           | x -> Lwt.fail x
+         in
          decr detached_cnt;
          if !detached_cnt <> 0 then
-           Lwt.return_unit
+           erg
          else
            let x = Uwt.Async.stop async_handle in
-           if Uwt.Int_result.is_error x then
+           if erg != Lwt.return_unit && Uwt.Int_result.is_error x then
              Lwt.fail(Uwt.Int_result.to_exn ~name:"Uwt_preemptive.detach" x)
            else
-             Lwt.return_unit)
+             erg)
 
 (* +-----------------------------------------------------------------+
    | Running Lwt threads in the main thread                          |

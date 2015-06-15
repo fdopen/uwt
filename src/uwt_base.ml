@@ -81,18 +81,16 @@ module Int_result = struct
                #include "error_val.ml"
 end
 
-type file = int
-
-type socket
+type file = Unix.file_descr
 
 type buf =
   (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 type sockaddr
 
-let stdin : file = Obj.magic 0
-let stdout : file = Obj.magic 1
-let stderr : file = Obj.magic 2
+let stdin : file = Unix.stdin
+let stdout : file = Unix.stdout
+let stderr : file = Unix.stderr
 
 module Fs_types = struct
   type uv_open_flag =
@@ -203,14 +201,18 @@ module type Fs_functions = sig
 end
 
 module Conv = struct
-  external sockaddr_of_unix_sockaddr : Unix.sockaddr -> sockaddr = "uwt_of_sockaddr"
-  external unix_sockaddr_of_sockaddr : sockaddr -> Unix.sockaddr = "uwt_to_sockaddr"
-  (* the following functions always succeeds on *nix - but not on windows *)
-  external file_of_file_descr: Unix.file_descr -> file option = "uwt_get_fd"
-  external socket_of_file_descr:
-    Unix.file_descr -> socket option = "uwt_get_socket"
-  external file_descr_of_file :
-    file -> Unix.file_descr option = "uwt_get_file_descriptor"
+  external sockaddr_of_unix_sockaddr :
+    Unix.sockaddr -> sockaddr = "uwt_of_sockaddr"
+  external unix_sockaddr_of_sockaddr :
+    sockaddr -> Unix.sockaddr = "uwt_to_sockaddr"
+
+  external set_crtfd : Unix.file_descr -> bool = "uwt_set_crtfd_na"
+  let file_of_file_descr s =
+    if not Sys.win32 || set_crtfd s then Some s
+    else None
+  (* it might change in the future , therefore I continue to wrap it in
+     an option *)
+  let file_descr_of_file f = Some f
 end
 
 module Misc = struct

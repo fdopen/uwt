@@ -58,10 +58,6 @@ let poll_read () =
           let addr = Unix.inet_addr_of_string server_ip in
           let addr = Unix.ADDR_INET(addr,server_port) in
           Unix.connect fd addr;
-          let socket = match Uwt.Conv.socket_of_file_descr fd with
-          | None -> failwith "Uwt.Compat.socket_of_file_descr"
-          | Some x -> x
-          in
           let sleeper,waker = Lwt.task () in
           let abort s msg =
             Uwt.Poll.close_noerr s;
@@ -89,7 +85,7 @@ let poll_read () =
                 Buffer.add_subbytes buf b 0 len;
               )
           in
-          let s = Uwt.Poll.start_socket_exn socket Uwt.Poll.Readable ~cb in
+          let s = Uwt.Poll.start_exn fd Uwt.Poll.Readable ~cb in
           try_finally ( fun () ->
               Lwt.pick [ sleeper ; Uwt.Timer.sleep 2_000 ] >>= fun () ->
               if !cb_called > 1 && !cb_called <= List.length test_strings &&

@@ -270,7 +270,6 @@ end
 
 type file (** abstract type for a file descriptor *)
 type sockaddr (** similar to [Unix.sockaddr], but abstract *)
-type socket
 
 type buf =
   (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
@@ -424,7 +423,6 @@ module Conv : sig
 
   (** the following functions always succeed on Unix - but not on windows *)
   val file_of_file_descr : Unix.file_descr -> file option
-  val socket_of_file_descr : Unix.file_descr -> socket option
   val file_descr_of_file : file -> Unix.file_descr option
 end
 

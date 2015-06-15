@@ -28,6 +28,8 @@ ConfReplace(file)=
 			close($(stdout))
 			if $(not $(equal $(OSTYPE), Win32))
 				chmod(0444 $(file))
+	clean::
+		rm -f $(file)
 
 Repeat_targets(t)=
 	foreach(f, $(t))
@@ -207,3 +209,16 @@ pkg_config_between_vers(name, libname, min_ver, too_high_ver) =
   else
     value false
   export
+
+Install_helper(name, OBJFILES)=
+	MLIS=
+		t1=$(replacesuffixes .cmo .cma .cmx .cmxa .cmxs .cmti .o .a, .mli .mli .mli .mli .mli .mli .mli .mli, $(OBJFILES))
+		t2=$(set $(filter %.mli, $(t1)))
+		value $(filter-exists $(t2))
+	IFILES= $(set $(filter-out %.o %.cmo, $(OBJFILES)) $(MLIS) )
+	CMTIFILES=$(set $(replacesuffixes .cmo, .cmti, $(filter %.cmo, $(OBJFILES))))
+	install:: META $(OBJFILES)
+		$(OCAMLFIND) remove $(name) || true
+		$(OCAMLFIND) install -patch-version $(VERSION) $(name) META $(IFILES) -optional $(CMTIFILES)
+	uninstall::
+		$(OCAMLFIND) remove $(name)

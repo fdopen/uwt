@@ -34,6 +34,7 @@
 /src/config.h.in
 /src/configure
 /src/autom4te.cache/
+/src/aclocal.m4
 /src/error.ml
 /src/byte_order.ml
 /src/map_error.h

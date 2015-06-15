@@ -78,6 +78,10 @@ P2(uwt_get_buffer_size_common_na);
 P3(uwt_set_buffer_size_common_na);
 P1(uwt_close_nowait);
 P1(uwt_is_active_na);
+P1(uwt_ref_na);
+P1(uwt_unref_na);
+P1(uwt_has_ref_na);
+P1(uwt_fileno);
 
 P1(uwt_is_readable_na);
 P1(uwt_is_writable_na);
@@ -144,7 +148,6 @@ P3(uwt_signal_start);
 /* P1(uwt_signal_stop); */
 
 P4(uwt_poll_start);
-P4(uwt_poll_start_socket);
 /*`P1(uwt_poll_stop); */
 
 P4(uwt_fs_event_start);
@@ -186,8 +189,7 @@ P2(uwt_process_kill_na);
 P2(uwt_kill_na);
 
 P1(uwt_get_fd);
-P1(uwt_get_socket);
-P1(uwt_get_file_descriptor);
+P1(uwt_set_crtfd_na);
 P1(uwt_to_sockaddr);
 P1(uwt_of_sockaddr);
 P1(uwt_sun_path);

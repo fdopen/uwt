@@ -8,6 +8,7 @@ let dnstest host =
   | [] -> Lwt.fail_with "nothing found"
   | (hd::_) as s1 ->
     UD.getnameinfo hd.UD.ai_addr [] >>= fun n1 ->
+    no_win (); (* doesn't work, why? *)
     let opts2 = Unix.([AI_FAMILY PF_INET6; AI_SOCKTYPE SOCK_STREAM ]) in
     UD.getaddrinfo ~host ~service:"www" opts2 >>= function
     | [] -> Lwt.fail_with "nothing found"

@@ -141,11 +141,6 @@ module Req = struct
       else
         let x : int = (x :> int) in
         Lwt.return x
-
-  let qlfile ~typ ~f ~name ~param =
-    qli ~typ ~f ~name ~param >>= fun (i:int) ->
-    Lwt.return (Obj.magic i)
-
 end
 
 module Fs = struct
@@ -155,12 +150,12 @@ module Fs = struct
 
   external openfile:
     string -> uv_open_flag list -> int ->
-    loop -> Req.t -> int_cb ->
+    loop -> Req.t -> file cb ->
     Int_result.unit =
     "uwt_fs_open_byte" "uwt_fs_open_native"
 
   let openfile ?(perm=0o644) ~mode fln =
-    Req.qlfile ~typ ~name:"uv_fs_open" ~param:fln ~f:(openfile fln mode perm)
+    Req.ql ~typ ~name:"uv_fs_open" ~param:fln ~f:(openfile fln mode perm)
 
   external read:
     file -> 'a -> int -> int ->
@@ -410,6 +405,10 @@ module Handle = struct
   let close_noerr t = let _ = close t  in ()
 
   external is_active: t -> bool = "uwt_is_active_na" "noalloc"
+
+  external ref': t -> unit = "uwt_ref_na" "noalloc"
+  external unref: t -> unit = "uwt_unref_na" "noalloc"
+  external has_ref: t -> bool = "uwt_has_ref_na" "noalloc"
 end
 
 external get_buffer_size_common:
@@ -436,6 +435,12 @@ module Handle_ext = struct
   let set_recv_buffer_size s l = set_buffer_size_common s l true
   let set_recv_buffer_size_exn s l =
     set_send_buffer_size s l |> to_exnu "uv_recv_buffer_size"
+end
+
+module Handle_fileno = struct
+  type t = u
+  external fileno: u -> Unix.file_descr result = "uwt_fileno"
+  let fileno_exn s = fileno s |> to_exn "uv_fileno"
 end
 
 module Stream = struct
@@ -620,11 +625,11 @@ module Pipe = struct
   external to_stream : t -> Stream.t = "%identity"
 
   include (Handle_ext: (module type of Handle_ext) with type t := t)
+  include (Handle_fileno: (module type of Handle_fileno) with type t := t)
 
-  external e_openpipe : loop -> file -> bool -> t result = "uwt_pipe_open"
+  external e_openpipe : loop -> Unix.file_descr -> bool -> t result = "uwt_pipe_open"
+  let openpipe_exn ?(ipc=false) f = e_openpipe loop f ipc |> to_exn "uv_pipe_open"
   let openpipe ?(ipc=false) f = e_openpipe loop f ipc
-  let openpipe_exn ?(ipc=false) f =
-    e_openpipe loop f ipc |> to_exn "uv_pipe_open"
 
   external e_init : loop -> bool -> t result = "uwt_pipe_init"
   let init ?(ipc=false) () =
@@ -671,6 +676,7 @@ end
 module Tty = struct
   type t = u
   include (Stream: (module type of Stream) with type t := t )
+  include (Handle_fileno: (module type of Handle_fileno) with type t := t)
   external to_stream : t -> Stream.t = "%identity"
 
   external init: loop -> file -> bool -> t result = "uwt_tty_init"
@@ -703,6 +709,7 @@ module Tcp = struct
   type t = u
   include (Stream: (module type of Stream) with type t := t )
   include (Handle_ext: (module type of Handle_ext) with type t := t)
+  include (Handle_fileno: (module type of Handle_fileno) with type t := t)
   external to_stream : t -> Stream.t = "%identity"
 
   type mode =
@@ -716,7 +723,7 @@ module Tcp = struct
     | Error x -> raise (Uwt_error(x,"uv_tcp_init",""))
 
   external opentcp:
-    t -> socket -> Int_result.unit = "uwt_tcp_open_na" "noalloc"
+    t -> Unix.file_descr -> Int_result.unit = "uwt_tcp_open_na" "noalloc"
 
   let opentcp s =
     let x = init_raw loop in
@@ -779,7 +786,7 @@ module Udp = struct
   type t = u
   include (Handle: (module type of Handle) with type t := t )
   include (Handle_ext: (module type of Handle_ext) with type t := t)
-
+  include (Handle_fileno: (module type of Handle_fileno) with type t := t)
   external to_handle : t -> Handle.t = "%identity"
 
   external send_queue_size: t -> int = "uwt_udp_send_queue_size_na" "noalloc"
@@ -792,7 +799,7 @@ module Udp = struct
     | Error ENOMEM -> raise Out_of_memory
     | Error x -> raise (Uwt_error(x,"uv_init_tcp",""))
 
-  external openudp: t -> socket -> Int_result.unit = "uwt_udp_open_na" "noalloc"
+  external openudp: t -> Unix.file_descr -> Int_result.unit = "uwt_udp_open_na" "noalloc"
   let openudp s =
     let x = init_raw loop in
     match x with
@@ -1048,6 +1055,7 @@ end
 module Poll = struct
   type t = u
   include ( Handle: (module type of Handle) with type t := t )
+  include (Handle_fileno: (module type of Handle_fileno) with type t := t)
   external to_handle : t -> Handle.t = "%identity"
 
   type event =
@@ -1056,22 +1064,11 @@ module Poll = struct
     | Readable_writable
 
   external start:
-    loop -> file -> event -> ( t -> event result -> unit ) -> t result
+    loop -> Unix.file_descr -> event -> ( t -> event result -> unit ) -> t result
     = "uwt_poll_start"
 
   let start_exn f e ~cb = start loop f e cb |> to_exn "uv_poll_start"
   let start f e ~cb = start loop f e cb
-
-  external start_socket:
-    loop -> socket -> event -> ( t -> event result -> unit ) -> t result
-    = "uwt_poll_start_socket"
-
-  let start_socket_exn f e ~cb =
-    start_socket loop f e cb |> to_exn "uv_poll_start"
-  let start_socket f e ~cb = start_socket loop f e cb
-
-  (* external stop: t -> Int_result.unit = "uwt_poll_stop"
-  let stop_exn t = stop t |> to_exnu "uv_poll_stop" *)
 end
 
 module Fs_event = struct
@@ -1350,7 +1347,16 @@ module Main = struct
         (fun _  -> Lwt.return_unit) >>= fun () ->
       call_hooks ()
 
-  let () = at_exit (fun () -> if !fatal_found then () else run (call_hooks ()))
+  let () = at_exit ( fun () ->
+      if !fatal_found then ()
+      else
+        try
+          run (call_hooks ())
+        with
+        | Main_error(UWT_EBUSY,"run") -> () )
+  (* The user has probably called Pervasives.exit inside a
+     lwt thread. I can't do anything. *)
+
   let at_exit f = ignore (Lwt_sequence.add_l f exit_hooks)
 
 end

@@ -109,20 +109,7 @@ section
 	x=$(CreateDoc uwt,html,uwt_base.mli uv_sync.mli uwt_bytes.mli uwt.mli uwt_io.mli)
 
 ConfReplace(META)
-
-clean::
-	rm -f META
-
-.PHONY: install uninstall
-section
-	UWT= $(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_LOG) $(UWT_PREEMPTIVE)
-	IFILES= $(filter-out %.o %.cmo, $(UWT))
-	CMTIFILES=$(replacesuffixes .cma, .cmti, $(filter %.cma, $(UWT)))
-	install: META $(UWT)
-		$(OCAMLFIND) remove uwt || true
-		$(OCAMLFIND) install uwt uwt-worker.h META $(IFILES) -optional $(CMTIFILES)
-	uninstall:
-		$(OCAMLFIND) remove uwt
+Install_helper($(PROJNAME),$(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_LOG) $(UWT_PREEMPTIVE) uwt-worker.h)
 
 clean::
 	clean-helper()
