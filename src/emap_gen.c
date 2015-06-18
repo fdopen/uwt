@@ -20,7 +20,7 @@
 #define UV_UWT_ENOTACTIVE (int16_t)(INT16_MAX + 20)
 #define UV_UWT_EBUSY (int16_t)(INT16_MAX + 21)
 #define UV_UWT_ENOENT (int16_t)(INT16_MAX + 22)
-#define UV_UWT_WRONGUV (int16_t)(INT16_MAX + 23)
+#define UV_UWT_EUNAVAIL (int16_t)(INT16_MAX + 23)
 
 static const char *
 get_er_msg(unsigned int d)
@@ -33,7 +33,7 @@ get_er_msg(unsigned int d)
   case UV_UWT_ENOTACTIVE: return "handle not active";
   case UV_UWT_EBUSY: return "handle busy";
   case UV_UWT_ENOENT: return "entry not found";
-  case UV_UWT_WRONGUV: return "libuv version too old or too recent";
+  case UV_UWT_EUNAVAIL: return "libuv version too old or too recent";
   default: assert(0);
   }
   return "unknown uv error";
@@ -123,7 +123,7 @@ int er_map [] = {
   UV_UWT_ENOTACTIVE,
   UV_UWT_EBUSY,
   UV_UWT_ENOENT,
-  UV_UWT_WRONGUV
+  UV_UWT_EUNAVAIL
 };
 
 static const char *
@@ -137,7 +137,7 @@ err_name(int i)
   case UV_UWT_ENOTACTIVE: return "UWT_ENOTACTIVE";
   case UV_UWT_EBUSY: return "UWT_EBUSY";
   case UV_UWT_ENOENT: return "UWT_ENOENT";
-  case UV_UWT_WRONGUV: return "UWT_WRONGUV";
+  case UV_UWT_EUNAVAIL: return "UWT_EUNAVAIL";
   default: return (uv_err_name(i));
   }
 }
@@ -171,14 +171,15 @@ int main(void)
   unsigned int uwt_unknown = UINT_MAX;
 
   FILE * c = fopen("map_error.h","w");
+  FILE * c2 = fopen("uwt-error.h","w");
   FILE * ml = fopen("error.ml","w");
 
-  if (!c || !ml){
+  if (!c || !c2 || !ml){
     fputs("can't create error files\n",stderr);
     return 1;
   }
 
-  fputs("typedef enum {\n",c);
+  fputs("typedef enum {\n",c2);
   for (i=0; i< AR_SIZE(er_map); ++i){
     int val = er_map[i];
     const char * x = err_name(val);
@@ -186,10 +187,10 @@ int main(void)
       uwt_unknown = i;
     }
     if ( x[0] == 'U' && x[1] == 'W' && x[2] == 'T' ){
-      fprintf(c,"  UV_%s = (%d),\n",x,val);
+      fprintf(c2,"  UV_%s = (%d),\n",x,val);
     }
   }
-  fputs("} uv_uwt_errno_t;\n\n",c);
+  fputs("} uv_uwt_errno_t;\n\n",c2);
 
   assert( uwt_unknown != UINT_MAX );
 
@@ -215,25 +216,25 @@ int main(void)
   }
   fputs("#pragma GCC diagnostic pop\n\n",c);
 
-  fputs("typedef enum {\n",c);
+  fputs("typedef enum {\n",c2);
   for (i=0; i< AR_SIZE(er_map); ++i){
     int val = er_map[i];
     const char * x = err_name(val);
-    fprintf(c,"  VAL_UV_%s = (Val_long(%d)),\n",x,i);
+    fprintf(c2,"  VAL_UV_%s = (Val_long(%d)),\n",x,i);
   }
-  fputs("} val_uv_uwt_errno_t;\n\n",c);
+  fputs("} val_uv_uwt_errno_t;\n\n",c2);
 
-  fputs("typedef enum {\n",c);
+  fputs("typedef enum {\n",c2);
   for (i=0; i< AR_SIZE(er_map); ++i){
     int val = er_map[i];
     const char * x = err_name(val);
-    fprintf(c,"  VAL_RESULT_UV_%s = (Val_long(%d)),\n",x,neg_result(i));
+    fprintf(c2,"  VAL_RESULT_UV_%s = (Val_long(%d)),\n",x,neg_result(i));
   }
-  fputs("} val_result_errno_t;\n\n",c);
+  fputs("} val_result_errno_t;\n\n",c2);
 
 
 
-  fputs("static value\n"
+  fputs("value\n"
         "Val_error(int n)\n"
         "{\n"
         "  value erg;\n"
@@ -251,7 +252,7 @@ int main(void)
   fputs("\n",c);
 
 
-  fputs("static value\n"
+  fputs("value\n"
         "Val_uv_result(int n)\n"
         "{\n"
         "  value erg;\n"
@@ -323,7 +324,7 @@ int main(void)
   }
   fputs("\n",ml);
 
-  if ( fclose(c) || fclose(ml) ){
+  if ( fclose(c2) || fclose(c) || fclose(ml) ){
     fputs("i/o error\n",stderr);
     return 1;
   }

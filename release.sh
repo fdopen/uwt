@@ -23,8 +23,8 @@ stash="$(git stash create)"
 git archive --format=tar ${stash:-HEAD} | ( cd "$mtmpf" ; tar -xf- )
 
 cd src
-omake error.ml error_val.ml map_error.h configure
-cp -p config.h.in configure error.ml error_val.ml map_error.h "${mtmpf}/src"
+omake error.ml uwt-error.h error_val.ml map_error.h configure
+cp -p config.h.in configure uwt-error.h error.ml error_val.ml map_error.h "${mtmpf}/src"
 cd ..
 omake setup.ml _oasis
 cp -p setup.ml _oasis "$mtmpf"

@@ -1,0 +1,36 @@
+#define HAVE_REENTRANT_POSIX @HAVE_REENTRANT_POSIX@
+#define HAVE_WINDOWS @HAVE_WINDOWS@
+#define HAVE_REENTRANT_PASSWD @HAVE_REENTRANT_PASSWD@
+#define HAVE_GETLOGIN_R @HAVE_GETLOGIN_R@
+#define OS_MACRO @OS_MACRO@
+
+#ifdef DEFINE_MUTEXES
+
+#if HAVE_REENTRANT_POSIX = 0
+  let host_mutex = Lwt_mutex.create ()
+  let serv_mutex = Lwt_mutex.create ()
+  let proto_mutex = Lwt_mutex.create ()
+#define host_protect(args) Lwt_mutex.with_lock host_mutex ( fun () -> args )
+#define serv_protect(args) Lwt_mutex.with_lock serv_mutex ( fun () -> args )
+#define proto_protect(args) Lwt_mutex.with_lock proto_mutex ( fun () -> args )
+#else
+#define host_protect(args) args
+#define serv_protect(args) args
+#define proto_protect(args) args
+#endif
+
+#if HAVE_REENTRANT_PASSWD = 0 && HAVE_WINDOWS = 0
+  let passwd_mutex = Lwt_mutex.create ()
+#define passwd_protect(args) Lwt_mutex.with_lock passwd_mutex ( fun () -> args )
+#else
+#define passwd_protect(args) args
+#endif
+
+#if HAVE_GETLOGIN_R = 0 && HAVE_WINDOWS = 0
+  let getlogin_mutex = Lwt_mutex.create ()
+#define getlogin_protect(args) Lwt_mutex.with_lock getlogin_mutex ( fun () -> args )
+#else
+#define getlogin_protect(args) args
+#endif
+
+#endif

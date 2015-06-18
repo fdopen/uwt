@@ -200,10 +200,10 @@ let l = [
          ) ( fun () -> close_noerr s1 ; close_noerr s2 ; Lwt.return_unit )
      in
      let sockaddr = Uwt_base.Misc.ip4_addr_exn "0.0.0.0" test_port in
-     m_raises (Uwt.EADDRINUSE,"uv_listen","") (l sockaddr);
+     m_raises (Uwt.EADDRINUSE,"listen","") (l sockaddr);
      ip6_only ctx;
      let sockaddr = Uwt_base.Misc.ip6_addr_exn "::0" test_port in
-     m_raises (Uwt.EADDRINUSE,"uv_listen","") (l sockaddr));
+     m_raises (Uwt.EADDRINUSE,"listen","") (l sockaddr));
   ("write_allot">::
    fun ctx ->
      let l addr =

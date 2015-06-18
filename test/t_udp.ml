@@ -126,7 +126,7 @@ let l = [
              let server = server addr in
              let client = start_client ~raw ~iter:100 ~length:999 addr in
              Lwt.pick [ server ; client ]);
-           m_raises (Uwt.EMSGSIZE,"uv_udp_send","") (
+           m_raises (Uwt.EMSGSIZE,"udp_send","") (
              let server = server addr in
              let client = start_client ~raw ~iter:2 ~length:65536 addr in
              Lwt.pick [ server ; client ]);

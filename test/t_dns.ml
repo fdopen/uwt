@@ -15,10 +15,10 @@ let dnstest host =
     | (hd::_) as s2 ->
       UD.getnameinfo hd.UD.ai_addr [] >>= fun n2 ->
       if
-        n1.UD.hostname <> "" &&
-        n2.UD.hostname <> "" &&
-        String.length n1.UD.service > 0  &&
-        String.length n2.UD.service > 0  &&
+        n1.Unix.ni_hostname <> "" &&
+        n2.Unix.ni_hostname <> "" &&
+        String.length n1.Unix.ni_service > 0  &&
+        String.length n2.Unix.ni_service > 0  &&
         List.length (List.map D.show_addr_info s1) > 0 &&
         List.length (List.map D.show_addr_info s2) > 0 &&
         (List.for_all (fun x -> x.UD.ai_family = Unix.PF_INET &&

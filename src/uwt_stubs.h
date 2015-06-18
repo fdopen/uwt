@@ -177,6 +177,7 @@ P1(uwt_get_total_memory);
 P1(uwt_hrtime);
 P1(uwt_getrusage);
 P1(uwt_os_homedir);
+P1(uwt_exepath);
 
 P6(uwt_getaddrinfo_native);
 BY(uwt_getaddrinfo_byte);
@@ -194,13 +195,6 @@ P1(uwt_to_sockaddr);
 P1(uwt_of_sockaddr);
 P1(uwt_sun_path);
 
-P5(uwt_getservbyname);
-P5(uwt_getservbyport);
-P4(uwt_gethostbyname);
-P4(uwt_gethostbyaddr);
-P3(uwt_gethostname);
-P4(uwt_getprotobyname);
-P4(uwt_getprotobynumber);
 P6(uwt_lseek_native);
 BY(uwt_lseek_byte);
 

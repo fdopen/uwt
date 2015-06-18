@@ -32,4 +32,4 @@ type cpu_info = [%import: Uwt_base.Misc.cpu_info] [@@deriving show]
 type interface_address = [%import: Uwt_base.Misc.interface_address] [@@deriving show]
 
 type addr_info = [%import: Uwt.Dns.addr_info] [@@deriving show]
-type name_info = [%import: Uwt.Dns.name_info] [@@deriving show]
+type name_info = [%import: Unix.name_info] [@@deriving show]

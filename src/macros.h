@@ -220,4 +220,53 @@
   }
 
 #define INT_TO_POINTER(i) ((void *) (intnat)(i))
-#define POINTER_TO_INT(p) ((int) (intnat) (p))
+#define POINTER_TO_INT(p) ((intnat) (intnat) (p))
+
+#define F_EUNAVAIL2(name)                       \
+  CAMLprim value                                \
+    uwt_ ## name (value o1, value o2)           \
+  {                                             \
+    (void) o1;                                  \
+    (void) o2;                                  \
+    return VAL_RESULT_UV_UWT_EUNAVAIL;          \
+  }
+
+static FORCE_INLINE char *
+s_strdup (const char *s){
+  return (strdup( s == NULL ? "" : s ));
+}
+
+static FORCE_INLINE value
+s_caml_copy_string_array(const char ** s){
+  return ( s == NULL ? Atom(0) : caml_copy_string_array(s) );
+}
+
+static FORCE_INLINE value
+csafe_copy_string (const char *x){
+  return ( x == NULL ? caml_alloc_string(0) : caml_copy_string(x) );
+}
+
+#if !defined(HAVE_DECL_STRNLEN) || HAVE_DECL_STRNLEN != 1
+static size_t
+strnlen(const char *s, size_t maxlen)
+{
+  size_t i;
+  for ( i = 0 ; i < maxlen && *s != '\0'; i++ ){
+    s++;
+  }
+  return i;
+}
+#endif
+
+#ifndef HAVE_STRDUP
+static char *
+strdup (const char *s)
+{
+  size_t len = strlen(s) + 1;
+  void *n = malloc(len);
+  if (n == NULL)
+    return NULL;
+  memcpy(n,s,len);
+  return n;
+}
+#endif

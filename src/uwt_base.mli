@@ -124,8 +124,8 @@ type error =
                   while you've already registered another callback for this
                   event *)
   | UWT_ENOENT (** entry not found, [Not_found] message for callbacks *)
-  | UWT_WRONGUV (** you've tried to call a function, that is not supported,
-                       by your libuv installation *)
+  | UWT_EUNAVAIL (** you've tried to call a function, that is not supported,
+                     either by your os or your libuv installation *)
 
 exception Uwt_error of error * string * string
 
@@ -265,7 +265,7 @@ module Int_result : sig
   val uwt_enotactive : int
   val uwt_ebusy : int
   val uwt_enoent: int
-  val uwt_wronguv: int
+  val uwt_eunavail: int
 end
 
 type file (** abstract type for a file descriptor *)
@@ -523,4 +523,29 @@ module Misc : sig
   val version_raw: unit -> int
   val version_string: unit -> string
   val os_homedir: unit -> string result
+
+  (** like Sys.executable_name , but utf-8 encoded under windows
+      and more reliable under niche operating systems  *)
+  val exepath: unit -> string result
+end
+
+module Sys_info : sig
+  type os =
+    | Windows
+    | Android
+    | Linux
+    | Mac
+    | Freebsd
+    | Openbsd
+    | Cygwin
+    | Netbsd
+    | Sun
+    | Hp
+    | Dragonfly
+    | Aix
+    | Minix
+    | Bsd
+    | Unknown
+
+  val os : os
 end

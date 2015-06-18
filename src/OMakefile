@@ -10,7 +10,7 @@ if $(equal $(OSTYPE),Win32)
 			bash.exe autoreconf -fi
 		else
 			touch configure config.h.in
-	config.h: config.h.in configure
+	config.h config.inc: config.h.in configure config.inc.in
 		bash.exe configure CC="$(OCAMLC_CC)" CFLAGS="$(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS_LIBUV)"
 else
 	configure config.h.in: configure.ac
@@ -18,14 +18,14 @@ else
 			autoreconf -fi
 		else
 			touch configure config.h.in
-	config.h: config.h.in configure
+	config.h config.inc: config.h.in configure config.inc.in
 		./configure CC="$(OCAMLC_CC)" CFLAGS="$(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS_LIBUV)"
 
 clean::
 	rm -f config.log config.status
 
 distclean::
-	rm -f config.h *~ configure
+	rm -f config.h *~ configure config.inc
 	rm -rf autom4te.cache
 
 section
@@ -51,7 +51,7 @@ section
 	.SCANNER: scan-ocaml-%: error.ml error_val.ml
 	OCAMLFINDFLAGS+= -pp cppo
 	MLFILES= uwt_base uwt_bytes
-	CFILES= uwt_stubs uwt_bytes_stubs
+	CFILES= uwt_stubs uwt_bytes_stubs uwt_stubs_unix
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+=$(LDFLAGS_LIBUV)
 	Repeat_targets($(MLFILES))
@@ -68,6 +68,8 @@ section
 	export UV_SYNC
 
 section
+	.SCANNER: scan-ocaml-%: config.inc
+	OCAMLFINDFLAGS+= -pp cppo
 	OCAMLPACKS+= lwt
 	MLFILES= uwt uwt_io
 	OCAML_LIBS+= uwt_base

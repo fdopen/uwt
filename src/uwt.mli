@@ -664,34 +664,41 @@ module Dns : sig
     host:string -> service:string ->
     getaddrinfo_option list -> addr_info list Lwt.t
 
-  type name_info = {
-    hostname : string;
-    service : string;
-  }
-
   type getnameinfo_option = Unix.getnameinfo_option
 
-  val getnameinfo : sockaddr -> getnameinfo_option list -> name_info Lwt.t
+  val getnameinfo : sockaddr -> getnameinfo_option list -> Unix.name_info Lwt.t
 end
 
 
 module Unix : sig
   val gethostname : unit -> string Lwt.t
 
-  type host_entry = Unix.host_entry
-  val gethostbyname: string -> host_entry Lwt.t
-  val gethostbyaddr: Unix.inet_addr -> host_entry Lwt.t
+  (** These function don't fail with Not_found.
+      but with [Uwt_error(Uwt.ENOENT,"function_name","")] *)
+  val gethostbyname: string -> Unix.host_entry Lwt.t
+  val gethostbyaddr: Unix.inet_addr -> Unix.host_entry Lwt.t
 
-  type service_entry = Unix.service_entry
-
-  val getservbyname: name:string -> protocol:string -> service_entry Lwt.t
-  val getservbyport: int -> string -> service_entry Lwt.t
-  val lseek: file -> int64 -> Unix.seek_command -> int64 Lwt.t
-  val getaddrinfo:
-    string -> string -> Unix.getaddrinfo_option list -> Unix.addr_info list Lwt.t
+  val getservbyname: name:string -> protocol:string -> Unix.service_entry Lwt.t
+  val getservbyport: int -> string -> Unix.service_entry Lwt.t
 
   val getprotobyname: string -> Unix.protocol_entry Lwt.t
   val getprotobynumber: int -> Unix.protocol_entry Lwt.t
+
+  val getlogin: unit -> string Lwt.t
+
+  val getpwnam: string -> Unix.passwd_entry Lwt.t
+  val getpwuid: int -> Unix.passwd_entry Lwt.t
+
+  val getgrnam: string -> Unix.group_entry Lwt.t
+  val getgrgid: int -> Unix.group_entry Lwt.t
+
+  val lseek: file -> int64 -> Unix.seek_command -> int64 Lwt.t
+
+  val getcwd: unit -> string Lwt.t
+  val chdir: string -> unit Lwt.t
+
+  val chroot: string -> unit Lwt.t
+  val lockf : file -> Unix.lock_command -> int64 -> unit Lwt.t
 end
 
 module C_worker : sig

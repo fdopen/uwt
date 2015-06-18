@@ -8,6 +8,9 @@ extern "C" {
 #include <uv.h>
 #include <caml/mlvalues.h>
 
+#define Ok_tag 0
+#define Error_tag 1
+
 struct worker_params {
     void *p1;
     void *p2;
@@ -38,7 +41,6 @@ typedef value (*cb_camlval)(uv_req_t *);
 */
 typedef void (*cb_cleaner)(uv_req_t *);
 
-
 int
 uwt_add_worker(value o_uwt,
                cb_cleaner cleaner,
@@ -46,6 +48,17 @@ uwt_add_worker(value o_uwt,
                cb_camlval camlval,
                void * p1,
                void * p2);
+
+int
+uwt_add_worker_result(value o_uwt,
+                      cb_cleaner cleaner,
+                      cb_worker worker,
+                      cb_camlval camlval,
+                      void * p1,
+                      void * p2);
+
+value Val_error(int n);
+value Val_uv_result(int n);
 
 #ifdef __cplusplus
 }

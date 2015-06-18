@@ -55,7 +55,7 @@ let l = [
       let open Uwt in
       let p = match os_homedir () with
       | Ok "" -> false
-      | Error UWT_WRONGUV ->
+      | Error UWT_EUNAVAIL ->
         let {major;minor;_} = version () in
         if major > 1 || minor >= 6 then
           false
@@ -65,6 +65,17 @@ let l = [
       | Error _ -> false
       in
       assert_equal true p);
+  ("exepath">:: fun _ ->
+      (* doesn't work very well on various *nixes *)
+      let do_skip = Uwt.Sys_info.(os <> Windows && os <> Linux) in
+      OUnit2.skip_if do_skip "exepath resolution differs";
+      match exepath () with
+      | Uwt.Error x ->
+        Uwt.err_name x |>
+        Printf.sprintf "expath error:%s\n" |>
+        failwith
+      | Uwt.Ok x ->
+        assert_equal Sys.executable_name x );
 ]
 
 let l = "Misc">:::l

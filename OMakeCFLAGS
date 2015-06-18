@@ -1,34 +1,31 @@
-DEVCFLAGS=-Wall
-DEVCFLAGS+=-Wextra 
-DEVCFLAGS+=-g3
-DEVCFLAGS+=-O0
-DEVCFLAGS+=-Waggregate-return
-DEVCFLAGS+=-Wbad-function-cast
-DEVCFLAGS+=-Wcast-align
-#DEVCFLAGS+=-Wcast-qual
-DEVCFLAGS+=-Wdate-time
-DEVCFLAGS+=-Wendif-labels
-DEVCFLAGS+=-Werror=overflow
-DEVCFLAGS+=-Wfloat-equal
-DEVCFLAGS+=-Wformat=2 -Wformat-security -Wformat-nonliteral
-DEVCFLAGS+=-Winit-self
-DEVCFLAGS+=-Wlogical-op
-DEVCFLAGS+=-Wmissing-declarations
-DEVCFLAGS+=-Wmissing-include-dirs
-DEVCFLAGS+=-Wmissing-prototypes
-DEVCFLAGS+=-Wnested-externs
-DEVCFLAGS+=-Wold-style-definition
-DEVCFLAGS+=-Wpointer-arith
-DEVCFLAGS+=-Wredundant-decls
-DEVCFLAGS+=-Wshadow
-DEVCFLAGS+=-Wsign-compare # currently in -Wextra
-DEVCFLAGS+=-Wstrict-prototypes
-DEVCFLAGS+=-Wsuggest-attribute=noreturn
-DEVCFLAGS+=-Wundef
-DEVCFLAGS+=-Wuninitialized 
-DEVCFLAGS+=-Wunused 
-DEVCFLAGS+=-Wunused-macros
-DEVCFLAGS+=-Wwrite-strings 
-DEVCFLAGS+=-pedantic 
-DEVCFLAGS+=-std=gnu11 
+open configure/Configure
+
+CheckCFlag(flag) =
+	CFLAGS += $(flag)
+	program = $'int main(void) { return 0; }'
+	return $(TryCompileC $(program))
+
+static. =
+	section
+		DEVCFLAGS=$(EMPTY)
+		Add_flags(flags)=
+			CC=$(OCAMLC_CC)
+			CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS)
+			foreach(f, $(flags))
+				if $(CheckCFlag $(DEVCFLAGS) $(f))
+					export
+					DEVCFLAGS+= $(f)
+				export
+			export
+		Add_flags(-Wall -Wextra -O2 -g3 -Waggregate-return -Wbad-function-cast -Wcast-align -Wdate-time -Wendif-labels -Werror=overflow -Wfloat-equal -Wformat=2 -Wformat-security -Wformat-nonliteral -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wpointer-arith -Wredundant-decls -Wshadow -Wsign-compare -Wstrict-prototypes -Wsuggest-attribute=noreturn -Wundef -Wuninitialized  -Wunused  -Wunused-macros -Wwrite-strings)
+		CC=$(OCAMLC_CC)
+		CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS)
+		if $(CheckCFlag $(DEVCFLAGS) -pedantic -std=gnu11)
+			DEVCFLAGS+= -pedantic -std=gnu11
+			export
+		elseif $(CheckCFlag $(DEVCFLAGS) -pedantic -std=gnu99)
+			DEVCFLAGS+= -pedantic -std=gnu99
+			export
+		export DEVCFLAGS
+
 #DEVCFLAGS+=-DNDEBUG=1

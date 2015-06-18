@@ -118,8 +118,8 @@ let copy_sendfile ~src ~dst =
 let random_bytes_length = 262144
 let random_bytes =
   Bytes.init random_bytes_length ( fun _i -> Random.int 256 |> Char.chr )
-let tmpdir = ref "/tmp/invalid/invalid/invalid/invalid"
 
+let tmpdir = T_fs.tmpdir
 
 let to_exn = function
 | Ok x -> x
@@ -135,76 +135,85 @@ let m_raises a (t: unit -> 'a) =
     (Uwt.Uwt_error(a,"",""))
     ( fun () -> t () |> to_exn )
 
+let with_file ~mode fln f =
+  openfile ~mode fln >>= fun fd ->
+  let close_called = ref false in
+  try
+    let erg = f fd in
+    close_called:= true;
+    close fd >>= fun () ->
+    erg
+  with
+  | exn when !close_called = false ->
+    (try close fd |> ignore with _ -> ());
+    raise exn
 
 let (//) = Filename.concat
 let l = [
   ("mkdtemp">::
    fun _ctx ->
+     let () = T_fs.clean_tmp_dir () in
      let fln = "uwt-test.XXXXXX" in
      m_true ( fun () -> mkdtemp fln >>= fun s ->
-             tmpdir:= s;
-             at_exit ( fun () ->
-                 let cmd = "rm -rf " ^ (Filename.quote s) in
-                 Sys.command cmd |> ignore );
-             return (s <> "")));
+              T_fs.remove_dir s;
+              return (s <> "")));
   ("write">::
    fun _ctx ->
-     let fln = !tmpdir // "a" in
+     let fln = tmpdir () // "a" in
      m_equal () ( fun () ->
-       openfile ~mode:[ O_WRONLY ; O_CREAT ; O_EXCL ] fln >>= fun fd ->
-       really_write random_bytes fd >>= fun () ->
-       close fd );
+       with_file  ~mode:[ O_WRONLY ; O_CREAT ; O_EXCL ] fln @@ fun fd ->
+       really_write random_bytes fd );
      m_equal random_bytes (fun () -> file_to_bytes fln));
   ("read_ba/write_ba">::
    fun _ctx ->
-     let fln = !tmpdir // "a" in
-     let fln2 = !tmpdir // "b" in
+     let fln = tmpdir () // "a" in
+     let fln2 = tmpdir () // "b" in
      m_equal random_bytes ( fun () -> copy_ba ~src:fln ~dst:fln2 >>= fun () ->
                             file_to_bytes fln2));
   ("read/write">::
    fun _ctx ->
-     let fln = !tmpdir // "a" in
-     let fln2 = !tmpdir // "c" in
+     let fln = tmpdir () // "a" in
+     let fln2 = tmpdir () // "c" in
      m_equal random_bytes ( fun () -> copy ~src:fln ~dst:fln2 >>= fun () ->
                             file_to_bytes fln2));
   ("sendfile">::
    fun _ctx ->
-     let fln = !tmpdir // "a" in
-     let fln2 = !tmpdir // "d" in
+     let fln = tmpdir () // "a" in
+     let fln2 = tmpdir () // "d" in
      m_equal random_bytes ( fun () -> copy_sendfile ~src:fln ~dst:fln2 >>= fun () ->
                             file_to_bytes fln2));
   ("stat">::
    fun _ctx ->
-     let fln = !tmpdir // "d" in
+     let fln = tmpdir () // "d" in
      m_true (fun () -> stat fln >>= fun s -> Ok (
          Common.D.qstat s && s.st_kind = S_REG &&
          s.st_size = Int64.of_int random_bytes_length )));
   ("mkdir">::
    fun _ctx ->
-     m_equal () (fun () -> mkdir (!tmpdir // "f")));
+     m_equal () (fun () -> mkdir (tmpdir () // "f")));
   ("rmdir">::
    fun _ctx ->
-     m_equal () (fun () -> rmdir (!tmpdir // "f")));
+     m_equal () (fun () -> rmdir @@ tmpdir () // "f"));
   ("unlink">::
    fun _ctx ->
-     m_equal () (fun () -> unlink (!tmpdir // "d")));
+     m_equal () (fun () -> unlink @@ tmpdir () // "d"));
   ("link">::
    fun _ctx ->
      no_win ();
-     m_equal () (fun () -> link ~target:(!tmpdir // "a") ~link_name:(!tmpdir // "f"));
-     m_equal () (fun () -> unlink (!tmpdir // "f")));
+     m_equal () (fun () -> link ~target:(tmpdir () // "a") ~link_name:(tmpdir () // "f"));
+     m_equal () (fun () -> unlink (tmpdir () // "f")));
   ("scandir">::
    fun _ctx ->
      (* It's currently broken on windows, but fixed in trunk:
         https://github.com/libuv/libuv/issues/196 *)
      let files = [| S_REG, "a" ; S_REG, "b" ; S_REG, "c" |] in
-     m_equal files (fun () -> scandir !tmpdir >>= fun s -> Array.sort compare s ;
+     m_equal files (fun () -> scandir (tmpdir()) >>= fun s -> Array.sort compare s ;
                     return s));
   ("symlink/lstat">::
    fun _ctx ->
      no_win ();
-     let a = !tmpdir // "a"
-     and d = !tmpdir // "d" in
+     let a = tmpdir () // "a"
+     and d = tmpdir () // "d" in
      m_equal () (fun () -> symlink ~src:a ~dst:d ());
      m_equal true (fun () -> lstat d >>= fun s -> return (
          Common.D.qstat s && s.st_kind = S_LNK));
@@ -212,12 +221,12 @@ let l = [
      m_equal () (fun () -> unlink d));
   ("rename">::
    fun _ctx ->
-     let a = !tmpdir // "a"
-     and z = !tmpdir // "z" in
+     let a = tmpdir () // "a"
+     and z = tmpdir () // "z" in
      m_equal () (fun () -> rename ~src:a ~dst:z));
   ("utime">::
    fun _ctx ->
-     let z = !tmpdir // "z" in
+     let z = tmpdir () // "z" in
      let itime = (int_of_float (Unix.time ())) - 99_000 in
      let time = float_of_int itime in
      m_true (fun () -> utime z ~access:time ~modif:time >>= fun () ->
@@ -228,12 +237,12 @@ let l = [
              return ( d1 = 0L && d2 = 0L ) ));
   ("futime/fstat">::
    fun _ctx ->
-     let z = !tmpdir // "z" in
-     m_true ( fun () -> openfile ~mode:[O_RDWR] z >>= fun fd ->
+     let z = tmpdir () // "z" in
+     m_true ( fun () -> with_file ~mode:[O_RDWR] z @@ fun fd ->
               let itime = (int_of_float (Unix.time ())) + 99_000 in
               let time = float_of_int itime in
               futime fd ~access:time ~modif:time >>= fun () ->
-              fstat fd >>= fun s -> close fd >>= fun () ->
+              fstat fd >>= fun s ->
               let time = Int64.of_float time in
               let d1 = Int64.sub s.st_atime time |> Int64.abs
               and d2 = Int64.sub s.st_mtime time |> Int64.abs in
@@ -241,21 +250,20 @@ let l = [
   ("chmod">::
    fun _ctx ->
      no_win ();
-     let z = !tmpdir // "z" in
+     let z = tmpdir () // "z" in
      m_true ( fun () -> chmod z ~perm:0o751 >>= fun () ->
              stat z >>= fun s -> return (s.st_perm = 0o751)));
   ("fchmod">::
    fun _ctx ->
      no_win ();
-     let z = !tmpdir // "z" in
-     m_true ( fun () -> openfile ~mode:[O_WRONLY] z >>= fun fd ->
-             fchmod fd ~perm:0o621 >>= fun () ->
-             fstat fd >>= fun s -> close fd >>= fun () ->
+     let z = tmpdir () // "z" in
+     m_true ( fun () -> with_file ~mode:[O_WRONLY] z @@ fun fd ->
+             fchmod fd ~perm:0o621 >>= fun () -> fstat fd >>= fun s ->
              return (s.st_perm = 0o621)));
   ("access">::
    fun _ctx ->
-     let z = !tmpdir // "z" in
-     let x = !tmpdir // "zz" in
+     let z = tmpdir () // "z" in
+     let x = tmpdir () // "zz" in
      m_raises
        Uwt.ENOENT
        (fun () -> access x [Read]);
@@ -278,8 +286,8 @@ let l = [
        (fun () -> access shadow [Read]) );
   ("ftruncate">::
    fun _ctx ->
-     let z = !tmpdir // "z" in
-     m_true ( fun () -> openfile ~mode:[O_RDWR] z >>= fun fd ->
+     let z = tmpdir () // "z" in
+     m_true ( fun () -> with_file ~mode:[O_RDWR] z @@ fun fd ->
               ftruncate fd ~len:777L >>= fun () ->
               fstat fd >>= fun s -> s.st_size = 777L |> return ));
 ]

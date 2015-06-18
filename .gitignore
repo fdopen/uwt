@@ -32,6 +32,7 @@
 /src/META
 /src/config.h
 /src/config.h.in
+/src/config.inc
 /src/configure
 /src/autom4te.cache/
 /src/aclocal.m4
@@ -42,6 +43,7 @@
 /src/emap_gen
 /src/error_val.ml
 /src/error_val.mli
+/src/uwt-error.h
 /examples/copy
 /examples/dns
 /examples/echo_tcp
@@ -58,3 +60,4 @@
 /examples/echo_udp
 /examples/custom_c_worker
 /test/test
+/test/lock_helper

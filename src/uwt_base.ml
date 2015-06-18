@@ -33,6 +33,7 @@
 *)
 
 #include "error.ml"
+#include "config.inc"
 
 type 'a result =
 | Ok of 'a
@@ -201,10 +202,15 @@ module type Fs_functions = sig
 end
 
 module Conv = struct
+
+  type usockaddr = Unix.sockaddr =
+    | ADDR_UNIX of string
+    | ADDR_INET of Unix.inet_addr * int
+
   external sockaddr_of_unix_sockaddr :
-    Unix.sockaddr -> sockaddr = "uwt_of_sockaddr"
+    usockaddr -> sockaddr = "uwt_of_sockaddr"
   external unix_sockaddr_of_sockaddr :
-    sockaddr -> Unix.sockaddr = "uwt_to_sockaddr"
+    sockaddr -> usockaddr = "uwt_to_sockaddr"
 
   external set_crtfd : Unix.file_descr -> bool = "uwt_set_crtfd_na"
   let file_of_file_descr s =
@@ -328,4 +334,26 @@ module Misc = struct
 
   external version_string: unit -> string = "uwt_version_string"
   external os_homedir: unit -> string result = "uwt_os_homedir"
+  external exepath: unit -> string result = "uwt_exepath"
+
+end
+
+module Sys_info = struct
+  type os =
+    | Windows
+    | Android
+    | Linux
+    | Mac
+    | Freebsd
+    | Openbsd
+    | Cygwin
+    | Netbsd
+    | Sun
+    | Hp
+    | Dragonfly
+    | Aix
+    | Minix
+    | Bsd
+    | Unknown
+  let os : os = OS_MACRO
 end

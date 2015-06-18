@@ -3,11 +3,12 @@ AC_INIT([uwt], [0.0.1],[uwt@ml.ignorelist.com],[uwt])
 AC_PROG_CC
 
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([config.inc])
 AC_USE_SYSTEM_EXTENSIONS
 
 AC_MSG_CHECKING([posix source 200809L])
 
-AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h)
+AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h grp.h pwd.h)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_DECLS([strnlen], [], [], [#include <string.h>])
 AC_CHECK_DECLS([uv_os_homedir,UV_TTY_MODE_NORMAL,UV_TTY_MODE_RAW,UV_TTY_MODE_IO],[],[],[#include <uv.h>])
@@ -153,11 +154,101 @@ se = getservbyname_r((const char *)NULL, (const char *)NULL,
 se = getservbyport_r((int)0, (const char *)NULL,
 (struct servent *)NULL, (char *)NULL, (int)0, (struct servent **)NULL);
 ],
+HAVE_REENTRANT_POSIX=1
 AC_DEFINE(HAVE_GETxxxxBYyyyy_R_POSIX)
-AC_MSG_RESULT(yes),
-AC_MSG_RESULT(no)
+AC_MSG_RESULT([yes]),
+HAVE_REENTRANT_POSIX=0
+AC_MSG_RESULT([no])
 )
+AC_SUBST(HAVE_REENTRANT_POSIX)
+
+OS_MACRO=0
+AC_CHECK_DECLS([_WIN32],
+OS_MACRO="Windows"
+HAVE_WINDOWS=1,
+HAVE_WINDOWS=0)
+AC_SUBST(HAVE_WINDOWS)
+
+AC_CHECK_DECLS([__ANDROID__],OS_MACRO="Android")
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__linux__],OS_MACRO="Linux")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__APPLE__],OS_MACRO="Mac")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__FreeBSD__],OS_MACRO="Freebsd")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__OpenBSD__],OS_MACRO="Openbsd")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__CYGWIN__],OS_MACRO="Cygwin")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__NetBSD__],OS_MACRO="Netbsd")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__sun],OS_MACRO="Sun")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__hpux],OS_MACRO="Hp")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__DragonFly__],OS_MACRO="Dragonfly")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([_AIX],OS_MACRO="Aix")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__minix],OS_MACRO="Minix")
+fi
+if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__bsdi__],OS_MACRO="Bsd")
+fi
+if test "$OS_MACRO" = "0" ; then
+OS_MACRO="Unknown"
+fi
+AC_SUBST(OS_MACRO)
 
 
+AC_CHECK_FUNCS(getlogin cuserid getpwnam getgrnam getpwuid getgrgid)
+AC_CHECK_FUNCS(getlogin_r getpwnam_r getgrnam_r getpwuid_r getgrgid_r)
+AC_CHECK_FUNCS(chroot lockf)
+
+if test "$ac_cv_func_getlogin_r" = "yes" ; then
+HAVE_GETLOGIN_R=1
+else
+HAVE_GETLOGIN_R=0
+fi
+AC_SUBST(HAVE_GETLOGIN_R)
+
+if test "$ac_cv_func_getgrnam_r" = "yes" \
+     -a "$ac_cv_func_getpwnam_r" = "yes" \
+     -a "$ac_cv_func_getpwuid_r" = "yes" \
+     -a "$ac_cv_func_getgrgid_r" = "yes" \
+; then
+HAVE_REENTRANT_PASSWD=1
+else
+HAVE_REENTRANT_PASSWD=0
+fi
+AC_SUBST(HAVE_REENTRANT_PASSWD)
+
+AC_MSG_CHECKING([uv_translate_sys_error])
+LIBS="-luv $LIBS"
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([[
+#include <uv.h>
+extern int uv_translate_sys_error(int);
+int
+uwt_translate(void)
+{
+    int er = uv_translate_sys_error(30);
+    return (er);
+}
+]])],
+    [AC_MSG_RESULT([yes]);
+     AC_DEFINE([HAVE_UV_TRANSLATE_SYSERROR], [1], [Define to 1 if libuv supports it.])],
+    [AC_MSG_RESULT([no])])
 
 AC_OUTPUT
