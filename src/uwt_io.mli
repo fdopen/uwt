@@ -202,8 +202,6 @@ val is_busy : 'a channel -> bool
 
 (** {2 Random access} *)
 
-(** {2 Random access} *)
-
 val position : 'a channel -> int64
   (** [position ch] Returns the current position in the channel. *)
 
@@ -401,6 +399,24 @@ val with_connection :
   Uwt.sockaddr -> (input_channel * output_channel -> 'a Lwt.t) -> 'a Lwt.t
 (** [with_connection ?fd ?in_buffer ?out_buffer addr f] opens a connection to
       the given address and passes the channels to [f] *)
+
+type server
+  (** Type of a server *)
+
+val establish_server :
+  ?buffer_size : int ->
+  ?backlog : int ->
+  Unix.sockaddr -> (input_channel * output_channel -> unit) -> server
+  (** [establish_server ?fd ?buffer_size ?backlog sockaddr f] creates
+      a server which will listen for incoming connections. New
+      connections are passed to [f]. Note that [f] must not raise any
+      exception.
+
+      [backlog] is the argument passed to [Lwt_unix.listen] *)
+
+val shutdown_server : server -> unit
+  (** Shutdown the given server *)
+
 
 val lines_of_file : file_name -> string Lwt_stream.t
   (** [lines_of_file name] returns a stream of all lines of the file

@@ -1435,13 +1435,78 @@ let with_connection ?in_buffer ?out_buffer sockaddr f =
     (fun () -> f (ic, oc))
     (fun () -> close ic <&> close oc)
 
-(*
 type server = {
   shutdown : unit Lazy.t;
+  server: Uwt.Stream.t;
 }
+
+let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) sockaddr f =
+  let f_cb s_client =
+    let close () =
+      Uwt.Stream.close_noerr s_client;
+      Lwt.return_unit
+    in
+    let buffer = Uwt_bytes.create buffer_size in
+    let ic = of_stream ~close ~buffer ~mode:input s_client in
+    let buffer = Uwt_bytes.create buffer_size in
+    let oc = of_stream ~close ~buffer ~mode:output s_client in
+    f (ic,oc)
+  and f_es server er =
+    if Uwt.Int_result.is_error er then
+      let () = Uwt.Stream.close_noerr server in
+      raise (Uwt.Int_result.to_exn ~name:"listen" er)
+    else
+      let shutdown () =
+        if Uwt.Stream.write_queue_size server <= 0 then
+          Uwt.Stream.close_noerr server
+        else
+          Lwt.finalize
+            (fun () -> Uwt.Stream.shutdown server )
+            (fun () -> Uwt.Stream.close_noerr server ; Lwt.return_unit)
+          |> ignore
+      in
+      {
+        shutdown = Lazy.from_fun shutdown;
+        server = server
+      }
+  and addr = Uwt.Conv.sockaddr_of_unix_sockaddr sockaddr in
+  match sockaddr with
+  | Unix.ADDR_UNIX path ->
+    let server = Uwt.Pipe.init () in
+    let s_server = Uwt.Pipe.to_stream server in
+    Uwt.Pipe.bind_exn server ~path;
+    let cb server res =
+      if Uwt.Int_result.is_error res then
+        Uwt.Pipe.close_noerr server
+      else
+        let client = Uwt.Pipe.init () in
+        let r =  Uwt.Pipe.accept_raw ~server ~client in
+        if Uwt.Int_result.is_ok r then
+          Uwt.Pipe.to_stream client |> f_cb
+    in
+    let er = Uwt.Pipe.listen server ~max:backlog ~cb in
+    f_es s_server er
+  | Unix.ADDR_INET _ ->
+    let server = Uwt.Tcp.init () in
+    let s_server = Uwt.Tcp.to_stream server in
+    Uwt.Tcp.bind_exn server ~addr ();
+    let cb server res =
+      if Uwt.Int_result.is_error res then
+        Uwt.Tcp.close_noerr server
+      else
+        match Uwt.Tcp.accept server with
+        | Uwt.Error _ -> ()
+        | Uwt.Ok client ->
+          let _ = Uwt.Tcp.nodelay client true in
+          let s_client = Uwt.Tcp.to_stream client in
+          f_cb s_client
+    in
+    let er = Uwt.Tcp.listen server ~max:backlog ~cb in
+    f_es s_server er
 
 let shutdown_server server = Lazy.force server.shutdown
 
+(*
 let establish_server ?fd ?(buffer_size = !default_buffer_size) ?(backlog=5) sockaddr f =
   let sock = match fd with
     | None -> Lwt_unix.socket (Unix.domain_of_sockaddr sockaddr) Unix.SOCK_STREAM 0
