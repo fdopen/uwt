@@ -5532,32 +5532,28 @@ uwt_spawn(value p1, value p2, value p3, value p4)
       struct handle * h;
       int tag = Tag_val(cur);
       cur = Field(cur,0);
-      switch(tag){
-      case 0:
+      if ( tag == 0 ){
         stdio[i].flags = UV_INHERIT_FD;
         stdio[i].data.fd = FD_VAL(cur);
-        break;
-      default:
+      }
+      else {
         h = get_handle(cur);
         if ( h == NULL ){
           erg = UV_UWT_EBADF;
           goto error_end;
         }
         stdio[i].data.stream = (uv_stream_t*)h->handle;
-        switch(tag){
-        case 1:
+        if ( tag == 1 || h->initialized ){
           stdio[i].flags = UV_INHERIT_STREAM;
-          break;
-        case 2:
+        }
+        else {
+          assert(tag == 2);
           if ( i == 0 ){
             stdio[i].flags = UV_CREATE_PIPE | UV_READABLE_PIPE;
           }
           else {
             stdio[i].flags = UV_CREATE_PIPE | UV_WRITABLE_PIPE;
           }
-          break;
-        default:
-          assert(0);
         }
       }
     }
