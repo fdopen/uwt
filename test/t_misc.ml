@@ -75,6 +75,9 @@ let l = [
         Printf.sprintf "expath error:%s\n" |>
         failwith
       | Uwt.Ok x ->
+        let x1 = Filename.is_relative x
+        and x2 = Filename.is_relative Sys.executable_name in
+        OUnit2.skip_if (x1 <> x2) "exepath not tracked";
         assert_equal Sys.executable_name x );
 ]
 
