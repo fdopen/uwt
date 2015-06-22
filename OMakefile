@@ -7,20 +7,60 @@ BYTE_ENABLED=	true
 
 include OMakeIncludes
 include OMakeCFLAGS
-# omake sets OCAMLFLAGS to '-warn-error A' by default which usually
-# breaks compilation every time a new ocaml version is released
+
+LIBUV_VERSION=1.6.1
+CompileLibuv()=
+	if $(equal $(OSTYPE),Win32)
+		x=$(shell-code sh libuv-compile.sh "$(LIBUV_VERSION)" "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" false)
+		if $(not $(eq $(x), 0))
+			y[]=
+			return($(y))
+		LIBUV_LDFLAGS[]=-luv -ladvapi32 -liphlpapi -lpsapi -lshell32 -luserenv -lws2_32
+		return($(LIBUV_LDFLAGS))
+	else
+		x=$(shell-code ./libuv-compile.sh "$(LIBUV_VERSION)" "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" true)
+		if $(not $(eq $(x), 0))
+			y[]=
+			return($(y))
+		LIBUV_LDFLAGS=$(shell awk $''/^Lib/ {for(i=3;i<NF;i++)printf "%s",$i OFS; if (NF) printf "%s",$NF; printf ORS}'' libuv-v$(LIBUV_VERSION)/libuv.pc )
+		return($(LIBUV_LDFLAGS))
+
+.PHONY: libuv-compile
+libuv-compile:
+	section
+		echo $(CompileLibuv )
+
 static.=
 	PATH_PKG_CONFIG=$(Check_prog_in_path pkg-config)
 	if $(equal $(PATH_PKG_CONFIG), false)
 		PATH_PKG_CONFIG=$(Check_prog_in_path pkgconf)
 		export
 	x=$(pkg_config LIBUV,libuv)
-	if $(not $(x))
-		$(ConfMsgError $''libuv missing'')
+	x=
+		if $(not $(x))
+			value false
+		else
+			value $(pkg_config_between_vers LIBUV,libuv,1.0,2.0)
+	if $(x)
+		export
+		INTERNAL_LIBUV=false
+	else
+		export
+		ConfMsgWarn($''libuv not found. I will try to compile it from source'')
+		LDFLAGS_LIBUV=$(CompileLibuv )
+		if $(eq 0, $(LDFLAGS_LIBUV.length))
+			$(ConfMsgError $''couldn't compile libuv'')
+		LDFLAGS_LIBUV[]=-L. $(LDFLAGS_LIBUV)
+		CFLAGS_LIBUV=
+			x=$(absname libuv-v$(LIBUV_VERSION)/include)
+			if $(equal $(OSTYPE),Win32)
+				value -I$(shell cygpath "$(x)")
+			else
+				value -I$(x)
+		INTERNAL_LIBUV=true
 	x=$(Check_prog_in_path cppo)
 	if $(equal $(x), false)
 		$(ConfMsgError $''cppo missing'')
-	x=$(pkg_config_between_vers LIBUV,libuv,1.0,2.0)
 	if $(not $(x))
 		$(ConfMsgError $''libuv version not supported'')
 	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))
@@ -29,9 +69,11 @@ static.=
 		CFLAGS= $(DEVCFLAGS)
 	else
 		export
+		# omake sets OCAMLFLAGS to '-warn-error A' by default which usually
+		# breaks compilation every time a new ocaml version is released
 		OCAMLFLAGS= -g -bin-annot -safe-string
 		CFLAGS= -O2 -g
-	export OCAMLFLAGS CFLAGS
+	export OCAMLFLAGS CFLAGS LDFLAGS_LIBUV CFLAGS_LIBUV INTERNAL_LIBUV
 
 ConfReplace(_oasis)
 
@@ -49,6 +91,7 @@ clean::
 
 distclean:: clean
 	rm -f *~ .*~ setup.ml _oasis *.xz *.gz
+	rm -rf libuv-v*
 
 .PHONY: echo-pkg
 echo-pkg:

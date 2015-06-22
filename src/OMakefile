@@ -111,7 +111,12 @@ section
 	x=$(CreateDoc uwt,html,uwt_base.mli uv_sync.mli uwt_bytes.mli uwt.mli uwt_io.mli)
 
 ConfReplace(META)
-Install_helper($(PROJNAME),$(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE) uwt-worker.h)
+section
+	x=$(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE) uwt-worker.h
+	if $(INTERNAL_LIBUV)
+		export
+		x+=libuv$(EXT_LIB) $(glob ../libuv-v$(LIBUV_VERSION)/include/*.h)
+	Install_helper($(PROJNAME),$(x))
 
 clean::
 	clean-helper()

@@ -25,6 +25,7 @@
 *.out
 *.tar.gz
 *.tar.xz
+*.tar
 *.idoc
 /setup.ml
 /.omakedb*
@@ -61,3 +62,4 @@
 /examples/custom_c_worker
 /test/test
 /test/lock_helper
+/libuv-v1*
