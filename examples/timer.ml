@@ -19,7 +19,7 @@ let three_times () =
   let sleeper,waker = Lwt.task () in
   let cb t =
     let ic = !i in
-    Uwt_io.printf "%d\n%!" ic |> Lwt.ignore_result;
+    Lwt.ignore_result(Uwt_io.printf "%d\n%!" ic);
     decr i;
     if ic = 0 then (
       T.close_noerr t;

@@ -27,14 +27,14 @@ module Echo_server = struct
 
   let on_listen server x =
     if Uwt.Int_result.is_error x then
-      Uwt_io.printl "listen error" |> ignore
+      ignore(Uwt_io.printl "listen error")
     else
       let client = init () in
       let t = accept_raw ~server ~client in
       if Uwt.Int_result.is_error t then
-        Uwt_io.printl "accept error" |> ignore
+        ignore(Uwt_io.printl "accept error")
       else
-        echo_client client |> ignore
+        ignore(echo_client client)
 
   let start () =
     let server = init () in
@@ -121,7 +121,7 @@ let write_much client =
       write_ba client ~buf >>= fun () ->
       Lwt.fail (Failure "everything written!")
     else (
-      write_ba client ~buf |> ignore;
+      ignore(write_ba client ~buf);
       iter (pred n)
     )
   in
@@ -239,7 +239,7 @@ let l = [
            read client ~buf >>= fun _ ->
            Lwt.fail (Failure "read successful!")
          in
-         let _ =
+         let _ : unit Lwt.t =
            Uwt.Timer.sleep 40 >>= fun () ->
            close_noerr client ; Lwt.return_unit
          in

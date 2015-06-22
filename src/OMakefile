@@ -55,15 +55,15 @@ section
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+=$(LDFLAGS_LIBUV)
 	Repeat_targets($(MLFILES))
-	UWT_BASE=$(MixedLibrary uwt_base, $(MLFILES), $(CFILES))
+	UWT_BASE=$(MixedLibrary uwt-base, $(MLFILES), $(CFILES))
 	lib:: $(UWT_BASE)
 	export UWT_BASE
 
 section
 	MLFILES= uv_fs_sync
-	OCAML_LIBS+= uwt_base
+	OCAML_LIBS+= uwt-base
 	Repeat_targets($(MLFILES))
-	UV_SYNC=$(MOCamlLibrary uv_fs_sync, $(MLFILES))
+	UV_SYNC=$(MOCamlLibrary uv-fs-sync, $(MLFILES))
 	lib:: $(UV_SYNC)
 	export UV_SYNC
 
@@ -71,8 +71,8 @@ section
 	.SCANNER: scan-ocaml-%: config.inc
 	OCAMLFINDFLAGS+= -pp cppo
 	OCAMLPACKS+= lwt
-	MLFILES= uwt uwt_io
-	OCAML_LIBS+= uwt_base
+	MLFILES= uwt
+	OCAML_LIBS+= uwt-base
 	Repeat_targets($(MLFILES))
 	UWT_CORE=$(MOCamlLibrary uwt, $(MLFILES))
 	lib:: $(UWT_CORE)
@@ -80,29 +80,29 @@ section
 
 section
 	OCAMLPACKS+= lwt
-	OCAML_LIBS+= uwt_base uwt
-	FILES= uwt_log
+	OCAML_LIBS+= uwt-base uwt
+	FILES= uwt_log uwt_io uwt_process uwt_throttle uwt_timeout
 	Repeat_targets($(FILES))
-	UWT_LOG=$(MOCamlLibrary uwt_log, $(FILES))
-	lib:: $(UWT_LOG)
-	export UWT_LOG
+	UWT_EXT=$(MOCamlLibrary uwt-ext, $(FILES))
+	lib:: $(UWT_EXT)
+	export UWT_EXT
 
 section
 	OCAMLPACKS+= lwt
-	OCAML_LIBS+= uwt_base uwt uwt_log
+	OCAML_LIBS+= uwt-base uwt uwt-ext
 	OCAMLFLAGS+= -thread
 	FILES= uwt_preemptive
 	Repeat_targets($(FILES))
-	UWT_PREEMPTIVE=$(MOCamlLibrary uwt_preemptive,$(FILES))
+	UWT_PREEMPTIVE=$(MOCamlLibrary uwt-preemptive,$(FILES))
 	lib:: $(UWT_PREEMPTIVE)
 	export UWT_PREEMPTIVE
 
 section
 	OCAMLPACKS+= lwt lwt.log
-	OCAML_LIBS+= uwt_base uwt uwt_log
+	OCAML_LIBS+= uwt-base uwt uwt-ext
 	FILES= uwt_compat
 	Repeat_targets($(FILES))
-	UWT_COMPAT=$(MOCamlLibrary uwt_compat,$(FILES))
+	UWT_COMPAT=$(MOCamlLibrary uwt-compat,$(FILES))
 	lib:: $(UWT_COMPAT)
 	export UWT_COMPAT
 
@@ -111,7 +111,7 @@ section
 	x=$(CreateDoc uwt,html,uwt_base.mli uv_sync.mli uwt_bytes.mli uwt.mli uwt_io.mli)
 
 ConfReplace(META)
-Install_helper($(PROJNAME),$(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_LOG) $(UWT_PREEMPTIVE) uwt-worker.h)
+Install_helper($(PROJNAME),$(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE) uwt-worker.h)
 
 clean::
 	clean-helper()

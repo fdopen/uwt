@@ -44,7 +44,7 @@ let on_listen server x =
   else
     match Uwt.Tcp.accept server with
     | Uwt.Error _ -> failwith "accept error"
-    | Uwt.Ok c -> write_strings server c |> ignore
+    | Uwt.Ok c -> ignore (write_strings server c)
 
 let poll_read () =
   let server = Uwt.Tcp.init () in

@@ -1,8 +1,8 @@
 open OUnit2
 
 let close () =
-  T_tcp.close_servers () |> ignore ;
-  T_pipe.close_server () |> ignore
+  ignore (T_tcp.close_servers ());
+  ignore (T_pipe.close_server ())
 
 let l = [
   ("Timer normal">::

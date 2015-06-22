@@ -37,7 +37,7 @@ let mexit i =
 
 let main () =
   Unix.putenv "OUNIT_RUNNER" "sequential";
-  OUnit2.run_test_tt_main ~exit:mexit tests |> ignore
+  ignore (OUnit2.run_test_tt_main ~exit:mexit tests)
 
 let () =
   try

@@ -75,7 +75,7 @@ let copy_sendfile ~src ~dst =
         rexn ("open " ^ dst)
       in
       try_finally ( fun fdo ->
-          let _s = US.sendfile ~dst:fdo ~src:fdi () |> rexn "sendfile" in ()
+          ignore (US.sendfile ~dst:fdo ~src:fdi () |> rexn "sendfile");
         ) fdo ( fun fdo -> US.close fdo |> rexn ("close " ^ dst) ) fdo
     )
     fdi ( fun fdi -> US.close fdi |> rexn ("close " ^ src) ) fdi

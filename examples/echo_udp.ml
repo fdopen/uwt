@@ -1,7 +1,7 @@
 let server_port = 9009
 
 let log s =
-  Uwt_io.eprintl s |> ignore
+  ignore (Uwt_io.eprintl s)
 
 let start_server () =
   let server = Uwt.Udp.init () in
@@ -16,7 +16,7 @@ let start_server () =
     log "transmission error"
   | Uwt.Udp.Data(b,Some x)
   | Uwt.Udp.Partial_data(b,Some x) ->
-    Uwt.Udp.send server ~buf:b x |> ignore
+    ignore (Uwt.Udp.send server ~buf:b x)
   in
   Lwt.finalize ( fun () ->
       let addr = Uwt.Misc.ip4_addr_exn "127.0.0.1" server_port in

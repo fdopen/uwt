@@ -807,15 +807,14 @@ struct
 
   let rev_concat len l =
     let buf = Bytes.create len in
-    let _ =
+    ignore (
       List.fold_left
         (fun ofs str ->
            let len = String.length str in
            let ofs = ofs - len in
            String.unsafe_blit str 0 buf ofs len;
            ofs)
-        len l
-    in
+        len l );
     buf
 
   let rec read_all ic total_len acc =
@@ -1460,10 +1459,13 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) sockaddr
         if Uwt.Stream.write_queue_size server <= 0 then
           Uwt.Stream.close_noerr server
         else
-          Lwt.finalize
-            (fun () -> Uwt.Stream.shutdown server )
-            (fun () -> Uwt.Stream.close_noerr server ; Lwt.return_unit)
-          |> ignore
+          let t =
+            Lwt.finalize
+              (fun () -> Uwt.Stream.shutdown server )
+              (fun () -> Uwt.Stream.close_noerr server ; Lwt.return_unit)
+          in
+          ignore t
+
       in
       {
         shutdown = Lazy.from_fun shutdown;
@@ -1497,7 +1499,7 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) sockaddr
         match Uwt.Tcp.accept server with
         | Uwt.Error _ -> ()
         | Uwt.Ok client ->
-          let _ = Uwt.Tcp.nodelay client true in
+          ignore (Uwt.Tcp.nodelay client true);
           let s_client = Uwt.Tcp.to_stream client in
           f_cb s_client
     in

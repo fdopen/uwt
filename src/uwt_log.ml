@@ -101,7 +101,7 @@ let channel ?(template="$(name): $(section): $(message)") ~close_mode ~channel (
               | `Keep -> Lwt.return
               | `Close -> (fun () -> Uwt_io.close channel))
 
-let _ = Lwt_log_core.default := channel ~close_mode:`Keep ~channel:Uwt_io.stderr ()
+let () = Lwt_log_core.default := channel ~close_mode:`Keep ~channel:Uwt_io.stderr ()
 
 let file ?(template="$(date): $(section): $(message)") ?(mode=`Append) ?(perm=0o640) ~file_name () =
   let mode = match mode with

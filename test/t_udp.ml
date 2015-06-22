@@ -30,7 +30,7 @@ let start_iter_server_bytes addr =
           | None -> Lwt.return_false
           | Some sockaddr ->
             let b = Bytes.sub buf 0 x.recv_len in
-            send server ~buf:b sockaddr |> ignore;
+            ignore (send server ~buf:b sockaddr);
             iter ()
         )
         else
@@ -51,7 +51,7 @@ let start_iter_server_ba addr =
           | None -> Lwt.return_false
           | Some sockaddr ->
             let b = Uwt_bytes.extract buf 0 x.recv_len in
-            send_ba server ~buf:b sockaddr |> ignore;
+            ignore (send_ba server ~buf:b sockaddr);
             iter ()
         )
         else
@@ -69,7 +69,7 @@ let start_server_cb addr : bool Lwt.t =
   | Uwt.Udp.Partial_data(_,_) -> e "partial data"
   | Uwt.Udp.Empty_from _ -> e "empty datagram"
   | Uwt.Udp.Transmission_error _ -> e "transmission error"
-  | Uwt.Udp.Data(b,Some x) -> Uwt.Udp.send server ~buf:b x |> ignore
+  | Uwt.Udp.Data(b,Some x) -> ignore (Uwt.Udp.send server ~buf:b x)
   in
   try_finally ( fun () ->
       let () = bind_exn server addr in

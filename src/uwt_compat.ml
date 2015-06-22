@@ -39,17 +39,7 @@ module Lwt_unix = struct
   type setattr_when = Unix.setattr_when
   type flush_queue = Unix.flush_queue
 
-  let max_sleep = float_of_int (max_int / 1_000)
-  let sleep s =
-    let msi =
-      if s <= 0. then
-        0
-      else if s >= max_sleep then
-        max_int
-      else
-        int_of_float (s *. 1_000.)
-    in
-    Uwt.Timer.sleep msi
+  let sleep = UU.sleep
 
   let yield = Uwt.Main.yield
   let auto_yield timeout =

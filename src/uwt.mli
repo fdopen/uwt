@@ -592,8 +592,9 @@ module Process : sig
 
   type stdio =
     | Inherit_file of file
+    | Create_pipe of Pipe.t
+    | Inherit_pipe of Pipe.t
     | Inherit_stream of Stream.t
-    | Pipe of Pipe.t
 
   type exit_cb = t -> exit_status:int -> term_signal:int -> unit
 
@@ -699,6 +700,8 @@ module Unix : sig
 
   val chroot: string -> unit Lwt.t
   val lockf : file -> Unix.lock_command -> int64 -> unit Lwt.t
+
+  val sleep : float -> unit Lwt.t
 end
 
 module C_worker : sig

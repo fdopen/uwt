@@ -36,7 +36,7 @@ let test () =
   Uwt.Fs.mkdtemp fln >>= fun fln ->
   let remove  = lazy (
     let cmd = "rm -rf " ^ Filename.quote fln in
-    Sys.command cmd |> ignore )
+    ignore (Sys.command cmd) )
   in
   Lwt.catch ( fun () ->
       let t = Uwt.Fs_event.start_exn fln [] ~cb in

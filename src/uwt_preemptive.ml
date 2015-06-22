@@ -106,7 +106,7 @@ let () =
 let send_notification (a:int) =
   Mutex.lock notification_mutex;
   Queue.push a notification_queue;
-  Uwt.Async.send async_handle |> ignore; (* TODO: Failing? *)
+  ignore(Uwt.Async.send async_handle) ; (* TODO: Failing? *)
   Mutex.unlock notification_mutex
 
 (* +-----------------------------------------------------------------+

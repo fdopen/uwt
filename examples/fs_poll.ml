@@ -2,7 +2,7 @@ module U = Uwt
 module UP = U.Fs_poll
 
 let cb _t = function
-| Uwt.Error x -> Uwt.strerror x |> Uwt_io.printf "error: %s\n" |> ignore
+| Uwt.Error x -> ignore ( Uwt.strerror x |> Uwt_io.printf "error: %s\n")
 | Uwt.Ok x ->
   let open UP in
   let open Show_uwt in
@@ -18,7 +18,7 @@ let cb _t = function
              (show_stats x.curr) ^ "\n" ^ atime_diff ^ mtime_diff ^
              ctime_diff
   in
-  Uwt_io.printl msg |> ignore
+  ignore (Uwt_io.printl msg)
 
 let observe fln timeout =
   let l = UP.start_exn fln timeout ~cb in

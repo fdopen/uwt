@@ -26,11 +26,11 @@ let output_dummy c =
 
 let on_listen server x =
   if Uwt.Int_result.is_error x then
-    Uwt_io.printl "listen error" |> ignore
+    ignore(Uwt_io.printl "listen error")
   else
     match T.accept server with
-    | Uwt.Error _ -> Uwt_io.printl "accept error" |> ignore
-    | Uwt.Ok c -> output_dummy c |> ignore
+    | Uwt.Error _ -> ignore (Uwt_io.printl "accept error")
+    | Uwt.Ok c -> ignore (output_dummy c)
 
 let hello_server () =
   let server = T.init () in

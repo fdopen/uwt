@@ -572,7 +572,7 @@ gethostbyaddr_worker(uv_work_t *req)
     }
     else {
       w->p1 = h;
-      w->p2 = NULL;
+      w->p2 = (void*)1;
     }
   }
   free(addr);

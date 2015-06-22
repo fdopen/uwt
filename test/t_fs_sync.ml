@@ -145,7 +145,7 @@ let with_file ~mode fln f =
     erg
   with
   | exn when !close_called = false ->
-    (try close fd |> ignore with _ -> ());
+    (try ignore (close fd) with _ -> ());
     raise exn
 
 let (//) = Filename.concat

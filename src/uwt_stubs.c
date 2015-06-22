@@ -5543,17 +5543,17 @@ uwt_spawn(value p1, value p2, value p3, value p4)
           goto error_end;
         }
         stdio[i].data.stream = (uv_stream_t*)h->handle;
-        if ( tag == 1 || h->initialized ){
-          stdio[i].flags = UV_INHERIT_STREAM;
-        }
-        else {
-          assert(tag == 2);
+        if ( tag == 1 ){
           if ( i == 0 ){
             stdio[i].flags = UV_CREATE_PIPE | UV_READABLE_PIPE;
           }
           else {
             stdio[i].flags = UV_CREATE_PIPE | UV_WRITABLE_PIPE;
           }
+        }
+        else {
+          assert( tag == 2 || tag == 3 );
+          stdio[i].flags = UV_INHERIT_STREAM;
         }
       }
     }

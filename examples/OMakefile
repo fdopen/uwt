@@ -4,14 +4,14 @@
 section
 	OCAMLPACKS+= lwt
 	OCAMLINCLUDES[]+= ../src
-	OCAML_LIBS+= ../src/uwt_base
+	OCAML_LIBS+= ../src/uwt-base
 	f=help
 	Repeat_targets($(f))
 	TEST_PROG=$(OCamlLibrary $(f),$(f))
 
 section
 	OCAMLPACKS+= ppx_import unix ppx_deriving.show
-	OCAML_LIBS+= ../src/uwt_base ../src/uwt
+	OCAML_LIBS+= ../src/uwt-base ../src/uwt
 	OCAMLINCLUDES[]+= ../src
 	f=show_uwt
 	Repeat_targets($(f))
@@ -21,7 +21,7 @@ if $(not $(equal $(OSTYPE),Win32))
 	section
 		OCAMLPACKS+= lwt
 		OCAMLINCLUDES[]+= ../src
-		OCAML_LIBS+= ../src/uwt_base ../src/uwt
+		OCAML_LIBS+= ../src/uwt-base ../src/uwt
 		MLFILES= glob
 		CFILES= glob_stubs
 		CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
@@ -32,7 +32,7 @@ if $(not $(equal $(OSTYPE),Win32))
 
 	section
 		OCAMLINCLUDES[]+= ../src
-		OCAML_LIBS+= ../src/uwt_base ../src/uwt uwtglob
+		OCAML_LIBS+= ../src/uwt-base ../src/uwt ../src/uwt-ext uwtglob
 		MLFILES = custom_c_worker
 		OCAMLPACKS+= lwt bigarray unix
 		TEST_PROG=$(OCamlProgram custom_c_worker,$(MLFILES))
@@ -44,7 +44,7 @@ if $(not $(equal $(OSTYPE),Win32))
 example_s(f)=
 	OCAMLPACKS+= ppx_deriving.show bigarray unix
 	OCAMLINCLUDES[]+= ../src
-	OCAML_LIBS+= ../src/uwt_base ../src/uv_fs_sync
+	OCAML_LIBS+= ../src/uwt-base ../src/uv-fs-sync
 	Repeat_targets($(f))
 	TEST_PROG=$(OCamlProgram $(f),$(f))
 	examples:: $(TEST_PROG)
@@ -55,7 +55,7 @@ example_r(f,x)=
 	OCAMLPACKS+= ppx_deriving.show lwt bigarray unix threads lwt.log
 	OCAMLFLAGS+= -thread
 	OCAMLINCLUDES[]+= ../src
-	OCAML_LIBS+= ../src/uwt_base ../src/uwt ../src/uwt_log ../src/uwt_preemptive show_uwt
+	OCAML_LIBS+= ../src/uwt-base ../src/uwt ../src/uwt-ext ../src/uwt-preemptive show_uwt
 	if $(equal $(x),true)
 		OCAML_LIBS+= help
 		export

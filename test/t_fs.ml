@@ -115,7 +115,7 @@ let remove_dir ?(keep_root=false) orig_file =
       Sys.readdir file |> Array.iter ( fun name ->
           Filename.concat file name |> iter );
       if keep_root = false || file <> orig_file then
-        Unix.rmdir file |> ignore
+        ignore(Unix.rmdir file)
     | U.S_REG | U.S_CHR | U.S_BLK | U.S_LNK | U.S_FIFO | U.S_SOCK ->
       if keep_root = false || file <> orig_file then
         Sys.remove file

@@ -41,7 +41,7 @@ let poll_file () =
         ) ( fun () -> Uwt.Fs_poll.close_noerr s; Lwt.return_unit )
     ) ( fun () ->
       let cmd = "rm -rf " ^ (Filename.quote tmpfile) in
-      Sys.command cmd |> ignore;
+      ignore(Sys.command cmd);
       Lwt.return_unit )
 
 open OUnit2

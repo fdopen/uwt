@@ -12,8 +12,8 @@ let cat_test () =
   let stdout = Uwt.Pipe.init () in
   let p =
     P.spawn_exn
-      ~stdin:(P.Pipe stdin)
-      ~stdout:(P.Pipe stdout)
+      ~stdin:(P.Create_pipe stdin)
+      ~stdout:(P.Create_pipe stdout)
       "cat" [ "cat" ; "-" ]
   in
   let out_buf = Buffer.create len in

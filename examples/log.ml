@@ -39,7 +39,7 @@ let flood_log () =
       Lwt.wakeup waker ()
     )
   in
-  let _ = Uwt.Timer.start_exn ~repeat:200  ~timeout:200 ~cb in
+  ignore (Uwt.Timer.start_exn ~repeat:200  ~timeout:200 ~cb);
   sleeper
 
 let () =

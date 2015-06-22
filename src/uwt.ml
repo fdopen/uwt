@@ -402,7 +402,7 @@ module Handle = struct
   let close_wait t = qsu1 ~f:close_wait ~name:"uv_close" t
 
   external close: t -> Int_result.unit = "uwt_close_nowait"
-  let close_noerr t = let _ = close t  in ()
+  let close_noerr t =  ignore ( close t )
 
   external is_active: t -> bool = "uwt_is_active_na" "noalloc"
 
@@ -568,7 +568,7 @@ module Stream = struct
       if Int_result.is_error x then
         LInt_result.fail ~name:"uwt_read" ~param x
       else
-        let () = Lwt.on_cancel sleeper ( fun () -> read_stop t |> ignore ) in
+        let () = Lwt.on_cancel sleeper ( fun () -> ignore(read_stop t) ) in
         sleeper >>= fun ( x: Int_result.int ) ->
         if Int_result.is_error x then
           LInt_result.fail ~name:"uwt_read" ~param x
@@ -994,7 +994,7 @@ module Udp = struct
       if Int_result.is_error x then
         LInt_result.fail ~name ~param x
       else
-        let () = Lwt.on_cancel sleeper ( fun () -> recv_stop t |> ignore ) in
+        let () = Lwt.on_cancel sleeper ( fun () -> ignore (recv_stop t) ) in
         sleeper >>= function
         | Ok x -> Lwt.return x
         | Error x -> Lwt.fail (Uwt_error(x,name,param))
@@ -1183,8 +1183,9 @@ module Process = struct
 
   type stdio =
     | Inherit_file of file
+    | Create_pipe of Pipe.t
+    | Inherit_pipe of Pipe.t
     | Inherit_stream of Stream.t
-    | Pipe of Pipe.t
 
   type stdio_args = stdio option * stdio option * stdio option
   type uid_gid = int * int
@@ -1529,16 +1530,28 @@ module Unix = struct
     file * lock_command * int64 -> unit C_worker.u -> C_worker.t = "uwt_lockf"
   let lockf a b c =
     C_worker.call_internal ~name:"lockf" lockf (a,b,c)
+
+  let max_sleep = float_of_int (max_int / 1_000)
+  let sleep s =
+    let msi =
+      if s <= 0. then
+        0
+      else if s >= max_sleep then
+        max_int
+      else
+        int_of_float (s *. 1_000.)
+    in
+    Timer.sleep msi
 end
 
 module Valgrind = struct
   let help () =
     let len = int_of_float (2. ** 18.) in
-    let _t = Array.init len ( fun _x ->
-        Random.int 1024 |> Bytes.create
-      )
+    let t =
+      Array.init len ( fun _x ->
+        Random.int 1024 |> Bytes.create )
     in
-    ()
+    ignore t
   let lwt_cleanup () =
     let rec iter n =
       if n <= 0 then
