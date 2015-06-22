@@ -26,7 +26,13 @@ let l = [
   ("start_exn">::
    fun _ctx ->
      no_win ();
-     m_true (Lwt.pick [wait_for_signal (); send_signal ()]))
+     m_true (Lwt.pick [wait_for_signal (); send_signal ()]));
+  ("constants">::
+   fun _ ->
+     assert_equal Sys.sigint (-6);
+     assert_equal Sys.sigkill (-7);
+     assert_equal Sys.sigterm (-11);
+  );
 ]
 
 let l = "Signal">:::l

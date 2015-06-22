@@ -4158,6 +4158,45 @@ uwt_udp_send_queue_count_na(value o_udp)
 extern int caml_convert_signal_number(int);
 extern int caml_rev_convert_signal_number(int);
 
+#ifndef _WIN32
+#define uwt_convert_signal_number caml_convert_signal_number
+#define uwt_rev_convert_signal_number caml_rev_convert_signal_number
+#else
+/* libuv can handle SIGTERM, SIGKILL, SIGINT. Howver, the caml_* functions above
+   can't translate all of them */
+
+#ifndef SIGKILL
+#define SIGKILL 9
+#endif
+#ifndef SIGTERM
+#define SIGTERM 15
+#endif
+#ifndef SIGINT
+#define SIGINT 2
+#endif
+static int
+uwt_convert_signal_number(int signum)
+{
+  switch(signum){
+  case -7: return SIGKILL;
+  case -11: return SIGTERM;
+  case -6: return SIGINT;
+  default: return caml_convert_signal_number(signum);
+  }
+}
+
+static int
+uwt_rev_convert_signal_number(int signum)
+{
+  switch(signum){
+  case SIGKILL: return -7;
+  case SIGTERM: return -11;
+  case SIGINT: return -6;
+  default: return caml_rev_convert_signal_number(signum);
+  }
+}
+#endif
+
 static void
 signal_cb(uv_signal_t* handle, int signum)
 {
@@ -4168,7 +4207,7 @@ signal_cb(uv_signal_t* handle, int signum)
     DEBUG_PF("callback lost");
   }
   else {
-    int x = caml_rev_convert_signal_number(signum);
+    int x = uwt_rev_convert_signal_number(signum);
     value cb = GET_CB_VAL(h->cb_read);
     value t = GET_CB_VAL(h->cb_listen);
     ret = caml_callback2_exn(cb,t,Val_long(x));
@@ -4206,7 +4245,7 @@ uwt_signal_start(value o_loop,
       free_struct_handle(h);
     }
     else {
-      int signum = caml_convert_signal_number(Long_val(o_sig));
+      int signum = uwt_convert_signal_number(Long_val(o_sig));
       erg = uv_signal_start(t,signal_cb,signum);
       if ( erg < 0 ){
         h->finalize_called = 1;
@@ -5480,7 +5519,7 @@ spawn_exit_cb(uv_process_t*t, int64_t exit_status, int term_signal)
       value process = GET_CB_VAL(h->cb_listen);
       gr_root_unregister(&h->cb_read);
       gr_root_unregister(&h->cb_listen);
-      int o_signal = caml_rev_convert_signal_number(term_signal);
+      int o_signal = uwt_rev_convert_signal_number(term_signal);
       exn=caml_callback3_exn(callback,
                              process,
                              Val_long(exit_status),
@@ -5640,7 +5679,7 @@ uwt_process_kill_na(value o_h,value o_sig)
 {
   HANDLE_NINIT_NA(h,o_h);
   uv_process_t * p = (uv_process_t *)h->handle;
-  int signum = caml_convert_signal_number(Long_val(o_sig));
+  int signum = uwt_convert_signal_number(Long_val(o_sig));
   int ret = uv_process_kill(p,signum);
   value erg = VAL_UNIT_UV_RESULT(ret);
   return erg;
@@ -5649,7 +5688,7 @@ uwt_process_kill_na(value o_h,value o_sig)
 CAMLprim value
 uwt_kill_na(value o_pid,value o_sig)
 {
-  int signum = caml_convert_signal_number(Long_val(o_sig));
+  int signum = uwt_convert_signal_number(Long_val(o_sig));
   int ret = uv_kill(Long_val(o_pid),signum);
   value erg = VAL_UNIT_UV_RESULT(ret);
   return erg;
