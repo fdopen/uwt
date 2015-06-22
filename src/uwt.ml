@@ -1341,10 +1341,14 @@ module Main = struct
         run ~nothing_cnt task
       )
 
+  external cleanup: unit -> unit = "uwt_empty_caches" "noalloc"
+
   let run (t:'a Lwt.t) : 'a =
     if !fatal_found then
       failwith "uwt loop unusuable";
-    run ~nothing_cnt:0 t
+    match run ~nothing_cnt:0 t with
+    | exception x -> cleanup (); raise x
+    | x -> cleanup (); x
 
   let exit_hooks = Lwt_sequence.create ()
 

@@ -6032,6 +6032,23 @@ stack_clean (struct stack *s){
   }
 }
 
+static void
+empty_caches(void)
+{
+  unsigned int i;
+  stack_clean(&stack_struct_req);
+  stack_clean(&stack_struct_handle);
+  for ( i = 0 ; i < UV_REQ_TYPE_MAX ; ++i ){
+    stack_clean(&stacks_req_t[i]);
+  }
+  for ( i = 0 ; i < UV_HANDLE_TYPE_MAX ; ++i ){
+    stack_clean(&stacks_handle_t[i]);
+  }
+  for ( i = 0 ; i < STACKS_MEM_BUF_SIZE ; ++i ){
+    stack_clean(&stacks_mem_buf[i]);
+  }
+}
+
 /* just for debugging. make valgrind happy */
 CAMLprim value
 uwt_free_all_memory(value unit)
@@ -6059,18 +6076,7 @@ uwt_free_all_memory(value unit)
     }
   }
 
-  stack_clean(&stack_struct_req);
-  stack_clean(&stack_struct_handle);
-  for ( i = 0 ; i < UV_REQ_TYPE_MAX ; ++i ){
-    stack_clean(&stacks_req_t[i]);
-  }
-  for ( i = 0 ; i < UV_HANDLE_TYPE_MAX ; ++i ){
-    stack_clean(&stacks_handle_t[i]);
-  }
-
-  for ( i = 0 ; i < STACKS_MEM_BUF_SIZE ; ++i ){
-    stack_clean(&stacks_mem_buf[i]);
-  }
+  empty_caches();
 
   for ( i = 0 ; i < CB_MAX ; ++i ){
     if ( default_loop_init_called[i] == 1 ){
@@ -6176,4 +6182,12 @@ runtime_acquire_prepare_init(uv_loop_t *l)
     fputs("fatal error in uwt, can't register prepare handle\n",stderr);
     exit(2);
   }
+}
+
+CAMLprim value
+uwt_empty_caches(value o_unit)
+{
+  (void)o_unit;
+  empty_caches();
+  return Val_unit;
 }

@@ -198,6 +198,7 @@ P1(uwt_sun_path);
 P6(uwt_lseek_native);
 BY(uwt_lseek_byte);
 
+P1(uwt_empty_caches);
 /* valgrind */
 P1(uwt_free_all_memory);
 
