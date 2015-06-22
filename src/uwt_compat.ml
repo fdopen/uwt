@@ -2,6 +2,8 @@ module Lwt_main = Uwt.Main
 module Lwt_io = Uwt_io
 module Lwt_log = Uwt_log
 module Lwt_bytes = Uwt_bytes
+module Lwt_process = Uwt_process
+module Lwt_throttle = Uwt_throttle
 
 module Lwt_unix = struct
 

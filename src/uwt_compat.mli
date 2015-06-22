@@ -2,11 +2,17 @@ module Lwt_main = Uwt.Main
 module Lwt_io = Uwt_io
 module Lwt_log = Uwt_log
 module Lwt_bytes = Uwt_bytes
+module Lwt_process = Uwt_process
+module Lwt_throttle = Uwt_throttle
+
+(** everything inside Lwt_unix is implemented with funcions from Uwt.
+    The sole purpose is to make it easier to test existing code with
+    uwt.
+
+    Unlike the modules above, functions from Lwt_unix always fail with
+    [Unix.Unix_error], not [Uwt.Uwt_error].
+*)
 module Lwt_unix :
-  (**
-     everything inside Lwt_unix is implemented with funcions from Uwt.
-     The sole purpose is to make it easier to test existing code with uwt
-  *)
   sig
     type file_descr
     val to_file_descr:
