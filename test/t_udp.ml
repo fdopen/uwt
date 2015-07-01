@@ -11,7 +11,7 @@ open Uwt.Udp
 open Common
 
 let bind_exn s sockaddr =
-  if  Unix.PF_INET6 = (Uwt.Conv.unix_sockaddr_of_sockaddr sockaddr
+  if  Unix.PF_INET6 = (Uwt.Conv.to_unix_sockaddr_exn sockaddr
                        |> Unix.domain_of_sockaddr)
   then
     bind_exn ~mode:[ Ipv6_only; Reuse_addr ] s ~addr:sockaddr ()
@@ -74,8 +74,8 @@ let start_server_cb addr : bool Lwt.t =
   try_finally ( fun () ->
       let () = bind_exn server addr in
       let addr2 = Uwt.Udp.getsockname_exn server in
-      if Uwt.Conv.unix_sockaddr_of_sockaddr addr <>
-         Uwt.Conv.unix_sockaddr_of_sockaddr addr2 then
+      if Uwt.Conv.to_unix_sockaddr_exn addr <>
+         Uwt.Conv.to_unix_sockaddr_exn addr2 then
         failwith "udp server sockaddr differ";
       let () = Uwt.Udp.recv_start_exn server ~cb in
       sleeper
@@ -83,11 +83,8 @@ let start_server_cb addr : bool Lwt.t =
 
 let start_client ~raw ~iter ~length addr =
   let client = Uwt.Udp.init () in
-  let buf = Bytes.create length in
+  let buf = rbytes_create length in
   let buf_recv = Bytes.create length in
-  for i = 0 to pred length do
-    Bytes.set buf i (Char.chr (i land 255))
-  done;
   let send = match raw with
   | true -> send_raw
   | false -> send

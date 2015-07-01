@@ -21,15 +21,16 @@
  * 02111-1307, USA.
  *)
 
+#include "config.inc"
 open Lwt.Infix
 
 type command = string * string array
 
-let shell =
-  if Sys.win32 then
-    fun cmd -> ("", [|"cmd.exe"; "/c"; "\000" ^ cmd|])
-  else
-    fun cmd -> ("", [|"/bin/sh"; "-c"; cmd|])
+#if HAVE_WINDOWS <> 0
+let shell cmd = ("", [|"cmd.exe"; "/c"; "\000" ^ cmd|])
+#else
+let shell cmd = ("", [|"/bin/sh"; "-c"; cmd|])
+#endif
 
 type redirection =
     [ `Keep

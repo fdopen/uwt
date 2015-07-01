@@ -21,9 +21,53 @@
 #define unlikely(x) (x)
 #endif
 
-#define AR_SIZE(x) ((sizeof (x)) / (sizeof *(x)))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define BUILD_ASSERT_OR_ZERO(cond)              \
+  (sizeof(char [1 - 2*!(cond)]) - 1)
+
+#if HAVE_BUILTIN_TYPES_COMPATIBLE_P
+/* &arr[0] degrades to a pointer: a different type from an array */
+#define _array_size_chk(arr) \
+ BUILD_ASSERT_OR_ZERO(!__builtin_types_compatible_p(typeof(arr), \
+                                                    typeof(&(arr)[0])))
+#else
+#define _array_size_chk(arr) 0
+#endif
+#define AR_SIZE(x) (sizeof(x) / sizeof((x)[0]) + _array_size_chk(x))
+
+#if defined(HAVE_TYPEOF) && defined(HAVE_STATEMENT_EXPRESSIONS)
+#define UMAX_REAL2(a,b,L)                       \
+  ({ typeof (a) _a##L = (a);                    \
+    typeof (b) _b##L = (b);                     \
+    _a##L > _b##L ?                             \
+      _a##L : _b##L ; })
+#define UMAX_REAL(a,b,c)                        \
+  UMAX_REAL2(a,b,c)
+#ifdef __COUNTER__
+#define UMAX(a,b)                               \
+  UMAX_REAL(a,b,__COUNTER__)
+#else
+#define UMAX(a,b)                               \
+  UMAX_REAL(a,b,__LINE__)
+#endif
+#define UMIN_REAL2(a,b,L)                       \
+  ({ typeof (a) _c##L = (a);                    \
+    typeof (b) _d##L = (b);                     \
+    _c##L < _d##L ?                             \
+      _c##L : _d##L ; })
+#define UMIN_REAL(a,b,c)                        \
+  UMIN_REAL2(a,b,c)
+#ifdef __COUNTER__
+#define UMIN(a,b)                               \
+  UMIN_REAL(a,b,__COUNTER__)
+#else
+#define UMIN(a,b)                               \
+  UMIN_REAL(a,b,__LINE__)
+#endif
+#else
+#define UMIN(x, y) (((x) < (y)) ? (x) : (y))
+#define UMAX(x, y) (((x) > (y)) ? (x) : (y))
+#endif
+
 #define CEIL(a, b) (((a) / (b)) + (((a) % (b)) > 0 ? 1 : 0))
 
 #define PP_NARG(...)                            \
@@ -228,7 +272,7 @@
   {                                             \
     (void) o1;                                  \
     (void) o2;                                  \
-    return VAL_RESULT_UV_UWT_EUNAVAIL;          \
+    return VAL_UWT_INT_RESULT_UWT_EUNAVAIL;     \
   }
 
 static FORCE_INLINE char *
@@ -242,7 +286,7 @@ s_caml_copy_string_array(const char ** s){
 }
 
 static FORCE_INLINE value
-csafe_copy_string (const char *x){
+s_caml_copy_string(const char *x){
   return ( x == NULL ? caml_alloc_string(0) : caml_copy_string(x) );
 }
 

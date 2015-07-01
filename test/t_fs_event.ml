@@ -47,6 +47,28 @@ let test () =
         ) (fun () -> Uwt.Fs_event.close_noerr t ; Lwt.return_unit)
     ) ( fun exn -> Lazy.force remove ; Lwt.fail exn )
 
+let () =
+  (* Workaround for stupid oUnit.
+     Mac Os X sets the environement variable __CF_USER_TEXT_ENCODING
+     under certain conditions.
+     And oUnit always checks for each test case, if the environment doesn't
+     change.
+     In the following lines I try to trigger some event, that
+     sets / modify __CF_USER_TEXT_ENCODING before oUnit can
+     inspect the environment. It hopefully won't change again.
+  *)
+  if Uwt_base.Sys_info.os = Uwt_base.Sys_info.Mac then (
+    try
+      let cb t _ =
+        Uwt.Fs_event.close_noerr t
+      in
+      let fln = Filename.get_temp_dir_name () in
+      let t = Uwt.Fs_event.start_exn fln [] ~cb in
+      Uwt.Fs_event.close_noerr t
+    with
+    | Uwt.Uwt_error _ -> ()
+  )
+
 let l = [
   ("tmpdir watcher">::
    fun _ctx ->

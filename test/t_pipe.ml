@@ -84,7 +84,7 @@ module Client = struct
         Lwt.return_unit
       else
         let buf_len = Random.int 934 + 1 in
-        let buf = Bytes.init buf_len ( fun i -> Char.chr (i land 255) ) in
+        let buf = rbytes_create buf_len in
         Buffer.add_bytes buf_write buf;
         pipe_write t ~buf >>= fun () ->
         really_read buf_len >>= fun () ->
@@ -112,10 +112,7 @@ let server_init () =
     Uwt.Main.at_exit close_server
 
 let write_much client =
-  let buf = Uwt_bytes.create 32768 in
-  for i = 0 to pred 32768 do
-    Uwt_bytes.set buf i (Char.chr (i land 255))
-  done;
+  let buf = rba_create 32_768 in
   let rec iter n =
     if n = 0 then
       write_ba client ~buf >>= fun () ->

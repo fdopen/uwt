@@ -49,13 +49,16 @@ OCAMLPACKS+= bigarray unix
 section
 	.SCANNER: scan-c-%: map_error.h config.h
 	.SCANNER: scan-ocaml-%: error.ml error_val.ml
-	OCAMLFINDFLAGS+= -pp cppo
-	MLFILES= uwt_base uwt_bytes
+	MLFILES=  uwt_bytes
+	CPPOFILES= uwt_base
 	CFILES= uwt_stubs uwt_bytes_stubs uwt_stubs_unix
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+=$(LDFLAGS_LIBUV)
+	section
+		OCAMLFINDFLAGS+= -pp cppo
+		Repeat_targets($(CPPOFILES))
 	Repeat_targets($(MLFILES))
-	UWT_BASE=$(MixedLibrary uwt-base, $(MLFILES), $(CFILES))
+	UWT_BASE=$(MixedLibrary uwt-base, $(CPPOFILES) $(MLFILES), $(CFILES))
 	lib:: $(UWT_BASE)
 	export UWT_BASE
 
@@ -79,11 +82,16 @@ section
 	export UWT_CORE
 
 section
+	.SCANNER: scan-ocaml-%: config.inc
 	OCAMLPACKS+= lwt
 	OCAML_LIBS+= uwt-base uwt
-	FILES= uwt_log uwt_io uwt_process uwt_throttle uwt_timeout
+	FILES= uwt_log uwt_throttle uwt_timeout
+	CPPOFILES= uwt_io uwt_process
 	Repeat_targets($(FILES))
-	UWT_EXT=$(MOCamlLibrary uwt-ext, $(FILES))
+	section
+		OCAMLFINDFLAGS+= -pp cppo
+		Repeat_targets($(CPPOFILES))
+	UWT_EXT=$(MOCamlLibrary uwt-ext, $(FILES) $(CPPOFILES))
 	lib:: $(UWT_EXT)
 	export UWT_EXT
 
@@ -108,7 +116,7 @@ section
 
 section
 	OCAMLPACKS+= lwt
-	x=$(CreateDoc uwt,html,uwt_base.mli uv_sync.mli uwt_bytes.mli uwt.mli uwt_io.mli)
+	x=$(CreateDoc uwt,html,$(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE))
 
 ConfReplace(META)
 section

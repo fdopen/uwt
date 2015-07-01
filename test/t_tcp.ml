@@ -18,7 +18,7 @@ sig
 end
 
 let bind_exn s addr =
-  if  Unix.PF_INET6 = (Uwt.Conv.unix_sockaddr_of_sockaddr addr
+  if  Unix.PF_INET6 = (Uwt.Conv.to_unix_sockaddr_exn addr
                        |> Unix.domain_of_sockaddr)
   then
     bind_exn ~mode:[ Ipv6_only ] s ~addr ()
@@ -56,8 +56,8 @@ module Echo_server (X: Sockaddr) = struct
         (* I'm sure about this test. Does the ocaml unix library
            support equality compare for the abstract type
            Unix.inet_addr ? *)
-        if Uwt.Conv.unix_sockaddr_of_sockaddr sockaddr <>
-           Uwt.Conv.unix_sockaddr_of_sockaddr sockaddr2 then
+        if Uwt.Conv.to_unix_sockaddr_exn sockaddr <>
+           Uwt.Conv.to_unix_sockaddr_exn sockaddr2 then
           failwith "server sockaddr differ";
         listen_exn server ~max:server_backlog ~cb:on_listen;
         let (s:unit Lwt.t),_ = Lwt.task () in
@@ -99,7 +99,7 @@ module Client = struct
         Lwt.return_unit
       else
         let buf_len = Random.int 934 + 1 in
-        let buf = Bytes.init buf_len ( fun i -> Char.chr (i land 255) ) in
+        let buf = rbytes_create buf_len in
         Buffer.add_bytes buf_write buf;
         tcp_write t ~buf >>= fun () ->
         really_read buf_len >>= fun () ->
@@ -147,10 +147,7 @@ let close_servers () =
 let () = Uwt.Main.at_exit close_servers
 
 let write_much client =
-  let buf = Uwt_bytes.create 32768 in
-  for i = 0 to pred 32768 do
-    Uwt_bytes.set buf i (Char.chr (i land 255))
-  done;
+  let buf = rba_create 32_768 in
   let rec iter n =
     if n = 0 then
       write_ba client ~buf >>= fun () ->
@@ -298,7 +295,7 @@ let l = [
      m_true (try_finally ( fun () ->
          Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
          match Uwt.Tcp.getpeername_exn client
-               |> Uwt.Conv.unix_sockaddr_of_sockaddr with
+               |> Uwt.Conv.to_unix_sockaddr_exn with
          | Unix.ADDR_INET(y,x) ->
            if server_port = x &&
               server_ip = Unix.string_of_inet_addr y

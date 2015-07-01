@@ -189,7 +189,7 @@ module type Fs_functions = sig
     ?mode:symlink_mode -> src:string -> dst:string -> unit -> unit t
   val mkdtemp : string -> string t
   val sendfile :
-    ?pos:int64 -> ?len:int64 -> dst:file -> src:file -> unit -> int64 t
+    ?pos:int64 -> ?len:nativeint -> dst:file -> src:file -> unit -> nativeint t
   val utime : string -> access:float -> modif:float -> unit t
   val futime : file -> access:float -> modif:float -> unit t
   val readlink : string -> string t
@@ -202,20 +202,21 @@ module type Fs_functions = sig
 end
 
 module Conv = struct
-
   type usockaddr = Unix.sockaddr =
     | ADDR_UNIX of string
     | ADDR_INET of Unix.inet_addr * int
 
-  external sockaddr_of_unix_sockaddr :
+  external of_unix_sockaddr_exn :
     usockaddr -> sockaddr = "uwt_of_sockaddr"
-  external unix_sockaddr_of_sockaddr :
+  external to_unix_sockaddr_exn :
     sockaddr -> usockaddr = "uwt_to_sockaddr"
 
+#if HAVE_WINDOWS = 0
+  let file_of_file_descr s = Some s
+#else
   external set_crtfd : Unix.file_descr -> bool = "uwt_set_crtfd_na"
-  let file_of_file_descr s =
-    if not Sys.win32 || set_crtfd s then Some s
-    else None
+  let file_of_file_descr s = if set_crtfd s then Some s else None
+#endif
   (* it might change in the future , therefore I continue to wrap it in
      an option *)
   let file_descr_of_file f = Some f
@@ -356,4 +357,17 @@ module Sys_info = struct
     | Bsd
     | Unknown
   let os : os = OS_MACRO
+
+  type win_version = {
+    major_version: int;
+    minor_version: int;
+    build_number: int;
+    platform_id: int;
+    csd_version: string;
+  }
+#if HAVE_WINDOWS = 0
+  let win_version () = Error UWT_EUNAVAIL
+#else
+  external win_version: unit -> win_version result = "uwt_win_version"
+#endif
 end

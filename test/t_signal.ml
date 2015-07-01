@@ -17,18 +17,19 @@ let send_signal () =
   let pid = Unix.getpid ()
   and signum = Sys.sigusr1 in
   Uwt.Process.kill_exn ~pid ~signum;
-  Uwt.Timer.sleep 10 >>= fun () ->
-  Lwt.return_false
+  Uwt.Timer.sleep 3_000 >>= fun () ->
+  Lwt.fail_with "send_signal_failure"
 
 open Common
 open OUnit2
 let l = [
   ("start_exn">::
-   fun _ctx ->
-     no_win ();
+   fun ctx ->
+     no_win ctx;
      m_true (Lwt.pick [wait_for_signal (); send_signal ()]));
   ("constants">::
    fun _ ->
+     assert_equal Sys.sighup (-4);
      assert_equal Sys.sigint (-6);
      assert_equal Sys.sigkill (-7);
      assert_equal Sys.sigterm (-11);

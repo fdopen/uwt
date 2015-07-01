@@ -115,11 +115,8 @@ let copy_sendfile ~src ~dst =
         ) ( fun () -> US.close fd_write )
     ) ( fun () -> US.close fd_read )
 
-let random_bytes_length = 262144
-let random_bytes =
-  Bytes.init random_bytes_length ( fun _i -> Random.int 256 |> Char.chr )
-
-let tmpdir = T_fs.tmpdir
+let random_bytes_length = 88_411
+let random_bytes = Common.rbytes_create random_bytes_length
 
 let to_exn = function
 | Ok x -> x
@@ -148,14 +145,16 @@ let with_file ~mode fln f =
     (try ignore (close fd) with _ -> ());
     raise exn
 
+let tmpdir = Common.tmpdir
+
 let (//) = Filename.concat
 let l = [
   ("mkdtemp">::
    fun _ctx ->
-     let () = T_fs.clean_tmp_dir () in
+     let () = Common.clean_tmp_dir () in
      let fln = "uwt-test.XXXXXX" in
      m_true ( fun () -> mkdtemp fln >>= fun s ->
-              T_fs.remove_dir s;
+              Common.remove_dir s;
               return (s <> "")));
   ("write">::
    fun _ctx ->
@@ -198,8 +197,8 @@ let l = [
    fun _ctx ->
      m_equal () (fun () -> unlink @@ tmpdir () // "d"));
   ("link">::
-   fun _ctx ->
-     no_win ();
+   fun ctx ->
+     no_win ctx;
      m_equal () (fun () -> link ~target:(tmpdir () // "a") ~link_name:(tmpdir () // "f"));
      m_equal () (fun () -> unlink (tmpdir () // "f")));
   ("scandir">::
@@ -210,8 +209,8 @@ let l = [
      m_equal files (fun () -> scandir (tmpdir()) >>= fun s -> Array.sort compare s ;
                     return s));
   ("symlink/lstat">::
-   fun _ctx ->
-     no_win ();
+   fun ctx ->
+     no_win ctx;
      let a = tmpdir () // "a"
      and d = tmpdir () // "d" in
      m_equal () (fun () -> symlink ~src:a ~dst:d ());
@@ -227,11 +226,10 @@ let l = [
   ("utime">::
    fun _ctx ->
      let z = tmpdir () // "z" in
-     let itime = (int_of_float (Unix.time ())) - 99_000 in
-     let time = float_of_int itime in
+     let time = Unix.time () -. 99_000. in
      m_true (fun () -> utime z ~access:time ~modif:time >>= fun () ->
              stat z >>= fun s ->
-             let time = Int64.of_int itime in
+             let time = Int64.of_float time in
              let d1 = Int64.sub s.st_atime time |> Int64.abs
              and d2 = Int64.sub s.st_mtime time |> Int64.abs in
              return ( d1 = 0L && d2 = 0L ) ));
@@ -239,8 +237,7 @@ let l = [
    fun _ctx ->
      let z = tmpdir () // "z" in
      m_true ( fun () -> with_file ~mode:[O_RDWR] z @@ fun fd ->
-              let itime = (int_of_float (Unix.time ())) + 99_000 in
-              let time = float_of_int itime in
+              let time = Unix.time () +. 99_000. in
               futime fd ~access:time ~modif:time >>= fun () ->
               fstat fd >>= fun s ->
               let time = Int64.of_float time in
@@ -248,20 +245,20 @@ let l = [
               and d2 = Int64.sub s.st_mtime time |> Int64.abs in
               return ( Common.D.qstat s && d1 = 0L && d2 = 0L ) ));
   ("chmod">::
-   fun _ctx ->
-     no_win ();
+   fun ctx ->
+     no_win ctx;
      let z = tmpdir () // "z" in
      m_true ( fun () -> chmod z ~perm:0o751 >>= fun () ->
              stat z >>= fun s -> return (s.st_perm = 0o751)));
   ("fchmod">::
-   fun _ctx ->
-     no_win ();
+   fun ctx ->
+     no_win ctx;
      let z = tmpdir () // "z" in
      m_true ( fun () -> with_file ~mode:[O_WRONLY] z @@ fun fd ->
              fchmod fd ~perm:0o621 >>= fun () -> fstat fd >>= fun s ->
              return (s.st_perm = 0o621)));
   ("access">::
-   fun _ctx ->
+   fun ctx ->
      let z = tmpdir () // "z" in
      let x = tmpdir () // "zz" in
      m_raises
@@ -269,7 +266,7 @@ let l = [
        (fun () -> access x [Read]);
      m_equal () (fun () -> access z [Read]);
      m_equal () (fun () -> access Sys.executable_name [Exec]);
-     no_win ();
+     no_win ctx;
      skip_if (Unix.getuid () = 0) "not for root";
      let invalid = "\000" in
      let shadow =

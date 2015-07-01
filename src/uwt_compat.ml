@@ -562,13 +562,24 @@ module Lwt_unix = struct
         ai_socktype = a.Uwt.Dns.ai_socktype;
         ai_protocol = a.Uwt.Dns.ai_protocol;
         ai_canonname = a.Uwt.Dns.ai_canonname;
-        ai_addr = Uwt.Conv.unix_sockaddr_of_sockaddr a.Uwt.Dns.ai_addr }
+        ai_addr = Uwt.Conv.to_unix_sockaddr_exn a.Uwt.Dns.ai_addr }
     in
     Lwt.return (List.map f l)
 
   let getaddrinfo = help3 getaddrinfo
 
   let getnameinfo addr l =
-    let addr = Uwt.Conv.sockaddr_of_unix_sockaddr addr in
+    let addr = Uwt.Conv.of_unix_sockaddr_exn addr in
     help2n "getnameinfo" Uwt.Dns.getnameinfo addr l
+
+  let pipe () =
+    try
+      let fd1,fd2 = UU.pipe_exn () in
+      Pipe fd1, Pipe fd2
+    with
+    | Uwt.Uwt_error(x,y,z) -> raise (U.Unix_error(er_code x,y,z))
+
+  let system s =
+    let s = Uwt_process.shell s in
+    help ( fun () -> Uwt_process.exec s )
 end

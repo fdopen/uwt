@@ -103,6 +103,12 @@ val null : output_channel
 
 (** {2 Channels creation/manipulation} *)
 
+val pipe : ?cloexec : bool -> ?in_buffer : Uwt_bytes.t -> ?out_buffer : Uwt_bytes.t -> unit ->
+  input_channel * output_channel
+  (** [pipe ?cloexec ?in_buffer ?out_buffer ()] creates a pipe using
+      {!Uwt.Unix.pipe} and makes two channels from the two returned file
+      descriptors *)
+
 val make :
   ?buffer : Uwt_bytes.t ->
   ?close : (unit -> unit Lwt.t) ->
@@ -152,6 +158,13 @@ val of_stream :
   ?buffer : Uwt_bytes.t ->
   ?close:(unit -> unit Lwt.t) -> mode:'m mode -> Uwt.Stream.t -> 'm channel
 
+val of_pipe :
+  ?buffer : Uwt_bytes.t ->
+  ?close:(unit -> unit Lwt.t) -> mode:'m mode -> Uwt.Pipe.t -> 'm channel
+
+val of_tcp :
+  ?buffer : Uwt_bytes.t ->
+  ?close:(unit -> unit Lwt.t) -> mode:'m mode -> Uwt.Tcp.t -> 'm channel
 
 val close : 'a channel -> unit Lwt.t
   (** [close ch] closes the given channel. If [ch] is an output

@@ -57,8 +57,14 @@ uwt_add_worker_result(value o_uwt,
                       void * p1,
                       void * p2);
 
-value Val_error(int n);
-value Val_uv_result(int n);
+value Val_uwt_error(int n);
+value Val_uwt_int_result(int n);
+
+#ifdef _WIN32
+int uwt_translate_sys_error(DWORD);
+char * uwt_utf16_to_utf8(const WCHAR* utf16_buffer, int * error);
+WCHAR * uwt_utf8_to_utf16(const char* utf8_buffer,int *error);
+#endif
 
 #ifdef __cplusplus
 }

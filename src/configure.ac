@@ -8,7 +8,7 @@ AC_USE_SYSTEM_EXTENSIONS
 
 AC_MSG_CHECKING([posix source 200809L])
 
-AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h grp.h pwd.h)
+AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h grp.h pwd.h sys/param.h)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_DECLS([strnlen], [], [], [#include <string.h>])
 AC_CHECK_DECLS([uv_os_homedir,UV_TTY_MODE_NORMAL,UV_TTY_MODE_RAW,UV_TTY_MODE_IO],[],[],[#include <uv.h>])
@@ -16,6 +16,7 @@ AC_CHECK_DECLS([uv_os_homedir,UV_TTY_MODE_NORMAL,UV_TTY_MODE_RAW,UV_TTY_MODE_IO]
 AC_HEADER_STDBOOL
 AC_C_BIGENDIAN
 AC_SYS_LARGEFILE
+AC_C_TYPEOF
 
 AC_MSG_CHECKING([_Static_assert])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([_Static_assert (1, "");],
@@ -130,6 +131,22 @@ Define to 1 if compiler supports __builtin_expect)
 AC_MSG_RESULT([yes])],
 [AC_MSG_RESULT([no])])
 
+AC_MSG_CHECKING([for __builtin_types_compatible_p()])
+AC_LINK_IFELSE(
+[AC_LANG_SOURCE([int main(void) { return __builtin_types_compatible_p(char *, int) ? 1 : 0; }])],
+AC_DEFINE([HAVE_BUILTIN_TYPES_COMPATIBLE_P], [1],
+[Define if have __builtin_types_compatible_p]))
+
+AC_CACHE_CHECK([for statement expressions],
+  [uwt_cv_statement_expressions],
+  [AC_COMPILE_IFELSE(
+     [AC_LANG_PROGRAM([], [[return ({ int x = 5; x-x; });]])],
+     [uwt_cv_statement_expressions=yes],
+     [uwt_cv_statement_expressions=no])])
+if test "$uwt_cv_statement_expressions" = yes; then
+  AC_DEFINE([HAVE_STATEMENT_EXPRESSIONS], 1,
+    [Define to 1 if statement expressions work.])
+fi
 
 AC_SEARCH_LIBS(gethostbyname_r, [socket nsl])
 AC_SEARCH_LIBS(getservbyname_r, [socket nsl])
@@ -214,7 +231,7 @@ AC_SUBST(OS_MACRO)
 
 AC_CHECK_FUNCS(getlogin cuserid getpwnam getgrnam getpwuid getgrgid)
 AC_CHECK_FUNCS(getlogin_r getpwnam_r getgrnam_r getpwuid_r getgrgid_r)
-AC_CHECK_FUNCS(chroot lockf)
+AC_CHECK_FUNCS(chroot lockf pipe2)
 
 if test "$ac_cv_func_getlogin_r" = "yes" ; then
 HAVE_GETLOGIN_R=1
@@ -250,5 +267,48 @@ uwt_translate(void)
     [AC_MSG_RESULT([yes]);
      AC_DEFINE([HAVE_UV_TRANSLATE_SYSERROR], [1], [Define to 1 if libuv supports it.])],
     [AC_MSG_RESULT([no])])
+
+# realpath test breaks cross compiling, therefore we try to avoid it
+if test "$OS_MACRO" != "Windows" ; then
+AC_CHECK_FUNCS(canonicalize_file_name)
+if test "$ac_cv_func_canonicalize_file_name" != "yes" ; then
+
+# Check if realpath accepts null for its second argument
+AC_MSG_CHECKING([if realpath accepts null for its second argument])
+AC_RUN_IFELSE(
+  [
+    AC_LANG_PROGRAM(
+      [
+        #include <limits.h>
+        #include <errno.h>
+        #include <stdlib.h>
+      ],
+      [
+        int status;
+        char *res;
+        res = realpath( "somefile", 0 );
+        status = !(res != 0 || errno == ENOENT);
+        exit( status );
+      ]
+    )
+  ],
+  [have_realpath_null=yes],
+  [have_realpath_null=no]
+)
+
+if test "$have_realpath_null" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(
+    [HAVE_REALPATH_NULL],
+    [1],
+    [Define to 1 if realpath accepts null for its second argument.]
+  )
+else
+  AC_MSG_RESULT(no)
+fi
+
+fi
+
+fi # OS != Windows
 
 AC_OUTPUT

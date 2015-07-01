@@ -268,8 +268,11 @@ module Int_result : sig
   val uwt_eunavail: int
 end
 
-type file (** abstract type for a file descriptor *)
-type sockaddr (** similar to [Unix.sockaddr], but abstract *)
+(** abstract type for a file descriptor *)
+type file
+
+(** similar to [Unix.sockaddr], but abstract *)
+type sockaddr
 
 type buf =
   (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
@@ -356,6 +359,7 @@ module type Fs_functions = sig
   with type stats = Fs_types.stats
 
   type 'a t
+
   (** @param perm defaults are 0o644 *)
   val openfile : ?perm:int -> mode:uv_open_flag list -> string -> file t
 
@@ -396,9 +400,9 @@ module type Fs_functions = sig
   val mkdtemp : string -> string t
 
   (** @param pos default 0
-      @param len [Int64.max_int] *)
+      @param len [Nativeint.max_int] *)
   val sendfile :
-    ?pos:int64 -> ?len:int64 -> dst:file -> src:file -> unit -> int64 t
+    ?pos:int64 -> ?len:nativeint -> dst:file -> src:file -> unit -> nativeint t
   val utime : string -> access:float -> modif:float -> unit t
   val futime : file -> access:float -> modif:float -> unit t
   val readlink : string -> string t
@@ -413,13 +417,13 @@ end
 
 module Conv : sig
   (** be careful in case of [Unix.ADDR_UNIX path]. If path is very
-        long, {!of_unix_sockaddr} will raise an exception
-        ([Unix.Unix_error]) and {!to_unix_sockaddr} might return a
-        truncated string.  [Unix.ADDR_UNIX] is not supported on windows,
-        {!of_unix_sockaddr} will also raise an exception in this
-        case. *)
-  val sockaddr_of_unix_sockaddr : Unix.sockaddr -> sockaddr
-  val unix_sockaddr_of_sockaddr : sockaddr -> Unix.sockaddr
+      long, {!of_unix_sockaddr} will raise an exception
+      ([Unix.Unix_error]) and {!to_unix_sockaddr} might return a
+      truncated string.  [Unix.ADDR_UNIX] is not supported on windows,
+      {!of_unix_sockaddr} will also raise an exception in this
+      case. *)
+  val of_unix_sockaddr_exn : Unix.sockaddr -> sockaddr
+  val to_unix_sockaddr_exn : sockaddr -> Unix.sockaddr
 
   (** the following functions always succeed on Unix - but not on windows *)
   val file_of_file_descr : Unix.file_descr -> file option
@@ -525,7 +529,7 @@ module Misc : sig
   val os_homedir: unit -> string result
 
   (** like Sys.executable_name , but utf-8 encoded under windows
-      and more reliable under niche operating systems  *)
+      and perhaps more reliable under niche operating systems *)
   val exepath: unit -> string result
 end
 
@@ -547,5 +551,20 @@ module Sys_info : sig
     | Bsd
     | Unknown
 
+  (** {!os} is determined at compile time (by the c compiler) and
+      might differ from the later OS *)
   val os : os
+
+  type win_version = {
+    major_version: int;
+    minor_version: int;
+    build_number: int;
+    platform_id: int;
+    csd_version: string;
+  }
+  (** Wrapper around GetVersionEx. It will always return [Error
+      UWT_EUNAVAIL] on non windows systems.
+      Your application must be manifested, otherwise you will get
+      wrong informations on windows 8.1 and newer *)
+  val win_version: unit -> win_version result
 end

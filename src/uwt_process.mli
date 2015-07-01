@@ -100,7 +100,10 @@ val exec :
   ?stdout : redirection ->
   ?stderr : redirection ->
   command -> Unix.process_status Lwt.t
-  (** Executes the given command and returns its exit status. *)
+  (** Executes the given command and returns its exit status.
+      [Unix.WSTOPPED] is not supported by libuv at the moment.
+      It will return either [Unix.WSIGNALED] or [Unix.WEXITED]
+  *)
 
 (** {3 Receiving} *)
 

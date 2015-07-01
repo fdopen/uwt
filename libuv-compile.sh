@@ -8,7 +8,7 @@ CFLAGS=$3
 unix=$4
 
 archive="libuv-v${version}.tar.gz"
-archive_url="http://libuv.org/dist/v${version}/${archive}"
+archive_url="http://dist.libuv.org/dist/v${version}/${archive}"
 
 if [ ! -f "$archive" ]; then
     if which wget >/dev/null 2>&1 ; then
@@ -22,25 +22,31 @@ tar -xzf "$archive"
 cd "libuv-v${version}"
 
 if [ "$unix" = "true" ]; then
-    x="$(uname)"
-    if [ "$x" = "OpenBSD" ] ; then
-        AUTOCONF_VERSION="$( ls -1 /usr/local/bin/autoreconf-* | sort | tail -n 1 )"
-        AUTOCONF_VERSION="${AUTOCONF_VERSION##*-}"
+    if [ ! -f .libs/libuv.a ]; then
+        x="$(uname)"
+        if [ "$x" = "OpenBSD" ] ; then
+            AUTOCONF_VERSION="$( ls -1 /usr/local/bin/autoreconf-* | sort | tail -n 1 )"
+            AUTOCONF_VERSION="${AUTOCONF_VERSION##*-}"
 
-        AUTOMAKE_VERSION="$( ls -1 /usr/local/bin/automake-* | sort | tail -n 1 )"
-        AUTOMAKE_VERSION="${AUTOMAKE_VERSION##*-}"
+            AUTOMAKE_VERSION="$( ls -1 /usr/local/bin/automake-* | sort | tail -n 1 )"
+            AUTOMAKE_VERSION="${AUTOMAKE_VERSION##*-}"
 
-        export AUTOCONF_VERSION AUTOMAKE_VERSION
+            export AUTOCONF_VERSION AUTOMAKE_VERSION
+        fi
+
+        ./autogen.sh
+
+        make=gmake
+        if ! which gmake >/dev/null 2>&1 ; then
+            make=make
+        fi
+        if [ -f Makefile ]; then
+            $make clean || true
+            $make distclean || true
+        fi
+        ./configure --enable-static --disable-shared CC="$CC" CFLAGS="$CFLAGS"
+        $make all
     fi
-
-    ./autogen.sh
-    ./configure --enable-static --disable-shared CC="$CC" CFLAGS="$CFLAGS"
-
-    make=gmake
-    if ! which gmake >/dev/null 2>&1 ; then
-        make=make
-    fi
-    $make all
     cd ..
     lib="../libuv-v${version}/.libs/libuv.a"
     rm -f src/libuv.a examples/libuv.a test/libuv.a
@@ -48,18 +54,20 @@ if [ "$unix" = "true" ]; then
     ln -s "${lib}" examples/libuv.a
     ln -s "${lib}" test/libuv.a
 else
-    AR=
-    case "$CC" in
-        *-gcc)
-            AR=${CC%-*}
-            AR="${AR}-ar"
-            if which "$AR" >/dev/null 2>&1 ; then
-               export AR
-            fi
-            ;;
-    esac
-    export CC CFLAGS
-    make -f Makefile.mingw
+    if [ ! -f libuv.a ]; then
+        AR=
+        case "$CC" in
+            *-gcc)
+                AR=${CC%-*}
+                AR="${AR}-ar"
+                if which "$AR" >/dev/null 2>&1 ; then
+                    export AR
+                fi
+                ;;
+        esac
+        export CC CFLAGS
+        make -f Makefile.mingw
+    fi
     cd ..
     lib="libuv-v${version}/libuv.a"
     rm -f src/libuv.a examples/libuv.a test/libuv.a

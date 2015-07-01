@@ -152,6 +152,7 @@ type thread = {
   mutable reuse : bool;
   (* Whether the thread must be readded to the pool when the work is
      done. *)
+  mutable exn: exn option;
 }
 
 (* Pool of worker threads: *)
@@ -162,14 +163,20 @@ let waiters : thread Lwt.u Lwt_sequence.t = Lwt_sequence.create ()
 
 (* Code executed by a worker: *)
 let rec worker_loop worker =
-  let id, task = Event.sync (Event.receive worker.task_channel) in
-  task ();
-  (* If there is too much threads, exit. This can happen if the user
-     decreased the maximum: *)
-  if !threads_count > !max_threads then worker.reuse <- false;
-  (* Tell the main thread that work is done: *)
-  send_notification id;
-  if worker.reuse then worker_loop worker
+  match Event.sync (Event.receive worker.task_channel) with
+  | exception exn ->
+    (* TODO: debug, how it happens - and why only on some systems.
+       Invalid_argument "index out of bounds" is sometimes
+       thrown inside Event.sync *)
+    worker.exn <- Some exn
+  | id, task ->
+    task ();
+    (* If there is too much threads, exit. This can happen if the user
+       decreased the maximum: *)
+    if !threads_count > !max_threads then worker.reuse <- false;
+    (* Tell the main thread that work is done: *)
+    send_notification id;
+    if worker.reuse then worker_loop worker
 
 (* create a new worker: *)
 let make_worker () =
@@ -178,6 +185,7 @@ let make_worker () =
     task_channel = Event.new_channel ();
     thread = Thread.self ();
     reuse = true;
+    exn = None;
   } in
   worker.thread <- Thread.create worker_loop worker;
   worker
@@ -191,9 +199,14 @@ let add_worker worker =
     Lwt.wakeup w worker
 
 (* Wait for worker to be available, then return it: *)
-let get_worker () =
+let rec get_worker () =
   if not (Queue.is_empty workers) then
-    Lwt.return (Queue.take workers)
+    let p = Queue.take workers in
+    if p.exn = None then
+      Lwt.return p
+    else
+      let () = decr threads_count in
+      get_worker ()
   else if !threads_count < !max_threads then
     Lwt.return (make_worker ())
   else
@@ -258,17 +271,21 @@ let detach f args =
     let id =
       make_notification ~once:true
         (fun () -> Lwt.wakeup_result wakener !result)
-    in
+    and exn_catched = ref false in
     Lwt.finalize
       (fun () ->
          incr detached_cnt;
          (* Send the id and the task to the worker: *)
          Event.sync (Event.send worker.task_channel (id, task));
-         waiter)
+         match worker.exn with
+         | None -> waiter
+         | Some x ->
+           exn_catched:= true;
+           Lwt.fail x)
       (fun () ->
          let erg =
            try
-             if worker.reuse then
+             if worker.reuse || !exn_catched then
                (* Put back the worker to the pool: *)
                add_worker worker
              else begin

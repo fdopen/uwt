@@ -22,7 +22,7 @@
 
 
 (* Many things disabled, e.g. seeking is not supported by libuv,... *)
-
+#include "config.inc"
 open Lwt.Infix
 
 exception Channel_closed of string
@@ -203,15 +203,17 @@ let perform_io : type mode. mode _channel -> int Lwt.t = fun ch -> match ch.main
               | Output ->
                   (0, ch.ptr) in
             Lwt.pick [ch.abort_waiter;
-                      if Sys.win32 then
+#if HAVE_WINDOWS <> 0
                         Lwt.catch
                           (fun () -> perform_io ch.buffer ptr len)
                           (function
-                          | Unix.Unix_error (Unix.EPIPE, _, _) ->
+                          | Uwt.Uwt_error ((Uwt.EPIPE|Uwt.EOF), _, _)
+                          | Unix.Unix_error(Unix.EPIPE, _, _) ->
                             Lwt.return 0
                           | exn -> Lwt.fail exn)
-                      else
+#else
                         perform_io ch.buffer ptr len
+#endif
                      ] >>= fun n ->
             (* Never trust user functions... *)
             if n < 0 || n > len then
@@ -566,17 +568,17 @@ let of_stream : type m. ?buffer : Uwt_bytes.t -> ?close : (unit -> unit Lwt.t) -
     ?buffer
     ~close:(match close with
               | Some f -> f
-              | None -> (fun () ->
-                  let merr = Uwt.Stream.close fd in
-                  if Uwt.Int_result.is_ok merr then
-                    Lwt.return_unit
-                  else
-                    Lwt.fail(Uwt.Int_result.to_exn ~name:"of_stream_close" merr)
-                ))
+              | None -> fun () -> Uwt.Stream.close_noerr fd; Lwt.return_unit)
     ~mode
     perform_io
 
+let of_pipe ?buffer ?close ~mode t =
+  let t = Uwt.Pipe.to_stream t in
+  of_stream ?buffer ?close ~mode t
 
+let of_tcp ?buffer ?close ~mode t =
+  let t = Uwt.Tcp.to_stream t in
+  of_stream ?buffer ?close ~mode t
 
 (*
 let of_unix_fd : type m. ?buffer : Uwt_bytes.t -> ?close : (unit -> unit Lwt.t) -> mode : m mode -> Unix.file_descr -> m channel = fun ?buffer ?close ~mode fd ->
@@ -1340,9 +1342,10 @@ let eprintl txt = write_line stderr txt
 let eprintf fmt = Printf.ksprintf eprint fmt
 let eprintlf fmt = Printf.ksprintf eprintl fmt
 
-(*let pipe ?buffer_size _ =
-  let fd_r, fd_w = Lwt_unix.pipe () in
-  (of_fd ?buffer_size ~mode:input fd_r, of_fd ?buffer_size ~mode:output fd_w) *)
+let pipe ?cloexec ?in_buffer ?out_buffer () =
+  let fd_r, fd_w = Uwt.Unix.pipe_exn ?cloexec () in
+  of_stream ?buffer:in_buffer ~mode:input (Uwt.Pipe.to_stream fd_r),
+  of_stream ?buffer:out_buffer ~mode:output (Uwt.Pipe.to_stream fd_w)
 
 type file_name = string
 
@@ -1471,7 +1474,7 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) sockaddr
         shutdown = Lazy.from_fun shutdown;
         server = server
       }
-  and addr = Uwt.Conv.sockaddr_of_unix_sockaddr sockaddr in
+  and addr = Uwt.Conv.of_unix_sockaddr_exn sockaddr in
   match sockaddr with
   | Unix.ADDR_UNIX path ->
     let server = Uwt.Pipe.init () in

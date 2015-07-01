@@ -25,6 +25,7 @@ let tests =
     T_tty.l;
     T_fs_sync.l;
     T_stub.l;
+    T_preemptive.l; (* yes twice, it must be tested again after T_spawn *)
     T_timer.l;
   ]
 

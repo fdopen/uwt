@@ -33,3 +33,5 @@ type interface_address = [%import: Uwt_base.Misc.interface_address] [@@deriving 
 
 type addr_info = [%import: Uwt.Dns.addr_info] [@@deriving show]
 type name_info = [%import: Unix.name_info] [@@deriving show]
+
+type win_version = [%import: Uwt_base.Sys_info.win_version] [@@deriving show]

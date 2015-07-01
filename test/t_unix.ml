@@ -29,17 +29,20 @@ let ruwt (t:'a Lwt.t) : 'a t =
 
 let adv_equal t1 t2 =
   match t1,t2 with
-  | Result _, Result _
-  | Exn _, Result _
-  | Result _, Exn _ -> assert_equal t1 t2
+  | Result _, Result _ -> assert_equal t1 t2
+  | Exn a, Result _
+  | Result _, Exn a -> raise a
   | Exn a, Exn b ->
     match a,b with
-    | Unix.Unix_error(a,_,_), Unix.Unix_error(b,_,_) -> assert_equal a b
-    | _,_ -> assert_equal a b
+    | Unix.Unix_error(a',_,_), Unix.Unix_error(b',_,_) ->
+      if a' = b' then
+        assert_equal a' b'
+      else
+        raise a
+    | _ ->  raise a
 
 
 module UUnix = Uwt_compat.Lwt_unix
-let tmpdir = T_fs.tmpdir
 module U = Unix
 module UU = Uwt.Unix
 
@@ -55,6 +58,11 @@ let lock_helper =
   Filename.dirname Sys.executable_name //
   if Sys.win32 then "lock_helper.exe" else "lock_helper"
 
+
+let invalid_path = match Sys.win32 with
+| true -> "C:\\aYdf\\aYs"
+| false -> "/aYdf/aYs"
+
 let l = [
   ("gethostname">::
    fun _ctx ->
@@ -64,16 +72,19 @@ let l = [
      m_equal Unix.PF_INET (
        Uwt.Unix.gethostbyname "google.com" >>=
        fun s -> Lwt.return s.Unix.h_addrtype);
-     m_raises (Uwt.ENOENT,"gethostbyname","")(
-       Uwt.Unix.gethostbyname "verylongandinvalidadzuarztgjbgf.com"));
+     let name = "verylongandinvalidadzuarztgjbgf.com" in
+     m_raises (Uwt.ENOENT,"gethostbyname",name)(
+       Uwt.Unix.gethostbyname name));
   ("gethostbyaddr">::
-   fun _ctx ->
-     let ip4 = Unix.inet_addr_of_string "8.8.8.8"
-     and ip6 = Unix.inet_addr_of_string "2001:4860:4860::8888"
-     and ip6_invalid = Unix.inet_addr_of_string "1234:1234:1234::1234" in
+   fun ctx ->
+     let ip4 = Unix.inet_addr_of_string "8.8.8.8" in
      m_equal Unix.PF_INET (
        Uwt.Unix.gethostbyaddr ip4 >>=
        fun s -> Lwt.return s.Unix.h_addrtype);
+     ip6_only ctx;
+     let s_invalid = "1234:1234:1234::1234" in
+     let ip6 = Unix.inet_addr_of_string "2001:4860:4860::8888"
+     and ip6_invalid = Unix.inet_addr_of_string s_invalid in
      m_equal Unix.PF_INET6 (
        Uwt.Unix.gethostbyaddr ip6 >>=
        fun s -> Lwt.return s.Unix.h_addrtype);
@@ -82,7 +93,7 @@ let l = [
   ("getprotobyname">::
    fun _ctx ->
      unix_equal UU.getprotobyname U.getprotobyname "icmp";
-     m_raises (Uwt.ENOENT,"getprotobyname","")(
+     m_raises (Uwt.ENOENT,"getprotobyname","uwt")(
        Uwt.Unix.getprotobyname "uwt" >>= fun s ->
        return s.Unix.p_proto));
   ("getprotobynumber">::
@@ -99,7 +110,7 @@ let l = [
      m_true (
        Uwt.Unix.getservbyname ~name:"www" ~protocol:"tcp" >>=
        fun s -> is_http s );
-     m_raises (Uwt.ENOENT,"getservbyname","")(
+     m_raises (Uwt.ENOENT,"getservbyname","uwt")(
        Uwt.Unix.getservbyname ~name:"uwt" ~protocol:"udp" >>=
        fun s -> return s.Unix.s_name));
   ("getservbyport">::
@@ -108,7 +119,7 @@ let l = [
        Uwt.Unix.getservbyport 80 "" >>= fun s -> is_http s);
      m_true (
        Uwt.Unix.getservbyport 80 "tcp" >>= fun s -> is_http s);
-     m_raises (Uwt.ENOENT,"getservbyport","")(
+     m_raises (Uwt.ENOENT,"getservbyport","udp")(
        Uwt.Unix.getservbyport 54325 "udp" >>=
        fun s -> return s.Unix.s_name));
   ("getcwd">::
@@ -116,28 +127,47 @@ let l = [
      let s1 = runix Sys.getcwd () in
      let s2 = ruwt @@ Uwt.Unix.getcwd () in
      adv_equal s1 s2);
+  ("realpath">::
+   fun _ ->
+     let t = Uwt.Unix.realpath "." >>= fun s ->
+       Uwt.Fs.stat s >>= fun l ->
+       return (l.Uwt.Fs.st_kind = Uwt.Fs.S_DIR &&
+               s <> ".")
+     in
+     m_true t );
+  ("realpath_enoent">::
+   fun _ ->
+     let t = Uwt.Unix.realpath invalid_path >>= fun (_:string) ->
+       Lwt.return_true
+     in
+     m_raises (Uwt.ENOENT,"realpath",invalid_path) t);
   ("chdir">::
    fun _ ->
      let orig = Sys.getcwd () in
+     let real_tmpdir = Uwt.Main.run @@ Uwt.Unix.realpath @@ tmpdir () in
      Common.nm_try_finally ( fun () ->
          m_true (Uwt.Unix.chdir (tmpdir ()) >>= fun () ->
+                 Uwt.Unix.getcwd () >>= fun s ->
+                 Uwt.Unix.realpath s >>= fun cwd_real ->
                  let erg =
-                   Sys.getcwd () = tmpdir () &&
+                   cwd_real = real_tmpdir &&
                    tmpdir () <> orig
                  in
                  Lwt.return erg );
-         m_raises (Uwt.ENOENT,"chdir","")(
-           Uwt.Unix.chdir "/adfkYlads/adsYlfj/adsYflj" >>=
-           fun () -> Lwt.return_unit)
+         m_raises (Uwt.ENOENT,"chdir",invalid_path)(Uwt.Unix.chdir invalid_path)
        ) () Unix.chdir orig );
   ("getlogin">::
-   fun _ ->
+   fun ctx ->
      let s1 = runix Unix.getlogin () in
      let s2 = ruwt @@ UUnix.getlogin () in
+     (* UUnix.getlogin uses getlogin_r on some systems. If stdin isn't a
+        a tty, it won't work on some systems. *)
+     let is_tty = Uwt_base.Misc.guess_handle Uwt.stdin = Uwt_base.Misc.Tty in
+     skip_if_not_all ctx (not is_tty && s1 <> s2 ) "stdin no tty";
      adv_equal s1 s2);
   ("getpwnam">::
-   fun _ ->
-     no_win ();
+   fun ctx ->
+     no_win ctx;
      let user =
        try Unix.getlogin () with Unix.Unix_error _ ->
          try Sys.getenv "USER" with Not_found ->
@@ -146,31 +176,32 @@ let l = [
      let s1 = runix Unix.getpwnam user in
      let s2 = ruwt @@ UUnix.getpwnam user in
      adv_equal s1 s2;
-     m_raises (Uwt.ENOENT,"getpwnam","")(
-       Uwt.Unix.getpwnam "adfklXakja"));
+     let pwnam = "adfklXakja" in
+     m_raises (Uwt.ENOENT,"getpwnam",pwnam)(
+       Uwt.Unix.getpwnam pwnam));
   ("getpwuid">::
-   fun _ ->
-     no_win ();
+   fun ctx ->
+     no_win ctx;
      let user = try Unix.getuid () with Unix.Unix_error _ -> 0 in
      let s1 = runix Unix.getpwuid user in
      let s2 = ruwt @@ UUnix.getpwuid user in
      adv_equal s1 s2;
      m_raises (Uwt.ENOENT,"getpwuid","")(
-       Uwt.Unix.getpwuid (user*79 + 17) )
-  );
+       Uwt.Unix.getpwuid (user*79 + 17) ));
   ("getgrnam">::
-   fun _ ->
-     no_win ();
+   fun ctx ->
+     no_win ctx;
      let s1 = Unix.getgid () in
      let name = (Unix.getgrgid s1).Unix.gr_name in
      let s1 = runix Unix.getgrnam name in
      let s2 = ruwt @@ UUnix.getgrnam name in
      adv_equal s1 s2;
-     m_raises (Uwt.ENOENT,"getgrnam","")(
-       Uwt.Unix.getgrnam "adfklXakja"));
+     let grnam = "adfklXakja" in
+     m_raises (Uwt.ENOENT,"getgrnam",grnam)(
+       Uwt.Unix.getgrnam grnam));
   ("getgrgid">::
-   fun _ ->
-     no_win ();
+   fun ctx ->
+     no_win ctx;
      let gid = Unix.getgid () in
      let s1 = runix Unix.getgrgid gid in
      let s2 = ruwt @@ UUnix.getgrgid gid in
@@ -202,7 +233,7 @@ let l = [
      in
      let t =
        let x = Uwt_preemptive.detach ( fun () -> Sys.command cmd ) () in
-       Uwt.Timer.sleep 100 >>= fun () ->
+       Uwt.Timer.sleep 750 >>= fun () ->
        with_file ~mode:[Uwt.Fs.O_WRONLY; Uwt.Fs.O_CREAT] file @@ fun fd ->
        Lwt.catch ( fun () ->
            UU.lockf fd Unix.F_TLOCK 0L >>= fun () ->
@@ -215,8 +246,15 @@ let l = [
              Lwt.return_true
            | x -> Lwt.fail x )
      in
-     m_true t
-  );
+     m_true t);
+  ("pipe">::
+   fun _ ->
+     let pin,pout = Uwt_io.pipe ~cloexec:true () in
+     let message = rstring_create 65_541 in
+     let result = ref "" in
+     let t1 = Uwt_io.write pout message >>= fun () -> Uwt_io.close pout
+     and t2 = Uwt_io.read pin >>= fun s -> result:=s; Uwt_io.close pin in
+     m_equal message ( Lwt.join [t1;t2] >>= fun () -> Lwt.return !result ));
 ]
 
 let l = "Unix">:::l

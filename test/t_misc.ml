@@ -65,10 +65,10 @@ let l = [
       | Error _ -> false
       in
       assert_equal true p);
-  ("exepath">:: fun _ ->
+  ("exepath">:: fun ctx ->
       (* doesn't work very well on various *nixes *)
       let do_skip = Uwt.Sys_info.(os <> Windows && os <> Linux) in
-      OUnit2.skip_if do_skip "exepath resolution differs";
+      skip_if_not_all ctx do_skip "exepath resolution differs";
       match exepath () with
       | Uwt.Error x ->
         Uwt.err_name x |>
@@ -77,8 +77,22 @@ let l = [
       | Uwt.Ok x ->
         let x1 = Filename.is_relative x
         and x2 = Filename.is_relative Sys.executable_name in
-        OUnit2.skip_if (x1 <> x2) "exepath not tracked";
+        skip_if_not_all ctx (x1 <> x2) "exepath not tracked";
         assert_equal Sys.executable_name x );
+  ("win_version">:: fun _ ->
+      let v = Uwt_base.Sys_info.win_version () in
+      if not Sys.win32 then
+        assert_equal v (Uwt.Error Uwt.UWT_EUNAVAIL)
+      else
+        match v with
+        | Uwt.Error s ->
+          let s = Uwt_base.err_name s in
+          let msg = Printf.sprintf "win_version:%s" s in
+          failwith msg
+        | Uwt.Ok x ->
+          let slen = D.show_win_version x |> String.length in
+          let open Uwt_base.Sys_info in
+          assert_equal true ( slen > 30 && x.major_version >= 5 ));
 ]
 
 let l = "Misc">:::l

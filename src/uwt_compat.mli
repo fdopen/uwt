@@ -119,4 +119,6 @@ module Lwt_unix :
       string ->
       string -> Unix.getaddrinfo_option list -> Unix.addr_info list Lwt.t
     val getnameinfo: Unix.sockaddr -> Unix.getnameinfo_option list -> Unix.name_info Lwt.t
+    val pipe: unit -> file_descr * file_descr
+    val system : string -> Unix.process_status Lwt.t
   end

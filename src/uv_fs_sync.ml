@@ -248,10 +248,10 @@ let write ?pos ?len t ~buf =
   write ~dim ?pos ?len t ~buf
 
 external sendfile:
-  file -> file -> int64 -> int64 -> loop -> Req.t -> unit ->
+  file -> file -> int64 -> nativeint -> loop -> Req.t -> unit ->
   Int_result.int = "uwt_fs_sendfile_byte" "uwt_fs_sendfile_native"
 
-let sendfile ?(pos=0L) ?(len=Int64.max_int)  ~dst ~src () : int64 result =
+let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () : nativeint result =
   cu (sendfile dst src pos len)
 
 external stat:

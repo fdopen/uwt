@@ -32,6 +32,9 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
+#define DEFINE_MUTEXES 1
+#include "config.inc"
+
 open Lwt.Infix
 external init_stacks : unit -> unit = "uwt_init_stacks_na" "noalloc"
 let () = init_stacks ()
@@ -284,9 +287,9 @@ module Fs = struct
     Req.ql ~typ ~f:(mkdtemp param) ~name:"mkdtemp" ~param
 
   external sendfile:
-    file -> file -> int64 -> int64 -> loop -> Req.t -> int64 cb ->
+    file -> file -> int64 -> nativeint -> loop -> Req.t -> nativeint cb ->
     Int_result.unit = "uwt_fs_sendfile_byte" "uwt_fs_sendfile_native"
-  let sendfile ?(pos=0L) ?(len=Int64.max_int)  ~dst ~src () =
+  let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () =
     Req.ql ~typ ~f:(sendfile dst src pos len) ~name:"sendfile" ~param
 
   external utime:
@@ -454,8 +457,9 @@ module Stream = struct
     t  -> cb:(Bytes.t result -> unit) -> Int_result.unit = "uwt_read_start"
   let read_start_exn a ~cb = read_start a ~cb |> to_exnu "uv_read_start"
 
-  external read_stop: t -> Int_result.unit = "uwt_read_stop"
-  let read_stop_exn a = read_stop a |> to_exnu "read_stop"
+  external iread_stop: t -> bool -> Int_result.unit = "uwt_read_stop"
+  let read_stop a = iread_stop a false
+  let read_stop_exn a = iread_stop a false |> to_exnu "read_stop"
 
   external write:
     t -> 'a -> int -> int -> unit_cb -> Int_result.unit =
@@ -508,6 +512,8 @@ module Stream = struct
     let name = "write" in
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Stream.write")
+    else if len > 131072 then
+      qsu4 ~name ~f:write s buf pos len
     else
       (* always us try_write first, perhaps we don't need to create
          a sleeping thread at all. It's faster for small write requests *)
@@ -568,7 +574,7 @@ module Stream = struct
       if Int_result.is_error x then
         LInt_result.fail ~name:"uwt_read" ~param x
       else
-        let () = Lwt.on_cancel sleeper ( fun () -> ignore(read_stop t) ) in
+        let () = Lwt.on_cancel sleeper (fun () -> ignore(iread_stop t true)) in
         sleeper >>= fun ( x: Int_result.int ) ->
         if Int_result.is_error x then
           LInt_result.fail ~name:"uwt_read" ~param x
@@ -914,8 +920,10 @@ module Udp = struct
     in
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Udp.send")
-    else if Sys.win32 then (* windows doesn't support try_send *)
+#if HAVE_WINDOWS <> 0
+    else (* windows doesn't support try_send *)
       qsu5 ~name ~f:send s buf pos len addr
+#else
     else
       let x' = try_send ~pos ~len ~buf ~dim s addr in
       let x = ( x' :> int ) in
@@ -932,6 +940,7 @@ module Udp = struct
         let pos = pos + x
         and len = len - x in
         qsu5 ~name ~f:send s buf pos len addr
+#endif
 
   let send_ba ?pos ?len ~(buf:buf) t addr =
     let dim = Bigarray.Array1.dim buf in
@@ -967,8 +976,9 @@ module Udp = struct
     t -> cb:(recv_result -> unit) -> Int_result.unit = "uwt_udp_recv_start"
   let recv_start_exn a ~cb = recv_start a ~cb |> to_exnu "udp_recv_start"
 
-  external recv_stop: t -> Int_result.unit = "uwt_udp_recv_stop"
-  let recv_stop_exn a = recv_stop a |> to_exnu "udp_recv_stop"
+  external irecv_stop: t -> bool -> Int_result.unit = "uwt_udp_recv_stop"
+  let recv_stop a = irecv_stop a false
+  let recv_stop_exn a = irecv_stop a false |> to_exnu "udp_recv_stop"
 
   type recv = {
     recv_len: int;
@@ -994,7 +1004,7 @@ module Udp = struct
       if Int_result.is_error x then
         LInt_result.fail ~name ~param x
       else
-        let () = Lwt.on_cancel sleeper ( fun () -> ignore (recv_stop t) ) in
+        let () = Lwt.on_cancel sleeper (fun () -> ignore (irecv_stop t true)) in
         sleeper >>= function
         | Ok x -> Lwt.return x
         | Error x -> Lwt.fail (Uwt_error(x,name,param))
@@ -1044,6 +1054,9 @@ module Signal = struct
 
   external start:
     loop -> int -> (t -> int -> unit) -> t result = "uwt_signal_start"
+
+  let sigbreak = -50
+  let sigwinch = -51
 
   let start_exn i ~cb = start loop i cb |> to_exn "signal_start"
   let start i ~cb = start loop i cb
@@ -1402,8 +1415,6 @@ module C_worker = struct
 end
 
 module Unix = struct
-#define DEFINE_MUTEXES 1
-#include "config.inc"
   type seek_command = Unix.seek_command = SEEK_SET | SEEK_CUR | SEEK_END
   external lseek:
     file -> int64 -> seek_command -> loop -> Req.t -> int64 cb ->
@@ -1431,12 +1442,12 @@ module Unix = struct
   external gethostbyname:
     string -> host_entry C_worker.u -> C_worker.t = "uwt_gethostbyname"
   let gethostbyname s =
-    host_protect(C_worker.call_internal ~name:"gethostbyname" gethostbyname s)
+    host_protect(
+      C_worker.call_internal ~name:"gethostbyname" ~param:s gethostbyname s)
 
   external gethostbyaddr:
-    string -> host_entry C_worker.u -> C_worker.t = "uwt_gethostbyaddr"
+    Unix.inet_addr -> host_entry C_worker.u -> C_worker.t = "uwt_gethostbyaddr"
   let gethostbyaddr p =
-    let p = Unix.string_of_inet_addr p in
     host_protect(C_worker.call_internal ~name:"gethostbyaddr" gethostbyaddr p)
 
   type service_entry = Unix.service_entry = {
@@ -1450,14 +1461,16 @@ module Unix = struct
     "uwt_getservbyname"
   let getservbyname ~name ~protocol =
     let p = name,protocol in
-    serv_protect(C_worker.call_internal ~name:"getservbyname" getservbyname p)
+    serv_protect(
+      C_worker.call_internal ~name:"getservbyname" ~param:name getservbyname p)
 
   external getservbyport:
     int * string -> service_entry C_worker.u -> C_worker.t =
     "uwt_getservbyport"
-  let getservbyport port protocol =
-    let p = port,protocol in
-    serv_protect(C_worker.call_internal ~name:"getservbyport" getservbyport p)
+  let getservbyport port proto =
+    let p = port,proto in
+    serv_protect(
+      C_worker.call_internal ~name:"getservbyport" ~param:proto getservbyport p)
 
   type protocol_entry = Unix.protocol_entry = {
     p_name : string;
@@ -1468,13 +1481,15 @@ module Unix = struct
     string -> protocol_entry C_worker.u -> C_worker.t =
     "uwt_getprotobyname"
   let getprotobyname p =
-    proto_protect(C_worker.call_internal ~name:"getprotobyname" getprotobyname p)
+    proto_protect(
+      C_worker.call_internal ~name:"getprotobyname" ~param:p getprotobyname p)
 
   external getprotobynumber:
     int -> protocol_entry C_worker.u -> C_worker.t =
     "uwt_getprotobynumber"
   let getprotobynumber p =
-    proto_protect(C_worker.call_internal ~name:"getprotobynumber" getprotobynumber p)
+    proto_protect(
+      C_worker.call_internal ~name:"getprotobynumber" getprotobynumber p)
 
   external getcwd:
     unit -> string C_worker.u -> C_worker.t = "uwt_getcwd"
@@ -1482,7 +1497,7 @@ module Unix = struct
 
   external chdir:
     string -> unit C_worker.u -> C_worker.t = "uwt_chdir"
-  let chdir s = C_worker.call_internal ~name:"chdir" chdir s
+  let chdir s = C_worker.call_internal ~name:"chdir" ~param:s chdir s
 
   external getlogin:
     unit -> string C_worker.u -> C_worker.t = "uwt_getlogin"
@@ -1501,7 +1516,7 @@ module Unix = struct
   external getpwnam:
     string -> passwd_entry C_worker.u -> C_worker.t = "uwt_getpwnam"
   let getpwnam s =
-    passwd_protect(C_worker.call_internal ~name:"getpwnam" getpwnam s)
+    passwd_protect(C_worker.call_internal ~name:"getpwnam" ~param:s getpwnam s)
 
   external getpwuid:
     int -> passwd_entry C_worker.u -> C_worker.t = "uwt_getpwuid"
@@ -1517,7 +1532,8 @@ module Unix = struct
   external getgrnam:
     string -> group_entry C_worker.u -> C_worker.t = "uwt_getgrnam"
   let getgrnam s =
-    passwd_protect(C_worker.call_internal ~name:"getgrnam" getgrnam s)
+    passwd_protect(
+      C_worker.call_internal ~name:"getgrnam" ~param:s getgrnam s)
 
   external getgrgid:
     int -> group_entry C_worker.u -> C_worker.t = "uwt_getgrgid"
@@ -1526,7 +1542,7 @@ module Unix = struct
 
   external chroot:
     string -> unit C_worker.u -> C_worker.t = "uwt_chroot"
-  let chroot s = C_worker.call_internal ~name:"chroot" chroot s
+  let chroot s = C_worker.call_internal ~name:"chroot" ~param:s chroot s
 
   type lock_command = Unix.lock_command =
     | F_ULOCK | F_LOCK | F_TLOCK | F_TEST | F_RLOCK | F_TRLOCK
@@ -1546,6 +1562,42 @@ module Unix = struct
         int_of_float (s *. 1_000.)
     in
     Timer.sleep msi
+
+  external pipe:
+    bool -> (Unix.file_descr * Unix.file_descr) result = "uwt_pipe"
+
+  let close_noerr x =
+    try Unix.close x with Unix.Unix_error _ -> ()
+
+  let pipe_exn ?(cloexec=true) () =
+    match pipe cloexec with
+    | Error x -> raise (Uwt_error(x,"pipe",""))
+    | Ok(fd1,fd2) ->
+      try
+        Pipe.(openpipe_exn fd1, openpipe_exn fd2)
+      with
+      | exn ->
+        close_noerr fd1;
+        close_noerr fd2;
+        raise exn
+
+  let pipe ?(cloexec=true) () =
+    match pipe cloexec with
+    | (Error _) as x -> x
+    | Ok(fd1,fd2) ->
+      match Pipe.(openpipe fd1, openpipe fd2) with
+      | Ok p1, Ok p2 -> Ok(p1,p2)
+      | x,y ->
+        close_noerr fd1;
+        close_noerr fd2;
+        match x,y with
+        | ((Error _) as x) , _
+        | _ , ((Error _) as x) -> x
+        | Ok _, Ok _ -> assert false
+
+  external realpath:
+    string -> string C_worker.u -> C_worker.t = "uwt_realpath"
+  let realpath s = C_worker.call_internal ~name:"realpath" ~param:s realpath s
 end
 
 module Valgrind = struct

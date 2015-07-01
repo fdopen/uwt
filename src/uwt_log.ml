@@ -265,6 +265,7 @@ let syslog ?(template="$(date) $(name)[$(pid)]: $(section): $(message)") ?(paths
                               write_string fd (make_line socket_type line) >>= fun () ->
                               print socket_type fd lines)
                             (function
+                            | Uwt.Uwt_error _
                             | Unix.Unix_error(_, _, _) ->
                                 (* Try to reconnect *)
                                 shutdown fd >>= fun () ->

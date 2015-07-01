@@ -1,35 +1,23 @@
 /* Libuv bindings for OCaml
  * http://github.com/fdopen/uwt
- * Module Uwt
+ * Module Uwt.Unix
  * Copyright (C) 2015 Andreas Hauptmann
- * All rights reserved.
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
  *
- * * Redistributions of source code must retain the above copyright
- *   notice, this list of conditions and the following disclaimer.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, with linking exceptions;
+ * either version 2.1 of the License, or (at your option) any later
+ * version. See COPYING file for details.
  *
- * * Redistributions in binary form must reproduce the above copyright
- *   notice, this list of conditions and the following disclaimer in
- *   the documentation and/or other materials provided with the
- *   distribution.
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * * Neither the name of the author nor the names of its contributors
- *   may be used to endorse or promote products derived from this
- *   software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+ * 02111-1307, USA.
  */
 
 #include "config.h"
@@ -61,6 +49,9 @@
 #endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
 #endif
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -116,8 +107,10 @@ P(getprotobyname);
 P(getprotobynumber);
 P(gethostname);
 P(lockf);
-
+P(realpath);
 #undef P
+
+CAMLextern value uwt_pipe(value);
 
 #define ALLOCA_SIZE 16384
 
@@ -141,7 +134,7 @@ getstrp1_camlval(uv_req_t * req)
   struct worker_params * w = req->data;
   if ( w->p1 == NULL ){
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_error(POINTER_TO_INT(w->p2));
+    Field(ret,0) = Val_uwt_error(POINTER_TO_INT(w->p2));
   }
   else {
     tmp = caml_copy_string(w->p1);
@@ -154,99 +147,19 @@ getstrp1_camlval(uv_req_t * req)
 static value
 getunitp2_camlval(uv_req_t * req)
 {
-  CAMLparam0();
-  CAMLlocal1(tmp);
   value ret;
   struct worker_params * w = req->data;
   int er = POINTER_TO_INT(w->p2);
   if ( er != 0 ){
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_error(POINTER_TO_INT(er));
+    Field(ret,0) = Val_uwt_error(POINTER_TO_INT(er));
   }
   else {
     ret = caml_alloc_small(1,Ok_tag);
     Field(ret,0) = Val_unit;
   }
-  CAMLreturn(ret);
+  return ret;
 }
-
-#ifdef _WIN32
-#ifdef HAVE_UV_TRANSLATE_SYSERROR
-extern int uv_translate_sys_error(int);
-#else
-static int
-uv_translate_sys_error(int t)
-{
-  return UV_UNKNOWN;
-}
-#endif
-
-
-static char *
-uwt_utf16_to_utf8(const WCHAR* utf16_buffer, ssize_t utf16_possize, int * error)
-{
-
-  size_t utf16_len = utf16_possize <= 0 ? -1 : utf16_possize;
-  char * utf8_buffer;
-  int utf8_len = WideCharToMultiByte(CP_UTF8,
-                                     0,
-                                     utf16_buffer,
-                                     utf16_len,
-                                     NULL,
-                                     0,
-                                     NULL,
-                                     NULL);
-  if ( utf8_len == 0 ){
-    *error = uv_translate_sys_error(GetLastError());
-    return NULL;
-  }
-  utf8_buffer = malloc(utf8_len+1);
-  if ( utf8_buffer == NULL ){
-    *error = UV_ENOMEM;
-    return NULL;
-  }
-
-  utf8_len = WideCharToMultiByte(CP_UTF8,
-                                 0,
-                                 utf16_buffer,
-                                 utf16_len,
-                                 utf8_buffer,
-                                 utf8_len,
-                                 NULL,
-                                 NULL);
-
-  if ( utf8_len == 0 ){
-    *error = uv_translate_sys_error(GetLastError());
-    free(utf8_buffer);
-    return NULL;
-  }
-  return utf8_buffer;
-}
-#if 0
-static WCHAR*
-uwt_utf8_to_utf16(const char* utf8_buffer,int *error){
-  WCHAR * utf16_buffer;
-  int utf16_len = MultiByteToWideChar(CP_UTF8,0,utf8_buffer,-1,NULL,0);
-  if ( utf16_len == 0 ){
-    *error = uv_translate_sys_error(GetLastError());
-    return NULL;
-  }
-  utf16_buffer = malloc(sizeof(WCHAR) * utf16_len);
-  if ( utf16_buffer == NULL ){
-    *error = UV_ENOMEM;
-    return NULL;
-  }
-  utf16_len = MultiByteToWideChar(CP_UTF8,0,utf8_buffer,-1,utf16_buffer,
-                                  utf16_len);
-  if ( utf16_len == 0 ){
-    *error = uv_translate_sys_error(GetLastError());
-    free(utf16_buffer);
-    return NULL;
-  }
-  return utf16_buffer;
-}
-#endif
-#endif /* _WIN32 */
 
 static char **
 c_copy_string_array(char **src)
@@ -255,21 +168,20 @@ c_copy_string_array(char **src)
     return NULL;
   }
   char ** p = src;
-  size_t i = 0 ;
   while ( *p ){
-    i++;
     p++;
   }
-  const size_t len = i;
+  const size_t len = p - src;
   p = malloc((len+1) * sizeof(char *));
   if ( p == NULL ){
     return NULL;
   }
+  size_t i;
   for ( i = 0 ; i < len ; ++i ){
     p[i] = strdup(src[i]);
     if ( p[i] == NULL ){
       size_t j;
-      for ( j = 0 ; j < i ; j++ ){
+      for ( j = 0 ; j < i ; ++j ){
         free(p[j]);
       }
       free(p);
@@ -287,21 +199,20 @@ c_copy_addr_array(char ** src, int addr_len)
     return NULL;
   }
   char ** p = src;
-  size_t i = 0 ;
   while ( *p ){
-    i++;
     p++;
   }
-  const size_t ar_len = i;
+  const size_t ar_len = p - src;
   p = malloc((ar_len+1) * sizeof(char*));
   if ( p == NULL ){
     return NULL;
   }
+  size_t i;
   for ( i = 0 ; i < ar_len ; ++i ){
     p[i] = malloc(addr_len);
     if ( p[i] == NULL ){
       size_t j;
-      for ( j = 0 ; j < i ; j++ ){
+      for ( j = 0 ; j < i ; ++j ){
         free(p[j]);
       }
       free(p);
@@ -393,7 +304,7 @@ gethostbyname_worker(uv_work_t *req)
     }
 #endif
     else {
-      w->p2 = INT_TO_POINTER(UV_ENOMEM);
+      w->p2 = INT_TO_POINTER(UV_UNKNOWN);
     }
   }
 #else
@@ -458,8 +369,12 @@ gethostent_value(uv_req_t * req)
   struct worker_params * w = req->data;
   struct hostent * entry = w->p1;
   if ( entry == NULL ){
+    value t = Val_uwt_error(POINTER_TO_INT(w->p2));
+    if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
+      t = VAL_UWT_ERROR_ENOENT;
+    }
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_error(POINTER_TO_INT(w->p2));
+    Field(ret,0) = t;
   }
   else {
     value res;
@@ -467,7 +382,7 @@ gethostent_value(uv_req_t * req)
     value addr_list = Val_unit, adr = Val_unit;
 
     Begin_roots4 (name, aliases, addr_list, adr);
-    name = csafe_copy_string(entry->h_name);
+    name = s_caml_copy_string(entry->h_name);
     /* PR#4043: protect against buggy implementations of gethostbyname()
        that return a NULL pointer in h_aliases */
     aliases = s_caml_copy_string_array((const char**)entry->h_aliases);
@@ -502,10 +417,10 @@ uwt_gethostbyname(value o_name, value o_uwt)
   const char * mname = String_val(o_name);
   char * name;
   if ( mname == NULL || *mname == '\0' ){
-    ret = VAL_RESULT_UV_UWT_EINVAL;
+    ret = VAL_UWT_INT_RESULT_EINVAL;
   }
   else if ( (name = strdup(mname)) == NULL ){
-    ret = VAL_RESULT_UV_ENOMEM;
+    ret = VAL_UWT_INT_RESULT_ENOMEM;
   }
   else {
     ret = uwt_add_worker_result(o_uwt,
@@ -513,8 +428,7 @@ uwt_gethostbyname(value o_name, value o_uwt)
                                 gethostbyname_worker,
                                 gethostent_value,
                                 name,
-                                NULL
-      );
+                                NULL);
   }
   return ret;
 }
@@ -554,7 +468,7 @@ gethostbyaddr_worker(uv_work_t *req)
     }
 #endif
     else {
-      w->p2 = INT_TO_POINTER(UV_ENOMEM);
+      w->p2 = INT_TO_POINTER(UV_UNKNOWN);
     }
   }
 #else
@@ -581,40 +495,37 @@ gethostbyaddr_worker(uv_work_t *req)
 CAMLprim value
 uwt_gethostbyaddr(value o_ip, value o_uwt)
 {
-  value ret;
-  void *p1 = NULL;
-  void *p2 = NULL;
-  const char * ip = String_val(o_ip);
-  int err = 0;
-  if ( strchr(ip,':') != NULL ){
+  void *p1;
+  void *p2;
+  if ( caml_string_length(o_ip) == 16 ){
+#ifndef GET_INET6_ADDR
+    return VAL_UWT_INT_RESULT_UWT_EUNAVAIL;
+#else
+    struct in6_addr * s = malloc(sizeof *s);
+    if ( !s ){
+      return VAL_UWT_INT_RESULT_ENOMEM;
+    }
+    *s = GET_INET6_ADDR(o_ip);
+    p1 = s;
     p2 = INT_TO_POINTER(0);
-    p1 = malloc(sizeof(struct in6_addr));
-    if ( p1  ){
-      err = uv_inet_pton(AF_INET6,ip,p1);
-    }
+#endif
   }
   else {
+    struct in_addr * s = malloc(sizeof *s);
+    if ( !s ){
+      return VAL_UWT_INT_RESULT_ENOMEM;
+    }
+    *s = GET_INET_ADDR(o_ip);
+    p1 = s;
     p2 = INT_TO_POINTER(2);
-    p1 = malloc(sizeof(struct in_addr));
-    if ( p1  ){
-      err = uv_inet_pton(AF_INET,ip,p1);
-    }
   }
-  if ( err != 0 ){
-    ret = Val_uv_result(err);
-    free(p1);
-  }
-  else if ( p1 == NULL ){
-    ret = VAL_RESULT_UV_ENOMEM;
-  }
-  else {
-    ret = uwt_add_worker_result(o_uwt,
-                                gethostbyname_cleaner,
-                                gethostbyaddr_worker,
-                                gethostent_value,
-                                p1,
-                                p2);
-  }
+  value ret;
+  ret = uwt_add_worker_result(o_uwt,
+                              gethostbyname_cleaner,
+                              gethostbyaddr_worker,
+                              gethostent_value,
+                              p1,
+                              p2);
   return ret;
 }
 
@@ -666,11 +577,12 @@ getservbyname_worker(uv_work_t *req)
   int err = getservbyname_r(name,proto,&result_buf,&buf[0],ALLOCA_SIZE,&serv);
   if ( err != 0 || serv == NULL ){
     w->p1 = NULL;
-    if ( err == ENOENT || (err == 0 && serv == NULL) ){
+    /* err == 1: older APIs, that don't return errno numbers */
+    if ( err == ENOENT || (err == 0 && serv == NULL) || err == 1 || err < 0 ){
       w->p2 = INT_TO_POINTER(UV_ENOENT);
     }
     else {
-      w->p2 = INT_TO_POINTER(UV_ENOMEM);
+      w->p2 = INT_TO_POINTER(-err);
     }
     serv = NULL;
   }
@@ -724,16 +636,20 @@ getservent_value(uv_req_t * req)
   value ret;
   struct servent *entry = w->p1 ;
   if ( entry == NULL ){
+    value t = Val_uwt_error(POINTER_TO_INT(w->p2));
+    if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
+      t = VAL_UWT_ERROR_ENOENT;
+    }
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_error(POINTER_TO_INT(w->p2));
+    Field(ret,0) = t;
   }
   else {
     value res;
     value name = Val_unit, aliases = Val_unit, proto = Val_unit;
     Begin_roots3(name, aliases, proto);
-    name = csafe_copy_string(entry->s_name);
+    name = s_caml_copy_string(entry->s_name);
     aliases = s_caml_copy_string_array((const char **)entry->s_aliases);
-    proto = csafe_copy_string(entry->s_proto);
+    proto = s_caml_copy_string(entry->s_proto);
     res = caml_alloc_small(4, 0);
     Field(res,0) = name;
     Field(res,1) = aliases;
@@ -759,7 +675,7 @@ uwt_getservbyname(value o_b, value o_uwt)
   p1 = s_strdup(String_val(o_name));
   p2 = s_strdup(String_val(o_proto));
   if ( p1 == NULL || p2 == NULL ){
-    ret = VAL_RESULT_UV_ENOMEM;
+    ret = VAL_UWT_INT_RESULT_ENOMEM;
   }
   else {
     ret = uwt_add_worker_result(o_uwt,
@@ -767,8 +683,7 @@ uwt_getservbyname(value o_b, value o_uwt)
                                 getservbyname_worker,
                                 getservent_value,
                                 p1,
-                                p2
-      );
+                                p2);
   }
   return ret;
 }
@@ -807,11 +722,11 @@ getservbyport_worker(uv_work_t *req)
   int err = getservbyport_r(port,proto,&result_buf,&buf[0],ALLOCA_SIZE,&serv);
   if ( err != 0 || serv == NULL ){
     w->p1 = NULL;
-    if ( err == ENOENT || (err == 0 && serv == NULL) ){
+    if ( err == ENOENT || (err == 0 && serv == NULL) || err == 1 || err < 0 ){
       w->p2 = INT_TO_POINTER(UV_ENOENT);
     }
     else {
-      w->p2 = INT_TO_POINTER(UV_ENOMEM);
+      w->p2 = INT_TO_POINTER(-err);
     }
     serv = NULL;
   }
@@ -848,7 +763,7 @@ uwt_getservbyport(value o_b, value o_uwt)
   p2 = INT_TO_POINTER(htons(Long_val(o_port)));
   p1 = s_strdup(String_val(o_proto));
   if ( p1 == NULL ){
-    ret = VAL_RESULT_UV_ENOMEM;
+    ret = VAL_UWT_INT_RESULT_ENOMEM;
   }
   else {
     ret = uwt_add_worker_result(o_uwt,
@@ -895,13 +810,17 @@ getprotoent_value(uv_req_t * req)
   struct worker_params * w = req->data;
   struct protoent *entry = w->p1 ;
   if ( entry == NULL ){
+    value t = Val_uwt_error(POINTER_TO_INT(w->p2));
+    if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
+      t = VAL_UWT_ERROR_ENOENT;
+    }
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_error(POINTER_TO_INT(w->p2));
+    Field(ret,0) = t;
   }
   else {
     value name = Val_unit, aliases = Val_unit;
     Begin_roots2 (aliases, name);
-    name = csafe_copy_string(entry->p_name);
+    name = s_caml_copy_string(entry->p_name);
     aliases = s_caml_copy_string_array((const char**)entry->p_aliases);
     ret = caml_alloc_small(3, 0);
     Field(ret,0) = name;
@@ -946,11 +865,11 @@ getprotobyname_worker(uv_work_t * req)
   int err = getprotobyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&proto);
   if ( err != 0 || proto == NULL ){
     w->p1 = NULL;
-    if ( err == ENOENT || (err == 0 && proto == NULL )){
+    if ( err == ENOENT || (err == 0 && proto == NULL ) || err == 1 || err < 0 ){
       w->p2 = INT_TO_POINTER(UV_ENOENT);
     }
     else {
-      w->p2 = INT_TO_POINTER(UV_ENOMEM);
+      w->p2 = INT_TO_POINTER(-err);
     }
   }
 #else
@@ -981,10 +900,10 @@ uwt_getprotobyname(value o_name, value o_uwt)
   char *p1;
   const char * mname = String_val(o_name);
   if (  mname == NULL || *mname == '\0' ){
-    ret = VAL_RESULT_UV_EINVAL;
+    ret = VAL_UWT_INT_RESULT_EINVAL;
   }
   else if ( (p1 = strdup(mname)) == NULL ){
-    ret = VAL_RESULT_UV_ENOMEM;
+    ret = VAL_UWT_INT_RESULT_ENOMEM;
   }
   else {
     ret = uwt_add_worker_result(o_uwt,
@@ -1009,11 +928,11 @@ getprotobynumber_worker(uv_work_t * req)
   int err = getprotobynumber_r(number,&result_buf,&buf[0],ALLOCA_SIZE,&proto);
   if ( err != 0 || proto == NULL ){
     w->p1 = NULL;
-    if ( err == ENOENT || ( err == 0 && proto == NULL ) ){
+    if ( err == ENOENT || (err == 0 && proto == NULL) || err == 1 || err < 0 ){
       w->p2 = INT_TO_POINTER(UV_ENOENT);
     }
     else {
-      w->p2 = INT_TO_POINTER(UV_ENOMEM);
+      w->p2 = INT_TO_POINTER(-err);
     }
   }
 #else
@@ -1058,7 +977,7 @@ gethostname_worker(uv_work_t * req)
   int er = gethostname(name,ALLOCA_SIZE-1);
   name[ALLOCA_SIZE-1]='\0';
   if ( er != 0 ){
-    w->p2 = INT_TO_POINTER(er);
+    w->p2 = INT_TO_POINTER(-er);
   }
   else {
     w->p1 = s_strdup(name);
@@ -1088,11 +1007,19 @@ getcwd_worker(uv_work_t * req)
   struct worker_params * w = req->data;
   char name[ALLOCA_SIZE];
   size_t len = ALLOCA_SIZE;
-  int er = uv_cwd(name,&len);
+  int er;
+  name[0] = 0;
+  er = uv_cwd(name,&len);
   if ( er != 0 ){
     w->p2 = INT_TO_POINTER(er);
   }
   else {
+#if !defined(_WIN32) && (UV_VERSION_MAJOR == 1) && ( UV_VERSION_MINOR < 1 )
+    size_t len = strnlen(name,ALLOCA_SIZE);
+    if ( len > 1 && name[len-1] == '/' ){
+      name[len-1] = '\0';
+    }
+#endif
     w->p1 = s_strdup(name);
     if ( w->p1 == NULL ){
       w->p2 = INT_TO_POINTER(UV_ENOMEM);
@@ -1135,12 +1062,12 @@ uwt_chdir(value o_path, value o_uwt)
   char * cpath;
   char * opath = String_val(o_path);
   if ( opath == NULL && *opath == 0 ){
-    ret = VAL_RESULT_UV_UWT_EINVAL;
+    ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
   }
   cpath = strdup(opath);
   if ( cpath == NULL ){
-    ret = VAL_RESULT_UV_ENOMEM;
+    ret = VAL_UWT_INT_RESULT_ENOMEM;
     goto endp;
   }
   ret = uwt_add_worker_result(o_uwt,
@@ -1166,12 +1093,12 @@ getlogin_worker(uv_work_t * req)
   DWORD len = UNLEN+1;
   w->p1 = NULL;
   if ( GetUserNameW(name, &len) == 0 ){
-    int er = uv_translate_sys_error(GetLastError());
+    int er = uwt_translate_sys_error(GetLastError());
     w->p2 = INT_TO_POINTER(er);
   }
   else {
     int er;
-    w->p1 = uwt_utf16_to_utf8(name,len,&er);
+    w->p1 = uwt_utf16_to_utf8(name,&er);
     if ( w->p1 == NULL ){
       w->p2 = INT_TO_POINTER(er);
     }
@@ -1189,6 +1116,14 @@ getlogin_worker(uv_work_t * req)
   char buf[ALLOCA_SIZE];
   e = getlogin_r(buf,ALLOCA_SIZE);
   name = e == 0 ? buf : NULL;
+  if ( e == 1 ){
+    e = -UV_ENOENT;
+  }
+  else {
+    if ( e < 0 ){
+      e = errno;
+    }
+  }
 #elif defined(HAVE_GETLOGIN)
   name = getlogin();
   e = errno;
@@ -1289,8 +1224,12 @@ passwd_camlval(uv_req_t * req)
   struct passwd *pw = w->p1;
   value erg;
   if ( w->p1 == NULL ){
+    value t = Val_uwt_error(POINTER_TO_INT(w->p2));
+    if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
+      t = VAL_UWT_ERROR_ENOENT;
+    }
     erg = caml_alloc_small(1,Error_tag);
-    Field(erg,0) = Val_error(POINTER_TO_INT(w->p2));
+    Field(erg,0) = t;
   }
   else {
     value name = Val_unit, passwd = Val_unit, gecos = Val_unit;
@@ -1328,7 +1267,7 @@ getpwnam_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
   int e;
-  struct passwd *res;
+  struct passwd *res = NULL;
 #ifdef HAVE_GETPWNAM_R
   char buf[ALLOCA_SIZE];
   struct passwd result;
@@ -1336,7 +1275,7 @@ getpwnam_worker(uv_work_t * req)
   if ( e != 0 ){
     res = NULL;
   }
-  if ( e == 0 && res == NULL ){
+  if ( e == 1 || (e == 0 && res == NULL) || e < 0 ){
     e = UV_ENOENT;
   }
 #else
@@ -1364,12 +1303,12 @@ uwt_getpwnam(value o_path, value o_uwt)
   char * cpath;
   char * opath = String_val(o_path);
   if ( opath == NULL && *opath == 0 ){
-    ret = VAL_RESULT_UV_UWT_EINVAL;
+    ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
   }
   cpath = strdup(opath);
   if ( cpath == NULL ){
-    ret = VAL_RESULT_UV_ENOMEM;
+    ret = VAL_UWT_INT_RESULT_ENOMEM;
     goto endp;
   }
   ret = uwt_add_worker_result(o_uwt,
@@ -1392,7 +1331,7 @@ getpwuid_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
   int e;
-  struct passwd *res;
+  struct passwd *res = NULL;
   uid_t uid = POINTER_TO_INT(w->p2);
 #ifdef HAVE_GETPWUID_R
   char buf[ALLOCA_SIZE];
@@ -1401,7 +1340,7 @@ getpwuid_worker(uv_work_t * req)
   if ( e != 0 ){
     res = NULL;
   }
-  if ( e == 0 && res == NULL ){
+  if ( e == 1 || (e == 0 && res == NULL) || e < 0 ){
     e = UV_ENOENT;
   }
 #else
@@ -1483,8 +1422,12 @@ group_camlval(uv_req_t * req)
   struct group *entry = w->p1;
   value erg;
   if ( entry == NULL ){
+    value t = Val_uwt_error(POINTER_TO_INT(w->p2));
+    if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
+      t = VAL_UWT_ERROR_ENOENT;
+    }
     erg = caml_alloc_small(1,Error_tag);
-    Field(erg,0) = Val_error(POINTER_TO_INT(w->p2));
+    Field(erg,0) = t;
   }
   else {
     value res;
@@ -1513,7 +1456,7 @@ getgrnam_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
   int e;
-  struct group *res;
+  struct group *res = NULL;
 #ifdef HAVE_GETGRNAM_R
   char buf[ALLOCA_SIZE];
   struct group result;
@@ -1521,7 +1464,7 @@ getgrnam_worker(uv_work_t * req)
   if ( e != 0 ){
     res = NULL;
   }
-  if ( e == 0 && res == NULL ){
+  if ( e == 1 || (e == 0 && res == NULL) || e < 0 ){
     e = UV_ENOENT;
   }
 #else
@@ -1549,12 +1492,12 @@ uwt_getgrnam(value o_name, value o_uwt)
   char * cname;
   char * oname = String_val(o_name);
   if ( oname == NULL && *oname == 0 ){
-    ret = VAL_RESULT_UV_UWT_EINVAL;
+    ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
   }
   cname = strdup(oname);
   if ( cname == NULL ){
-    ret = VAL_RESULT_UV_ENOMEM;
+    ret = VAL_UWT_INT_RESULT_ENOMEM;
     goto endp;
   }
   ret = uwt_add_worker_result(o_uwt,
@@ -1577,7 +1520,7 @@ getgrgid_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
   int e;
-  struct group *res;
+  struct group *res = NULL;
   uid_t uid = POINTER_TO_INT(w->p2);
 #ifdef HAVE_GETGRGID_R
   char buf[ALLOCA_SIZE];
@@ -1586,7 +1529,7 @@ getgrgid_worker(uv_work_t * req)
   if ( e != 0 ){
     res = NULL;
   }
-  if ( e == 0 && res == NULL ){
+  if ( e == 1 || (e == 0 && res == NULL) || e < 0 ){
     e = UV_ENOENT;
   }
 #else
@@ -1646,12 +1589,12 @@ uwt_chroot(value o_name, value o_uwt)
   char * cname;
   char * oname = String_val(o_name);
   if ( oname == NULL && *oname == 0 ){
-    ret = VAL_RESULT_UV_UWT_EINVAL;
+    ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
   }
   cname = strdup(oname);
   if ( cname == NULL ){
-    ret = VAL_RESULT_UV_ENOMEM;
+    ret = VAL_UWT_INT_RESULT_ENOMEM;
     goto endp;
   }
   ret = uwt_add_worker_result(o_uwt,
@@ -1774,7 +1717,7 @@ static int set_file_pointer(HANDLE h, LARGE_INTEGER gohere,
   if(ret == INVALID_SET_FILE_POINTER) {
     DWORD err = GetLastError();
     if(err != NO_ERROR) {
-      int ec = err == 0 ? UV_UNKNOWN : uv_translate_sys_error(err);
+      int ec = err == 0 ? UV_UNKNOWN : uwt_translate_sys_error(err);
       return ec;
     }
   }
@@ -1892,7 +1835,7 @@ static void worker_lockf(uv_work_t * req)
     return;
   }
   if ( result != 0) {
-    int ec = err == 0 ? UV_UNKNOWN : uv_translate_sys_error(err);
+    int ec = err == 0 ? UV_UNKNOWN : uwt_translate_sys_error(err);
     w->p2 = INT_TO_POINTER(ec);
   }
   return;
@@ -1906,7 +1849,7 @@ uwt_lockf(value o_t, value o_uwt)
   value ret;
   struct job_lockf * p1 = malloc(sizeof *p1);
   if ( p1 == NULL ){
-    ret = VAL_RESULT_UV_ENOMEM;
+    ret = VAL_UWT_INT_RESULT_ENOMEM;
   }
   else {
 #ifdef _WIN32
@@ -1928,3 +1871,262 @@ uwt_lockf(value o_t, value o_uwt)
 #else
 F_EUNAVAIL2(lockf)
 #endif
+
+#ifndef _WIN32
+static int
+pipe_normal(int fds[2],bool cloexec)
+{
+  int er;
+  int rv ;
+  errno=0;
+  rv = pipe(fds);
+  if (rv == -1){
+    return rv;
+  }
+  errno=0;
+  if (fcntl(fds[0], F_SETFL, O_NONBLOCK) == -1 ||
+      fcntl(fds[1], F_SETFL, O_NONBLOCK) == -1 ||
+      (cloexec && ( fcntl(fds[0], F_SETFD, FD_CLOEXEC) == -1 ||
+                    fcntl(fds[1], F_SETFD, FD_CLOEXEC) == -1 ))){
+    er = errno;
+    close(fds[0]);
+    close(fds[1]);
+    errno = er;
+    rv = -1;
+  }
+  return rv;
+}
+#if defined(HAVE_PIPE2) && defined(O_CLOEXEC)
+static int
+my_pipe(int fds[2],bool close_exec)
+{
+  static int enosys = 0;
+  int ec;
+  int flags;
+  if ( enosys ){
+    return (pipe_normal(fds,close_exec));
+  }
+  flags = O_NONBLOCK;
+  if ( close_exec ){
+    flags |= O_CLOEXEC;
+  }
+  errno = 0;
+  ec = pipe2(fds, flags);
+  if ( ec == -1 && errno == ENOSYS ){
+    enosys = 1;
+    return (pipe_normal(fds,close_exec));
+  }
+  return ec;
+}
+#else /* #if defined(HAVE_PIPE2) && defined(O_CLOEXEC) */
+#define my_pipe pipe_normal
+#endif
+
+CAMLprim value
+uwt_pipe(value o_close_exec)
+{
+  CAMLparam0();
+  CAMLlocal2(tup,ret);
+  int fd[2];
+  bool close_exec = Long_val(o_close_exec) == 1;
+  tup = caml_alloc(2,0);
+  ret = caml_alloc_small(1,Ok_tag);
+  Field(ret,0) = tup;
+  if (my_pipe(fd,close_exec) == -1){
+    value er = Val_uwt_error(-errno);
+    Tag_val(ret) = Error_tag;
+    Store_field(ret,0,er);
+  }
+  else {
+    Field(tup,0) = Val_long(fd[0]);
+    Field(tup,1) = Val_long(fd[1]);
+  }
+  CAMLreturn(ret);
+}
+
+#else /* #ifndef _WIN32 */
+CAMLprim value
+uwt_pipe(value o_close_exec)
+{
+  CAMLparam0();
+  CAMLlocal4(tup,ret,oread,owrite);
+  SECURITY_ATTRIBUTES attr;
+  bool close_exec = Long_val(o_close_exec) == 1;
+  HANDLE readh, writeh;
+
+  oread = win_alloc_handle(INVALID_HANDLE_VALUE);
+  owrite = win_alloc_handle(INVALID_HANDLE_VALUE);
+  tup = caml_alloc_small(2,0);
+  Field(tup,0) = oread;
+  Field(tup,1) = owrite;
+  ret = caml_alloc_small(1,Ok_tag);
+  Field(ret,0) = tup;
+
+  attr.nLength = sizeof(attr);
+  attr.lpSecurityDescriptor = NULL;
+  attr.bInheritHandle = close_exec ? FALSE : TRUE;
+  if ( !CreatePipe(&readh, &writeh, &attr, UNIX_BUFFER_SIZE) ){
+    value er = Val_uwt_error(uwt_translate_sys_error(GetLastError()));
+    Tag_val(ret) = Error_tag;
+    Store_field(ret,0,er);
+  }
+  else {
+    Handle_val(oread) = readh;
+    Handle_val(owrite) = writeh;
+  }
+  CAMLreturn(ret);
+}
+#endif
+
+#ifdef _WIN32
+#define BSIZE 8192
+static void
+realpath_worker(uv_work_t *req)
+{
+  struct worker_params * w = req->data;
+  WCHAR buf[BSIZE];
+  WCHAR *name = w->p1;
+  WCHAR *fullpath = NULL;
+  DWORD size = GetFullPathNameW(name,BSIZE-1,buf,NULL);
+  if ( size == 0 ){
+    int e = uwt_translate_sys_error(GetLastError());
+    free(w->p1);
+    w->p1 = NULL;
+    w->p2 = INT_TO_POINTER(e);
+    return;
+  }
+  if ( size < BSIZE - 1 ){
+    fullpath = buf;
+  }
+  else {
+    fullpath = malloc(size * sizeof(*fullpath));
+    if ( fullpath == NULL ){
+      free(w->p1);
+      w->p1 = NULL;
+      w->p2 = INT_TO_POINTER(UV_ENOMEM);
+      return;
+    }
+    DWORD size2 = GetFullPathNameW(name,size,fullpath,NULL);
+    if ( size2 == 0 || size2 > size ){
+      int e ;
+      if ( size == 0 ){
+        e = uwt_translate_sys_error(GetLastError());
+      }
+      else {
+        e = UV_UNKNOWN;
+      }
+      free(w->p1);
+      w->p1 = NULL;
+      w->p2 = INT_TO_POINTER(e);
+      return;
+    }
+  }
+  DWORD h = GetFileAttributesW(fullpath);
+  if ( h == INVALID_FILE_ATTRIBUTES ){
+    DWORD er = GetLastError();
+    switch ( er ){
+    case ERROR_BAD_NETPATH: /* fall */
+    case ERROR_BAD_PATHNAME:  /* fall */
+    case ERROR_FILE_NOT_FOUND: /* fall */
+    case ERROR_INVALID_DRIVE:  /* fall */
+    case ERROR_INVALID_NAME:  /* fall */
+    case ERROR_INVALID_PARAMETER:  /* fall */
+    case ERROR_NOT_READY:  /* fall */
+    case ERROR_PATH_NOT_FOUND:  /* fall */
+      w->p2 = INT_TO_POINTER(UV_ENOENT);
+      break;
+    default:
+      w->p2 = INT_TO_POINTER(uwt_translate_sys_error(er));
+    }
+    free(w->p1);
+    w->p1 = NULL;
+  }
+  else {
+    free(w->p1);
+    int er;
+    w->p1 = uwt_utf16_to_utf8(fullpath,&er);
+    if ( w->p1 == NULL ){
+      w->p2 = INT_TO_POINTER(er);
+    }
+    else {
+      w->p2 = NULL;
+    }
+  }
+  if ( fullpath != buf ){
+    free(fullpath);
+  }
+}
+#undef BSIZE
+#else /* #ifdef _WIN32 */
+
+static void
+realpath_worker(uv_work_t *req)
+{
+  struct worker_params * w = req->data;
+  char *name = w->p1;
+  char * fp;
+#ifdef HAVE_CANONICALIZE_FILE_NAME
+  errno = 0;
+  fp = canonicalize_file_name(name);
+#elif defined(HAVE_REALPATH_NULL)
+  errno = 0;
+  fp = realpath(name,NULL);
+#else
+#ifdef PATH_MAX
+  char buf[UMAX(PATH_MAX,ALLOCA_SIZE)];
+#elif defined(MAXPATHLEN)
+  char buf[UMAX(MAXPATHLEN,ALLOCA_SIZE)];
+#elif defined(NAME_MAX)
+  char buf[UMAX(NAME_MAX,ALLOCA_SIZE)];
+#else
+#error "PATH_MAX not defined!"
+#endif /* PATH_MAX */
+  errno = 0;
+  fp = realpath(name,buf);
+  if ( fp != NULL ){
+    fp = strdup(fp);
+    if ( fp == NULL ){
+      errno = -UV_ENOMEM;
+    }
+  }
+#endif /* HAVE_CANONICALIZE_FILE_NAME */
+  if ( fp == NULL ){
+    w->p2 = INT_TO_POINTER(-errno);
+  }
+  else {
+    w->p2 = NULL;
+  }
+  free(w->p1);
+  w->p1 = fp;
+}
+#endif /* #ifdef _WIN32 */
+
+CAMLprim value
+uwt_realpath(value o_name, value o_uwt)
+{
+  value ret;
+  const char * mname = String_val(o_name);
+  void * name;
+  if ( mname == NULL || *mname == '\0' ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
+#ifndef _WIN32
+  if ( (name = strdup(mname)) == NULL ){
+    return VAL_UWT_INT_RESULT_ENOMEM;
+  }
+#else
+  int er;
+  name = uwt_utf8_to_utf16(mname,&er);
+  if ( name == NULL ){
+    er = uwt_translate_sys_error(er);
+    return (Val_uwt_int_result(er));
+  }
+#endif
+  ret = uwt_add_worker_result(o_uwt,
+                              free_p1,
+                              realpath_worker,
+                              getstrp1_camlval,
+                              name,
+                              NULL);
+  return ret;
+}

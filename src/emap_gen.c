@@ -220,22 +220,22 @@ int main(void)
   for (i=0; i< AR_SIZE(er_map); ++i){
     int val = er_map[i];
     const char * x = err_name(val);
-    fprintf(c2,"  VAL_UV_%s = (Val_long(%d)),\n",x,i);
+    fprintf(c2,"  VAL_UWT_ERROR_%s = (Val_long(%d)),\n",x,i);
   }
-  fputs("} val_uv_uwt_errno_t;\n\n",c2);
+  fputs("} val_uwt_error_t;\n\n",c2);
 
   fputs("typedef enum {\n",c2);
   for (i=0; i< AR_SIZE(er_map); ++i){
     int val = er_map[i];
     const char * x = err_name(val);
-    fprintf(c2,"  VAL_RESULT_UV_%s = (Val_long(%d)),\n",x,neg_result(i));
+    fprintf(c2,"  VAL_UWT_INT_RESULT_%s = (Val_long(%d)),\n",x,neg_result(i));
   }
-  fputs("} val_result_errno_t;\n\n",c2);
+  fputs("} val_uwt_int_result_errno_t;\n\n",c2);
 
 
 
   fputs("value\n"
-        "Val_error(int n)\n"
+        "Val_uwt_error(int n)\n"
         "{\n"
         "  value erg;\n"
         "  switch (n) {\n",c);
@@ -244,7 +244,7 @@ int main(void)
     const char * x = err_name(val);
     fprintf(c,"  case UV_%s: erg = Val_long(%u) ; break;\n",x,i);
   }
-  fputs("  default: erg = VAL_UV_UWT_UNKNOWN;\n"
+  fputs("  default: erg = VAL_UWT_ERROR_UWT_UNKNOWN;\n"
         "  }\n"
         "  return erg;\n"
         "}\n",c);
@@ -253,7 +253,7 @@ int main(void)
 
 
   fputs("value\n"
-        "Val_uv_result(int n)\n"
+        "Val_uwt_int_result(int n)\n"
         "{\n"
         "  value erg;\n"
         "  if ( n > 0 ){\n"

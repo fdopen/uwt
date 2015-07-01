@@ -31,7 +31,7 @@ package "sync" (
 
 package "ext" (
  version = "@VERSION@"
- description = "higher level apis"
+ description = "higher level APIs like Uwt_io"
  requires = "uwt lwt.log"
  archive(byte) = "uwt-ext.cma"
  archive(byte, plugin) = "uwt-ext.cma"

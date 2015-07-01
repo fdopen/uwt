@@ -53,9 +53,8 @@
  - Uwt is {b not} {i thread safe}. All uwt functions should be called from your
    main thread.
 
- - Uwt is in an early alpha stage. The interface is likely to
-   change. Feel free to open an issue an make suggestions about it :)
-
+ - Uwt is in beta stage. The interface is likely to change in the first official
+   release. Feel free to open an issue an make suggestions about it :)
 
    Please notice, that there are subtle differences compared to
    [lwt.unix]. Because all requests are accomplished by libuv
@@ -98,7 +97,7 @@ module Main : sig
   exception Main_error of error * string
 
 
-  (** You shouldn't raise exceptions, if you are using lwt. Always use
+  (** You shouldn't raise exceptions, if you are using uwt. Always use
       {!Lwt.fail}. If you throw exceptions nevertheless, uwt can
       usually not propagate the exceptions to the OCaml runtime
       immediately. The exceptions are stored internally an are
@@ -116,12 +115,12 @@ module Main : sig
       {[
         let rec main t1  =
           match Uwt.Main.run t1 with
-          | result -> let y = ... (* no error *)
           | exception Uwt.Main.Deferred(l) ->
             log_deferred l ; main t2 (* safe *)
           | exception Uwt.Main.Fatal(e,p) -> (* fatal, restart your process *)
             log_fatal e p ; cleanup () ; exit 2
           | exception x -> log_normal x ; main t3 (* safe *)
+          | result -> let y = ... (* no error *)
       ]}
   *)
   exception Deferred of (exn * Printexc.raw_backtrace) list
@@ -228,6 +227,7 @@ end
 
 module Handle_fileno : sig
   type t
+
   (** Be careful. You must still keep your orginal handle around.
       Otherwise uwt will close the handle .... *)
   val fileno : t -> Unix.file_descr result
@@ -270,14 +270,14 @@ module Stream : sig
   val write_string : ?pos:int -> ?len:int -> t -> buf:string -> unit Lwt.t
   val write_ba : ?pos:int -> ?len:int -> t -> buf:buf -> unit Lwt.t
 
-  (** {!write} is always eager. It first calls try_write internally to
-      check if it can return immediately (without the overhead of
-      creating a sleeping thread and waking it up later). If it can't
-      write everything instantly, it will call write_raw
-      internally. {!write_raw} is exposed here mainly in order to write
-      unit tests for it. But you can also use it, if you your [buf] is
-      very large or you know for another reason, that try_write will
-      fail.  *)
+  (** {!write} is eager. If len is not very large, it first calls
+      try_write internally to check if it can return immediately
+      (without the overhead of creating a sleeping thread and waking
+      it up later). If it can't write everything instantly, it will
+      call write_raw internally. {!write_raw} is exposed here mainly
+      in order to write unit tests for it. But you can also use it, if
+      you your [buf] is very large or you know for another reason, that
+      try_write will fail.  *)
   val write_raw : ?pos:int -> ?len:int -> t -> buf:bytes -> unit Lwt.t
   val write_raw_string : ?pos:int -> ?len:int -> t -> buf:string -> unit Lwt.t
   val write_raw_ba : ?pos:int -> ?len:int -> t -> buf:buf -> unit Lwt.t
@@ -305,8 +305,9 @@ module Pipe : sig
   (** The only thing that can go wrong, is memory allocation.
       In this case the ordinary exception [Out_of_memory] is thrown.
       The function is not called init_exn, because this exception can
-      be thrown by nearly all functions. *)
-  (** @param ipc is false by default *)
+      be thrown by nearly all functions.
+      @param ipc is false by default
+  *)
   val init : ?ipc:bool -> unit -> t
 
   (**
@@ -476,6 +477,7 @@ module Udp : sig
     is_partial: bool;
     sockaddr: sockaddr option;
   }
+
   (** Wrappers around {!recv_start} and {!recv_stop} for you convenience,
       no callback soup. *)
   val recv : ?pos:int -> ?len:int -> buf:bytes -> t -> recv Lwt.t
@@ -528,6 +530,12 @@ module Signal : sig
   type t
   include module type of Handle with type t := t
   val to_handle : t -> Handle.t
+
+  (** {!sigbreak} and {!sigwinch} are windows and libuv specific.
+      Don't use them under other systems and don't pass them to
+      {Unix.kill} or similar functions *)
+  val sigbreak: int
+  val sigwinch: int
 
   (** use Sys.sigterm, Sys.sigstop, etc *)
   val start : int -> cb:(t -> int -> unit) -> t result
@@ -675,7 +683,7 @@ module Unix : sig
   val gethostname : unit -> string Lwt.t
 
   (** These function don't fail with Not_found.
-      but with [Uwt_error(Uwt.ENOENT,"function_name","")] *)
+      but with [Uwt_error(Uwt.ENOENT,"function_name",x)] *)
   val gethostbyname: string -> Unix.host_entry Lwt.t
   val gethostbyaddr: Unix.inet_addr -> Unix.host_entry Lwt.t
 
@@ -702,6 +710,20 @@ module Unix : sig
   val lockf : file -> Unix.lock_command -> int64 -> unit Lwt.t
 
   val sleep : float -> unit Lwt.t
+
+  (** @param cloexec is true by default *)
+  val pipe : ?cloexec: bool -> unit -> (Pipe.t * Pipe.t) result
+  val pipe_exn : ?cloexec: bool -> unit -> Pipe.t * Pipe.t
+
+  (** wrapper around realpath under Unix and GetFullPathName (and an
+      additional check if the file exists) under windows.
+
+      Be careful:
+      - realpath/GetFullPathName is not thread-safe, but the
+        function is called in a work thread.
+      - The windows version doesn't resolve symlinks at the moment.
+  *)
+  val realpath: string -> string Lwt.t
 end
 
 module C_worker : sig
