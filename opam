@@ -20,6 +20,7 @@ depends: [
   "base-bigarray"
   "base-threads"
   "base-bytes"
+  "conf-libuv" {build & >= "1"}
   "lwt" {>= "2.4.7"}
   "ocamlfind" {build}
   "cppo" {build}

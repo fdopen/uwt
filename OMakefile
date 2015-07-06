@@ -45,7 +45,13 @@ static.=
 		export
 		INTERNAL_LIBUV=false
 	else
-		export
+		x=
+			try
+				value $(getvar BUILD_LIBUV)
+			default
+				value $''0''
+		if $(equal $(x),$''0'')
+			$(ConfMsgError $''libuv missing'')
 		ConfMsgWarn($''libuv not found. I will try to compile it from source'')
 		LDFLAGS_LIBUV=$(CompileLibuv )
 		if $(eq 0, $(LDFLAGS_LIBUV.length))
@@ -58,6 +64,7 @@ static.=
 			else
 				value -I$(x)
 		INTERNAL_LIBUV=true
+		export CFLAGS_LIBUV LDFLAGS_LIBUV INTERNAL_LIBUV
 	x=$(Check_prog_in_path cppo)
 	if $(equal $(x), false)
 		$(ConfMsgError $''cppo missing'')
