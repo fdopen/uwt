@@ -120,7 +120,7 @@ section
 
 ConfReplace(META)
 section
-	x=$(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE) uwt-worker.h
+	x=$(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE) uwt-worker.h uwt-error.h
 	if $(INTERNAL_LIBUV)
 		export
 		x+=libuv$(EXT_LIB) $(glob ../libuv-v$(LIBUV_VERSION)/include/*.h)

@@ -2,13 +2,11 @@ let test_strings = [ "akkkk" ; "dkasjf" ; "aldkfjasdf" ; "kkazsdfutu" ; "dafy" ]
 let server_port = 9009
 let server_ip = "127.0.0.1"
 
-
 let rec really_read fd buf ofs len =
   match Unix.read fd buf ofs len with
   | x -> x
   | exception Unix.Unix_error(Unix.EINTR,_,_) -> really_read fd buf ofs len
 
-open Common
 open Lwt.Infix
 
 let connect () =
@@ -48,13 +46,13 @@ let on_listen server x =
 
 let poll_read () =
   let server = Uwt.Tcp.init () in
-  let t = try_finally ( fun () ->
+  let t = Lwt.finalize ( fun () ->
       let addr = Uwt_base.Misc.ip4_addr_exn server_ip server_port in
       Uwt.Tcp.bind_exn server ~addr ();
       let () = Uwt.Tcp.listen_exn server ~max:10 ~cb:on_listen in
       let fd = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
       let close = lazy ( Unix.close fd ) in
-      try_finally ( fun () ->
+      Lwt.finalize ( fun () ->
           let addr = Unix.inet_addr_of_string server_ip in
           let addr = Unix.ADDR_INET(addr,server_port) in
           Unix.connect fd addr;
@@ -75,24 +73,19 @@ let poll_read () =
             | Uwt.Poll.Readable ->
               let b = Bytes.create 128 in
               let len = really_read fd b 0 128 in
-              if len = 0 then (
-                Uwt.Poll.close_noerr s;
+              if len = 0 then
+                let () = Uwt.Poll.close_noerr s in
                 Lazy.force close;
                 Lwt.wakeup waker ()
-              )
-              else (
-                incr cb_called;
+              else
+                let () = incr cb_called in
                 Buffer.add_subbytes buf b 0 len;
-              )
           in
           let s = Uwt.Poll.start_exn fd Uwt.Poll.Readable ~cb in
-          try_finally ( fun () ->
-              Lwt.pick [ sleeper ; Uwt.Timer.sleep 2_000 ] >>= fun () ->
-              if !cb_called > 1 && !cb_called <= List.length test_strings &&
-                 Buffer.contents buf = String.concat "" test_strings then
-                Lwt.return_true
-              else
-                Lwt.return_false
+          Lwt.finalize ( fun () ->
+              Lwt.pick [ sleeper ; Uwt.Timer.sleep 2_000 ] >|= fun () ->
+              !cb_called > 1 && !cb_called <= List.length test_strings &&
+              Buffer.contents buf = String.concat "" test_strings
             ) ( fun () -> Uwt.Poll.close_noerr s ; Lwt.return_unit )
         ) ( fun () -> Lazy.force close ; Lwt.return_unit )
     ) ( fun () -> Uwt.Tcp.close_noerr server ; Lwt.return_unit )

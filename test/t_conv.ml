@@ -1,6 +1,8 @@
 open OUnit2
 open Uwt.Conv
 
+external get_sun_path: Uwt.sockaddr -> string option = "uwt_sun_path"
+
 let l = [
   ("unix_sockaddr_ip4">::
    fun _ctx ->
@@ -20,7 +22,13 @@ let l = [
      Common.no_win ctx;
      let sock = Unix.ADDR_UNIX "/tmp/uwt" in
      assert_equal sock (of_unix_sockaddr_exn sock |>
-                         to_unix_sockaddr_exn));
+                        to_unix_sockaddr_exn));
+  ("sun_path">::
+   fun ctx ->
+     Common.no_win ctx;
+     let name = "/tmp/uwt" in
+     let usock = of_unix_sockaddr_exn @@ Unix.ADDR_UNIX name in
+     assert_equal (Some name) (get_sun_path usock));
 ]
 
 let l = "Conv">:::l

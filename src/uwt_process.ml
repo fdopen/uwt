@@ -40,6 +40,8 @@ type redirection =
     | `FD_move of Unix.file_descr
     | `File_copy of Uwt.file
     | `File_move of Uwt.file
+    | `Pipe_copy of Uwt.Pipe.t
+    | `Pipe_move of Uwt.Pipe.t
     | `Stream_copy of Uwt.Stream.t
     | `Stream_move of Uwt.Stream.t
     ]
@@ -60,8 +62,10 @@ type iredirection =
 let get_fd fd = function
 | `Keep ->   Some (Uwt.Process.Inherit_file fd)
 | `Pipe x -> Some (Uwt.Process.Create_pipe x)
-| `Dev_null
-| `Close   -> None (* libuv always redirects stdin, stdout and stderr to dev null *)
+| `Dev_null (* libuv always redirects stdin, stdout, stderr to /dev/null *)
+| `Close   -> None
+| `Pipe_move p
+| `Pipe_copy p -> Some (Uwt.Process.Inherit_pipe p)
 | `Stream_copy s
 | `Stream_move s -> Some (Uwt.Process.Inherit_stream s)
 | `File_copy s
@@ -121,6 +125,7 @@ let spawn
   in
   let close = function
   | `FD_move fd -> Unix.close fd
+  | `Pipe_move p -> Uwt.Pipe.close_noerr p
   | `Stream_move s -> Uwt.Stream.close_noerr s
   | `File_move s -> let _ : unit Lwt.t = Uwt.Fs.close s in ()
   | _ -> ()

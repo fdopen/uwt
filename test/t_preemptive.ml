@@ -1,10 +1,14 @@
 open OUnit2
 open Lwt.Infix
 
-let l _ctx = assert_equal 50 (
-    let minisleep ms =
+let l _ctx =
+  let t =
+    let rec minisleep ms =
       let sec = (float_of_int ms) /. 1000. in
-      ignore (Unix.select [] [] [] sec)
+      try
+        ignore (Unix.select [] [] [] sec)
+      with
+      | Unix.Unix_error(Unix.EINTR,_,_) -> minisleep ms
     in
     let sleep_time = 25 in
     let cnt = ref 0 in
@@ -32,8 +36,8 @@ let l _ctx = assert_equal 50 (
         ()
       else
         let () = minisleep sleep_time in
-        let () = Uwt_preemptive.run_in_main ( fun () -> incr_cnt ();
-                                              Lwt.return_unit )
+        let () =
+          Uwt_preemptive.run_in_main ( fun () -> incr_cnt (); Lwt.return_unit )
         in
         incr_cnt ();
         iter_detached tn (succ i)
@@ -53,6 +57,7 @@ let l _ctx = assert_equal 50 (
     let end' = Lwt.join [a 1; b ] in
     Uwt.Main.run end';
     !cnt
-  )
+  in
+  assert_equal 50 t
 
 let l =  "preemptive_test">:: l

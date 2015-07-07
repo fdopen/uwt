@@ -26,8 +26,21 @@ let rec really_write ?(pos=0) ?len buf fd =
   else
     really_write ~pos:(pos+n) ~len:len' buf fd
 
+let with_file ~mode fln f =
+  openfile ~mode fln >>= fun fd ->
+  let close_called = ref false in
+  try
+    let erg = f fd in
+    close_called:= true;
+    close fd >>= fun () ->
+    erg
+  with
+  | exn when !close_called = false ->
+    (try ignore (close fd) with Uwt_base.Uwt_error _ -> ());
+    raise exn
+
 let file_to_bytes s =
-  US.openfile ~mode:[ O_RDONLY ] s >>= fun fd ->
+  with_file ~mode:[ O_RDONLY ] s @@ fun fd ->
   let fd' : Unix.file_descr = match Uwt.Conv.file_descr_of_file fd with
   | None -> assert false;
   | Some ok -> ok
@@ -40,7 +53,7 @@ let file_to_bytes s =
   let rec iter () =
     US.read fd ~buf >>= fun n ->
     if n = 0 then
-      US.close fd
+      Ok ()
     else (
       Buffer.add_subbytes b buf 0 n;
       iter ()
@@ -51,69 +64,54 @@ let file_to_bytes s =
   Ok (Buffer.to_bytes b)
 
 let copy ~src ~dst =
-  US.openfile ~mode:[ O_RDONLY ] src >>= fun fd_read ->
-  finalize ( fun () ->
-      openfile
-        ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst >>= fun fd_write ->
-      finalize ( fun () ->
-          let b_len = 65_536 in
-          let buf = Bytes.create b_len in
-          let rec read () =
-            US.read fd_read ~buf ~pos:0 ~len:b_len >>= fun n ->
-            if n = 0 then
-              Ok ()
-            else
-              write ~offset:0 ~len:n
-          and write ~offset ~len =
-            US.write fd_write ~buf ~pos:offset ~len >>= fun n ->
-            US.fsync fd_write >>= fun () ->
-            let len' = len - n in
-            if len' <= 0 then
-              read ()
-            else
-              write ~offset:(offset+n) ~len:len'
-          in
-          read ()
-        ) ( fun () -> close fd_write )
-    ) ( fun () -> close fd_read )
+  with_file ~mode:[ O_RDONLY ] src @@ fun fd_read ->
+  with_file ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst @@ fun fd_write ->
+  let b_len = 65_536 in
+  let buf = Bytes.create b_len in
+  let rec read () =
+    US.read fd_read ~buf ~pos:0 ~len:b_len >>= fun n ->
+    if n = 0 then
+      Ok ()
+    else
+      write ~offset:0 ~len:n
+  and write ~offset ~len =
+    US.write fd_write ~buf ~pos:offset ~len >>= fun n ->
+    US.fsync fd_write >>= fun () ->
+    let len' = len - n in
+    if len' <= 0 then
+      read ()
+    else
+      write ~offset:(offset+n) ~len:len'
+  in
+  read ()
 
 let copy_ba ~src ~dst =
-  openfile ~mode:[ O_RDONLY ] src >>= fun fd_read ->
-  finalize ( fun () ->
-      openfile
-        ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst >>= fun fd_write ->
-      finalize ( fun () ->
-          let b_len = 65_536 in
-          let buf = Uwt_bytes.create b_len in
-          let rec read () =
-            US.read_ba fd_read ~buf ~pos:0 ~len:b_len >>= fun n ->
-            if n = 0 then
-              Ok ()
-            else
-              write ~offset:0 ~len:n
-          and write ~offset ~len =
-            US.write_ba fd_write ~buf ~pos:offset ~len >>= fun n ->
-            US.fdatasync fd_write >>= fun () ->
-            let len' = len - n in
-            if len' <= 0 then
-              read ()
-            else
-              write ~offset:(offset+n) ~len:len'
-          in
-          read ()
-        ) ( fun () -> US.close fd_write )
-    ) ( fun () -> US.close fd_read )
+  with_file ~mode:[ O_RDONLY ] src @@ fun fd_read ->
+  with_file ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst @@ fun fd_write ->
+  let b_len = 65_536 in
+  let buf = Uwt_bytes.create b_len in
+  let rec read () =
+    US.read_ba fd_read ~buf ~pos:0 ~len:b_len >>= fun n ->
+    if n = 0 then
+      Ok ()
+    else
+      write ~offset:0 ~len:n
+  and write ~offset ~len =
+    US.write_ba fd_write ~buf ~pos:offset ~len >>= fun n ->
+    US.fdatasync fd_write >>= fun () ->
+    let len' = len - n in
+    if len' <= 0 then
+      read ()
+    else
+      write ~offset:(offset+n) ~len:len'
+  in
+  read ()
 
 let copy_sendfile ~src ~dst =
-  openfile ~mode:[ O_RDONLY ] src >>= fun fd_read ->
-  finalize ( fun () ->
-      US.openfile
-        ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst >>= fun fd_write ->
-      finalize ( fun () ->
-          US.sendfile ~dst:fd_write ~src:fd_read () >>= fun _i ->
-          Ok ()
-        ) ( fun () -> US.close fd_write )
-    ) ( fun () -> US.close fd_read )
+  with_file ~mode:[ O_RDONLY ] src @@ fun fd_read ->
+  with_file ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst @@ fun fd_write ->
+  US.sendfile ~dst:fd_write ~src:fd_read () >>= fun _i ->
+  Ok ()
 
 let random_bytes_length = 88_411
 let random_bytes = Common.rbytes_create random_bytes_length
@@ -123,27 +121,13 @@ let to_exn = function
 | Error s -> raise (Uwt_error(s,"",""))
 
 let return s = Ok s
-let m_equal s t =
-  assert_equal s (t () |> to_exn )
+let m_equal s t = assert_equal s (t () |> to_exn )
 let m_true t = m_equal true t
 
 let m_raises a (t: unit -> 'a) =
   assert_raises
     (Uwt.Uwt_error(a,"",""))
     ( fun () -> t () |> to_exn )
-
-let with_file ~mode fln f =
-  openfile ~mode fln >>= fun fd ->
-  let close_called = ref false in
-  try
-    let erg = f fd in
-    close_called:= true;
-    close fd >>= fun () ->
-    erg
-  with
-  | exn when !close_called = false ->
-    (try ignore (close fd) with _ -> ());
-    raise exn
 
 let tmpdir = Common.tmpdir
 

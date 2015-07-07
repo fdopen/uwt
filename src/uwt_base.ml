@@ -285,7 +285,7 @@ module Misc = struct
     file -> handle_type = "uwt_guess_handle_na" "noalloc"
 
   external resident_set_memory:
-    unit -> nativeint result = "uwt_resident_set_memory"
+    unit -> int64 result = "uwt_resident_set_memory"
   let resident_set_memory_exn () =
     resident_set_memory () |> to_exn "uv_resident_set_memory"
 

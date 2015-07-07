@@ -70,6 +70,16 @@ type uv_run_mode =
   | Run_nowait
   (* | Run_default *)
 
+module Exception = struct
+  let exceptions = ref []
+
+  let add_exception (e:exn) =
+    let bt = Printexc.get_raw_backtrace () in
+    exceptions := (e,bt)::!exceptions
+
+  let () = Callback.register "uwt.add_exception" add_exception
+end
+
 (* not sure, if I can leave it that simple. Lwt.wakeup will
    raise an exception, if the corresponding thread is neither sleeping
    nor canceled *)
@@ -87,6 +97,9 @@ let loop =
   | Ok x -> x
 
 let param = ""
+
+let efail ?(param="") name x = Lwt.fail (Uwt_error(x,name,param))
+let eraise ?(param="") name x = raise (Uwt_error(x,name,param))
 
 module Req = struct
   type t
@@ -112,7 +125,7 @@ module Req = struct
       finalize req;
       match x with
       | Ok x -> Lwt.return x
-      | Error x -> Lwt.fail (Uwt_error(x,name,param))
+      | Error x -> efail ~param name x
 
   let qlu ~typ ~f ~name ~param =
     let sleeper,waker = Lwt.task () in
@@ -527,7 +540,7 @@ module Stream = struct
       else if x = len then
         Lwt.return_unit
       else if x > len then
-        Lwt.fail(Uwt_error(UWT_EFATAL,name,""))
+        efail name UWT_EFATAL
       else
         let pos = pos + x
         and len = len - x in
@@ -647,7 +660,7 @@ module Pipe = struct
          start - an will never be closed (UWT_EFATAL not possible).
          And uv_tcp_init always returns zero. But the libuv internals
          might change in future versions,... *)
-      raise (Uwt_error(x,"pipe_init",""))
+      eraise "pipe_init" x
 
   external bind:
     t -> path:string -> Int_result.unit = "uwt_pipe_bind_na" "noalloc"
@@ -677,6 +690,25 @@ module Pipe = struct
 
   external pending_type:
     t -> pending_type = "uwt_pipe_pending_type_na" "noalloc"
+
+  let with_pipe ?ipc f =
+    let t = init ?ipc () in
+    Lwt.finalize ( fun () -> f t )
+      (fun () -> close_noerr t ; Lwt.return_unit)
+
+  let with_connect ?ipc ~path f =
+    let t = init ?ipc () in
+    Lwt.finalize (fun () ->
+        connect t ~path >>= fun () ->
+        f t
+      )(fun () -> close_noerr t ; Lwt.return_unit)
+
+  let with_open ?ipc fd f =
+    match openpipe ?ipc fd with
+    | Error x -> efail "openpipe" x
+    | Ok t ->
+      Lwt.finalize (fun () -> f t)
+        (fun () -> close_noerr t ; Lwt.return_unit)
 end
 
 module Tty = struct
@@ -726,7 +758,7 @@ module Tcp = struct
     match init_raw loop with
     | Ok x -> x
     | Error ENOMEM -> raise Out_of_memory
-    | Error x -> raise (Uwt_error(x,"tcp_init",""))
+    | Error x -> eraise "tcp_init" x
 
   external opentcp:
     t -> Unix.file_descr -> Int_result.unit = "uwt_tcp_open_na" "noalloc"
@@ -786,6 +818,32 @@ module Tcp = struct
   let accept_exn server =
     accept server |> to_exn "accept"
 
+  let with_tcp f =
+    let t = init () in
+    Lwt.finalize (fun () -> f t)
+      (fun () -> close_noerr t; Lwt.return_unit)
+
+  let with_open fd f =
+    match opentcp_exn fd with
+    | exception x -> Lwt.fail x
+    | t ->
+      Lwt.finalize (fun () -> f t)
+        (fun () -> close_noerr t; Lwt.return_unit)
+
+  let with_connect ~addr f =
+    let t = init () in
+    Lwt.finalize (fun () -> connect t ~addr >>= fun () -> f t)
+      (fun () -> close_noerr t; Lwt.return_unit)
+
+  let with_accept server f =
+    let t = init () in
+    let r = accept_raw ~server ~client:t in
+    if Int_result.is_error r then
+      let () = close_noerr t in
+      LInt_result.mfail ~param ~name:"accept" r
+    else
+      Lwt.finalize (fun () -> f t)
+        (fun () -> close_noerr t; Lwt.return_unit)
 end
 
 module Udp = struct
@@ -803,7 +861,7 @@ module Udp = struct
     match init_raw loop with
     | Ok x -> x
     | Error ENOMEM -> raise Out_of_memory
-    | Error x -> raise (Uwt_error(x,"init_tcp",""))
+    | Error x -> eraise "init_tcp" x
 
   external openudp: t -> Unix.file_descr -> Int_result.unit = "uwt_udp_open_na" "noalloc"
   let openudp s =
@@ -935,7 +993,7 @@ module Udp = struct
       else if x = len then
         Lwt.return_unit
       else if x > len then
-        Lwt.fail(Uwt_error(UWT_EFATAL,name,""))
+        efail name UWT_EFATAL
       else
         let pos = pos + x
         and len = len - x in
@@ -1007,7 +1065,7 @@ module Udp = struct
         let () = Lwt.on_cancel sleeper (fun () -> ignore (irecv_stop t true)) in
         sleeper >>= function
         | Ok x -> Lwt.return x
-        | Error x -> Lwt.fail (Uwt_error(x,name,param))
+        | Error x -> efail ~param name x
 
   let recv_ba ?pos ?len ~(buf:buf) t =
     let dim = Bigarray.Array1.dim buf in
@@ -1041,7 +1099,7 @@ module Timer = struct
     let sleeper,waker = Lwt.task () in
     let cb (_:t) = Lwt.wakeup waker () in
     match start ~repeat:0 ~timeout:s ~cb with
-    | Error x -> Lwt.fail (Uwt_error(x,"timer_start",param))
+    | Error x -> efail "timer_start" x
     | Ok t ->
       Lwt.on_cancel sleeper ( fun () -> close_noerr t );
       sleeper
@@ -1276,14 +1334,10 @@ end
 
 module Main = struct
 
-  let exceptions = ref []
+  open Exception
+
   let fatal_found = ref false (* information for exit_hook and run *)
 
-  let add_exception (e:exn) =
-    let bt = Printexc.get_raw_backtrace () in
-    exceptions := (e,bt)::!exceptions
-
-  let () = Callback.register "uwt.add_exception" add_exception
 
   exception Main_error of error * string
   exception Deferred of (exn * Printexc.raw_backtrace) list
@@ -1354,21 +1408,18 @@ module Main = struct
         run ~nothing_cnt task
       )
 
-  external cleanup: unit -> unit = "uwt_empty_caches" "noalloc"
+  external cleanup: unit -> unit = "uwt_cleanup_na" "noalloc"
 
   let run (t:'a Lwt.t) : 'a =
     if !fatal_found then
       failwith "uwt loop unusuable";
-    match run ~nothing_cnt:0 t with
-    | exception x -> cleanup (); raise x
-    | x -> cleanup (); x
+    run ~nothing_cnt:0 t
 
   let exit_hooks = Lwt_sequence.create ()
 
   let rec call_hooks () =
     match Lwt_sequence.take_opt_l exit_hooks with
-    | None ->
-      Lwt.return_unit
+    | None -> Lwt.return_unit
     | Some f ->
       Lwt.catch
         (fun () -> f ())
@@ -1409,7 +1460,7 @@ module C_worker = struct
         Req.finalize req;
         match x with
         | Ok x -> Lwt.return x
-        | Error x -> Lwt.fail (Uwt_error(x,name,param))
+        | Error x -> efail ~param name x
 
   let call a b = call_internal a b
 end
@@ -1571,7 +1622,7 @@ module Unix = struct
 
   let pipe_exn ?(cloexec=true) () =
     match pipe cloexec with
-    | Error x -> raise (Uwt_error(x,"pipe",""))
+    | Error x -> eraise "pipe" x
     | Ok(fd1,fd2) ->
       try
         Pipe.(openpipe_exn fd1, openpipe_exn fd2)

@@ -229,7 +229,7 @@ c_free_string_array(char ** src)
 {
   if ( src ){
     char ** p = src;
-    while (*p){
+    while ( *p ){
       free(*p);
       ++p;
     }
@@ -256,7 +256,7 @@ dup_hostent(struct hostent *orig)
   }
   else {
     h->h_aliases = c_copy_string_array(orig->h_aliases);
-    if ( !h->h_aliases){
+    if ( !h->h_aliases ){
       goto nomem2;
     }
   }
@@ -281,6 +281,36 @@ nomem1:
   return NULL;
 }
 
+static void *
+gethost_error_code(int hno)
+{
+  switch ( hno ){
+  default:
+#ifdef HOST_NOT_FOUND
+  case HOST_NOT_FOUND:
+#endif
+    return INT_TO_POINTER(UV_ENOENT);
+#ifdef TRY_AGAIN
+  case TRY_AGAIN:
+    return INT_TO_POINTER(UV_EAGAIN);
+#endif
+#ifdef NO_ADDRESS
+  case NO_ADDRESS:
+#endif
+#if defined(NO_DATA) && ( !defined(NO_ADDRESS) || NO_ADDRESS != NO_DATA )
+  case NO_DATA:
+#endif
+#if defined(NO_DATA) || defined(NO_ADDRESS)
+    return INT_TO_POINTER(UV_EINVAL);
+#endif
+#ifdef NO_RECOVERY
+  case NO_RECOVERY:
+    /* TODO: find better mapping */
+    return INT_TO_POINTER(UV_UNKNOWN);
+#endif
+  }
+}
+
 static void
 gethostbyname_worker(uv_work_t *req)
 {
@@ -290,22 +320,12 @@ gethostbyname_worker(uv_work_t *req)
   struct hostent result_buf;
   struct hostent *host = NULL;
   char buf[ALLOCA_SIZE];
-  int hno;
+  int hno = 0;
   int err = gethostbyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&host,&hno);
   if ( err != 0 || host == NULL ){
     w->p1 = NULL;
     host = NULL;
-    if ( hno == HOST_NOT_FOUND ){
-      w->p2 = INT_TO_POINTER(UV_ENOENT);
-    }
-#ifdef TRY_AGAIN
-    else if ( hno == TRY_AGAIN ){
-      w->p2 = INT_TO_POINTER(UV_EAGAIN);
-    }
-#endif
-    else {
-      w->p2 = INT_TO_POINTER(UV_UNKNOWN);
-    }
+    w->p2 = gethost_error_code(hno);
   }
 #else
   struct hostent * host = gethostbyname(name);
@@ -388,17 +408,17 @@ gethostent_value(uv_req_t * req)
     aliases = s_caml_copy_string_array((const char**)entry->h_aliases);
     if ( entry->h_addr_list == NULL )
       addr_list = Atom(0);
-    else if (entry->h_length == 16)
+    else if ( entry->h_length == 16 )
       addr_list = caml_alloc_array(alloc_one_addr6,(const char**)entry->h_addr_list);
     else
       addr_list = caml_alloc_array(alloc_one_addr,(const char**)entry->h_addr_list);
     res = caml_alloc_small(4, 0);
     Field(res, 0) = name;
     Field(res, 1) = aliases;
-    switch (entry->h_addrtype) {
-    case PF_UNIX:          Field(res, 2) = Val_int(0); break;
-    case PF_INET:          Field(res, 2) = Val_int(1); break;
-    default: /*PF_INET6 */ Field(res, 2) = Val_int(2); break;
+    switch ( entry->h_addrtype ){
+    case PF_UNIX:          Field(res, 2) = Val_long(0); break;
+    case PF_INET:          Field(res, 2) = Val_long(1); break;
+    default: /*PF_INET6 */ Field(res, 2) = Val_long(2); break;
     }
     Field(res, 3) = addr_list;
     name = caml_alloc_small(1,Ok_tag);
@@ -453,23 +473,13 @@ gethostbyaddr_worker(uv_work_t *req)
   struct hostent result_buf;
   struct hostent *host = NULL;
   char buf[ALLOCA_SIZE];
-  int hno;
+  int hno = 0;
   int err = gethostbyaddr_r(addr,len,type,&result_buf,&buf[0],ALLOCA_SIZE,
                             &host,&hno);
   if ( err != 0 || host == NULL ){
     w->p1 = NULL;
     host = NULL;
-    if ( hno == HOST_NOT_FOUND ){
-      w->p2 = INT_TO_POINTER(UV_ENOENT);
-    }
-#ifdef TRY_AGAIN
-    else if ( hno == TRY_AGAIN ){
-      w->p2 = INT_TO_POINTER(UV_EAGAIN);
-    }
-#endif
-    else {
-      w->p2 = INT_TO_POINTER(UV_UNKNOWN);
-    }
+    w->p2 = gethost_error_code(hno);
   }
 #else
   struct hostent * host = gethostbyaddr(addr,len,type);
@@ -532,7 +542,7 @@ uwt_gethostbyaddr(value o_ip, value o_uwt)
 static struct servent *
 dup_servent(const struct servent * serv)
 {
-  if (!serv){
+  if ( !serv ){
     return NULL;
   }
   struct servent * s = malloc(sizeof *s);
@@ -563,6 +573,24 @@ nomem1:
   return NULL;
 }
 
+static int
+geterror_helper(int err, void *p)
+{
+  if ( err == ENOENT || (err == 0 && p == NULL) ){
+    return UV_ENOENT;
+  }
+  /* err == 1: older APIs, that don't return errno numbers */
+  else if ( err > 1 ){
+    return (-err);
+  }
+  else if ( errno > 0 ){
+    return (-errno);
+  }
+  else {
+    return UV_ENOENT;
+  }
+}
+
 static void
 getservbyname_worker(uv_work_t *req)
 {
@@ -574,17 +602,11 @@ getservbyname_worker(uv_work_t *req)
   struct servent result_buf;
   struct servent *serv = NULL;
   char buf[ALLOCA_SIZE];
+  errno = 0;
   int err = getservbyname_r(name,proto,&result_buf,&buf[0],ALLOCA_SIZE,&serv);
   if ( err != 0 || serv == NULL ){
     w->p1 = NULL;
-    /* err == 1: older APIs, that don't return errno numbers */
-    if ( err == ENOENT || (err == 0 && serv == NULL) || err == 1 || err < 0 ){
-      w->p2 = INT_TO_POINTER(UV_ENOENT);
-    }
-    else {
-      w->p2 = INT_TO_POINTER(-err);
-    }
-    serv = NULL;
+    w->p2 = INT_TO_POINTER(geterror_helper(err,serv));
   }
 #else
   struct servent * serv = getservbyname(name,proto);
@@ -653,7 +675,7 @@ getservent_value(uv_req_t * req)
     res = caml_alloc_small(4, 0);
     Field(res,0) = name;
     Field(res,1) = aliases;
-    Field(res,2) = Val_int(ntohs(entry->s_port));
+    Field(res,2) = Val_long(ntohs(entry->s_port));
     Field(res,3) = proto;
     aliases = res;
     name = caml_alloc_small(1,Ok_tag);
@@ -719,16 +741,11 @@ getservbyport_worker(uv_work_t *req)
   struct servent result_buf;
   struct servent *serv = NULL;
   char buf[ALLOCA_SIZE];
+  errno = 0;
   int err = getservbyport_r(port,proto,&result_buf,&buf[0],ALLOCA_SIZE,&serv);
   if ( err != 0 || serv == NULL ){
     w->p1 = NULL;
-    if ( err == ENOENT || (err == 0 && serv == NULL) || err == 1 || err < 0 ){
-      w->p2 = INT_TO_POINTER(UV_ENOENT);
-    }
-    else {
-      w->p2 = INT_TO_POINTER(-err);
-    }
-    serv = NULL;
+    w->p2 = INT_TO_POINTER(geterror_helper(err,serv));
   }
 #else
   struct servent * serv = getservbyport(port,proto);
@@ -777,29 +794,29 @@ uwt_getservbyport(value o_b, value o_uwt)
 }
 
 static struct protoent *
-dup_protoent(const struct protoent * proto)
+dup_protoent(const struct protoent * orig)
 {
-  if (!proto){
+  if ( !orig ){
     return NULL;
   }
-  struct protoent * p = malloc(sizeof *p);
-  if ( p == NULL ){
+  struct protoent * copy = malloc(sizeof *copy);
+  if ( copy == NULL ){
     return NULL;
   }
-  p->p_name = s_strdup(proto->p_name);
-  if ( p->p_name == NULL ){
+  copy->p_name = s_strdup(orig->p_name);
+  if ( copy->p_name == NULL ){
     goto nomem1;
   }
-  p->p_aliases = c_copy_string_array( proto->p_aliases );
-  if ( p->p_aliases == NULL && proto->p_aliases != NULL){
+  copy->p_aliases = c_copy_string_array(orig->p_aliases);
+  if ( copy->p_aliases == NULL && orig->p_aliases != NULL ){
     goto nomem2;
   }
-  p->p_proto = proto->p_proto;
-  return p;
+  copy->p_proto = orig->p_proto;
+  return copy;
 nomem2:
-  free(p->p_name);
+  free(copy->p_name);
 nomem1:
-  free(p);
+  free(copy);
   return NULL;
 }
 
@@ -825,7 +842,7 @@ getprotoent_value(uv_req_t * req)
     ret = caml_alloc_small(3, 0);
     Field(ret,0) = name;
     Field(ret,1) = aliases;
-    Field(ret,2) = Val_int(entry->p_proto);
+    Field(ret,2) = Val_long(entry->p_proto);
     aliases = ret;
     ret = caml_alloc_small(1,0);
     Field(ret,0) = aliases;
@@ -862,15 +879,11 @@ getprotobyname_worker(uv_work_t * req)
   struct protoent result_buf;
   struct protoent *proto = NULL;
   char buf[ALLOCA_SIZE];
+  errno = 0;
   int err = getprotobyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&proto);
   if ( err != 0 || proto == NULL ){
     w->p1 = NULL;
-    if ( err == ENOENT || (err == 0 && proto == NULL ) || err == 1 || err < 0 ){
-      w->p2 = INT_TO_POINTER(UV_ENOENT);
-    }
-    else {
-      w->p2 = INT_TO_POINTER(-err);
-    }
+    w->p2 = INT_TO_POINTER(geterror_helper(err,proto));
   }
 #else
   struct protoent * proto = getprotobyname(name);
@@ -899,7 +912,7 @@ uwt_getprotobyname(value o_name, value o_uwt)
   value ret;
   char *p1;
   const char * mname = String_val(o_name);
-  if (  mname == NULL || *mname == '\0' ){
+  if ( mname == NULL || *mname == '\0' ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
   }
   else if ( (p1 = strdup(mname)) == NULL ){
@@ -925,15 +938,11 @@ getprotobynumber_worker(uv_work_t * req)
   struct protoent result_buf;
   struct protoent *proto = NULL;
   char buf[ALLOCA_SIZE];
+  errno = 0;
   int err = getprotobynumber_r(number,&result_buf,&buf[0],ALLOCA_SIZE,&proto);
   if ( err != 0 || proto == NULL ){
     w->p1 = NULL;
-    if ( err == ENOENT || (err == 0 && proto == NULL) || err == 1 || err < 0 ){
-      w->p2 = INT_TO_POINTER(UV_ENOENT);
-    }
-    else {
-      w->p2 = INT_TO_POINTER(-err);
-    }
+    w->p2 = INT_TO_POINTER(geterror_helper(err,proto));
   }
 #else
   struct protoent * proto = getprotobynumber(number);
@@ -975,7 +984,7 @@ gethostname_worker(uv_work_t * req)
   struct worker_params * w = req->data;
   char name[ALLOCA_SIZE];
   int er = gethostname(name,ALLOCA_SIZE-1);
-  name[ALLOCA_SIZE-1]='\0';
+  name[ALLOCA_SIZE-1] = '\0';
   if ( er != 0 ){
     w->p2 = INT_TO_POINTER(-er);
   }
@@ -1015,14 +1024,20 @@ getcwd_worker(uv_work_t * req)
   }
   else {
 #if !defined(_WIN32) && (UV_VERSION_MAJOR == 1) && ( UV_VERSION_MINOR < 1 )
-    size_t len = strnlen(name,ALLOCA_SIZE);
     if ( len > 1 && name[len-1] == '/' ){
       name[len-1] = '\0';
+      --len;
     }
 #endif
-    w->p1 = s_strdup(name);
-    if ( w->p1 == NULL ){
+    char * s = malloc(len + 1);
+    if ( s == NULL ){
+      w->p1 = NULL;
       w->p2 = INT_TO_POINTER(UV_ENOMEM);
+    }
+    else {
+      memcpy(s,name,len);
+      s[len] = 0;
+      w->p1 = s;
     }
   }
 }
@@ -1169,7 +1184,7 @@ static struct passwd *
 dup_passwd(const struct passwd * orig)
 {
   struct passwd * copy = malloc(sizeof *copy);
-  if ( copy == NULL){
+  if ( copy == NULL ){
     return NULL;
   }
   copy->pw_name = s_strdup(orig->pw_name);
@@ -1180,8 +1195,8 @@ dup_passwd(const struct passwd * orig)
   copy->pw_dir = s_strdup(orig->pw_dir);
   copy->pw_shell = s_strdup(orig->pw_shell);
 
-  if (!copy->pw_name || !copy->pw_passwd || !copy->pw_gecos ||
-      !copy->pw_dir || !copy->pw_shell)
+  if ( !copy->pw_name || !copy->pw_passwd || !copy->pw_gecos ||
+       !copy->pw_dir || !copy->pw_shell )
   {
     free(copy->pw_name);
     free(copy->pw_passwd);
@@ -1248,8 +1263,8 @@ passwd_camlval(uv_req_t * req)
     res = caml_alloc_small(7, 0);
     Field(res, 0) = name;
     Field(res, 1) = passwd;
-    Field(res, 2) = Val_int(pw->pw_uid);
-    Field(res, 3) = Val_int(pw->pw_gid);
+    Field(res, 2) = Val_long(pw->pw_uid);
+    Field(res, 3) = Val_long(pw->pw_gid);
     Field(res, 4) = gecos;
     Field(res, 5) = dir;
     Field(res, 6) = shell;
@@ -1268,18 +1283,16 @@ getpwnam_worker(uv_work_t * req)
   struct worker_params * w = req->data;
   int e;
   struct passwd *res = NULL;
+  errno = 0;
 #ifdef HAVE_GETPWNAM_R
   char buf[ALLOCA_SIZE];
   struct passwd result;
   e = getpwnam_r((char*)w->p1,&result, buf, ALLOCA_SIZE, &res);
-  if ( e != 0 ){
+  if ( e != 0 || res == NULL ){
     res = NULL;
-  }
-  if ( e == 1 || (e == 0 && res == NULL) || e < 0 ){
-    e = UV_ENOENT;
+    e = geterror_helper(e,res);
   }
 #else
-  errno = 0;
   res = getpwnam((char*)w->p1);
   e = errno == 0 ? UV_ENOENT : -errno;
 #endif
@@ -1333,18 +1346,16 @@ getpwuid_worker(uv_work_t * req)
   int e;
   struct passwd *res = NULL;
   uid_t uid = POINTER_TO_INT(w->p2);
+  errno = 0;
 #ifdef HAVE_GETPWUID_R
   char buf[ALLOCA_SIZE];
   struct passwd result;
   e = getpwuid_r(uid,&result, buf, ALLOCA_SIZE, &res);
-  if ( e != 0 ){
+  if ( e != 0 || res == NULL ){
     res = NULL;
-  }
-  if ( e == 1 || (e == 0 && res == NULL) || e < 0 ){
-    e = UV_ENOENT;
+    e = geterror_helper(e,res);
   }
 #else
-  errno = 0;
   res = getpwuid(uid);
   e = errno == 0 ? UV_ENOENT : -errno;
 #endif
@@ -1382,7 +1393,7 @@ static struct group *
 dup_group(const struct group * orig)
 {
   struct group * copy = malloc(sizeof *copy);
-  if ( copy == NULL){
+  if ( copy == NULL ){
     return NULL;
   }
   copy->gr_name = s_strdup(orig->gr_name);
@@ -1440,7 +1451,7 @@ group_camlval(uv_req_t * req)
     res = caml_alloc_small(4, 0);
     Field(res, 0) = name;
     Field(res, 1) = pass;
-    Field(res, 2) = Val_int(entry->gr_gid);
+    Field(res, 2) = Val_long(entry->gr_gid);
     Field(res, 3) = mem;
     name = res;
     pass = caml_alloc_small(1,Ok_tag);
@@ -1457,18 +1468,16 @@ getgrnam_worker(uv_work_t * req)
   struct worker_params * w = req->data;
   int e;
   struct group *res = NULL;
+  errno = 0;
 #ifdef HAVE_GETGRNAM_R
   char buf[ALLOCA_SIZE];
   struct group result;
   e = getgrnam_r((char*)w->p1,&result, buf, ALLOCA_SIZE, &res);
-  if ( e != 0 ){
+  if ( e != 0 || res == NULL ){
     res = NULL;
-  }
-  if ( e == 1 || (e == 0 && res == NULL) || e < 0 ){
-    e = UV_ENOENT;
+    e = geterror_helper(e,res);
   }
 #else
-  errno = 0;
   res = getgrnam((char*)w->p1);
   e = errno == 0 ? UV_ENOENT : -errno;
 #endif
@@ -1522,18 +1531,16 @@ getgrgid_worker(uv_work_t * req)
   int e;
   struct group *res = NULL;
   uid_t uid = POINTER_TO_INT(w->p2);
+  errno = 0;
 #ifdef HAVE_GETGRGID_R
   char buf[ALLOCA_SIZE];
   struct group result;
   e = getgrgid_r(uid,&result, buf, ALLOCA_SIZE, &res);
-  if ( e != 0 ){
+  if ( e != 0 || res == NULL ){
     res = NULL;
-  }
-  if ( e == 1 || (e == 0 && res == NULL) || e < 0 ){
-    e = UV_ENOENT;
+    e = geterror_helper(e,res);
   }
 #else
-  errno = 0;
   res = getgrgid(uid);
   e = errno == 0 ? UV_ENOENT : -errno;
 #endif
@@ -1636,14 +1643,14 @@ static void worker_lockf(uv_work_t * req)
   errno = 0;
   memset(&l,0,sizeof l);
   l.l_whence = 1;
-  if (job->length < 0) {
+  if ( job->length < 0 ){
     l.l_start = job->length;
     l.l_len = (off_t)-job->length;
   } else {
     l.l_start = 0L;
     l.l_len = (off_t)job->length;
   }
-  switch (job->command) {
+  switch ( job->command ){
   case 0: /* F_ULOCK */
     l.l_type = F_UNLCK;
     result = fcntl(job->fd, F_SETLK, &l);
@@ -1662,8 +1669,8 @@ static void worker_lockf(uv_work_t * req)
   case 3: /* F_TEST */
     l.l_type = F_WRLCK;
     result = fcntl(job->fd, F_GETLK, &l);
-    if (result != -1) {
-      if (l.l_type == F_UNLCK) {
+    if ( result != -1 ){
+      if ( l.l_type == F_UNLCK ){
         result = 0;
       } else {
         result = -1;
@@ -1714,14 +1721,13 @@ static int set_file_pointer(HANDLE h, LARGE_INTEGER gohere,
 {
   LONG high = gohere.HighPart;
   DWORD ret = SetFilePointer(h, gohere.LowPart, &high, method);
-  if(ret == INVALID_SET_FILE_POINTER) {
+  if ( ret == INVALID_SET_FILE_POINTER ){
     DWORD err = GetLastError();
-    if(err != NO_ERROR) {
-      int ec = err == 0 ? UV_UNKNOWN : uwt_translate_sys_error(err);
-      return ec;
+    if ( err != NO_ERROR ){
+      return uwt_translate_sys_error(err);
     }
   }
-  if(output != NULL) {
+  if ( output != NULL ){
     output->LowPart = ret;
     output->HighPart = high;
   }
@@ -1756,13 +1762,13 @@ static void worker_lockf(uv_work_t * req)
   /* All unused fields must be set to zero */
   memset(&overlap, 0, sizeof(overlap));
 
-  if(l_len == 0) {
+  if( l_len == 0 ){
     /* Lock from cur to infinity */
     lock_len.QuadPart = -1;
     overlap.OffsetHigh = cur_position.HighPart;
     overlap.Offset     = cur_position.LowPart ;
   }
-  else if(l_len > 0) {
+  else if ( l_len > 0 ){
     /* Positive file offset */
     lock_len.QuadPart = l_len;
     overlap.OffsetHigh = cur_position.HighPart;
@@ -1771,7 +1777,7 @@ static void worker_lockf(uv_work_t * req)
   else {
     /* Negative file offset */
     lock_len.QuadPart = - l_len;
-    if (lock_len.QuadPart > cur_position.QuadPart) {
+    if ( lock_len.QuadPart > cur_position.QuadPart ){
       w->p2 = INT_TO_POINTER(UV_EINVAL);
       return;
     }
@@ -1780,23 +1786,23 @@ static void worker_lockf(uv_work_t * req)
     overlap.Offset     = beg_position.LowPart ;
   }
 
-  switch(job->command){
+  switch( job->command ){
   case 0: /* F_ULOCK - unlock */
-    if (! UnlockFileEx(h, 0,
+    if ( !UnlockFileEx(h, 0,
                        lock_len.LowPart, lock_len.HighPart, &overlap)){
       result = -1;
       err = GetLastError();
     }
     break;
   case 1: /* F_LOCK - blocking write lock */
-    if (! LockFileEx(h, LOCKFILE_EXCLUSIVE_LOCK, 0,
+    if ( !LockFileEx(h, LOCKFILE_EXCLUSIVE_LOCK, 0,
                      lock_len.LowPart, lock_len.HighPart, &overlap)){
       result = -1;
       err = GetLastError();
     }
     break;
   case 2: /* F_TLOCK - non-blocking write lock */
-    if (! LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK, 0,
+    if ( !LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK, 0,
                      lock_len.LowPart, lock_len.HighPart, &overlap)){
       result = -1;
       err = GetLastError();
@@ -1808,8 +1814,8 @@ static void worker_lockf(uv_work_t * req)
      * this behavior matches anything in particular, but
      * it is not clear the nature of the lock test performed
      * by ocaml (unix) currently. */
-    if (LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK, 0,
-                   lock_len.LowPart, lock_len.HighPart, &overlap)) {
+    if ( LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK, 0,
+                    lock_len.LowPart, lock_len.HighPart, &overlap) ){
       UnlockFileEx(h, 0, lock_len.LowPart, lock_len.HighPart, &overlap);
     } else {
       err = GetLastError();
@@ -1817,15 +1823,15 @@ static void worker_lockf(uv_work_t * req)
     }
     break;
   case 4: /* F_RLOCK - blocking read lock */
-    if (! LockFileEx(h, 0, 0,
-                     lock_len.LowPart, lock_len.HighPart, &overlap)){
+    if ( !LockFileEx(h, 0, 0,
+                     lock_len.LowPart, lock_len.HighPart, &overlap) ){
       result = -1;
       err = GetLastError();
     }
     break;
   case 5: /* F_TRLOCK - non-blocking read lock */
-    if (! LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY, 0,
-                     lock_len.LowPart, lock_len.HighPart, &overlap)){
+    if ( !LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY, 0,
+                     lock_len.LowPart, lock_len.HighPart, &overlap) ){
       result = -1;
       err = GetLastError();
     }
@@ -1834,7 +1840,7 @@ static void worker_lockf(uv_work_t * req)
     w->p2 = INT_TO_POINTER(UV_EINVAL);
     return;
   }
-  if ( result != 0) {
+  if ( result != 0 ){
     int ec = err == 0 ? UV_UNKNOWN : uwt_translate_sys_error(err);
     w->p2 = INT_TO_POINTER(ec);
   }
@@ -1878,16 +1884,16 @@ pipe_normal(int fds[2],bool cloexec)
 {
   int er;
   int rv ;
-  errno=0;
+  errno = 0;
   rv = pipe(fds);
-  if (rv == -1){
+  if ( rv == -1 ){
     return rv;
   }
-  errno=0;
-  if (fcntl(fds[0], F_SETFL, O_NONBLOCK) == -1 ||
-      fcntl(fds[1], F_SETFL, O_NONBLOCK) == -1 ||
-      (cloexec && ( fcntl(fds[0], F_SETFD, FD_CLOEXEC) == -1 ||
-                    fcntl(fds[1], F_SETFD, FD_CLOEXEC) == -1 ))){
+  errno = 0;
+  if ( fcntl(fds[0], F_SETFL, O_NONBLOCK) == -1 ||
+       fcntl(fds[1], F_SETFL, O_NONBLOCK) == -1 ||
+       (cloexec && ( fcntl(fds[0], F_SETFD, FD_CLOEXEC) == -1 ||
+                     fcntl(fds[1], F_SETFD, FD_CLOEXEC) == -1 )) ){
     er = errno;
     close(fds[0]);
     close(fds[1]);
@@ -1932,7 +1938,7 @@ uwt_pipe(value o_close_exec)
   tup = caml_alloc(2,0);
   ret = caml_alloc_small(1,Ok_tag);
   Field(ret,0) = tup;
-  if (my_pipe(fd,close_exec) == -1){
+  if ( my_pipe(fd,close_exec) == -1 ){
     value er = Val_uwt_error(-errno);
     Tag_val(ret) = Error_tag;
     Store_field(ret,0,er);
@@ -2009,7 +2015,7 @@ realpath_worker(uv_work_t *req)
     DWORD size2 = GetFullPathNameW(name,size,fullpath,NULL);
     if ( size2 == 0 || size2 > size ){
       int e ;
-      if ( size == 0 ){
+      if ( size2 == 0 ){
         e = uwt_translate_sys_error(GetLastError());
       }
       else {

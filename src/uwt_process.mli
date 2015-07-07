@@ -82,6 +82,8 @@ type redirection =
             then closed. *)
     | `File_copy of Uwt.file
     | `File_move of Uwt.file
+    | `Pipe_copy of Uwt.Pipe.t
+    | `Pipe_move of Uwt.Pipe.t
     | `Stream_copy of Uwt.Stream.t
     | `Stream_move of Uwt.Stream.t ]
 

@@ -11,51 +11,47 @@ open Uwt.Udp
 open Common
 
 let bind_exn s sockaddr =
-  if  Unix.PF_INET6 = (Uwt.Conv.to_unix_sockaddr_exn sockaddr
-                       |> Unix.domain_of_sockaddr)
-  then
-    bind_exn ~mode:[ Ipv6_only; Reuse_addr ] s ~addr:sockaddr ()
-  else
-    bind_exn ~mode:[ Reuse_addr ] s ~addr:sockaddr ()
+  match Uwt.Conv.to_unix_sockaddr_exn sockaddr |> Unix.domain_of_sockaddr with
+  | Unix.PF_INET6 -> bind_exn ~mode:[Ipv6_only;Reuse_addr] s ~addr:sockaddr ()
+  | Unix.PF_INET -> bind_exn ~mode:[Reuse_addr] s ~addr:sockaddr ()
+  | Unix.PF_UNIX -> assert false
 
 let start_iter_server_bytes addr =
   let server = Uwt.Udp.init () in
-  try_finally ( fun () ->
+  Lwt.finalize ( fun () ->
       let () = bind_exn server addr in
       let buf = Bytes.create 65536 in
       let rec iter () =
         recv ~buf server >>= fun x ->
-        if x.recv_len > 0 then (
+        if x.recv_len <= 0 then
+          Lwt.return_false
+        else
           match x.sockaddr with
           | None -> Lwt.return_false
           | Some sockaddr ->
             let b = Bytes.sub buf 0 x.recv_len in
             ignore (send server ~buf:b sockaddr);
             iter ()
-        )
-        else
-          Lwt.return_false
       in
       iter ()
     ) ( fun () -> Uwt.Udp.close_wait server )
 
 let start_iter_server_ba addr =
   let server = Uwt.Udp.init () in
-  try_finally ( fun () ->
+  Lwt.finalize ( fun () ->
       let () = bind_exn server addr in
       let buf = Uwt_bytes.create 65536 in
       let rec iter () =
         recv_ba ~buf server >>= fun x ->
-        if x.recv_len > 0 then (
+        if x.recv_len <= 0 then
+          Lwt.return_false
+        else
           match x.sockaddr with
           | None -> Lwt.return_false
           | Some sockaddr ->
             let b = Uwt_bytes.extract buf 0 x.recv_len in
             ignore (send_ba server ~buf:b sockaddr);
             iter ()
-        )
-        else
-          Lwt.return_false
       in
       iter ()
     ) ( fun () -> Uwt.Udp.close_wait server )
@@ -64,14 +60,16 @@ let start_server_cb addr : bool Lwt.t =
   let server = Uwt.Udp.init () in
   let sleeper,waker = Lwt.task () in
   let e s = Lwt.wakeup_exn waker (Failure s) in
-  let cb = function
-  | Uwt.Udp.Data (_,None) -> e "no sockaddr"
-  | Uwt.Udp.Partial_data(_,_) -> e "partial data"
-  | Uwt.Udp.Empty_from _ -> e "empty datagram"
-  | Uwt.Udp.Transmission_error _ -> e "transmission error"
-  | Uwt.Udp.Data(b,Some x) -> ignore (Uwt.Udp.send server ~buf:b x)
+  let cb x =
+    assert ( 0 < String.length @@ Show_uwt.Udp.show_recv_result x);
+    match x with
+    | Uwt.Udp.Data (_,None) -> e "no sockaddr"
+    | Uwt.Udp.Partial_data(_,_) -> e "partial data"
+    | Uwt.Udp.Empty_from _ -> e "empty datagram"
+    | Uwt.Udp.Transmission_error _ -> e "transmission error"
+    | Uwt.Udp.Data(b,Some x) -> ignore (Uwt.Udp.send server ~buf:b x)
   in
-  try_finally ( fun () ->
+  Lwt.finalize ( fun () ->
       let () = bind_exn server addr in
       let addr2 = Uwt.Udp.getsockname_exn server in
       if Uwt.Conv.to_unix_sockaddr_exn addr <>
@@ -103,7 +101,7 @@ let start_client ~raw ~iter ~length addr =
         f (pred n)
     )
   in
-  try_finally ( fun () -> f iter ) ( fun () -> close_wait client )
+  Lwt.finalize ( fun () -> f iter ) ( fun () -> close_wait client )
 
 let sockaddr4 = Uwt_base.Misc.ip4_addr_exn server_ip server_port
 let sockaddr6 = Uwt_base.Misc.ip6_addr_exn server6_ip server6_port
@@ -142,7 +140,7 @@ let l = [
    fun _ctx ->
      let server = start_iter_server_ba sockaddr4 in
      let client = init () in
-     m_true (try_finally ( fun () ->
+     m_true (Lwt.finalize ( fun () ->
          send_raw_string client ~buf:"PING" sockaddr4 >>= fun () ->
          let read_thread =
            let buf = Bytes.create 128 in
@@ -163,7 +161,7 @@ let l = [
      let l addr : bool Lwt.t =
        let server = start_iter_server_ba addr in
        let client = init () in
-       try_finally ( fun () ->
+       Lwt.finalize ( fun () ->
            let buf_len = 1024 in
            let x = max 1 (multiplicand ctx) in
            let buf_cnt = 4096 * x in
@@ -177,33 +175,32 @@ let l = [
              Lwt.wakeup_exn waker (Failure s);
              close_noerr client
            in
-           let cb_read = function
-           | Uwt.Udp.Data (_,None) -> e "no sockaddr"
-           | Uwt.Udp.Partial_data(_,_) -> e "partial data"
-           | Uwt.Udp.Empty_from _ -> e "empty datagram"
-           | Uwt.Udp.Transmission_error _ -> e "transmission error"
-           | Uwt.Udp.Data(b,Some _) ->
-             for i = 0 to Bytes.length b - 1 do
-               if Bytes.unsafe_get b i <> Char.chr (!bytes_read land 255) then
-                 e "read wrong content";
-               incr bytes_read;
-             done
+           let cb_read x =
+             assert ( 0 < String.length @@ Show_uwt.Udp.show_recv_result x);
+             match x with
+             | Uwt.Udp.Data (_,None) -> e "no sockaddr"
+             | Uwt.Udp.Partial_data(_,_) -> e "partial data"
+             | Uwt.Udp.Empty_from _ -> e "empty datagram"
+             | Uwt.Udp.Transmission_error _ -> e "transmission error"
+             | Uwt.Udp.Data(b,Some _) ->
+               for i = 0 to Bytes.length b - 1 do
+                 if Bytes.unsafe_get b i <> Char.chr (!bytes_read land 255) then
+                   e "read wrong content";
+                 incr bytes_read;
+               done
            in
            let rec cb_write i started =
              if i = 0 then
-               Uwt.Timer.sleep 100 >>= fun () -> Lwt.return_unit
+               Uwt.Timer.sleep 100
              else
                send_ba ~buf client addr >>= fun () ->
                if started = false then
                  recv_start_exn client ~cb:cb_read;
-               (* TODO: udp is unreliable and this test might fail. Make this
-                  and similar tests optional. *)
                Uwt.Main.yield () >>= fun () ->
                cb_write (pred i) true
            in
-           Lwt.pick [ cb_write buf_cnt false ; sleeper ] >>= fun () ->
-           if !bytes_read = buf_len * buf_cnt then Lwt.return_true
-           else Lwt.return_false
+           Lwt.pick [ cb_write buf_cnt false ; sleeper ] >|= fun () ->
+           !bytes_read = buf_len * buf_cnt
          ) ( fun () -> close_noerr client; Lwt.cancel server; Lwt.return_unit )
      in
      m_true (l sockaddr4);

@@ -8,7 +8,7 @@ open Uwt_base.Misc
    don't return garbage *)
 let l = [
   ("resident_set_memory">:: fun _ ->
-      assert_equal true (resident_set_memory_exn () > 64n ));
+      assert_equal true (resident_set_memory_exn () > 64L ));
   ("uptime">:: fun _ -> assert_equal true (uptime_exn () > 20. ));
   ("getrusage">:: fun _ ->
       let x = getrusage_exn () |> D.show_rusage |> String.length in

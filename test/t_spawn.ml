@@ -161,7 +161,7 @@ let kill_test t =
     P.spawn_exn ~exit_cb
       "sleep" [ "sleep" ; "20" ]
   in
-  try_finally ( fun () ->
+  Lwt.finalize ( fun () ->
       Uwt.Timer.sleep 10 >>= fun () ->
       (match t with
       | true -> P.process_kill_exn p Sys.sigterm;
@@ -182,96 +182,89 @@ let with_npipe f =
         Lwt.return_unit )
 
 let pipeline ?(wrong_args=false) () =
-  with_npipe ( fun (read1,write1) ->
-      with_npipe ( fun (read2,write2) ->
-          with_npipe ( fun (read3,write3) ->
-              let ok x s =
-                s#close >>= fun s ->
-                if s = Unix.WEXITED 0 || ( x && s = Unix.WEXITED 2 ) then
-                  Lwt.return_true
-                else
-                  Lwt.return_false
-              in
-              let ok s = ok false s
-              and okgzip s = ok true s in
-              let buf_len =
-                (* This is a workaround for the wired
-                   behaviour of cygwin's gzip that I don't
-                   want to debug. The behaviour is the same for
-                   dd if=/dev/zero bs=128k count=1000 | gzip | gzip -d | gzip -d | wc -c
-                   from cmd.exe (not cygwin)
-                *)
-                if wrong_args && Sys.win32 then
-                  1021
-                else
-                  245_411
-              in
-              let buf = rstring_create buf_len in
-              let stderr = `Dev_null in
-              let force_close s f =
-                Lwt.catch ( fun () -> f s )
-                  ( fun exn ->
-                      match s#state with
-                      | Uwt_process.Exited _ -> Lwt.fail exn
-                      | Uwt_process.Running ->
-                        Lwt.catch ( fun () -> s#close >>= fun _ ->
-                                    Lwt.fail exn )
-                          ( fun _ -> Lwt.fail exn ))
-              in
-              let p1 =
-                Uwt_process.with_process_out
-                  ~stderr
-                  ~stdout:(`Stream_move write1)
-                  ("gzip",[|"gzip"|]) @@ fun s -> force_close s @@ fun s ->
-                Uwt.Main.yield () >>= fun () ->
-                Uwt_io.write s#stdin buf >>= fun () ->
-                okgzip s
-              in
-              let p2 =
-                Uwt_process.with_process_none
-                  ~stderr
-                  ~stdin:(`Stream_move read1)
-                  ~stdout:(`Stream_move write2)
-                  ("gzip",[|"gzip";"-d"|]) okgzip
-              in
-              let p3 =
-                let args = match wrong_args with
-                | false -> ("cat",[|"cat";"-"|])
-                | true -> ("gzip",[|"gzip";"-d"|])
-                in
-                Uwt_process.with_process_none
-                  ~stderr
-                  ~stdin:(`Stream_move read2)
-                  ~stdout:(`Stream_move write3)
-                  args okgzip
-              in
-              let p4 =
-                Uwt_process.with_process_in
-                  ~stderr
-                  ~stdin:(`Stream_move read3)
-                  ("cat",[|"cat";"-"|]) @@ fun s -> force_close s @@ fun s ->
-                Uwt_io.read s#stdout >>= fun buf' ->
-                ok s >>= function
-                | true -> Lwt.return (buf' = buf)
-                | false -> Lwt.return_false
-              in
-              let ret_status = ref true
-              and exn = ref None in
-              let f s =
-                Lwt.catch ( fun () ->
-                    s >>= function
-                    | false -> ret_status:=false; Lwt.return_unit
-                    | true -> Lwt.return_unit
-                  ) ( fun e ->
-                    if !exn = None then
-                      exn:= Some e;
-                    Lwt.return_unit )
-              in
-              Lwt_list.iter_p f [p1;p2;p3;p4] >>= fun () ->
-              match !exn with
-              | Some x -> Lwt.fail x
-              | None -> Lwt.return (!ret_status)
-            )))
+  with_npipe @@ fun (read1,write1) ->
+  with_npipe @@ fun (read2,write2) ->
+  with_npipe @@ fun (read3,write3) ->
+  let ok x s =
+    s#close >|= fun s -> Unix.(s = WEXITED 0 || (x && s = WEXITED 2))
+  in
+  let ok s = ok false s
+  and okgzip s = ok true s in
+  let buf_len =
+    (* This is a workaround for the wired
+       behaviour of cygwin's gzip that I don't
+       want to debug. The behaviour is the same for
+       dd if=/dev/zero bs=128k count=1000 | gzip | gzip -d | gzip -d | wc -c
+       from cmd.exe (not cygwin)
+    *)
+    if wrong_args && Sys.win32 then
+      1021
+    else
+      245_411
+  in
+  let buf = rstring_create buf_len in
+  let stderr = `Dev_null in
+  let force_close s f =
+    Lwt.catch ( fun () -> f s ) @@ fun exn ->
+    match s#state with
+    | Uwt_process.Exited _ -> Lwt.fail exn
+    | Uwt_process.Running ->
+      Lwt.catch ( fun () -> s#close >>= fun _ -> Lwt.fail exn )
+        ( fun _ -> Lwt.fail exn )
+  in
+  let p1 =
+    Uwt_process.with_process_out
+      ~stderr
+      ~stdout:(`Stream_move write1)
+      ("gzip",[|"gzip"|]) @@ fun s -> force_close s @@ fun s ->
+    Uwt.Main.yield () >>= fun () ->
+    Uwt_io.write s#stdin buf >>= fun () ->
+    okgzip s
+  in
+  let p2 =
+    Uwt_process.with_process_none
+      ~stderr
+      ~stdin:(`Stream_move read1)
+      ~stdout:(`Stream_move write2)
+      ("gzip",[|"gzip";"-d"|]) okgzip
+  in
+  let p3 =
+    let args = match wrong_args with
+    | false -> ("cat",[|"cat";"-"|])
+    | true -> ("gzip",[|"gzip";"-d"|])
+    in
+    Uwt_process.with_process_none
+      ~stderr
+      ~stdin:(`Stream_move read2)
+      ~stdout:(`Stream_move write3)
+      args okgzip
+  in
+  let p4 =
+    Uwt_process.with_process_in
+      ~stderr
+      ~stdin:(`Stream_move read3)
+      ("cat",[|"cat";"-"|]) @@ fun s -> force_close s @@ fun s ->
+    Uwt_io.read s#stdout >>= fun buf' ->
+    ok s >>= function
+    | true -> Lwt.return (buf' = buf)
+    | false -> Lwt.return_false
+  in
+  let ret_status = ref true
+  and exn = ref None in
+  let f s =
+    Lwt.catch ( fun () ->
+        s >>= function
+        | false -> ret_status:=false; Lwt.return_unit
+        | true -> Lwt.return_unit
+      ) ( fun e ->
+        if !exn = None then
+          exn:= Some e;
+        Lwt.return_unit )
+  in
+  Lwt_list.iter_p f [p1;p2;p3;p4] >>= fun () ->
+  match !exn with
+  | Some x -> Lwt.fail x
+  | None -> Lwt.return (!ret_status)
 
 let exn_ok = function
 | Failure t when t = gzip_error_message -> Lwt.return_true
@@ -314,19 +307,16 @@ let l = [
       let t =
         Uwt_process.with_process ~cwd ("cat",[|"cat";"-"|]) @@ fun s ->
         let res = ref "" in
-        let tw = Uwt_io.write s#stdin msg >>= fun () ->
-            Uwt_io.close s#stdin
-        and tr = Uwt_io.read s#stdout >>= fun s -> res:=s ; Lwt.return_unit in
-        Lwt.join [tw;tr] >>= fun () ->
-        Lwt.return !res
+        let tw = Uwt_io.write s#stdin msg >>= fun () -> Uwt_io.close s#stdin
+        and tr = Uwt_io.read s#stdout >|= fun s -> res:=s in
+        Lwt.join [tw;tr] >|= fun () ->
+        !res
       in
       m_equal msg t);
   ("pipeline">:: fun _ -> m_true (pipeline ()));
   ("pipeline2">:: fun _ ->
       let t =
-        Lwt.catch ( fun () ->
-            pipeline ~wrong_args:true () >>= fun l ->
-            Lwt.return (not l) )
+        Lwt.catch ( fun () -> pipeline ~wrong_args:true () >|= fun l -> not l )
           (function
           | Uwt.Uwt_error(Uwt.EPIPE,_,_)
           | Uwt.Uwt_error(_,("write"|"read"),_) ->  Lwt.return_true

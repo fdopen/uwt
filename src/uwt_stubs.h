@@ -34,7 +34,7 @@ P2(uwt_req_create);
 P1(uwt_req_cancel_noerr);
 P1(uwt_req_finalize_na);
 
-P1(uwt_fs_free_na);
+P1(uwt_fs_free);
 P1(uwt_get_fs_result);
 P6(uwt_fs_open_native);
 BY(uwt_fs_open_byte);
@@ -198,7 +198,7 @@ P1(uwt_sun_path);
 P6(uwt_lseek_native);
 BY(uwt_lseek_byte);
 
-P1(uwt_empty_caches);
+P1(uwt_cleanup_na);
 /* valgrind */
 P1(uwt_free_all_memory);
 

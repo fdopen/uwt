@@ -1,4 +1,5 @@
 open OUnit2
+open Lwt.Infix
 
 let close () =
   ignore (T_tcp.close_servers ());
@@ -31,8 +32,11 @@ let l = [
        let t = Uwt.Timer.start_exn ~repeat:100 ~timeout:5 ~cb in
        Common.nm_try_finally ( fun s ->
            let () = Uwt.Timer.unref t in
-           let erg = Uwt.Main.run s in
-           assert_equal erg true ) sleeper
+           let t2 = Uwt.Timer.sleep 1_000 >>= fun () ->
+             Lwt.fail_with "no eof"
+           in
+           let erg = Uwt.Main.run (Lwt.join [t2;s]) in
+           assert_equal erg () ) sleeper
          ( fun t -> Uwt.Timer.close_noerr t ) t
      in
      let erg =
@@ -53,8 +57,7 @@ let l = [
      Common.nm_try_finally ( fun t ->
          let () = Uwt.Timer.unref t in
          Uwt.Main.run (Uwt.Timer.sleep 500)
-       ) t
-       ( fun t -> Uwt.Timer.close_noerr t ) t;
+       ) t ( fun t -> Uwt.Timer.close_noerr t ) t;
      (* there are no guarantees *)
      let ok = !cnt > 3 && !cnt < 7 in
      assert_bool "unref timer was active" ok);

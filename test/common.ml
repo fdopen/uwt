@@ -1,5 +1,4 @@
 open OUnit
-open Lwt.Infix
 let return = Lwt.return
 let m_equal s t =
   assert_equal s (Uwt.Main.run t)
@@ -8,24 +7,14 @@ let m_raises (a,b,c) t =
     (Uwt.Uwt_error(a,b,c))
     (fun () -> Uwt.Main.run t)
 let m_true t = m_equal true t
+let assert_canceled t =
+  assert_raises Lwt.Canceled (fun () -> Uwt.Main.run t)
 
 let nm_try_finally f x finallly' y =
   let res =
     try f x with exn -> finallly' y; raise exn in
   finallly' y;
   res
-
-let try_finally fnormal finalizer =
-  let module T = struct type 'a t = Ok of 'a | Error of exn end in
-  Lwt.catch ( fun () ->
-      fnormal () >>= fun x ->
-      Lwt.return (T.Ok x)
-    ) ( fun exn -> Lwt.return (T.Error exn) ) >>= fun t ->
-  finalizer () >>= fun () ->
-  match t with
-  | T.Ok x -> Lwt.return x
-  | T.Error p -> Lwt.fail p
-
 
 let has_ip6 =
   Uwt_base.Misc.interface_addresses_exn () |> Array.to_list |>
@@ -71,6 +60,15 @@ let has_ip6 ctx =
 let no_win ctx =
   OUnit2.skip_if (all ctx = false && Sys.win32) "no windows support (yet)"
 
+
+let is_winxp =
+  Uwt.(match Sys_info.win_version () with
+    | Error _ -> false
+    | Ok x -> x.Sys_info.major_version < 6)
+
+let no_win_xp ctx =
+  OUnit2.skip_if (all ctx = false && is_winxp) "no windows xp support"
+
 let skip_if_not_all ctx cond msg =
   OUnit2.skip_if (all ctx = false && cond ) msg
 
@@ -79,45 +77,53 @@ module D = struct
   let qstat x = show_stats x |> String.length > 50
 end
 
-let rstring_create, rbytes_create, rba_create =
+let random_char =
   let seed = ref 7817 in
-  let rand () =
+  fun () ->
     seed := 214013 * !seed + 2531011;
     Char.chr ((!seed lsr 16 ) land 255)
-  in
-  let rec by len =
+
+let rbytes_create len =
     let b = Bytes.create len in
     for i = 0 to pred len do
-      Bytes.unsafe_set b i (rand ())
+      Bytes.unsafe_set b i (random_char ())
     done;
     b
-  and ba len =
+
+let rba_create len =
     let b = Uwt_bytes.create len in
     for i = 0 to pred len do
-      Uwt_bytes.unsafe_set b i (rand ())
+      Uwt_bytes.unsafe_set b i (random_char ())
     done;
     b
-  and str len =
-    by len |> Bytes.unsafe_to_string
-  in
-  str,by,ba
+
+let rstring_create len =
+  rbytes_create len |> Bytes.unsafe_to_string
 
 let invalid = "/tmp/invalid/invalid/invalid/invalid"
 let tmpdir = ref invalid
 
 let remove_dir ?(keep_root=false) orig_file =
+  let no_exn f t =
+    try
+      ignore( f t )
+    with
+    | Unix.Unix_error _
+    | Sys_error _ -> ()
+  in
   let rec iter file =
     let module U = Unix in
-    match (U.stat file).U.st_kind with
+    match (U.lstat file).U.st_kind with
     | exception _ -> ()
     | U.S_DIR ->
-      Sys.readdir file |> Array.iter ( fun name ->
-          Filename.concat file name |> iter );
+      Sys.readdir file |> Array.iter (function
+        | "." | ".." -> () (* should not be included anyway,...*)
+        | name -> Filename.concat file name |> iter );
       if keep_root = false || file <> orig_file then
-        ignore(Unix.rmdir file)
+        no_exn Unix.rmdir file
     | U.S_REG | U.S_CHR | U.S_BLK | U.S_LNK | U.S_FIFO | U.S_SOCK ->
       if keep_root = false || file <> orig_file then
-        Sys.remove file
+        no_exn Sys.remove file
   in
   iter orig_file
 

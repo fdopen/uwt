@@ -154,6 +154,11 @@ module Main : sig
   val run : 'a Lwt.t -> 'a
   val exit_hooks : (unit -> unit Lwt.t) Lwt_sequence.t
   val at_exit : (unit -> unit Lwt.t) -> unit
+
+  (** Call {!cleanup}, if you've called {!run} and and don't intend to
+      call {!run} again any time soon. It will free some internally used
+      memory, but not all. *)
+  val cleanup : unit -> unit
 end
 
 module Fs : sig
@@ -228,8 +233,18 @@ end
 module Handle_fileno : sig
   type t
 
-  (** Be careful. You must still keep your orginal handle around.
-      Otherwise uwt will close the handle .... *)
+  (** The usage of {!fileno} is unsafe and strongly discouraged.
+      But it's sometimes necessary, if you need to interact with third parties
+      libraries. Rules:
+
+      - You must still keep your orginal handle around.
+        Otherwise uwt will close the handle ....
+
+      - close the handle always with {!Handle.close}, not {!Unix.close} or
+        any other function
+
+      - Don't pass the file descriptor to functions like {!Pipe.openpipe}
+        or {!Poll.start}  *)
   val fileno : t -> Unix.file_descr result
   val fileno_exn : t -> Unix.file_descr
 end
@@ -340,6 +355,18 @@ module Pipe : sig
   val pending_type: t -> pending_type
 
   val connect: t -> path:string -> unit Lwt.t
+
+  (** with_pipe ?ipc f *)
+
+  (** [with_pipe ?ipc f] creates a new handle and passes
+      the pipe to [f]. It is ensured that the pipe is closed when [f t]
+      terminates (even if it fails).
+
+      You can also close the pipe manually inside [f] without further
+      consequences.  *)
+  val with_pipe: ?ipc:bool -> (t -> 'a Lwt.t) -> 'a Lwt.t
+  val with_connect: ?ipc:bool -> path:string -> (t -> 'a Lwt.t) -> 'a Lwt.t
+  val with_open: ?ipc:bool -> Unix.file_descr -> (t -> 'a Lwt.t) -> 'a Lwt.t
 end
 
 module Tcp : sig
@@ -383,6 +410,12 @@ module Tcp : sig
   (** initializes a new client and calls accept_raw with it *)
   val accept: t -> t result
   val accept_exn: t -> t
+
+  (** See comments to {!Pipe.with_pipe} *)
+  val with_tcp: (t -> 'a Lwt.t) -> 'a Lwt.t
+  val with_connect: addr:sockaddr -> (t -> 'a Lwt.t) -> 'a Lwt.t
+  val with_open: Unix.file_descr -> (t -> 'a Lwt.t) -> 'a Lwt.t
+  val with_accept: t -> (t -> 'a Lwt.t) -> 'a Lwt.t
 end
 
 module Udp : sig

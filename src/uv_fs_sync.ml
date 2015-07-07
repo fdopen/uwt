@@ -60,7 +60,7 @@ module Req = struct
     | Work *)
 
   external create: loop -> type' -> t = "uwt_req_create"
-  external free: t -> unit = "uwt_fs_free_na" "noalloc"
+  external free: t -> unit = "uwt_fs_free"
 
   let qlu ~typ ~f =
     let req = create loop typ in
@@ -70,7 +70,6 @@ module Req = struct
       Error (Int_result.to_error x)
     else
       Ok ()
-
 end
 
 let typ = Req.Fs
@@ -163,9 +162,7 @@ let cu f : 'a =
   if Int_result.is_error x then
     Error (Int_result.to_error x)
   else
-    let r = get_result req in
-    Req.free req;
-    r
+    get_result req
 
 external openfile:
   string -> uv_open_flag list -> int ->

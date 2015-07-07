@@ -5,8 +5,8 @@ let show_sockaddr s =
   match ip4_name s with
   | Ok ("0.0.0.0" as x) ->
     (match ip6_name s with
-     | Ok s -> s
-     | Error _ -> x)
+    | Ok s -> s
+    | Error _ -> x)
   | Ok s -> s
   | Error _ ->
     match ip6_name s with
@@ -35,3 +35,16 @@ type addr_info = [%import: Uwt.Dns.addr_info] [@@deriving show]
 type name_info = [%import: Unix.name_info] [@@deriving show]
 
 type win_version = [%import: Uwt_base.Sys_info.win_version] [@@deriving show]
+
+module Fs_event = struct
+  type event = [%import: Uwt.Fs_event.event] [@@deriving show]
+  type cb_res = string * event list [@@deriving show]
+end
+
+module Udp = struct
+  type error = [%import: Uwt_base.error] [@@deriving show]
+  module Bytes = struct
+    type t = [%import: Bytes.t] [@@deriving show]
+  end
+  type recv_result = [%import: Uwt.Udp.recv_result] [@@deriving show]
+end

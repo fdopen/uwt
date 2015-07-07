@@ -34,10 +34,9 @@ module Echo_server (X: Sockaddr) = struct
       read_ba ~buf c >>= function
       | 0 -> close_wait c
       | len ->
-        write_ba ~buf ~len c >>= fun () ->
-        iter ()
+        write_ba ~buf ~len c >>= fun () -> iter ()
     in
-    try_finally ( fun () -> iter () )
+    Lwt.finalize ( fun () -> iter () )
       ( fun () -> close_noerr c ; Lwt.return_unit )
 
   let on_listen server x =
@@ -50,7 +49,7 @@ module Echo_server (X: Sockaddr) = struct
 
   let start () =
     let server = init () in
-    try_finally ( fun () ->
+    Lwt.finalize ( fun () ->
         bind_exn server sockaddr;
         let sockaddr2 = getsockname_exn server in
         (* I'm sure about this test. Does the ocaml unix library
@@ -159,6 +158,13 @@ let write_much client =
   in
   iter 100
 
+let with_client f = server_init (); with_tcp f
+
+let with_client_c4 f =
+  server_init ();
+  let t = with_connect ~addr:Server.sockaddr @@ fun t -> f t in
+  m_true t
+
 open OUnit2
 let test_port = 8931
 let l = [
@@ -168,33 +174,29 @@ let l = [
      m_true ( Client.test true Server.sockaddr );
      m_true ( Client.test false Server.sockaddr );
      ip6_only ctx;
-     server6_init () ;
+     server6_init ();
      m_true ( Client.test true Server6.sockaddr );
      m_true ( Client.test false Server6.sockaddr ));
   ("connect_timeout">::
    fun _ctx -> (* an unreachable address should not block the event loop *)
-     let l addr =
-       let t = init () in
-       try_finally ( fun () ->
-           let p1 = connect t ~addr >>= fun () -> Lwt.return_false in
-           let p2 = Uwt.Timer.sleep 50 >>= fun () -> Lwt.return_true in
-           Lwt.pick [ p1 ; p2 ] )
-         ( fun () -> close_noerr t ; Lwt.return_unit )
+     let addr = Uwt_base.Misc.ip4_addr_exn "8.8.8.8" 9999 in
+     let t = with_client @@ fun client ->
+       let p1 = connect client ~addr >|= fun () -> false in
+       let p2 = Uwt.Timer.sleep 50 >|= fun () -> true in
+       Lwt.pick [ p1 ; p2 ]
      in
-     m_true (l (Uwt_base.Misc.ip4_addr_exn "8.8.8.8" 9999)));
+     m_true t);
   ("bind_error">::
    fun ctx ->
      let l sockaddr =
-       let s1 = init () in
-       let s2 = init () in
-       try_finally ( fun () ->
-           let cb _ _ = () in
-           bind_exn s1 sockaddr;
-           bind_exn s2 sockaddr;
-           let () = listen_exn ~max:8 ~cb s1 in
-           let () = listen_exn ~max:8 ~cb s2 in
-           Lwt.return_unit
-         ) ( fun () -> close_noerr s1 ; close_noerr s2 ; Lwt.return_unit )
+       with_tcp @@ fun s1 ->
+       with_tcp @@ fun s2 ->
+       let cb _ _ = () in
+       bind_exn s1 sockaddr;
+       bind_exn s2 sockaddr;
+       let () = listen_exn ~max:8 ~cb s1 in
+       let () = listen_exn ~max:8 ~cb s2 in
+       Lwt.return_unit
      in
      let sockaddr = Uwt_base.Misc.ip4_addr_exn "0.0.0.0" test_port in
      m_raises (Uwt.EADDRINUSE,"listen","") (l sockaddr);
@@ -203,142 +205,101 @@ let l = [
      m_raises (Uwt.EADDRINUSE,"listen","") (l sockaddr));
   ("write_allot">::
    fun ctx ->
-     let l addr =
-       let client = init () in
-       try_finally ( fun () ->
-           connect client ~addr >>= fun () ->
-           let buf_len = 65536 in
-           let x = max 1 (multiplicand ctx) in
-           let buf_cnt = 64 * x in
-           let bytes_read = ref 0 in
-           let bytes_written = ref 0 in
-           let buf = Uwt_bytes.create buf_len in
-           for i = 0 to pred buf_len do
-             buf.{i} <- Char.chr (i land 255);
-           done;
-           let sleeper,waker = Lwt.task () in
-           let cb_read = function
-           | Uwt.Ok b ->
-             for i = 0 to Bytes.length b - 1 do
-               if Bytes.unsafe_get b i <> Char.chr (!bytes_read land 255) then
-                 Lwt.wakeup_exn waker (Failure "read wrong content");
-               incr bytes_read;
-             done
-           | Uwt.Error Uwt.EOF -> Lwt.wakeup waker ()
-           | Uwt.Error _ -> Lwt.wakeup_exn waker (Failure "fatal error!")
-           in
-           let cb_write () =
-             bytes_written := buf_len + !bytes_written;
-             Lwt.return_unit
-           in
-           for _i = 1 to buf_cnt do
-             ignore ( write_ba client ~buf >>= cb_write );
-           done;
-           if write_queue_size client = 0 then
-             Lwt.wakeup_exn waker
-               (Failure "write queue size empty after write requests");
-           read_start_exn client ~cb:cb_read;
-           let t_shutdown = shutdown client >>= fun () ->
-             if write_queue_size client <> 0 then
-               Lwt.fail (Failure "write queue size not empty after shutdown")
-             else
-               Lwt.return_unit
-           in
-           Lwt.join [ t_shutdown ; sleeper ] >>= fun () ->
-           close_wait client >>= fun () ->
-           let success =
-             !bytes_read = !bytes_written &&
-             !bytes_read = buf_len * buf_cnt
-           in
-           Lwt.return success
-         ) ( fun () -> close_noerr client; Lwt.return_unit )
+     let l addr = with_client @@ fun client ->
+       connect client ~addr >>= fun () ->
+       let buf_len = 65_536 in
+       let x = max 1 (multiplicand ctx) in
+       let buf_cnt = 64 * x in
+       let bytes_read = ref 0 in
+       let bytes_written = ref 0 in
+       let buf = Uwt_bytes.create buf_len in
+       for i = 0 to pred buf_len do
+         buf.{i} <- Char.chr (i land 255);
+       done;
+       let sleeper,waker = Lwt.task () in
+       let cb_read = function
+       | Uwt.Ok b ->
+         for i = 0 to Bytes.length b - 1 do
+           if Bytes.unsafe_get b i <> Char.chr (!bytes_read land 255) then
+             Lwt.wakeup_exn waker (Failure "read wrong content");
+           incr bytes_read;
+         done
+       | Uwt.Error Uwt.EOF -> Lwt.wakeup waker ()
+       | Uwt.Error _ -> Lwt.wakeup_exn waker (Failure "fatal error!")
+       in
+       let cb_write () =
+         bytes_written := buf_len + !bytes_written;
+         Lwt.return_unit
+       in
+       for _i = 1 to buf_cnt do
+         ignore ( write_ba client ~buf >>= cb_write );
+       done;
+       if write_queue_size client = 0 then
+         Lwt.wakeup_exn waker
+           (Failure "write queue size empty after write requests");
+       read_start_exn client ~cb:cb_read;
+       let t_shutdown = shutdown client >>= fun () ->
+         if write_queue_size client <> 0 then
+           Lwt.fail (Failure "write queue size not empty after shutdown")
+         else
+           Lwt.return_unit
+       in
+       Lwt.join [ t_shutdown ; sleeper ] >>= fun () ->
+       close_wait client >|= fun () ->
+       !bytes_read = !bytes_written &&
+       !bytes_read = buf_len * buf_cnt
      in
      m_true (l Server.sockaddr);
      ip6_only ctx;
      m_true (l Server6.sockaddr));
   ("write_abort">::
    fun _ctx ->
-     let client = init () in
-     m_true (try_finally ( fun () ->
-         Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
-         let write_thread = write_much client in
-         close_wait client >>= fun () ->
-         Lwt.catch ( fun () -> write_thread )
-           ( function
-           | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
-           | x -> Lwt.fail x )
-       ) ( fun () -> close_noerr client; Lwt.return_unit ));
-  );
+     with_client_c4 @@ fun client ->
+     let write_thread = write_much client in
+     close_wait client >>= fun () ->
+     Lwt.catch ( fun () -> write_thread )
+       ( function
+       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+       | x -> Lwt.fail x ));
   ("read_abort">::
    fun _ctx ->
-     server_init ();
-     let client = init () in
-     m_true (try_finally ( fun () ->
-         Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
-         let read_thread =
-           let buf = Bytes.create 128 in
-           read client ~buf >>= fun _ ->
-           Lwt.fail (Failure "read successful!")
-         in
-         let _ : unit Lwt.t =
-           Uwt.Timer.sleep 40 >>= fun () ->
-           close_noerr client ; Lwt.return_unit
-         in
-         Lwt.catch ( fun () -> read_thread )(function
-           | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
-           | x -> Lwt.fail x )
-       ) ( fun () -> close_noerr client; Lwt.return_unit )));
+     with_client_c4 @@ fun client ->
+     let read_thread =
+       let buf = Bytes.create 128 in
+       read client ~buf >>= fun _ ->
+       Lwt.fail (Failure "read successful!")
+     in
+     let _:unit Lwt.t = Uwt.Timer.sleep 40 >|= fun () -> close_noerr client in
+     Lwt.catch ( fun () -> read_thread )(function
+       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+       | x -> Lwt.fail x ));
   ("getpeername">::
    fun _ctx ->
-     server_init ();
-     let client = init () in
-     m_true (try_finally ( fun () ->
-         Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
-         match Uwt.Tcp.getpeername_exn client
-               |> Uwt.Conv.to_unix_sockaddr_exn with
-         | Unix.ADDR_INET(y,x) ->
-           if server_port = x &&
-              server_ip = Unix.string_of_inet_addr y
-           then
-             Lwt.return_true
-           else
-             Lwt.return_false
-         | Unix.ADDR_UNIX _ -> Lwt.return_false
-       ) ( fun () -> close_noerr client; Lwt.return_unit )));
+     with_client_c4 @@ fun client ->
+     match getpeername_exn client |> Uwt.Conv.to_unix_sockaddr_exn with
+     | Unix.ADDR_INET(y,x) ->
+       Lwt.return (server_port = x && server_ip = Unix.string_of_inet_addr y)
+     | Unix.ADDR_UNIX _ -> Lwt.return_false);
   (* The following test the same as 'write_abort' above (regarding TCP).
      The intention is to ensure, that lwt behaves as expected *)
   ("write_abort_pick">::
    fun _ctx ->
-     server_init ();
-     let client = init () in
-     m_true (try_finally ( fun () ->
-         Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
-         let write_thread =
-           Lwt.catch ( fun () ->
-               write_much client
-             ) ( fun x -> Uwt.Main.yield () >>= fun () -> Lwt.fail x )
-         in
-         let close_thread = close_wait client >>= fun () -> Lwt.return_true in
-         Lwt.pick [ close_thread ; write_thread ]
-       ) ( fun () -> close_noerr client; Lwt.return_unit ));
-  );
+     with_client_c4 @@ fun client ->
+     let write_thread =
+       Lwt.catch ( fun () -> write_much client )
+         ( fun x -> Uwt.Main.yield () >>= fun () -> Lwt.fail x )
+     in
+     let close_thread = close_wait client >|= fun () -> true in
+     Lwt.pick [ close_thread ; write_thread ]);
   ("write_abort_pick2">::
    fun _ctx ->
-     server_init ();
-     let client = init () in
-     m_true (try_finally ( fun () ->
-         Uwt.Tcp.connect client ~addr:Server.sockaddr >>= fun () ->
-         let write_thread =
-           Lwt.catch ( fun () ->
-               write_much client
-             ) ( function
-             | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
-             | x -> Lwt.fail x )
-         in
-         let close_thread = close_wait client >>= fun () -> Lwt.return_false in
-         Lwt.pick [ close_thread ; write_thread ]
-       ) ( fun () -> close_noerr client; Lwt.return_unit ));
-  );
+     with_client_c4 @@ fun client ->
+     let write_thread = Lwt.catch ( fun () -> write_much client ) (function
+       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+       | x -> Lwt.fail x )
+     in
+     let close_thread = close_wait client >|= fun () -> false in
+     Lwt.pick [ close_thread ; write_thread ]);
 ]
 
 let l  = "Tcp">:::l

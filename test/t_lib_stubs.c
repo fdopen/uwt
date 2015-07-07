@@ -23,25 +23,30 @@ custom_strdup (const char *s)
   return n;
 }
 
+struct data {
+    char * fln;
+    char * content;
+    size_t len;
+};
+
 static void
 test_worker(uv_work_t * req)
 {
   FILE *f;
   struct worker_params * w = req->data;
-  char * filename = w->p1;
-  const char * content = w->p2;
-  int s1;
+  struct data * p = w->p1;
+  size_t s1 = 0;
   int s2;
-  w->p1 = (void*)1;
-  f = fopen(filename,"w");
-  free(filename);
+  f = fopen(p->fln,"w");
   if ( !f ){
     return ;
   }
-  s1 = fputs(content,f);
+  if ( p->len != 0 ){
+    s1 = fwrite(p->content,sizeof(char),p->len,f);
+  }
   s2 = fclose(f);
-  if ( s1 >= 0 && s2 == 0 ){
-    w->p1 = NULL;
+  if ( s1 == p->len && s2 == 0 ){
+    w->p2 = (void*)1;
   }
 }
 
@@ -49,11 +54,11 @@ static void
 test_cleanup(uv_req_t * req)
 {
   struct worker_params * w = req->data;
-  if ( w->p1 != NULL && w->p1 != (void*)1 ){
-    free(w->p1);
-  }
-  if ( w->p2 != NULL ){
-    free(w->p2);
+  if ( w->p1 != NULL ){
+    struct data * p = w->p1;
+    free(p->fln);
+    free(p->content);
+    free(p);
   }
   w->p1 = NULL;
   w->p2 = NULL;
@@ -63,7 +68,7 @@ static value
 test_camlval(uv_req_t * req)
 {
   struct worker_params * w = req->data;
-  return (Val_long(w->p1 == NULL));
+  return (Val_long(w->p2 != NULL));
 }
 
 CAMLextern value
@@ -73,23 +78,36 @@ CAMLprim value
 uwt_external_test(value o_user, value o_uwt)
 {
   CAMLparam2(o_user,o_uwt);
-  char * p1;
-  char * p2;
-  value ret;
-  p1 = custom_strdup(String_val(Field(o_user,0)));
+  struct data * p1;
+  p1 = malloc(sizeof *p1);
   if ( p1 == NULL ){
     caml_raise_out_of_memory();
   }
-  p2 = custom_strdup(String_val(Field(o_user,1)));
-  if ( p2 == NULL ){
-    free(p1);
+  p1->fln = custom_strdup(String_val(Field(o_user,0)));
+  if ( p1->fln == NULL ){
     caml_raise_out_of_memory();
   }
+  value o_str = Field(o_user,1);
+  char * c_str = String_val(o_str);
+  p1->len = caml_string_length(o_str);
+  if (!p1->len){
+    p1->content = NULL;
+  }
+  else {
+    p1->content = malloc(p1->len);
+    if ( p1->content == NULL ){
+      free(p1->fln);
+      free(p1);
+      caml_raise_out_of_memory();
+    }
+    memcpy(p1->content,c_str,p1->len);
+  }
+  int ret;
   ret = uwt_add_worker(o_uwt,
                        test_cleanup,
                        test_worker,
                        test_camlval,
                        p1,
-                       p2);
+                       NULL);
   CAMLreturn(ret);
 }

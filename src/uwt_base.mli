@@ -486,8 +486,8 @@ module Misc : sig
 
   val guess_handle: file -> handle_type
 
-  val resident_set_memory : unit -> nativeint result
-  val resident_set_memory_exn : unit -> nativeint
+  val resident_set_memory : unit -> int64 result
+  val resident_set_memory_exn : unit -> int64
 
   val uptime : unit -> float result
   val uptime_exn : unit -> float
@@ -562,6 +562,7 @@ module Sys_info : sig
     platform_id: int;
     csd_version: string;
   }
+
   (** Wrapper around GetVersionEx. It will always return [Error
       UWT_EUNAVAIL] on non windows systems.
       Your application must be manifested, otherwise you will get

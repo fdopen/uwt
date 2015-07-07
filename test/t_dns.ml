@@ -47,38 +47,34 @@ let dnstest ctx host =
       getaddrinfo ~host ~service:"www" opts2 >>= function
       | [] -> Lwt.return_true
       | (hd::_) as s2 ->
-        getnameinfo hd.UD.ai_addr [] >>= function
-        | None -> Lwt.return_true
+        getnameinfo hd.UD.ai_addr [] >|= function
+        | None -> true
         | Some n2 ->
-          if
-            n1.Unix.ni_hostname <> "" &&
-            n2.Unix.ni_hostname <> "" &&
-            String.length n1.Unix.ni_service > 0  &&
-            String.length n2.Unix.ni_service > 0  &&
-            List.length (List.map D.show_addr_info s1) > 0 &&
-            List.length (List.map D.show_addr_info s2) > 0 &&
-            (List.for_all (fun x -> x.UD.ai_family = Unix.PF_INET &&
-                                    x.UD.ai_socktype = Unix.SOCK_DGRAM) s1) &&
-            List.for_all (fun x -> x.UD.ai_family = Unix.PF_INET6 &&
-                                   x.UD.ai_socktype = Unix.SOCK_STREAM) s2
-          then
-            Lwt.return_true
-          else
-            Lwt.return_false
-
+          n1.Unix.ni_hostname <> "" &&
+          n2.Unix.ni_hostname <> "" &&
+          String.length n1.Unix.ni_service > 0  &&
+          String.length n2.Unix.ni_service > 0  &&
+          List.length (List.map D.show_addr_info s1) > 0 &&
+          List.length (List.map D.show_addr_info s2) > 0 &&
+          (List.for_all (fun x -> x.UD.ai_family = Unix.PF_INET &&
+                                  x.UD.ai_socktype = Unix.SOCK_DGRAM) s1) &&
+          List.for_all (fun x -> x.UD.ai_family = Unix.PF_INET6 &&
+                                 x.UD.ai_socktype = Unix.SOCK_STREAM) s2
 open OUnit2
 
 let l = [
   ("getaddrinfo/getnameinfo">::
    fun ctx ->
      let open Uwt in
-     m_true ( dnstest ctx "google.com" );
-     m_true ( Lwt.catch ( fun () -> dnstest
-                            ctx "asdfli4uqoi5tukjgakjlhadfkogle.com"
-                          >>= fun _ -> Lwt.return_false )
-                (function
-                | Uwt_error((EAI_NONAME|ENOENT|EAI_NODATA),_,_) ->
-                  Lwt.return_true
-                | x -> Lwt.fail x )));
+     m_true (dnstest ctx "google.com");
+     let t =
+       Lwt.catch ( fun () ->
+           dnstest ctx "asdfli4uqoi5tukjgakjlhadfkogle.com"
+           >|= fun _ -> false )
+         (function
+         | Uwt_error((EAI_NONAME|ENOENT|EAI_NODATA),_,_) -> Lwt.return_true
+         | x -> Lwt.fail x )
+     in
+     m_true t);
 ]
 let l = "Dns">:::l
