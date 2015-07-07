@@ -723,31 +723,91 @@ struct
       | End_of_file -> Lwt.return_none
       | exn -> Lwt.fail exn)
 
+  let rev_concat len l =
+    let buf = Bytes.create len in
+    ignore (
+      List.fold_left
+        (fun ofs str ->
+           let len = Bytes.length str in
+           let ofs = ofs - len in
+           Bytes.unsafe_blit str 0 buf ofs len;
+           ofs)
+        len l );
+    buf
+
+  external
+    unsafe_memchr: buf:Uwt_bytes.t -> pos:int -> len:int -> needle:char -> int =
+    "uwt_unix_memchr" "noalloc"
+
   let read_line ic =
-    let buf = Buffer.create 128 in
-    let rec loop cr_read =
-      Lwt.try_bind (fun _ -> read_char ic)
-        (function
-           | '\n' ->
-               Lwt.return(Buffer.contents buf)
-           | '\r' ->
-               if cr_read then Buffer.add_char buf '\r';
-               loop true
-           | ch ->
-               if cr_read then Buffer.add_char buf '\r';
-               Buffer.add_char buf ch;
-               loop false)
-        (function
-           | End_of_file ->
-               if cr_read then Buffer.add_char buf '\r';
-               Lwt.return(Buffer.contents buf)
-           | exn ->
-               Lwt.fail exn)
+    let ret l a =
+      rev_concat l a |> Bytes.unsafe_to_string |> Lwt.return
+    and help orig =
+      let rec iter = function
+      | [] -> orig
+      | x::tl ->
+        let lenm1 = Bytes.length x - 1 in
+        if lenm1 < 0 then
+          iter tl
+        else if Bytes.get x lenm1 = '\r' then
+          let s = Bytes.sub x 0 lenm1 in
+          s::tl
+        else
+          orig
+      in
+      iter orig
     in
-    read_char ic >>= function
-      | '\r' -> loop true
-      | '\n' -> Lwt.return ""
-      | ch -> Buffer.add_char buf ch; loop false
+    let rec iter whole_len accu ic =
+      let orig_len = ic.max - ic.ptr
+      and ptr = ic.ptr in
+      let nl_pos =
+        unsafe_memchr
+          ~buf:ic.buffer
+          ~pos:ptr
+          ~len:orig_len
+          ~needle:'\n'
+      in
+      if nl_pos = ptr then
+        let () = ic.ptr <- succ ptr in
+        let accu' = help accu in
+        if accu' == accu then
+          ret whole_len accu
+        else
+          ret (pred whole_len) accu'
+      else if nl_pos > 0 then
+        let () = ic.ptr <- succ nl_pos in
+        let len = nl_pos - ptr in
+        let len =
+          if Uwt_bytes.unsafe_get ic.buffer (pred nl_pos) = '\r' then
+            len - 1
+          else
+            len
+        in
+        let b = Bytes.create len in
+        Uwt_bytes.unsafe_blit_to_bytes ic.buffer ptr b 0 len;
+        if accu = [] then
+          Lwt.return (Bytes.unsafe_to_string b)
+        else
+          ret (len + whole_len) (b::accu)
+      else
+        let () = ic.ptr <- ic.max in
+        let accu =
+          if orig_len = 0 then
+            accu
+          else
+            let b = Bytes.create orig_len in
+            Uwt_bytes.unsafe_blit_to_bytes ic.buffer ptr b 0 orig_len;
+            b::accu
+        in
+        refill ic >>= function
+        | 0 ->
+          if accu = [] then
+            Lwt.fail End_of_file
+          else
+            ret (whole_len + orig_len) accu
+        | _ -> iter (whole_len + orig_len) accu ic
+    in
+    iter 0 [] ic
 
   let read_line_opt ic =
     Lwt.catch
@@ -807,29 +867,16 @@ struct
         unsafe_read_into_exactly ic buf ofs len
     end
 
-  let rev_concat len l =
-    let buf = Bytes.create len in
-    ignore (
-      List.fold_left
-        (fun ofs str ->
-           let len = String.length str in
-           let ofs = ofs - len in
-           String.unsafe_blit str 0 buf ofs len;
-           ofs)
-        len l );
-    buf
-
   let rec read_all ic total_len acc =
     let len = ic.max - ic.ptr in
     let buf = Bytes.create len in
     Uwt_bytes.unsafe_blit_to_bytes ic.buffer ic.ptr buf 0 len;
-    let str = Bytes.unsafe_to_string buf in
     ic.ptr <- ic.max;
     refill ic >>= function
       | 0 ->
-          Lwt.return (rev_concat (len + total_len) (str :: acc))
+          Lwt.return (rev_concat (len + total_len) (buf :: acc))
       | _n ->
-          read_all ic (len + total_len) (str :: acc)
+          read_all ic (len + total_len) (buf :: acc)
 
   let read count ic =
     match count with
@@ -1511,42 +1558,6 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) sockaddr
 
 let shutdown_server server = Lazy.force server.shutdown
 
-(*
-let establish_server ?fd ?(buffer_size = !default_buffer_size) ?(backlog=5) sockaddr f =
-  let sock = match fd with
-    | None -> Lwt_unix.socket (Unix.domain_of_sockaddr sockaddr) Unix.SOCK_STREAM 0
-    | Some fd -> fd
-  in
-  Lwt_unix.setsockopt sock Unix.SO_REUSEADDR true;
-  Lwt_unix.bind sock sockaddr;
-  Lwt_unix.listen sock backlog;
-  let abort_waiter, abort_wakener = Lwt.wait () in
-  let abort_waiter = abort_waiter >>= fun _ -> Lwt.return `Shutdown in
-  let rec loop () =
-    Lwt.pick [Lwt_unix.accept sock >|= (fun x -> `Accept x); abort_waiter] >>= function
-      | `Accept(fd, addr) ->
-          (try Lwt_unix.set_close_on_exec fd with Invalid_argument _ -> ());
-          let close = lazy begin
-            Lwt_unix.shutdown fd Unix.SHUTDOWN_ALL;
-            Lwt_unix.close fd
-          end in
-          f (of_fd ~buffer:(Uwt_bytes.create buffer_size) ~mode:input
-               ~close:(fun () -> Lazy.force close) fd,
-             of_fd ~buffer:(Uwt_bytes.create buffer_size) ~mode:output
-               ~close:(fun () -> Lazy.force close) fd);
-          loop ()
-      | `Shutdown ->
-          Lwt_unix.close sock >>= fun () ->
-          match sockaddr with
-            | Unix.ADDR_UNIX path when path <> "" && path.[0] <> '\x00' ->
-                Unix.unlink path;
-                Lwt.return_unit
-            | _ ->
-                Lwt.return_unit
-  in
-  ignore (loop ());
-  { shutdown = lazy(Lwt.wakeup abort_wakener `Shutdown) }
-*)
 let ignore_close ch =
   ignore (close ch)
 

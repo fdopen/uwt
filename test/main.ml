@@ -7,6 +7,7 @@ open OUnit2
 
 let tests =
   "All">:::[
+    T_io.l;
     T_gc.l;
     T_fs.l;
     T_unix.l;
