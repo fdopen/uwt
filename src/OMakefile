@@ -85,7 +85,7 @@ section
 	.SCANNER: scan-ocaml-%: config.inc
 	OCAMLPACKS+= lwt
 	OCAML_LIBS+= uwt-base uwt
-	FILES= uwt_log uwt_throttle uwt_timeout
+	FILES= uwt_log uwt_throttle uwt_timeout uwt_chan
 	CPPOFILES= uwt_io uwt_process
 	Repeat_targets($(FILES))
 	section

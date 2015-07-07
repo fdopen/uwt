@@ -4,6 +4,7 @@ module Lwt_log = Uwt_log
 module Lwt_bytes = Uwt_bytes
 module Lwt_process = Uwt_process
 module Lwt_throttle = Uwt_throttle
+module Lwt_chan = Uwt_chan
 
 (** everything inside Lwt_unix is implemented with funcions from Uwt.
     The sole purpose is to make it easier to test existing code with
