@@ -641,56 +641,17 @@ let resize_buffer : type m. m channel -> int -> unit Lwt.t = fun wrapper len ->
 module ByteOrder =
 struct
   module type S = sig
-    val pos16_0 : int
-    val pos16_1 : int
-    val pos32_0 : int
-    val pos32_1 : int
-    val pos32_2 : int
-    val pos32_3 : int
-    val pos64_0 : int
-    val pos64_1 : int
-    val pos64_2 : int
-    val pos64_3 : int
-    val pos64_4 : int
-    val pos64_5 : int
-    val pos64_6 : int
-    val pos64_7 : int
+    val little_endian : bool
   end
 
   module LE =
   struct
-    let pos16_0 = 0
-    let pos16_1 = 1
-    let pos32_0 = 0
-    let pos32_1 = 1
-    let pos32_2 = 2
-    let pos32_3 = 3
-    let pos64_0 = 0
-    let pos64_1 = 1
-    let pos64_2 = 2
-    let pos64_3 = 3
-    let pos64_4 = 4
-    let pos64_5 = 5
-    let pos64_6 = 6
-    let pos64_7 = 7
+    let little_endian = true
   end
 
   module BE =
   struct
-    let pos16_0 = 1
-    let pos16_1 = 0
-    let pos32_0 = 3
-    let pos32_1 = 2
-    let pos32_2 = 1
-    let pos32_3 = 0
-    let pos64_0 = 7
-    let pos64_1 = 6
-    let pos64_2 = 5
-    let pos64_3 = 4
-    let pos64_4 = 3
-    let pos64_5 = 2
-    let pos64_6 = 1
-    let pos64_7 = 0
+    let little_endian = false
   end
 end
 
@@ -897,9 +858,7 @@ struct
     let buffer = Bytes.create (20 + bsize) in
     Bytes.unsafe_blit header 0 buffer 0 20;
     unsafe_read_into_exactly ic buffer 20 bsize >>= fun () ->
-    (* Marshal.from_bytes should be used here, but we want 4.01
-       compat. *)
-    Lwt.return (Marshal.from_string (Bytes.unsafe_to_string buffer) 0)
+    Lwt.return (Marshal.from_bytes buffer 0)
 
   (* +---------------------------------------------------------------+
      | Writing                                                       |
@@ -1067,128 +1026,93 @@ struct
   module MakeNumberIO(ByteOrder : ByteOrder.S) =
   struct
     open ByteOrder
-
     (* +-------------------------------------------------------------+
        | Reading numbers                                             |
        +-------------------------------------------------------------+ *)
-
-    let get buffer ptr = Char.code (Uwt_bytes.unsafe_get buffer ptr)
+    external read_int:
+      Uwt_bytes.t -> int -> bool -> int = "uwt_unix_read_int" "noalloc"
+    external read_int16:
+      Uwt_bytes.t -> int -> bool -> int = "uwt_unix_read_int16" "noalloc"
+    external read_int32:
+      Uwt_bytes.t -> int -> bool -> int32 = "uwt_unix_read_int32"
+    external read_int64:
+      Uwt_bytes.t -> int -> bool -> int64 = "uwt_unix_read_int64"
+    external read_float32:
+      Uwt_bytes.t -> int -> bool -> float = "uwt_unix_read_float32"
+    external read_float64:
+      Uwt_bytes.t -> int -> bool -> float = "uwt_unix_read_float64"
 
     let read_int ic =
       read_block_unsafe ic 4
-        (fun buffer ptr ->
-           let v0 = get buffer (ptr + pos32_0)
-           and v1 = get buffer (ptr + pos32_1)
-           and v2 = get buffer (ptr + pos32_2)
-           and v3 = get buffer (ptr + pos32_3) in
-           let v = v0 lor (v1 lsl 8) lor (v2 lsl 16) lor (v3 lsl 24) in
-           if v3 land 0x80 = 0 then
-             Lwt.return v
-           else
-             Lwt.return (v - (1 lsl 32)))
-
+        (fun buffer ptr -> Lwt.return (read_int buffer ptr little_endian))
     let read_int16 ic =
       read_block_unsafe ic 2
         (fun buffer ptr ->
-           let v0 = get buffer (ptr + pos16_0)
-           and v1 = get buffer (ptr + pos16_1) in
-           let v = v0 lor (v1 lsl 8) in
-           if v1 land 0x80 = 0 then
-             Lwt.return v
-           else
-             Lwt.return (v - (1 lsl 16)))
-
+           Lwt.return (read_int16 buffer ptr little_endian))
     let read_int32 ic =
       read_block_unsafe ic 4
         (fun buffer ptr ->
-           let v0 = get buffer (ptr + pos32_0)
-           and v1 = get buffer (ptr + pos32_1)
-           and v2 = get buffer (ptr + pos32_2)
-           and v3 = get buffer (ptr + pos32_3) in
-           Lwt.return (Int32.logor
-                     (Int32.logor
-                        (Int32.of_int v0)
-                        (Int32.shift_left (Int32.of_int v1) 8))
-                     (Int32.logor
-                        (Int32.shift_left (Int32.of_int v2) 16)
-                        (Int32.shift_left (Int32.of_int v3) 24))))
-
+           Lwt.return (read_int32 buffer ptr little_endian))
     let read_int64 ic =
       read_block_unsafe ic 8
         (fun buffer ptr ->
-           let v0 = get buffer (ptr + pos64_0)
-           and v1 = get buffer (ptr + pos64_1)
-           and v2 = get buffer (ptr + pos64_2)
-           and v3 = get buffer (ptr + pos64_3)
-           and v4 = get buffer (ptr + pos64_4)
-           and v5 = get buffer (ptr + pos64_5)
-           and v6 = get buffer (ptr + pos64_6)
-           and v7 = get buffer (ptr + pos64_7) in
-           Lwt.return (Int64.logor
-                     (Int64.logor
-                        (Int64.logor
-                           (Int64.of_int v0)
-                           (Int64.shift_left (Int64.of_int v1) 8))
-                        (Int64.logor
-                           (Int64.shift_left (Int64.of_int v2) 16)
-                           (Int64.shift_left (Int64.of_int v3) 24)))
-                     (Int64.logor
-                        (Int64.logor
-                           (Int64.shift_left (Int64.of_int v4) 32)
-                           (Int64.shift_left (Int64.of_int v5) 40))
-                        (Int64.logor
-                           (Int64.shift_left (Int64.of_int v6) 48)
-                           (Int64.shift_left (Int64.of_int v7) 56)))))
+           Lwt.return (read_int64 buffer ptr little_endian))
+    let read_float32 ic =
+      read_block_unsafe ic 4
+        (fun buffer ptr ->
+           Lwt.return (read_float32 buffer ptr little_endian))
+    let read_float64 ic =
+      read_block_unsafe ic 8
+        (fun buffer ptr ->
+           Lwt.return (read_float64 buffer ptr little_endian))
 
-    let read_float32 ic = read_int32 ic >>= fun x -> Lwt.return (Int32.float_of_bits x)
-    let read_float64 ic = read_int64 ic >>= fun x -> Lwt.return (Int64.float_of_bits x)
 
     (* +-------------------------------------------------------------+
        | Writing numbers                                             |
        +-------------------------------------------------------------+ *)
-
-    let set buffer ptr x = Uwt_bytes.unsafe_set buffer ptr (Char.unsafe_chr x)
+    external write_int:
+      Uwt_bytes.t -> pos:int -> int -> bool -> unit =
+      "uwt_unix_write_int" "noalloc"
+    external write_int16:
+      Uwt_bytes.t -> pos:int -> int -> bool -> unit =
+      "uwt_unix_write_int16" "noalloc"
+    external write_int32:
+      Uwt_bytes.t -> pos:int -> int32 -> bool -> unit =
+      "uwt_unix_write_int32" "noalloc"
+    external write_int64:
+      Uwt_bytes.t -> pos:int -> int64 -> bool -> unit =
+      "uwt_unix_write_int64" "noalloc"
+    external write_float32:
+      Uwt_bytes.t -> pos:int -> float -> bool -> unit =
+      "uwt_unix_write_float32" "noalloc"
+    external write_float64:
+      Uwt_bytes.t -> pos:int -> float -> bool -> unit =
+      "uwt_unix_write_float64" "noalloc"
 
     let write_int oc v =
       write_block_unsafe oc 4
-        (fun buffer ptr ->
-           set buffer (ptr + pos32_0) v;
-           set buffer (ptr + pos32_1) (v lsr 8);
-           set buffer (ptr + pos32_2) (v lsr 16);
-           set buffer (ptr + pos32_3) (v asr 24);
-           Lwt.return_unit)
-
+        (fun buf pos ->
+           write_int buf ~pos v little_endian; Lwt.return_unit)
     let write_int16 oc v =
       write_block_unsafe oc 2
-        (fun buffer ptr ->
-           set buffer (ptr + pos16_0) v;
-           set buffer (ptr + pos16_1) (v lsr 8);
-           Lwt.return_unit)
-
+        (fun buf pos ->
+           write_int16 buf ~pos v little_endian; Lwt.return_unit)
     let write_int32 oc v =
       write_block_unsafe oc 4
-        (fun buffer ptr ->
-           set buffer (ptr + pos32_0) (Int32.to_int v);
-           set buffer (ptr + pos32_1) (Int32.to_int (Int32.shift_right v 8));
-           set buffer (ptr + pos32_2) (Int32.to_int (Int32.shift_right v 16));
-           set buffer (ptr + pos32_3) (Int32.to_int (Int32.shift_right v 24));
-           Lwt.return_unit)
-
+        (fun buf pos ->
+           write_int32 buf ~pos v little_endian; Lwt.return_unit)
     let write_int64 oc v =
       write_block_unsafe oc 8
-        (fun buffer ptr ->
-           set buffer (ptr + pos64_0) (Int64.to_int v);
-           set buffer (ptr + pos64_1) (Int64.to_int (Int64.shift_right v 8));
-           set buffer (ptr + pos64_2) (Int64.to_int (Int64.shift_right v 16));
-           set buffer (ptr + pos64_3) (Int64.to_int (Int64.shift_right v 24));
-           set buffer (ptr + pos64_4) (Int64.to_int (Int64.shift_right v 32));
-           set buffer (ptr + pos64_5) (Int64.to_int (Int64.shift_right v 40));
-           set buffer (ptr + pos64_6) (Int64.to_int (Int64.shift_right v 48));
-           set buffer (ptr + pos64_7) (Int64.to_int (Int64.shift_right v 56));
-           Lwt.return_unit)
-
-    let write_float32 oc v = write_int32 oc (Int32.bits_of_float v)
-    let write_float64 oc v = write_int64 oc (Int64.bits_of_float v)
+        (fun buf pos ->
+           write_int64 buf ~pos v little_endian; Lwt.return_unit)
+    let write_float32 oc v =
+      write_block_unsafe oc 4
+        (fun buf pos ->
+           write_float32 buf ~pos v little_endian; Lwt.return_unit)
+    let write_float64 oc v =
+      write_block_unsafe oc 8
+        (fun buf pos ->
+           write_float64 buf ~pos v little_endian; Lwt.return_unit)
   end
 
   (* +---------------------------------------------------------------+

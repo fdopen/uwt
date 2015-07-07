@@ -8,15 +8,21 @@ AC_USE_SYSTEM_EXTENSIONS
 
 AC_MSG_CHECKING([posix source 200809L])
 
-AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h grp.h pwd.h sys/param.h)
+AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h grp.h pwd.h sys/param.h byteswap.h sys/byteswap.h sys/endian.h)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_DECLS([strnlen], [], [], [#include <string.h>])
 AC_CHECK_DECLS([uv_os_homedir,UV_TTY_MODE_NORMAL,UV_TTY_MODE_RAW,UV_TTY_MODE_IO],[],[],[#include <uv.h>])
 
 AC_HEADER_STDBOOL
-AC_C_BIGENDIAN
 AC_SYS_LARGEFILE
 AC_C_TYPEOF
+
+AC_C_BIGENDIAN(
+  AC_DEFINE(ENDIAN_BIG, 1, [machine is bigendian]),
+  AC_DEFINE(ENDIAN_LITTLE, 1, [machine is littleendian]),
+  AC_MSG_ERROR(unknown endianess),
+  AC_MSG_ERROR(universial endianess not supported)
+)
 
 AC_MSG_CHECKING([_Static_assert])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([_Static_assert (1, "");],
@@ -84,6 +90,26 @@ bar(int y __attribute__((unused)))
     [AC_MSG_RESULT([no]);  AC_DEFINE(ATTR_UNUSED,
 	[], ["unused" attribute.])])
 
+AC_MSG_CHECKING([if the compiler supports __builtin_bswap16])
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([],[int x = 0; int y = __builtin_bswap16(x); return y;])],
+    [AC_MSG_RESULT([yes]);
+    AC_DEFINE([HAVE_BUILTIN_BSWAP16], [1], [Define to 1 if the compiler supports __builtin_bswap16.])],
+    [AC_MSG_RESULT([no])])
+
+AC_MSG_CHECKING([if the compiler supports __builtin_bswap32])
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([],[int x = 0; int y = __builtin_bswap32(x); return y;])],
+    [AC_MSG_RESULT([yes]);
+    AC_DEFINE([HAVE_BUILTIN_BSWAP32], [1], [Define to 1 if the compiler supports __builtin_bswap32.])],
+    [AC_MSG_RESULT([no])])
+
+AC_MSG_CHECKING([if the compiler supports __builtin_bswap64])
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([],[int x = 0; int y = __builtin_bswap64(x); return y;])],
+    [AC_MSG_RESULT([yes]);
+    AC_DEFINE([HAVE_BUILTIN_BSWAP64], [1], [Define to 1 if the compiler supports __builtin_bswap64.])],
+    [AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING(for __func__)
 AH_TEMPLATE(__func__, [C99-specified function identifier])
@@ -110,9 +136,9 @@ have_function=yes, have_function=no)
 fi
 
 AC_MSG_CHECKING([if the compiler supports __builtin_ctz])
-AC_TRY_COMPILE(, [
+AC_LINK_IFELSE([AC_LANG_PROGRAM(,
 return ( __builtin_ctz(0x10000u) == 16) ? 1 : 0
-], [
+)], [
 have_builtin_ctz=yes
 AC_MSG_RESULT([yes])
 ], [
@@ -134,8 +160,10 @@ AC_MSG_RESULT([yes])],
 AC_MSG_CHECKING([for __builtin_types_compatible_p()])
 AC_LINK_IFELSE(
 [AC_LANG_SOURCE([int main(void) { return __builtin_types_compatible_p(char *, int) ? 1 : 0; }])],
-AC_DEFINE([HAVE_BUILTIN_TYPES_COMPATIBLE_P], [1],
-[Define if have __builtin_types_compatible_p]))
+[AC_DEFINE([HAVE_BUILTIN_TYPES_COMPATIBLE_P], [1],[Define if have __builtin_types_compatible_p])
+ AC_MSG_RESULT([yes])],
+[AC_MSG_RESULT([no])]
+)
 
 AC_CACHE_CHECK([for statement expressions],
   [uwt_cv_statement_expressions],
@@ -143,6 +171,7 @@ AC_CACHE_CHECK([for statement expressions],
      [AC_LANG_PROGRAM([], [[return ({ int x = 5; x-x; });]])],
      [uwt_cv_statement_expressions=yes],
      [uwt_cv_statement_expressions=no])])
+
 if test "$uwt_cv_statement_expressions" = yes; then
   AC_DEFINE([HAVE_STATEMENT_EXPRESSIONS], 1,
     [Define to 1 if statement expressions work.])
