@@ -14,6 +14,12 @@ CAMLprim value
 uwt_unix_memchr(value,value,value,value);
 
 CAMLprim value
+uwt_unix_unsafe_setbuf(value,value,value);
+
+CAMLprim value
+uwt_unix_unsafe_getbuf(value,value);
+
+CAMLprim value
 uwt_unix_read_int(value,value,value);
 
 CAMLprim value

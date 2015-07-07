@@ -31,13 +31,31 @@ type t = (char, int8_unsigned_elt, c_layout) Array1.t
 let create size = Array1.create char c_layout size
 let length bytes = Array1.dim bytes
 
+external unsafe_fill : t -> int -> int -> char -> unit = "uwt_unix_fill_bytes" "noalloc"
+
+(*
+custom noalloc wrappers seem to be faster than the more general solution
+of the caml runtime. But this might change in the future.
+Benchmark it again with further releases of OCaml,...
+
 external get : t -> int -> char = "%caml_ba_ref_1"
 external set : t -> int -> char -> unit = "%caml_ba_set_1"
 
 external unsafe_get : t -> int -> char = "%caml_ba_unsafe_ref_1"
 external unsafe_set : t -> int -> char -> unit = "%caml_ba_unsafe_set_1"
+*)
+external unsafe_get: t -> int -> char = "uwt_unix_unsafe_getbuf" "noalloc"
+external unsafe_set: t -> int -> char -> unit = "uwt_unix_unsafe_setbuf" "noalloc"
 
-external unsafe_fill : t -> int -> int -> char -> unit = "uwt_unix_fill_bytes" "noalloc"
+let get b i =
+  if i < 0 || i >= Array1.dim b then
+    raise (Invalid_argument "index out of bounds");
+  unsafe_get b i
+
+let set b i c =
+  if i < 0 || i >= Array1.dim b then
+    raise (Invalid_argument "index out of bounds");
+  unsafe_set b i c
 
 let fill bytes ofs len ch =
   if ofs < 0 || len < 0 || ofs > length bytes - len then

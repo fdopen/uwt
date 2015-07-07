@@ -78,6 +78,23 @@ CAMLprim value uwt_unix_memchr(value val_buf, value val_ofs, value val_len, valu
   }
 }
 
+CAMLprim value
+uwt_unix_unsafe_setbuf(value val_buf, value val_ofs, value val)
+{
+  unsigned char * s = Caml_ba_data_val(val_buf);
+  intnat i = Long_val(val_ofs);
+  s[i] = Long_val(val);
+  return Val_unit;
+}
+
+CAMLprim value
+uwt_unix_unsafe_getbuf(value val_buf, value val_ofs)
+{
+  unsigned char * s = Caml_ba_data_val(val_buf);
+  intnat i = Long_val(val_ofs);
+  return (Val_long(s[i]));
+}
+
 #ifdef HAVE_SYS_BYTEORDER_H
 #include <sys/byteorder.h>
 #endif
