@@ -39,6 +39,11 @@ open Lwt.Infix
 external init_stacks : unit -> unit = "uwt_init_stacks_na" "noalloc"
 let () = init_stacks ()
 
+#if HAVE_WINDOWS <> 0
+external init_unix_windows : unit -> unit = "uwt_unix_windows_init_na" "noalloc"
+let () = init_unix_windows ()
+#endif
+
 include Uwt_base
 
 module LInt_result = struct
@@ -92,7 +97,7 @@ external uv_default_loop: int -> loop result = "uwt_default_loop"
 let loop =
   match uv_default_loop 1 with (* Lwt of disabled loop_mode *)
   | Error _ ->
-    prerr_endline "Can't init default loop";
+    prerr_endline "uwt error: can't initialize default loop";
     exit(3)
   | Ok x -> x
 
@@ -581,6 +586,8 @@ module Stream = struct
     in
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Stream.read")
+    else if len = 0 then
+      Lwt.return 0
     else
       let sleeper,waker = Lwt.task () in
       let (x: Int_result.unit) = read t buf pos len waker in
@@ -604,11 +611,10 @@ module Stream = struct
     read ?pos ?len ~dim ~buf t
 
   external write2:
-    t -> t -> Bytes.t -> int -> int -> unit_cb -> Int_result.unit =
+    t -> t -> 'a -> int -> int -> unit_cb -> Int_result.unit =
     "uwt_write2_byte" "uwt_write2_native"
 
-  let write2 ?(pos=0) ?len ~buf ~send s =
-    let dim = Bytes.length buf in
+  let write2 ?(pos=0) ?len ~buf ~send ~dim s =
     let len =
       match len with
       | None -> dim - pos
@@ -618,6 +624,18 @@ module Stream = struct
       Lwt.fail (Invalid_argument "Uwt.Stream.write2")
     else
       qsu5 ~name:"write2" ~f:write2 s send buf pos len
+
+  let write2_ba ?pos ?len ~(buf:buf) ~send t =
+    let dim = Bigarray.Array1.dim buf in
+    write2 ?pos ?len ~buf ~send ~dim t
+
+  let write2_string ?pos ?len ~buf ~send t =
+    let dim = String.length buf in
+    write2 ?pos ?len ~buf ~send ~dim t
+
+  let write2 ?pos ?len ~buf ~send t =
+    let dim = Bytes.length buf in
+    write2 ?pos ?len ~buf ~send ~dim t
 
   external is_readable : t -> bool = "uwt_is_readable_na" "noalloc"
   external is_writable : t -> bool = "uwt_is_writable_na" "noalloc"
@@ -657,8 +675,8 @@ module Pipe = struct
     | Error ENOMEM -> raise Out_of_memory
     | Error x ->
       (* this can currently not happen. loop is initialized at program
-         start - an will never be closed (UWT_EFATAL not possible).
-         And uv_tcp_init always returns zero. But the libuv internals
+         start - and will never be closed (UWT_EFATAL not possible).
+         And uv_pipe_init always returns zero. But the libuv internals
          might change in future versions,... *)
       eraise "pipe_init" x
 
@@ -1056,6 +1074,8 @@ module Udp = struct
     in
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Udp.recv")
+    else if len = 0 then
+      Lwt.return ({ recv_len = 0; is_partial = false ; sockaddr = None })
     else
       let sleeper,waker = Lwt.task () in
       let x = recv t buf pos len waker in
@@ -1082,18 +1102,17 @@ module Timer = struct
   include (Handle: (module type of Handle) with type t := t )
   external to_handle : t -> Handle.t = "%identity"
 
-  (* external stop: t -> Int_result.unit = "uwt_timer_stop"
-  let stop = stop
-  let stop_exn t = stop t |> to_exnu "timver_stop" *)
-
   external start:
     loop -> ( t -> unit ) -> int -> int -> t result = "uwt_timer_start"
 
-  let start_exn ~repeat ~timeout ~cb =
-    start loop cb timeout repeat |> to_exn "timer_start"
-
   let start ~repeat ~timeout ~cb =
-    start loop cb timeout repeat
+    if repeat < 0 || timeout < 0 then
+      Error UWT_EINVAL
+    else
+      start loop cb timeout repeat
+
+  let start_exn ~repeat ~timeout ~cb =
+    start ~cb ~timeout ~repeat |> to_exn "timer_start"
 
   let sleep s =
     let sleeper,waker = Lwt.task () in
@@ -1118,9 +1137,6 @@ module Signal = struct
 
   let start_exn i ~cb = start loop i cb |> to_exn "signal_start"
   let start i ~cb = start loop i cb
-
-  (* external stop: t -> Int_result.unit = "uwt_signal_stop"
-  let stop_exn t = stop t |> to_exnu "signal_stop" *)
 end
 
 module Poll = struct
@@ -1164,9 +1180,6 @@ module Fs_event = struct
 
   let start_exn s fl ~cb = start loop s fl cb |> to_exn "fs_event_start"
   let start s fl ~cb = start loop s fl cb
-
-(*  external stop: t -> Int_result.unit = "uwt_fs_event_stop"
-  let stop_exn t = stop t |> to_exnu "fs_event_stop" *)
 end
 
 module Fs_poll = struct
@@ -1185,9 +1198,6 @@ module Fs_poll = struct
 
   let start_exn s fl ~cb = start loop s fl cb |> to_exn "fs_poll_start"
   let start s fl ~cb = start loop s fl cb
-
-(*  external stop: t -> Int_result.unit = "uwt_fs_poll_stop"
-  let stop_exn t = stop t |> to_exnu "fs_poll_stop" *)
 end
 
 module Dns = struct

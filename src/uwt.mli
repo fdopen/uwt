@@ -298,6 +298,8 @@ module Stream : sig
   val write_raw_ba : ?pos:int -> ?len:int -> t -> buf:buf -> unit Lwt.t
 
   val write2 : ?pos:int -> ?len:int -> buf:bytes -> send:t -> t -> unit Lwt.t
+  val write2_ba : ?pos:int -> ?len:int -> buf:buf -> send:t -> t -> unit Lwt.t
+  val write2_string : ?pos:int -> ?len:int -> buf:string -> send:t -> t -> unit Lwt.t
 
   val listen:
     t -> max:int -> cb:( t -> Int_result.unit -> unit ) -> Int_result.unit
@@ -748,14 +750,8 @@ module Unix : sig
   val pipe : ?cloexec: bool -> unit -> (Pipe.t * Pipe.t) result
   val pipe_exn : ?cloexec: bool -> unit -> Pipe.t * Pipe.t
 
-  (** wrapper around realpath under Unix and GetFullPathName (and an
-      additional check if the file exists) under windows.
-
-      Be careful:
-      - realpath/GetFullPathName is not thread-safe, but the
-        function is called in a work thread.
-      - The windows version doesn't resolve symlinks at the moment.
-  *)
+  (** wrapper around realpath under Unix and GetFinalPathNameByHandleW
+      or GetFullPathName under windows. *)
   val realpath: string -> string Lwt.t
 end
 

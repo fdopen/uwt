@@ -375,6 +375,14 @@ module Lwt_unix = struct
       else
         Lwt.return_false
 
+  let file_exists name =
+    Lwt.try_bind
+      (fun () -> Uwt.Fs.stat name)
+      (fun _ -> Lwt.return_true)
+      (function
+      | Uwt.Uwt_error(Uwt.ENOENT, _, _) -> Lwt.return_false
+      | x -> trans_exn x)
+
   module LargeFile = struct
 
     type stats = U.LargeFile.stats
@@ -431,6 +439,8 @@ module Lwt_unix = struct
       | File fd ->
         let f () = UF.ftruncate fd ~len:i in
         help f
+
+    let file_exists = file_exists
   end
 
   let unlink s = help1 UF.unlink s

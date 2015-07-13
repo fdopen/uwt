@@ -56,13 +56,24 @@ module Client = struct
     connect t ~path:Echo_server.addr >>= fun () ->
 
     let rec really_read len =
-      let buf = Bytes.create len in
-      read t ~buf >>= fun len' ->
-      if len' = 0 || len' > len then
+      let blen = min len 32_768 in
+      (match Random.int 2 with
+      | 0 ->
+        let buf = Bytes.create blen in
+        read t ~buf >|= fun len' ->
+        Buffer.add_subbytes buf_read buf 0 len';
+        len'
+      | _ ->
+        let buf = Uwt_bytes.create blen in
+        read_ba t ~buf >|= fun len' ->
+        let b = Bytes.create len' in
+        Uwt_bytes.blit_to_bytes buf 0 b 0 len';
+        Buffer.add_subbytes buf_read b 0 len';
+        len') >>= fun len' ->
+      if len' = 0 then
         let () = close_noerr t in
         Lwt.return_unit
       else
-        let () = Buffer.add_subbytes buf_read buf 0 len' in
         let len'' = len - len' in
         if len'' = 0 then
           Lwt.return_unit
@@ -77,14 +88,13 @@ module Client = struct
       if i <= 0 then
         Lwt.return_unit
       else
-        let buf_len = Random.int 934 + 1 in
+        let buf_len = Random.int 131072 + 131072 in
         let buf = rbytes_create buf_len in
         Buffer.add_bytes buf_write buf;
-        pipe_write t ~buf >>= fun () ->
-        really_read buf_len >>= fun () ->
+        Lwt.join [pipe_write t ~buf ; really_read buf_len] >>= fun () ->
         write (pred i)
     in
-    write 1024 >>= fun () ->
+    write 20 >>= fun () ->
     close_wait t >|= fun () ->
     Buffer.contents buf_write = Buffer.contents buf_read
 end

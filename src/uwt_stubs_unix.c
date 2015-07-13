@@ -23,10 +23,8 @@
 #include "config.h"
 #include <uv.h>
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <errno.h>
 
 #ifdef HAVE_SYS_STAT_H
@@ -149,7 +147,7 @@ getunitp2_camlval(uv_req_t * req)
 {
   value ret;
   struct worker_params * w = req->data;
-  int er = POINTER_TO_INT(w->p2);
+  const int er = POINTER_TO_INT(w->p2);
   if ( er != 0 ){
     ret = caml_alloc_small(1,Error_tag);
     Field(ret,0) = Val_uwt_error(POINTER_TO_INT(er));
@@ -177,11 +175,11 @@ c_copy_string_array(char **src)
     return NULL;
   }
   size_t i;
-  for ( i = 0 ; i < len ; ++i ){
+  for ( i = 0; i < len; ++i ){
     p[i] = strdup(src[i]);
     if ( p[i] == NULL ){
       size_t j;
-      for ( j = 0 ; j < i ; ++j ){
+      for ( j = 0; j < i; ++j ){
         free(p[j]);
       }
       free(p);
@@ -208,11 +206,11 @@ c_copy_addr_array(char ** src, int addr_len)
     return NULL;
   }
   size_t i;
-  for ( i = 0 ; i < ar_len ; ++i ){
+  for ( i = 0; i < ar_len; ++i ){
     p[i] = malloc(addr_len);
     if ( p[i] == NULL ){
       size_t j;
-      for ( j = 0 ; j < i ; ++j ){
+      for ( j = 0; j < i; ++j ){
         free(p[j]);
       }
       free(p);
@@ -281,6 +279,7 @@ nomem1:
   return NULL;
 }
 
+#ifdef HAVE_GETxxxxBYyyyy_R_POSIX
 static void *
 gethost_error_code(int hno)
 {
@@ -310,6 +309,7 @@ gethost_error_code(int hno)
 #endif
   }
 }
+#endif
 
 static void
 gethostbyname_worker(uv_work_t *req)
@@ -321,7 +321,7 @@ gethostbyname_worker(uv_work_t *req)
   struct hostent *host = NULL;
   char buf[ALLOCA_SIZE];
   int hno = 0;
-  int err = gethostbyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&host,&hno);
+  const int err = gethostbyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&host,&hno);
   if ( err != 0 || host == NULL ){
     w->p1 = NULL;
     host = NULL;
@@ -353,7 +353,7 @@ gethostbyname_cleaner(uv_req_t *req)
 {
   struct worker_params * w = req->data;
   if ( w->p1 != NULL ){
-    if ( w->p2 == NULL || w->p2 == (void*)2 ){ /* see gethostbyaddr */
+    if ( w->p2 != (void*)1 ){ /* see gethostbyaddr */
       free(w->p1);
     }
     else {
@@ -371,14 +371,14 @@ gethostbyname_cleaner(uv_req_t *req)
 static value alloc_one_addr(char const *a)
 {
   struct in_addr addr;
-  memmove (&addr, a, 4);
+  memcpy(&addr, a, 4);
   return alloc_inet_addr(&addr);
 }
 
 static value alloc_one_addr6(char const *a)
 {
   struct in6_addr addr;
-  memmove(&addr, a, 16);
+  memcpy(&addr, a, 16);
   return alloc_inet6_addr(&addr);
 }
 
@@ -387,7 +387,7 @@ gethostent_value(uv_req_t * req)
 {
   value ret;
   struct worker_params * w = req->data;
-  struct hostent * entry = w->p1;
+  const struct hostent * entry = w->p1;
   if ( entry == NULL ){
     value t = Val_uwt_error(POINTER_TO_INT(w->p2));
     if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
@@ -436,7 +436,7 @@ uwt_gethostbyname(value o_name, value o_uwt)
   value ret;
   const char * mname = String_val(o_name);
   char * name;
-  if ( mname == NULL || *mname == '\0' ){
+  if ( *mname == '\0' ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
   }
   else if ( (name = strdup(mname)) == NULL ){
@@ -457,7 +457,7 @@ static void
 gethostbyaddr_worker(uv_work_t *req)
 {
   struct worker_params * w = req->data;
-  int j = POINTER_TO_INT(w->p2);
+  const int j = POINTER_TO_INT(w->p2);
   void * addr = w->p1;
   socklen_t len;
   int type;
@@ -474,8 +474,8 @@ gethostbyaddr_worker(uv_work_t *req)
   struct hostent *host = NULL;
   char buf[ALLOCA_SIZE];
   int hno = 0;
-  int err = gethostbyaddr_r(addr,len,type,&result_buf,&buf[0],ALLOCA_SIZE,
-                            &host,&hno);
+  const int err = gethostbyaddr_r(addr, len, type, &result_buf, &buf[0],
+                                  ALLOCA_SIZE, &host, &hno);
   if ( err != 0 || host == NULL ){
     w->p1 = NULL;
     host = NULL;
@@ -573,6 +573,7 @@ nomem1:
   return NULL;
 }
 
+#if defined(HAVE_GETxxxxBYyyyy_R_POSIX) || defined(HAVE_GETPWNAM_R) || defined(HAVE_GETPWUID_R) || defined(HAVE_GETGRNAM_R) || defined(HAVE_GETGRGID_R)
 static int
 geterror_helper(int err, void *p)
 {
@@ -590,6 +591,7 @@ geterror_helper(int err, void *p)
     return UV_ENOENT;
   }
 }
+#endif
 
 static void
 getservbyname_worker(uv_work_t *req)
@@ -597,13 +599,14 @@ getservbyname_worker(uv_work_t *req)
   struct worker_params * w = req->data;
   char * name = w->p1;
   char * p2_orig = w->p2;
-  char * proto = *p2_orig == '\0' ? NULL : p2_orig;
+  const char * proto = *p2_orig == '\0' ? NULL : p2_orig;
 #ifdef HAVE_GETxxxxBYyyyy_R_POSIX
   struct servent result_buf;
   struct servent *serv = NULL;
   char buf[ALLOCA_SIZE];
   errno = 0;
-  int err = getservbyname_r(name,proto,&result_buf,&buf[0],ALLOCA_SIZE,&serv);
+  const int err = getservbyname_r(name, proto, &result_buf,
+                                  &buf[0], ALLOCA_SIZE, &serv);
   if ( err != 0 || serv == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(geterror_helper(err,serv));
@@ -656,7 +659,7 @@ getservent_value(uv_req_t * req)
 {
   struct worker_params * w = req->data;
   value ret;
-  struct servent *entry = w->p1 ;
+  const struct servent *entry = w->p1;
   if ( entry == NULL ){
     value t = Val_uwt_error(POINTER_TO_INT(w->p2));
     if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
@@ -692,8 +695,8 @@ uwt_getservbyname(value o_b, value o_uwt)
   value ret;
   char * p1;
   char * p2;
-  value o_name = Field(o_b,0);
-  value o_proto = Field(o_b,1);
+  const value o_name = Field(o_b,0);
+  const value o_proto = Field(o_b,1);
   p1 = s_strdup(String_val(o_name));
   p2 = s_strdup(String_val(o_proto));
   if ( p1 == NULL || p2 == NULL ){
@@ -715,7 +718,7 @@ getservbyport_cleaner(uv_req_t *req)
 {
   struct worker_params * w = req->data;
   if ( w->p1 != NULL ){
-    if ( w->p2 != NULL ){
+    if ( w->p2 == (void*)1 ){
       free(w->p1);
     }
     else {
@@ -734,21 +737,24 @@ static void
 getservbyport_worker(uv_work_t *req)
 {
   struct worker_params * w = req->data;
-  int port = POINTER_TO_INT(w->p2);
   char * p1_orig = w->p1;
-  char * proto = *p1_orig == '\0' ? NULL : p1_orig;
+  uint16_t port;
+  memcpy(&port,p1_orig,sizeof port);
+  const char * proto =
+    p1_orig[sizeof port] == '\0' ? NULL : (p1_orig + sizeof port);
 #ifdef HAVE_GETxxxxBYyyyy_R_POSIX
   struct servent result_buf;
   struct servent *serv = NULL;
   char buf[ALLOCA_SIZE];
   errno = 0;
-  int err = getservbyport_r(port,proto,&result_buf,&buf[0],ALLOCA_SIZE,&serv);
+  const int err = getservbyport_r(port, proto, &result_buf,
+                                  &buf[0], ALLOCA_SIZE, &serv);
   if ( err != 0 || serv == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(geterror_helper(err,serv));
   }
 #else
-  struct servent * serv = getservbyport(port,proto);
+  const struct servent * serv = getservbyport(port,proto);
   if ( serv == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(UV_ENOENT);
@@ -772,23 +778,25 @@ CAMLprim value
 uwt_getservbyport(value o_b, value o_uwt)
 {
   value ret;
-  value o_port = Field(o_b,0);
-  value o_proto = Field(o_b,1);
-  void *p1;
-  void *p2;
+  const value o_port = Field(o_b,0);
+  const value o_proto = Field(o_b,1);
+  unsigned char *p1;
+  const uint16_t port = htons(Long_val(o_port));
+  const size_t len = caml_string_length(o_proto);
 
-  p2 = INT_TO_POINTER(htons(Long_val(o_port)));
-  p1 = s_strdup(String_val(o_proto));
+  p1 = malloc(sizeof port + len + 1);
   if ( p1 == NULL ){
     ret = VAL_UWT_INT_RESULT_ENOMEM;
   }
   else {
+    memcpy(p1,&port,sizeof port);
+    memcpy(p1 + sizeof port, String_val(o_proto), len + 1);
     ret = uwt_add_worker_result(o_uwt,
                                 getservbyport_cleaner,
                                 getservbyport_worker,
                                 getservent_value,
                                 p1,
-                                p2);
+                                (void*)1);
   }
   return ret;
 }
@@ -825,7 +833,7 @@ getprotoent_value(uv_req_t * req)
 {
   value ret;
   struct worker_params * w = req->data;
-  struct protoent *entry = w->p1 ;
+  const struct protoent *entry = w->p1;
   if ( entry == NULL ){
     value t = Val_uwt_error(POINTER_TO_INT(w->p2));
     if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
@@ -880,13 +888,14 @@ getprotobyname_worker(uv_work_t * req)
   struct protoent *proto = NULL;
   char buf[ALLOCA_SIZE];
   errno = 0;
-  int err = getprotobyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&proto);
+  const int err = getprotobyname_r(name, &result_buf, &buf[0],
+                                   ALLOCA_SIZE, &proto);
   if ( err != 0 || proto == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(geterror_helper(err,proto));
   }
 #else
-  struct protoent * proto = getprotobyname(name);
+  const struct protoent * proto = getprotobyname(name);
   if ( proto == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(UV_ENOENT);
@@ -912,7 +921,7 @@ uwt_getprotobyname(value o_name, value o_uwt)
   value ret;
   char *p1;
   const char * mname = String_val(o_name);
-  if ( mname == NULL || *mname == '\0' ){
+  if ( *mname == '\0' ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
   }
   else if ( (p1 = strdup(mname)) == NULL ){
@@ -933,19 +942,20 @@ static void
 getprotobynumber_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
-  int number = POINTER_TO_INT(w->p2);
+  const int number = POINTER_TO_INT(w->p2);
 #ifdef HAVE_GETxxxxBYyyyy_R_POSIX
   struct protoent result_buf;
   struct protoent *proto = NULL;
   char buf[ALLOCA_SIZE];
   errno = 0;
-  int err = getprotobynumber_r(number,&result_buf,&buf[0],ALLOCA_SIZE,&proto);
+  const int err = getprotobynumber_r(number, &result_buf, &buf[0],
+                                     ALLOCA_SIZE, &proto);
   if ( err != 0 || proto == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(geterror_helper(err,proto));
   }
 #else
-  struct protoent * proto = getprotobynumber(number);
+  const struct protoent * proto = getprotobynumber(number);
   if ( proto == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(UV_ENOENT);
@@ -983,10 +993,18 @@ gethostname_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
   char name[ALLOCA_SIZE];
-  int er = gethostname(name,ALLOCA_SIZE-1);
+#ifndef _WIN32
+  errno = 0;
+#endif
+  const int er = gethostname(name, ALLOCA_SIZE - 1);
   name[ALLOCA_SIZE-1] = '\0';
   if ( er != 0 ){
-    w->p2 = INT_TO_POINTER(-er);
+#ifndef _WIN32
+    const int ec = -errno;
+#else
+    const int ec = uwt_translate_sys_error(WSAGetLastError());
+#endif
+    w->p2 = INT_TO_POINTER(ec != 0 ? ec : UV_UNKNOWN);
   }
   else {
     w->p1 = s_strdup(name);
@@ -1016,11 +1034,12 @@ getcwd_worker(uv_work_t * req)
   struct worker_params * w = req->data;
   char name[ALLOCA_SIZE];
   size_t len = ALLOCA_SIZE;
-  int er;
-  name[0] = 0;
-  er = uv_cwd(name,&len);
+  const int er = uv_cwd(name, &len);
   if ( er != 0 ){
     w->p2 = INT_TO_POINTER(er);
+  }
+  else if ( len > ALLOCA_SIZE ){
+    w->p2 = INT_TO_POINTER(UV_ENOBUFS);
   }
   else {
 #if !defined(_WIN32) && (UV_VERSION_MAJOR == 1) && ( UV_VERSION_MINOR < 1 )
@@ -1075,8 +1094,8 @@ uwt_chdir(value o_path, value o_uwt)
 {
   value ret;
   char * cpath;
-  char * opath = String_val(o_path);
-  if ( opath == NULL && *opath == 0 ){
+  const char * opath = String_val(o_path);
+  if ( *opath == 0 ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
   }
@@ -1095,9 +1114,7 @@ endp:
   return ret;
 }
 
-
-
-#if defined(_WIN32) || HAVE_GETLOGIN || HAVE_GETLOGIN_R || HAVE_CUSERID
+#if defined(_WIN32) || defined(HAVE_GETLOGIN) || defined(HAVE_GETLOGIN_R) || defined(HAVE_CUSERID)
 
 #ifdef _WIN32
 static void
@@ -1175,7 +1192,7 @@ uwt_getlogin(value o_void, value o_uwt)
   return ret;
 }
 
-#else /* defined(_WIN32) || HAVE_GETLOGIN || HAVE_GETLOGIN_R || HAVE_CUSERID */
+#else /* defined(_WIN32) || defined(HAVE_GETLOGIN) || defined(HAVE_GETLOGIN_R) || defined(HAVE_CUSERID) */
 F_EUNAVAIL2(getlogin)
 #endif
 
@@ -1210,23 +1227,28 @@ dup_passwd(const struct passwd * orig)
   }
   copy->pw_uid = orig->pw_uid;
   copy->pw_gid = orig->pw_gid;
-  return(copy);
+  return copy;
 }
 
 static void
 passwd_cleaner(uv_req_t * req)
 {
   struct worker_params * w = req->data;
-  struct passwd *pw = w->p1;
-  if ( pw != NULL ){
-    free(pw->pw_name);
-    free(pw->pw_passwd);
+  if ( w->p1 != NULL ){
+    if ( w->p2 != NULL ){
+      free(w->p1);
+    }
+    else {
+      struct passwd *pw = w->p1;
+      free(pw->pw_name);
+      free(pw->pw_passwd);
 #if !defined(__BEOS__)
-    free(pw->pw_gecos);
+      free(pw->pw_gecos);
 #endif
-    free(pw->pw_dir);
-    free(pw->pw_shell);
-    free(pw);
+      free(pw->pw_dir);
+      free(pw->pw_shell);
+      free(pw);
+    }
   }
   w->p1 = NULL;
   w->p2 = NULL;
@@ -1236,7 +1258,6 @@ static value
 passwd_camlval(uv_req_t * req)
 {
   struct worker_params * w = req->data;
-  struct passwd *pw = w->p1;
   value erg;
   if ( w->p1 == NULL ){
     value t = Val_uwt_error(POINTER_TO_INT(w->p2));
@@ -1247,6 +1268,7 @@ passwd_camlval(uv_req_t * req)
     Field(erg,0) = t;
   }
   else {
+    const struct passwd *pw = w->p1;
     value name = Val_unit, passwd = Val_unit, gecos = Val_unit;
     value dir = Val_unit, shell = Val_unit;
     value res;
@@ -1281,20 +1303,20 @@ static void
 getpwnam_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
-  int e;
-  struct passwd *res = NULL;
+  const char * name = w->p1;
   errno = 0;
 #ifdef HAVE_GETPWNAM_R
   char buf[ALLOCA_SIZE];
   struct passwd result;
-  e = getpwnam_r((char*)w->p1,&result, buf, ALLOCA_SIZE, &res);
+  struct passwd *res = NULL;
+  int e = getpwnam_r(name, &result, buf, ALLOCA_SIZE, &res);
   if ( e != 0 || res == NULL ){
     res = NULL;
     e = geterror_helper(e,res);
   }
 #else
-  res = getpwnam((char*)w->p1);
-  e = errno == 0 ? UV_ENOENT : -errno;
+  const struct passwd *res = getpwnam(name);
+  const int e = errno == 0 ? UV_ENOENT : -errno;
 #endif
   free(w->p1);
   if ( res == NULL ){
@@ -1302,6 +1324,7 @@ getpwnam_worker(uv_work_t * req)
     w->p2 = INT_TO_POINTER(e);
   }
   else {
+    w->p2 = NULL;
     w->p1 = dup_passwd(res);
     if ( w->p1 == NULL ){
       w->p2 = INT_TO_POINTER(UV_ENOMEM);
@@ -1314,8 +1337,8 @@ uwt_getpwnam(value o_path, value o_uwt)
 {
   value ret;
   char * cpath;
-  char * opath = String_val(o_path);
-  if ( opath == NULL && *opath == 0 ){
+  const char * opath = String_val(o_path);
+  if ( *opath == 0 ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
   }
@@ -1329,7 +1352,7 @@ uwt_getpwnam(value o_path, value o_uwt)
                               getpwnam_worker,
                               passwd_camlval,
                               cpath,
-                              NULL);
+                              (void*)1);
 endp:
   return ret;
 }
@@ -1343,27 +1366,27 @@ static void
 getpwuid_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
-  int e;
-  struct passwd *res = NULL;
-  uid_t uid = POINTER_TO_INT(w->p2);
+  const uid_t uid = POINTER_TO_INT(w->p2);
   errno = 0;
 #ifdef HAVE_GETPWUID_R
   char buf[ALLOCA_SIZE];
   struct passwd result;
-  e = getpwuid_r(uid,&result, buf, ALLOCA_SIZE, &res);
+  struct passwd *res = NULL;
+  int e = getpwuid_r(uid,&result, buf, ALLOCA_SIZE, &res);
   if ( e != 0 || res == NULL ){
     res = NULL;
     e = geterror_helper(e,res);
   }
 #else
-  res = getpwuid(uid);
-  e = errno == 0 ? UV_ENOENT : -errno;
+  const struct passwd *res = getpwuid(uid);
+  const int e = errno == 0 ? UV_ENOENT : -errno;
 #endif
   if ( res == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(e);
   }
   else {
+    w->p2 = NULL;
     w->p1 = dup_passwd(res);
     if ( w->p1 == NULL ){
       w->p2 = INT_TO_POINTER(UV_ENOMEM);
@@ -1408,19 +1431,26 @@ dup_group(const struct group * orig)
     return NULL;
   }
   copy->gr_gid = orig->gr_gid;
-  return(copy);
+  return copy;
 }
 
 static void
 group_cleaner(uv_req_t * req)
 {
   struct worker_params * w = req->data;
-  struct group *gr = w->p1;
-  if ( gr != NULL ){
-    free(gr->gr_name);
-    free(gr->gr_passwd);
-    c_free_string_array(gr->gr_mem);
-    free(gr);
+  if ( w->p1 != NULL ){
+    if ( w->p2 != NULL ){
+      free(w->p1);
+    }
+    else {
+      struct group *gr = w->p1;
+      if ( gr != NULL ){
+        free(gr->gr_name);
+        free(gr->gr_passwd);
+        c_free_string_array(gr->gr_mem);
+        free(gr);
+      }
+    }
   }
   w->p1 = NULL;
   w->p2 = NULL;
@@ -1430,9 +1460,8 @@ static value
 group_camlval(uv_req_t * req)
 {
   struct worker_params * w = req->data;
-  struct group *entry = w->p1;
   value erg;
-  if ( entry == NULL ){
+  if ( w->p1 == NULL ){
     value t = Val_uwt_error(POINTER_TO_INT(w->p2));
     if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
       t = VAL_UWT_ERROR_ENOENT;
@@ -1441,6 +1470,7 @@ group_camlval(uv_req_t * req)
     Field(erg,0) = t;
   }
   else {
+    const struct group *entry = w->p1;
     value res;
     value name = Val_unit, pass = Val_unit, mem = Val_unit;
 
@@ -1466,20 +1496,19 @@ static void
 getgrnam_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
-  int e;
-  struct group *res = NULL;
   errno = 0;
 #ifdef HAVE_GETGRNAM_R
   char buf[ALLOCA_SIZE];
   struct group result;
-  e = getgrnam_r((char*)w->p1,&result, buf, ALLOCA_SIZE, &res);
+  struct group *res = NULL;
+  int e = getgrnam_r((char*)w->p1, &result, buf, ALLOCA_SIZE, &res);
   if ( e != 0 || res == NULL ){
     res = NULL;
     e = geterror_helper(e,res);
   }
 #else
-  res = getgrnam((char*)w->p1);
-  e = errno == 0 ? UV_ENOENT : -errno;
+  const struct group *res = getgrnam((char*)w->p1);
+  const int e = errno == 0 ? UV_ENOENT : -errno;
 #endif
   free(w->p1);
   if ( res == NULL ){
@@ -1487,6 +1516,7 @@ getgrnam_worker(uv_work_t * req)
     w->p2 = INT_TO_POINTER(e);
   }
   else {
+    w->p2 = NULL;
     w->p1 = dup_group(res);
     if ( w->p1 == NULL ){
       w->p2 = INT_TO_POINTER(UV_ENOMEM);
@@ -1499,8 +1529,8 @@ uwt_getgrnam(value o_name, value o_uwt)
 {
   value ret;
   char * cname;
-  char * oname = String_val(o_name);
-  if ( oname == NULL && *oname == 0 ){
+  const char * oname = String_val(o_name);
+  if ( *oname == 0 ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
   }
@@ -1514,7 +1544,7 @@ uwt_getgrnam(value o_name, value o_uwt)
                               getgrnam_worker,
                               group_camlval,
                               cname,
-                              NULL);
+                              (void*)1);
 endp:
   return ret;
 }
@@ -1528,27 +1558,27 @@ static void
 getgrgid_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
-  int e;
-  struct group *res = NULL;
-  uid_t uid = POINTER_TO_INT(w->p2);
+  const uid_t uid = POINTER_TO_INT(w->p2);
   errno = 0;
 #ifdef HAVE_GETGRGID_R
   char buf[ALLOCA_SIZE];
   struct group result;
-  e = getgrgid_r(uid,&result, buf, ALLOCA_SIZE, &res);
+  struct group *res = NULL;
+  int e = getgrgid_r(uid,&result, buf, ALLOCA_SIZE, &res);
   if ( e != 0 || res == NULL ){
     res = NULL;
     e = geterror_helper(e,res);
   }
 #else
-  res = getgrgid(uid);
-  e = errno == 0 ? UV_ENOENT : -errno;
+  const struct group *res = getgrgid(uid);
+  const int e = errno == 0 ? UV_ENOENT : -errno;
 #endif
   if ( res == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(e);
   }
   else {
+    w->p2 = NULL;
     w->p1 = dup_group(res);
     if ( w->p1 == NULL ){
       w->p2 = INT_TO_POINTER(UV_ENOMEM);
@@ -1578,11 +1608,11 @@ static void
 chroot_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
-  int er ;
   errno = 0;
-  er = chroot((char*)w->p1);
+  const int er = chroot((char*)w->p1);
   if ( er != 0 ){
-    w->p2 = INT_TO_POINTER(-errno);
+    const int ec = errno != 0 ? -errno : UV_UNKNOWN;
+    w->p2 = INT_TO_POINTER(ec);
   }
   else {
     w->p2 = 0;
@@ -1593,13 +1623,12 @@ CAMLprim value
 uwt_chroot(value o_name, value o_uwt)
 {
   value ret;
-  char * cname;
-  char * oname = String_val(o_name);
-  if ( oname == NULL && *oname == 0 ){
+  const char * oname = String_val(o_name);
+  if ( *oname == 0 ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
   }
-  cname = strdup(oname);
+  char * cname = strdup(oname);
   if ( cname == NULL ){
     ret = VAL_UWT_INT_RESULT_ENOMEM;
     goto endp;
@@ -1705,9 +1734,8 @@ static void worker_lockf(uv_work_t * req)
 {
   struct worker_params * w = req->data;
   struct job_lockf *job = w->p1;
-  int result;
   errno = 0;
-  result = lockf(job->fd, lock_command_table[job->command], job->length);
+  int result = lockf(job->fd, lock_command_table[job->command], job->length);
   if ( result == -1 ){
     int ec = errno != 0 ? -errno : UV_UNKNOWN;
     w->p2 = INT_TO_POINTER(ec);
@@ -1724,7 +1752,7 @@ static int set_file_pointer(HANDLE h, LARGE_INTEGER gohere,
   if ( ret == INVALID_SET_FILE_POINTER ){
     DWORD err = GetLastError();
     if ( err != NO_ERROR ){
-      return uwt_translate_sys_error(err);
+      return (uwt_translate_sys_error(err));
     }
   }
   if ( output != NULL ){
@@ -1766,24 +1794,24 @@ static void worker_lockf(uv_work_t * req)
     /* Lock from cur to infinity */
     lock_len.QuadPart = -1;
     overlap.OffsetHigh = cur_position.HighPart;
-    overlap.Offset     = cur_position.LowPart ;
+    overlap.Offset     = cur_position.LowPart;
   }
   else if ( l_len > 0 ){
     /* Positive file offset */
     lock_len.QuadPart = l_len;
     overlap.OffsetHigh = cur_position.HighPart;
-    overlap.Offset     = cur_position.LowPart ;
+    overlap.Offset     = cur_position.LowPart;
   }
   else {
     /* Negative file offset */
-    lock_len.QuadPart = - l_len;
+    lock_len.QuadPart = -l_len;
     if ( lock_len.QuadPart > cur_position.QuadPart ){
       w->p2 = INT_TO_POINTER(UV_EINVAL);
       return;
     }
     beg_position.QuadPart = cur_position.QuadPart - lock_len.QuadPart;
     overlap.OffsetHigh = beg_position.HighPart;
-    overlap.Offset     = beg_position.LowPart ;
+    overlap.Offset     = beg_position.LowPart;
   }
 
   switch( job->command ){
@@ -1882,10 +1910,8 @@ F_EUNAVAIL2(lockf)
 static int
 pipe_normal(int fds[2],bool cloexec)
 {
-  int er;
-  int rv ;
   errno = 0;
-  rv = pipe(fds);
+  int rv = pipe(fds);
   if ( rv == -1 ){
     return rv;
   }
@@ -1894,7 +1920,7 @@ pipe_normal(int fds[2],bool cloexec)
        fcntl(fds[1], F_SETFL, O_NONBLOCK) == -1 ||
        (cloexec && ( fcntl(fds[0], F_SETFD, FD_CLOEXEC) == -1 ||
                      fcntl(fds[1], F_SETFD, FD_CLOEXEC) == -1 )) ){
-    er = errno;
+    int er = errno;
     close(fds[0]);
     close(fds[1]);
     errno = er;
@@ -1934,7 +1960,7 @@ uwt_pipe(value o_close_exec)
   CAMLparam0();
   CAMLlocal2(tup,ret);
   int fd[2];
-  bool close_exec = Long_val(o_close_exec) == 1;
+  const bool close_exec = Long_val(o_close_exec) == 1;
   tup = caml_alloc(2,0);
   ret = caml_alloc_small(1,Ok_tag);
   Field(ret,0) = tup;
@@ -1957,7 +1983,7 @@ uwt_pipe(value o_close_exec)
   CAMLparam0();
   CAMLlocal4(tup,ret,oread,owrite);
   SECURITY_ATTRIBUTES attr;
-  bool close_exec = Long_val(o_close_exec) == 1;
+  const bool close_exec = Long_val(o_close_exec) == 1;
   HANDLE readh, writeh;
 
   oread = win_alloc_handle(INVALID_HANDLE_VALUE);
@@ -1985,15 +2011,14 @@ uwt_pipe(value o_close_exec)
 #endif
 
 #ifdef _WIN32
-#define BSIZE 8192
+#define BSIZE ((size_t)(UMAX(32767 + 17,MAX_PATH + 17)))
 static void
-realpath_worker(uv_work_t *req)
+realpath_worker_xp(uv_work_t *req)
 {
   struct worker_params * w = req->data;
   WCHAR buf[BSIZE];
-  WCHAR *name = w->p1;
-  WCHAR *fullpath = NULL;
-  DWORD size = GetFullPathNameW(name,BSIZE-1,buf,NULL);
+  const WCHAR *name = w->p1;
+  const DWORD size = GetFullPathNameW(name,BSIZE-1,buf,NULL);
   if ( size == 0 ){
     int e = uwt_translate_sys_error(GetLastError());
     free(w->p1);
@@ -2001,35 +2026,17 @@ realpath_worker(uv_work_t *req)
     w->p2 = INT_TO_POINTER(e);
     return;
   }
-  if ( size < BSIZE - 1 ){
-    fullpath = buf;
+  if ( size > BSIZE - 1 ){
+    free(w->p1);
+    w->p1 = NULL;
+    w->p2 = INT_TO_POINTER(UV_ENOBUFS);
+    return;
   }
-  else {
-    fullpath = malloc(size * sizeof(*fullpath));
-    if ( fullpath == NULL ){
-      free(w->p1);
-      w->p1 = NULL;
-      w->p2 = INT_TO_POINTER(UV_ENOMEM);
-      return;
-    }
-    DWORD size2 = GetFullPathNameW(name,size,fullpath,NULL);
-    if ( size2 == 0 || size2 > size ){
-      int e ;
-      if ( size2 == 0 ){
-        e = uwt_translate_sys_error(GetLastError());
-      }
-      else {
-        e = UV_UNKNOWN;
-      }
-      free(w->p1);
-      w->p1 = NULL;
-      w->p2 = INT_TO_POINTER(e);
-      return;
-    }
-  }
-  DWORD h = GetFileAttributesW(fullpath);
+  buf[BSIZE - 1] = L'\0';
+
+  DWORD h = GetFileAttributesW(buf);
   if ( h == INVALID_FILE_ATTRIBUTES ){
-    DWORD er = GetLastError();
+    const DWORD er = GetLastError();
     switch ( er ){
     case ERROR_BAD_NETPATH: /* fall */
     case ERROR_BAD_PATHNAME:  /* fall */
@@ -2050,7 +2057,7 @@ realpath_worker(uv_work_t *req)
   else {
     free(w->p1);
     int er;
-    w->p1 = uwt_utf16_to_utf8(fullpath,&er);
+    w->p1 = uwt_utf16_to_utf8(buf,&er);
     if ( w->p1 == NULL ){
       w->p2 = INT_TO_POINTER(er);
     }
@@ -2058,18 +2065,124 @@ realpath_worker(uv_work_t *req)
       w->p2 = NULL;
     }
   }
-  if ( fullpath != buf ){
-    free(fullpath);
+}
+
+typedef DWORD (WINAPI *realpath_t)(HANDLE, LPWSTR, DWORD, DWORD);
+static realpath_t pGetFinalPathNameByHandleW = NULL;
+
+static void
+realpath_worker_vista(uv_work_t *req)
+{
+  if ( pGetFinalPathNameByHandleW == NULL ){
+    realpath_worker_xp(req);
+    return;
+  }
+  struct worker_params * w = req->data;
+  WCHAR buf[BSIZE];
+  const WCHAR *name = w->p1;
+  int error_code = UV_UWT_EFATAL;
+  HANDLE h = CreateFileW(name,
+                         FILE_READ_ATTRIBUTES,
+                         /* the following attributes are always used by libuv */
+                         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                         NULL,
+                         /* only if it exists, otherwise error is
+                            ERROR_FILE_NOT_FOUND */
+                         OPEN_EXISTING,
+                         /* FILE_FLAG_BACKUP_SEMANTICS is required in order
+                            to open a folder */
+                         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS,
+                         NULL);
+  if ( h == INVALID_HANDLE_VALUE ){
+    goto eend;
+  }
+  bool dos_name = true;
+  size_t rlen = pGetFinalPathNameByHandleW(h,
+                                           buf,
+                                           BSIZE - 1,
+                                           VOLUME_NAME_DOS);
+  if ( rlen == 0 ){
+    DWORD ec = GetLastError();
+    if ( ec != ERROR_PATH_NOT_FOUND ){
+      error_code = uwt_translate_sys_error(ec);
+      goto eend2;
+    }
+    rlen = pGetFinalPathNameByHandleW(h,
+                                      buf,
+                                      BSIZE - 1,
+                                      VOLUME_NAME_GUID);
+    if ( rlen == 0 ){
+      goto eend;
+    }
+    dos_name = false;
+  }
+  CloseHandle(h);
+  h = INVALID_HANDLE_VALUE;
+
+  if ( rlen > BSIZE - 1 ){
+    error_code = UV_ENOBUFS;
+    goto eend2;
+  }
+
+  buf[BSIZE - 1] = L'\0';
+  WCHAR *p = buf;
+  if ( dos_name && rlen > 4 ){
+    if ( rlen > 8 && wcsncmp(buf, L"\\\\?\\UNC\\",8) == 0 ){
+      p += 8;
+    }
+    else {
+      if ( wcsncmp(buf, L"\\\\?\\",4) == 0 ){
+        p += 4;
+      }
+    }
+  }
+
+  free(w->p1);
+  w->p1 = uwt_utf16_to_utf8(p,&error_code);
+  if ( w->p1 == NULL ){
+    goto eend2;
+  }
+  w->p2 = NULL;
+  return;
+
+ eend:
+  error_code = uwt_translate_sys_error(GetLastError());
+ eend2:
+  free(w->p1);
+  w->p1 = NULL;
+  w->p2 = INT_TO_POINTER(error_code);
+  if ( h != INVALID_HANDLE_VALUE ){
+    CloseHandle(h);
   }
 }
 #undef BSIZE
+
+static void (*realpath_worker)(uv_work_t *req) = realpath_worker_xp;
+
+CAMLextern value uwt_unix_windows_init_na(value);
+CAMLprim value
+uwt_unix_windows_init_na(value o_unit){
+  (void) o_unit;
+  if ( pGetFinalPathNameByHandleW == NULL ){
+    HMODULE m = GetModuleHandleW(L"kernel32.dll");
+    if ( m != NULL ){
+      pGetFinalPathNameByHandleW =
+        (realpath_t)GetProcAddress(m,"GetFinalPathNameByHandleW");
+      if ( pGetFinalPathNameByHandleW != NULL ){
+        realpath_worker = realpath_worker_vista;
+      }
+    }
+  }
+  return Val_unit;
+}
+
 #else /* #ifdef _WIN32 */
 
 static void
 realpath_worker(uv_work_t *req)
 {
   struct worker_params * w = req->data;
-  char *name = w->p1;
+  const char *name = w->p1;
   char * fp;
 #ifdef HAVE_CANONICALIZE_FILE_NAME
   errno = 0;
@@ -2078,18 +2191,20 @@ realpath_worker(uv_work_t *req)
   errno = 0;
   fp = realpath(name,NULL);
 #else
-#ifdef PATH_MAX
-  char buf[UMAX(PATH_MAX,ALLOCA_SIZE)];
-#elif defined(MAXPATHLEN)
-  char buf[UMAX(MAXPATHLEN,ALLOCA_SIZE)];
-#elif defined(NAME_MAX)
-  char buf[UMAX(NAME_MAX,ALLOCA_SIZE)];
+#if defined(PATH_MAX) && PATH_MAX > 0
+#define TBUF_LEN (UMAX(PATH_MAX + 1,ALLOCA_SIZE))
+#elif defined(MAXPATHLEN) && MAXPATHLEN > 0
+#define TBUF_LEN (UMAX(MAXPATHLEN + 1,ALLOCA_SIZE))
+#elif defined(NAME_MAX) && NAME_MAX > 0
+#define TBUF_LEN (UMAX(NAME_MAX + 1,ALLOCA_SIZE))
 #else
-#error "PATH_MAX not defined!"
+#error "PATH_MAX not defined or not positive"
 #endif /* PATH_MAX */
+  char buf[TBUF_LEN];
   errno = 0;
   fp = realpath(name,buf);
   if ( fp != NULL ){
+    buf[TBUF_LEN - 1] = 0;
     fp = strdup(fp);
     if ( fp == NULL ){
       errno = -UV_ENOMEM;
@@ -2104,6 +2219,7 @@ realpath_worker(uv_work_t *req)
   }
   free(w->p1);
   w->p1 = fp;
+#undef TBUF_LEN
 }
 #endif /* #ifdef _WIN32 */
 
@@ -2113,7 +2229,7 @@ uwt_realpath(value o_name, value o_uwt)
   value ret;
   const char * mname = String_val(o_name);
   void * name;
-  if ( mname == NULL || *mname == '\0' ){
+  if ( *mname == '\0' ){
     return VAL_UWT_INT_RESULT_EINVAL;
   }
 #ifndef _WIN32

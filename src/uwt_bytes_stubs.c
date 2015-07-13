@@ -206,7 +206,12 @@ CAMLprim value
 uwt_unix_read_int(value val_buf, value val_ofs, value bo)
 {
   const unsigned char * s = Caml_ba_data_val(val_buf);
+#if defined(__arm__) || defined(__arm)
+  uint32_t n;
+  memcpy(&n,s + Long_val(val_ofs),sizeof n);
+#else
   uint32_t n = *((uint32_t*)(s + Long_val(val_ofs)));
+#endif
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP4(n);
   }
@@ -217,7 +222,12 @@ CAMLprim value
 uwt_unix_read_int16(value val_buf, value val_ofs, value bo)
 {
   const unsigned char * s = Caml_ba_data_val(val_buf);
+#if defined(__arm__) || defined(__arm)
+  uint16_t n;
+  memcpy(&n,s + Long_val(val_ofs),sizeof n);
+#else
   uint16_t n = *((uint16_t*)(s + Long_val(val_ofs)));
+#endif
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP2(n);
   }
@@ -228,7 +238,12 @@ CAMLprim value
 uwt_unix_read_int32(value val_buf, value val_ofs, value bo)
 {
   const unsigned char * s = Caml_ba_data_val(val_buf);
+#if defined(__arm__) || defined(__arm)
+  uint32_t n;
+  memcpy(&n,s + Long_val(val_ofs),sizeof n);
+#else
   uint32_t n = *((uint32_t*)(s + Long_val(val_ofs)));
+#endif
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP4(n);
   }
@@ -239,7 +254,12 @@ CAMLprim value
 uwt_unix_read_int64(value val_buf, value val_ofs, value bo)
 {
   const unsigned char * s = Caml_ba_data_val(val_buf);
+#if defined(__arm__) || defined(__arm)
+  uint64_t n;
+  memcpy(&n,s + Long_val(val_ofs),sizeof n);
+#else
   uint64_t n = *((uint64_t*)(s + Long_val(val_ofs)));
+#endif
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP8(n);
   }
@@ -251,7 +271,12 @@ uwt_unix_read_float32(value val_buf, value val_ofs, value bo)
 {
   union { float f; uint32_t ui; } u;
   const unsigned char * s = Caml_ba_data_val(val_buf);
+#if defined(__arm__) || defined(__arm)
+  uint32_t n;
+  memcpy(&n,s + Long_val(val_ofs),sizeof n);
+#else
   uint32_t n = *((uint32_t*)(s + Long_val(val_ofs)));
+#endif
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP4(n);
   }
@@ -264,7 +289,12 @@ uwt_unix_read_float64(value val_buf, value val_ofs, value bo)
 {
   union { double d; uint64_t ui; uint32_t h[2]; } u;
   const unsigned char * s = Caml_ba_data_val(val_buf);
+#if defined(__arm__) || defined(__arm)
+  uint64_t n;
+  memcpy(&n,s + Long_val(val_ofs),sizeof n);
+#else
   uint64_t n = *((uint64_t*)(s + Long_val(val_ofs)));
+#endif
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP8(n);
   }
@@ -279,12 +309,16 @@ CAMLprim value
 uwt_unix_write_int(value val_buf, value val_ofs, value val, value bo)
 {
   unsigned char * s = Caml_ba_data_val(val_buf);
-  uint32_t * p = (uint32_t*)(s + Long_val(val_ofs));
   uint32_t n = (uint32_t)(Long_val(val));
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP4(n);
   }
+#if defined(__arm__) || defined(__arm)
+  memcpy(s + Long_val(val_ofs),&n,sizeof n);
+#else
+  uint32_t * p = (uint32_t*)(s + Long_val(val_ofs));
   *p = n;
+#endif
   return Val_unit;
 }
 
@@ -292,12 +326,16 @@ CAMLprim value
 uwt_unix_write_int16(value val_buf, value val_ofs, value val, value bo)
 {
   unsigned char * s = Caml_ba_data_val(val_buf);
-  uint16_t * p = (uint16_t*)(s + Long_val(val_ofs));
   uint16_t n = (uint16_t)(Long_val(val));
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP2(n);
   }
+#if defined(__arm__) || defined(__arm)
+  memcpy(s + Long_val(val_ofs),&n,sizeof n);
+#else
+  uint16_t * p = (uint16_t*)(s + Long_val(val_ofs));
   *p = n;
+#endif
   return Val_unit;
 }
 
@@ -305,12 +343,16 @@ CAMLprim value
 uwt_unix_write_int32(value val_buf, value val_ofs, value val, value bo)
 {
   unsigned char * s = Caml_ba_data_val(val_buf);
-  uint32_t * p = (uint32_t*)(s + Long_val(val_ofs));
   uint32_t n = (uint32_t)(Int32_val(val));
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP4(n);
   }
+#if defined(__arm__) || defined(__arm)
+  memcpy(s + Long_val(val_ofs),&n,sizeof n);
+#else
+  uint32_t * p = (uint32_t*)(s + Long_val(val_ofs));
   *p = n;
+#endif
   return Val_unit;
 }
 
@@ -318,12 +360,16 @@ CAMLprim value
 uwt_unix_write_int64(value val_buf, value val_ofs, value val, value bo)
 {
   unsigned char * s = Caml_ba_data_val(val_buf);
-  uint64_t * p = (uint64_t*)(s + Long_val(val_ofs));
   uint64_t n = (uint64_t)(Int64_val(val));
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP8(n);
   }
+#if defined(__arm__) || defined(__arm)
+  memcpy(s + Long_val(val_ofs),&n,sizeof n);
+#else
+  uint64_t * p = (uint64_t*)(s + Long_val(val_ofs));
   *p = n;
+#endif
   return Val_unit;
 }
 
@@ -332,12 +378,11 @@ uwt_unix_write_float32(value val_buf, value val_ofs, value val, value bo)
 {
   union { float f; uint32_t ui; } u;
   unsigned char * s = Caml_ba_data_val(val_buf);
-  uint32_t * p = (uint32_t*)(s + Long_val(val_ofs));
   u.f = Double_val(val);
   if ( Int_val(bo) == SWAP_CODE ){
     u.ui = UBSWAP4(u.ui);
   }
-  memcpy(p,&u.ui,sizeof *p);
+  memcpy(s + Long_val(val_ofs),&u.ui,sizeof(uint32_t));
   return Val_unit;
 }
 
@@ -346,7 +391,6 @@ uwt_unix_write_float64(value val_buf, value val_ofs, value val, value bo)
 {
   union { double d; uint64_t ui; uint32_t h[2]; } u;
   unsigned char * s = Caml_ba_data_val(val_buf);
-  uint64_t * p = (uint64_t*)(s + Long_val(val_ofs));
   u.d = Double_val(val);
 #if defined(__arm__) && !defined(__ARM_EABI__)
   uint32 t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t;
@@ -354,6 +398,6 @@ uwt_unix_write_float64(value val_buf, value val_ofs, value val, value bo)
   if ( Int_val(bo) == SWAP_CODE ){
     u.ui = UBSWAP8(u.ui);
   }
-  memcpy(p,&u.ui,sizeof *p);
+  memcpy(s + Long_val(val_ofs),&u.ui,sizeof(uint64_t));
   return Val_unit;
 }

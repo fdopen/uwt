@@ -100,8 +100,7 @@ module Client = struct
         let buf_len = Random.int 934 + 1 in
         let buf = rbytes_create buf_len in
         Buffer.add_bytes buf_write buf;
-        tcp_write t ~buf >>= fun () ->
-        really_read buf_len >>= fun () ->
+        Lwt.join [tcp_write t ~buf ; really_read buf_len] >>= fun () ->
         write (pred i)
     in
     write 1024 >>= fun () ->

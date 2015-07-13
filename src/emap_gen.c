@@ -180,7 +180,7 @@ int main(void)
   }
 
   fputs("typedef enum {\n",c2);
-  for (i=0; i< AR_SIZE(er_map); ++i){
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
     if ( val == UV_UWT_UNKNOWN ){
@@ -197,7 +197,7 @@ int main(void)
   fputs("#pragma GCC diagnostic push\n"
     "#pragma GCC diagnostic ignored \"-Wenum-compare\"\n",c);
 
-  for (i=0; i< AR_SIZE(er_map); ++i){
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
     if ( x[0] != 'U' || x[1] != 'W' || x[2] != 'T' ){
@@ -217,7 +217,7 @@ int main(void)
   fputs("#pragma GCC diagnostic pop\n\n",c);
 
   fputs("typedef enum {\n",c2);
-  for (i=0; i< AR_SIZE(er_map); ++i){
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
     fprintf(c2,"  VAL_UWT_ERROR_%s = (Val_long(%d)),\n",x,i);
@@ -225,7 +225,7 @@ int main(void)
   fputs("} val_uwt_error_t;\n\n",c2);
 
   fputs("typedef enum {\n",c2);
-  for (i=0; i< AR_SIZE(er_map); ++i){
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
     fprintf(c2,"  VAL_UWT_INT_RESULT_%s = (Val_long(%d)),\n",x,neg_result(i));
@@ -239,7 +239,7 @@ int main(void)
         "{\n"
         "  value erg;\n"
         "  switch (n) {\n",c);
-  for (i=0; i< AR_SIZE(er_map); ++i){
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
     fprintf(c,"  case UV_%s: erg = Val_long(%u) ; break;\n",x,i);
@@ -260,7 +260,7 @@ int main(void)
         "    return Val_long(n);\n"
         "  }\n"
         "  switch (n) {\n",c);
-  for (i=0; i< AR_SIZE(er_map); ++i){
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
     fprintf(c,"  case UV_%s: erg = Val_long(%d) ; break;\n",x,neg_result(i));
@@ -275,7 +275,7 @@ int main(void)
 
   fputs("static const int16_t error_rev_map[] = {\n",c);
 
-  for (i=0; i< AR_SIZE(er_map); ++i){
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
     fprintf(c," UV_%s,\n",x);
@@ -297,7 +297,7 @@ int main(void)
     "  const char * msg;\n"
     "  switch(t){\n" ,c );
 
-  for (i=0; i< AR_SIZE(er_map); ++i){
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
     if ( x[0] == 'U' && x[1] == 'W' && x[2] == 'T' ){
@@ -310,14 +310,14 @@ int main(void)
         "}\n" ,c );
 
   fputs("type error = \n",ml);
-  for (i=0; i< AR_SIZE(er_map); ++i){
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
     fprintf(ml,"| %s\n",x);
   }
   fputs("\n",ml);
   fputs("let err_name = function\n",ml);
-  for (i=0; i< AR_SIZE(er_map); ++i){
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
     fprintf(ml,"| %s -> \"%s\"\n",x,x);
@@ -344,7 +344,7 @@ int main(void)
 
   ml = fopen("error_val.ml","w");
   c = fopen("error_val.mli","w");
-  for ( i = 0 ; i< AR_SIZE(er_map) ; ++i ){
+  for ( i = 0 ; i < AR_SIZE(er_map) ; ++i ){
     int val = er_map[i];
     char * x = lower_err_name(val);
     fprintf(ml,"let %s = %d\n",x,neg_result(i));

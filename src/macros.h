@@ -118,8 +118,12 @@
 #define DEBUG_PF_R(n,...)                       \
   DEBUG_PF_RR(n,__VA_ARGS__)
 
+#ifdef NDEBUG
+#define DEBUG_PF(...)
+#else
 #define DEBUG_PF(...)                           \
   DEBUG_PF_R(PP_NARG(__VA_ARGS__),__VA_ARGS__)
+#endif
 
 #ifndef R_OK
 # ifdef __R_OK

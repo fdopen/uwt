@@ -25,11 +25,14 @@ section
 OCAMLPACKS+= lwt bigarray unix threads lwt.log oUnit ppx_import ppx_deriving.show
 OCAMLFLAGS+= -thread
 OCAMLINCLUDES[]+= ../src ../examples
-OCAML_LIBS+= ../src/uwt-base ../src/uv-fs-sync ../src/uwt ../src/uwt-ext ../src/uwt-compat ../src/uwt-preemptive ../examples/show_uwt t_lib
+MLIBS=../src/uwt-base ../src/uv-fs-sync ../src/uwt ../src/uwt-ext ../src/uwt-compat ../src/uwt-preemptive ../examples/show_uwt t_lib
+OCAML_LIBS+= $(MLIBS)
 
 section
 	FILES[]= main common t_unix t_preemptive t_fs t_fs_sync t_tcp t_spawn t_fs_event \
 	 t_udp t_conv t_pipe t_dns t_misc t_signal t_poll t_fs_poll t_tty t_gc t_stub t_timer t_io
+	test.opt: $(addsuffix .cmxa, $(MLIBS)) ../src/libuwt-base$(EXT_LIB)
+	test.run: $(addsuffix .cma, $(MLIBS)) ../src/libuwt-base$(EXT_LIB)
 	Repeat_targets($(FILES))
 	TEST_PROG=$(OCamlProgram test,$(FILES))
 	build-tests:: $(LOCKH) $(TEST_PROG)

@@ -76,6 +76,7 @@ module Lwt_unix :
     val lstat : string -> Unix.stats Lwt.t
     val fstat : file_descr -> Unix.stats Lwt.t
     val isatty : file_descr -> bool Lwt.t
+    val file_exists : string -> bool Lwt.t
     module LargeFile :
       sig
         type stats = Unix.LargeFile.stats
@@ -85,6 +86,7 @@ module Lwt_unix :
         val lseek : file_descr -> int64 -> Unix.seek_command -> int Lwt.t
         val truncate : string -> int64 -> unit Lwt.t
         val ftruncate : file_descr -> int64 -> unit Lwt.t
+        val file_exists : string -> bool Lwt.t
       end
     val unlink : string -> unit Lwt.t
     val rename : string -> string -> unit Lwt.t

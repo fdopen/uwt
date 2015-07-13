@@ -36,6 +36,7 @@ else
 fi
 
 cd "$mtmpf"
+rm -f .git*
 
 $find . -type f ! -executable ! -perm 644 -exec chmod 644 {} \+
 $find . -type f -executable ! -perm 755 -exec chmod 755 {} \+
