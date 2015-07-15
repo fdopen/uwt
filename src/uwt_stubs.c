@@ -387,7 +387,6 @@ struct ATTR_PACKED req {
     unsigned int finalize_called: 1; /* message from ocaml garbage collector,
                                         that it can be freed */
     unsigned int cb_type : 2; /* 0: sync, 1: lwt, 2: normal callback */
-    unsigned int cancel : 1;
     unsigned int buf_contains_ba: 1; /* used for other purpose, if buf not used */
     unsigned int in_cb: 1;
 };
@@ -1010,7 +1009,6 @@ req_create(uv_req_type typ, struct loop *l)
   wp->offset = 0;
   wp->c_param = 0;
   wp->in_use = 0;
-  wp->cancel = 0;
   wp->finalize_called = 0;
   wp->buf_contains_ba = 0;
   wp->in_cb = 0;
@@ -1211,24 +1209,22 @@ universal_callback(uv_req_t * req)
   }
   else {
     assert( wp_req->in_use == 1 );
-    if ( wp_req->cancel != 1 ){
-      value exn;
-      wp_req->in_cb = 1;
-      if ( wp_req->c_cb == ret_unit_cparam ){
-        exn = VAL_UWT_UNIT_RESULT(wp_req->c_param);
-      }
-      else if ( wp_req->c_cb == ret_uv_fs_result_unit ){
-        exn = VAL_UWT_UNIT_RESULT(((uv_fs_t*)req)->result);
-      }
-      else {
-        exn = wp_req->c_cb(req);
-      }
-      exn = CAML_CALLBACK1(wp_req,cb,exn);
-      if (unlikely( Is_exception_result(exn) )){
-        add_exception(wp_req->loop,exn);
-      }
-      wp_req->in_cb = 0;
+    value exn;
+    wp_req->in_cb = 1;
+    if ( wp_req->c_cb == ret_unit_cparam ){
+      exn = VAL_UWT_UNIT_RESULT(wp_req->c_param);
     }
+    else if ( wp_req->c_cb == ret_uv_fs_result_unit ){
+      exn = VAL_UWT_UNIT_RESULT(((uv_fs_t*)req)->result);
+    }
+    else {
+      exn = wp_req->c_cb(req);
+    }
+    exn = CAML_CALLBACK1(wp_req,cb,exn);
+    if (unlikely( Is_exception_result(exn) )){
+      add_exception(wp_req->loop,exn);
+    }
+    wp_req->in_cb = 0;
   }
   req_free_most(wp_req);
 }
@@ -1266,11 +1262,9 @@ uwt_req_cancel_noerr(value res)
   if ( wp != NULL &&
        wp->req != NULL &&
        wp->in_use == 1 &&
-       wp->cancel == 0 &&
        wp->in_cb == 0 ){
     Field(res,1) = 0;
     wp->finalize_called = 1;
-    wp->cancel = 1;
     /* At the moment only cancelable requests are exposed
        to ocaml. */
     uv_cancel(wp->req);
@@ -5670,9 +5664,6 @@ common_after_work_cb(uv_work_t *req, int status)
   if (unlikely( !req || (r = req->data) == NULL ||
                 r->cb == CB_INVALID || r->c_cb == NULL )){
     DEBUG_PF("fatal, no cb");
-    req_free_most(r);
-  }
-  else if ( r->cancel == 1 ){
     req_free_most(r);
   }
   else {

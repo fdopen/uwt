@@ -160,6 +160,7 @@ module Int_result : sig
   (** will raise [Invalid_argument], if {!is_error} is false *)
   val to_error: 'a t -> error
 
+  val plain : 'a t -> real_int
   (*
   (** create a thread that fails with an [Uv_error] - or [Invalid_argument],
       if {!is_error} is false *)

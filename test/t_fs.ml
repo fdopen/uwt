@@ -239,6 +239,35 @@ let l = [
        s.st_size = len
      in
      m_true t);
+  ("fs_cancel">::
+   fun ctx ->
+     let cancel_test ?(cnt=1_000) f =
+       let s_cnt = ref 0
+       and a_cnt = ref 0 in
+       let rec iter f accu n =
+         if n <= 0 then
+           accu
+         else
+           let nhead =
+             Lwt.catch ( fun () -> f () >|= fun _ -> incr s_cnt ) (function
+               | Lwt.Canceled -> incr a_cnt ; Lwt.fail Lwt.Canceled
+               | x -> Lwt.fail x )
+           in
+           Lwt.cancel nhead;
+           iter f (nhead::accu) (pred n)
+       in
+       let tl = iter f [] cnt in
+       assert_equal (List.length tl) cnt;
+       let t = Lwt.join tl in
+       (try Uwt.Main.run t with Lwt.Canceled -> ());
+       assert_equal true (!s_cnt < cnt);
+       assert_equal true (!s_cnt + !a_cnt = cnt);
+     in
+     (* another racy test not yet disabled.
+        Use is_contingent, if it fails to often *)
+     Common.is_contingent ctx;
+     let f () = Uwt.Fs.stat "." in
+     cancel_test f);
 ]
 
 let l = "Fs">:::l

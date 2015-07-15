@@ -222,6 +222,7 @@ let l = [
      let t = with_client @@ fun client ->
        connect client ~path:Echo_server.addr >>= fun () ->
        let write_thread = write_much client in
+       Uwt.Pipe.read_start_exn client ~cb:(fun _ -> ());
        close_wait client >>= fun () ->
        Lwt.catch ( fun () -> write_thread )
          (function
@@ -229,16 +230,6 @@ let l = [
          | x -> Lwt.fail x)
      in
      m_true t);
-  ("write_cancel">::
-   fun _ctx ->
-     let t = with_client @@ fun client ->
-       connect client ~path:Echo_server.addr >>= fun () ->
-       let buf = rba_create 1_299_827 in
-       let t = write_ba client ~buf in
-       let _ : unit Lwt.t = Lwt.pause () >|= fun () -> Lwt.cancel t in
-       t
-     in
-     assert_canceled t);
   ("read_abort">::
    fun _ctx ->
      let t = with_client @@ fun client ->

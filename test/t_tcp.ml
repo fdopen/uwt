@@ -255,6 +255,7 @@ let l = [
    fun _ctx ->
      with_client_c4 @@ fun client ->
      let write_thread = write_much client in
+     Uwt.Tcp.read_start_exn client ~cb:(fun _ -> ());
      close_wait client >>= fun () ->
      Lwt.catch ( fun () -> write_thread )
        ( function

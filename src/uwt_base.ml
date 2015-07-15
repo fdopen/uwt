@@ -58,6 +58,8 @@ module Int_result = struct
       invalid_arg "Uwt.Int_result.to_int";
     x
 
+  external plain : 'a t -> real_int = "%identity"
+
   let transform x =
     let y = (x * (-1)) - 1 in
     Obj.magic y

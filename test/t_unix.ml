@@ -66,11 +66,6 @@ let l = [
   ("gethostname">::
    fun _ctx ->
      unix_equal UU.gethostname U.gethostname ());
-  ("gethostbyname_cancel">::
-   fun _ctx ->
-     let t = UU.gethostbyname "google.com" in
-     let _ : unit Lwt.t = Lwt.pause () >|= fun () -> Lwt.cancel t in
-     assert_canceled t );
   ("gethostbyname">::
    fun _ctx ->
      m_equal U.PF_INET (
@@ -78,19 +73,6 @@ let l = [
      let name = "verylongandinvalidadzuarztgjbgf.com" in
      m_raises (Uwt.ENOENT,"gethostbyname",name)(
        UU.gethostbyname name));
-  ("gethostbyaddr_cancel">::
-   fun _ctx ->
-     let ip4 = U.inet_addr_of_string "8.8.8.8" in
-     let t = UU.gethostbyaddr ip4 in
-     Lwt.cancel t;
-     assert_canceled t);
-  ("gethostbyaddr_cancel2">::
-   fun _ctx ->
-     let ip4 = U.inet_addr_of_string "8.8.4.4" in
-     let t = UU.gethostbyaddr ip4 in
-     (* theoretically racy *)
-     let _ : unit Lwt.t = Uwt.Main.yield () >|= fun () -> Lwt.cancel t in
-     assert_canceled t );
   ("gethostbyaddr">::
    fun ctx ->
      let ip4 = U.inet_addr_of_string "8.8.8.8" in
@@ -232,13 +214,12 @@ let l = [
      | false -> cmd
      in
      let t =
-       let x = Uwt_preemptive.detach ( fun () -> Sys.command cmd ) () in
+       ignore (Uwt_preemptive.detach ( fun () -> Sys.command cmd ) ());
        Uwt.Timer.sleep 750 >>= fun () ->
        with_file ~mode:[Uwt.Fs.O_WRONLY; Uwt.Fs.O_CREAT] file @@ fun fd ->
        Lwt.catch ( fun () ->
-           UU.lockf fd U.F_TLOCK 0L >|= fun () -> Lwt.cancel x; false
+           UU.lockf fd U.F_TLOCK 0L >>= fun () -> Lwt.return_false
          ) ( fun exn ->
-           Lwt.cancel x;
            match exn with
            | Uwt.Uwt_error((Uwt.EBUSY|Uwt.EACCES|Uwt.EAGAIN),"lockf",_) ->
              Lwt.return_true

@@ -118,50 +118,72 @@ module Req = struct
   external cancel_noerr: t -> unit = "uwt_req_cancel_noerr"
   external finalize: t -> unit = "uwt_req_finalize_na" "noalloc"
 
+  let canceled = Lwt.fail Lwt.Canceled
   let ql ~typ ~f ~name ~param =
-    let sleeper,waker = Lwt.task () in
-    let req = create loop typ in
-    let (x: Int_result.unit) = f loop req waker in
+    let sleeper,waker = Lwt.task ()
+    and wait_sleeper,wait_waker = Lwt.wait ()
+    and req = create loop typ in
+    let (x: Int_result.unit) = f loop req wait_waker in
     if Int_result.is_error x then
       LInt_result.mfail ~name ~param x
     else
-      let () = Lwt.on_cancel sleeper ( fun () -> cancel_noerr req ) in
-      sleeper >>= fun x ->
-      finalize req;
-      match x with
-      | Ok x -> Lwt.return x
-      | Error x -> efail ~param name x
-
-  let qlu ~typ ~f ~name ~param =
-    let sleeper,waker = Lwt.task () in
-    let req = create loop typ in
-    let (x: Int_result.unit) = f loop req waker in
-    if Int_result.is_error x then
-      LInt_result.mfail ~name ~param x
-    else
-      let () = Lwt.on_cancel sleeper ( fun () -> cancel_noerr req ) in
-      sleeper >>= fun (x: Int_result.unit) ->
-      finalize req;
-      if Int_result.is_error x then
-        LInt_result.mfail ~name ~param x
-      else
-        Lwt.return_unit
+      let t = wait_sleeper >>= fun x ->
+        finalize req;
+        if Lwt.is_sleeping sleeper then (
+          (match x with
+          | Ok x -> Lwt.wakeup waker x
+          | Error x -> Lwt.wakeup_exn waker (Uwt_error(x,name,param)));
+          canceled)
+        else
+          match x with
+          | Ok x -> Lwt.return x
+          | Error ECANCELED -> canceled
+          | Error x -> efail ~param name x
+      in
+      Lwt.catch (fun () -> sleeper) (function
+        | Lwt.Canceled ->
+          cancel_noerr req;
+          t
+        | x -> Lwt.fail x)
 
   let qli ~typ ~f ~name ~param =
-    let sleeper,waker = Lwt.task () in
-    let req = create loop typ in
-    let (x: Int_result.unit) = f loop req waker in
+    let wait_sleeper,wait_waker = Lwt.wait ()
+    and sleeper,waker = Lwt.task ()
+    and req = create loop typ in
+    let (x: Int_result.unit) = f loop req wait_waker in
     if Int_result.is_error x then
       LInt_result.mfail ~name ~param x
     else
-      let () = Lwt.on_cancel sleeper ( fun () -> cancel_noerr req ) in
-      sleeper >>= fun (x: Int_result.int) ->
-      finalize req;
-      if Int_result.is_error x then
-        LInt_result.mfail ~name ~param x
-      else
-        let x : int = (x :> int) in
-        Lwt.return x
+      let t = wait_sleeper >>= fun x ->
+        finalize req;
+        if Lwt.is_sleeping sleeper then (
+          if Int_result.is_ok x then
+            Lwt.wakeup waker x
+          else
+            Int_result.to_exn ~param ~name x |> Lwt.wakeup_exn waker;
+          canceled
+        )
+        else (
+          if Int_result.is_ok x then
+            Lwt.return x
+          else if Int_result.plain x = (Int_result.ecanceled :> int) then
+            canceled
+          else
+            Int_result.to_exn ~param ~name x |> Lwt.fail
+        )
+      in
+      Lwt.catch (fun () -> sleeper) (function
+        | Lwt.Canceled ->
+          cancel_noerr req;
+          t
+        | x -> Lwt.fail x)
+
+  let qlu ~typ ~f ~name ~param =
+    qli ~typ ~f ~name ~param >>= fun (_:unit Int_result.t) ->
+    Lwt.return_unit
+
+  let qli ~typ ~f ~name ~param =
+    qli ~typ ~f ~name ~param >|= fun (x:int Int_result.t) -> (x :> int)
 end
 
 module Fs = struct
@@ -373,12 +395,12 @@ let qsu_common ~name sleeper (x: Int_result.unit) =
       Lwt.return_unit
 
 let qsu1 ~f ~name a =
-  let sleeper,waker = Lwt.task () in
+  let sleeper,waker = Lwt.wait () in
   let (x: Int_result.unit) = f a waker in
   qsu_common ~name sleeper x
 
 let qsu2 ~f ~name a b =
-  let sleeper,waker = Lwt.task () in
+  let sleeper,waker = Lwt.wait () in
   let (x: Int_result.unit) = f a b waker in
   qsu_common ~name sleeper x
 
@@ -388,12 +410,12 @@ let qsu2 ~f ~name a b =
   qsu_common ~name sleeper x *)
 
 let qsu4 ~f ~name a b c d =
-  let sleeper,waker = Lwt.task () in
+  let sleeper,waker = Lwt.wait () in
   let (x: Int_result.unit) = f a b c d waker in
   qsu_common ~name sleeper x
 
 let qsu5 ~f ~name a b c d e =
-  let sleeper,waker = Lwt.task () in
+  let sleeper,waker = Lwt.wait () in
   let (x: Int_result.unit) = f a b c d e waker in
   qsu_common ~name sleeper x
 
@@ -1455,9 +1477,10 @@ module C_worker = struct
   type 'a u = loop * Req.t * 'a result Lwt.u
 
   let call_internal ?(param="") ?(name="") (f: 'a -> 'b u -> t) (a:'a) : 'b Lwt.t =
-    let sleeper,waker = Lwt.task () in
-    let req = Req.create loop Req.Work in
-    match f a (loop,req,waker) with
+    let sleeper,waker = Lwt.task ()
+    and wait_sleeper,wait_waker = Lwt.wait ()
+    and req = Req.create loop Req.Work in
+    match f a (loop,req,wait_waker) with
     | exception x ->
       Req.finalize req;
       Lwt.fail x
@@ -1465,12 +1488,24 @@ module C_worker = struct
       if Int_result.is_error x then
         LInt_result.mfail ~name ~param x
       else
-        let () = Lwt.on_cancel sleeper ( fun () -> Req.cancel_noerr req ) in
-        sleeper >>= fun x ->
-        Req.finalize req;
-        match x with
-        | Ok x -> Lwt.return x
-        | Error x -> efail ~param name x
+        let t = wait_sleeper >>= fun x ->
+          Req.finalize req;
+          if Lwt.is_sleeping sleeper then (
+            (match x with
+            | Ok x -> Lwt.wakeup waker x
+            | Error x -> Lwt.wakeup_exn waker (Uwt_error(x,name,param)));
+            Req.canceled)
+          else
+            match x with
+            | Ok x -> Lwt.return x
+            | Error ECANCELED -> Req.canceled
+            | Error x -> efail ~param name x
+        in
+        Lwt.catch (fun () -> sleeper) (function
+          | Lwt.Canceled ->
+            Req.cancel_noerr req;
+            t
+          | x -> Lwt.fail x)
 
   let call a b = call_internal a b
 end
