@@ -135,10 +135,10 @@ val strerror: error -> string
 (** error name for the given error code *)
 val err_name: error -> string
 
-(** The official [result] type will be used in the future *)
-type 'a result =
+type ('a , 'b) o_result = ('a, 'b) Result.result =
   | Ok of 'a
-  | Error of error
+  | Error of 'b
+type 'a result = ('a , error) o_result
 
 module Int_result : sig
   (** [Int_result.t] is used instead of ['a result], if a function returns either an

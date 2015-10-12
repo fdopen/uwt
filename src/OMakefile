@@ -45,7 +45,7 @@ section
 		else
 			touch error.ml error_val.ml map_error.h
 
-OCAMLPACKS+= bigarray unix
+OCAMLPACKS+= bigarray unix result
 section
 	.SCANNER: scan-c-%: map_error.h config.h
 	.SCANNER: scan-ocaml-%: error.ml error_val.ml

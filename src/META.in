@@ -10,7 +10,7 @@ exists_if = "uwt.cma"
 package "base" (
  version = "@VERSION@"
  description = "Base for uwt and uv_sync"
- requires = "unix bytes bigarray"
+ requires = "unix bytes bigarray result"
  archive(byte) = "uwt-base.cma"
  archive(byte, plugin) = "uwt-base.cma"
  archive(native) = "uwt-base.cmxa"

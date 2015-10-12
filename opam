@@ -21,6 +21,7 @@ depends: [
   "base-threads"
   "base-bytes"
   "conf-libuv" {build & >= "1"}
+  "result"
   "lwt" {>= "2.4.7"}
   "ocamlfind" {build}
   "cppo" {build}

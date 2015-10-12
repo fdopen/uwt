@@ -35,9 +35,10 @@
 #include "error.ml"
 #include "config.inc"
 
-type 'a result =
+type ('a , 'b) o_result = ('a, 'b) Result.result =
 | Ok of 'a
-| Error of error
+| Error of 'b
+type 'a result = ('a , error) o_result
 
 external strerror: error -> string = "uwt_strerror"
 exception Uwt_error of error * string * string
