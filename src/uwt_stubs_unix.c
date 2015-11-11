@@ -436,7 +436,10 @@ uwt_gethostbyname(value o_name, value o_uwt)
   value ret;
   const char * mname = String_val(o_name);
   char * name;
-  if ( *mname == '\0' ){
+  if ( !uwt_is_safe_string(o_name) ){
+    ret = VAL_UWT_INT_RESULT_ECHARSET;
+  }
+  else if ( *mname == '\0' ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
   }
   else if ( (name = strdup(mname)) == NULL ){
@@ -697,19 +700,31 @@ uwt_getservbyname(value o_b, value o_uwt)
   char * p2;
   const value o_name = Field(o_b,0);
   const value o_proto = Field(o_b,1);
+
+  if ( !uwt_is_safe_string(o_name) ){
+    return VAL_UWT_INT_RESULT_ECHARSET;
+  }
+  if ( !uwt_is_safe_string(o_proto) ){
+    return VAL_UWT_INT_RESULT_ECHARSET;
+  }
+
   p1 = s_strdup(String_val(o_name));
+  if ( p1 == NULL ){
+    return VAL_UWT_INT_RESULT_ENOMEM;
+  }
+
   p2 = s_strdup(String_val(o_proto));
-  if ( p1 == NULL || p2 == NULL ){
-    ret = VAL_UWT_INT_RESULT_ENOMEM;
+  if ( p2 == NULL ){
+    free(p1);
+    return VAL_UWT_INT_RESULT_ENOMEM;
   }
-  else {
-    ret = uwt_add_worker_result(o_uwt,
-                                getservbyname_cleaner,
-                                getservbyname_worker,
-                                getservent_value,
-                                p1,
-                                p2);
-  }
+
+  ret = uwt_add_worker_result(o_uwt,
+                              getservbyname_cleaner,
+                              getservbyname_worker,
+                              getservent_value,
+                              p1,
+                              p2);
   return ret;
 }
 
@@ -784,6 +799,9 @@ uwt_getservbyport(value o_b, value o_uwt)
   const uint16_t port = htons(Long_val(o_port));
   const size_t len = caml_string_length(o_proto);
 
+  if ( !uwt_is_safe_string(o_proto) ){
+    return VAL_UWT_INT_RESULT_ECHARSET;
+  }
   p1 = malloc(sizeof port + len + 1);
   if ( p1 == NULL ){
     ret = VAL_UWT_INT_RESULT_ENOMEM;
@@ -921,7 +939,10 @@ uwt_getprotobyname(value o_name, value o_uwt)
   value ret;
   char *p1;
   const char * mname = String_val(o_name);
-  if ( *mname == '\0' ){
+  if ( !uwt_is_safe_string(o_name) ){
+    ret = VAL_UWT_INT_RESULT_ECHARSET;
+  }
+  else if ( *mname == '\0' ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
   }
   else if ( (p1 = strdup(mname)) == NULL ){
@@ -1095,6 +1116,10 @@ uwt_chdir(value o_path, value o_uwt)
   value ret;
   char * cpath;
   const char * opath = String_val(o_path);
+  if ( !uwt_is_safe_string(o_path) ){
+    ret = VAL_UWT_INT_RESULT_ECHARSET;
+    goto endp;
+  }
   if ( *opath == 0 ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
@@ -1338,6 +1363,10 @@ uwt_getpwnam(value o_path, value o_uwt)
   value ret;
   char * cpath;
   const char * opath = String_val(o_path);
+  if ( !uwt_is_safe_string(o_path) ){
+    ret = VAL_UWT_INT_RESULT_ECHARSET;
+    goto endp;
+  }
   if ( *opath == 0 ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
@@ -1530,6 +1559,10 @@ uwt_getgrnam(value o_name, value o_uwt)
   value ret;
   char * cname;
   const char * oname = String_val(o_name);
+  if ( !uwt_is_safe_string(o_name) ){
+    ret = VAL_UWT_INT_RESULT_ECHARSET;
+    goto endp;
+  }
   if ( *oname == 0 ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
@@ -1624,6 +1657,10 @@ uwt_chroot(value o_name, value o_uwt)
 {
   value ret;
   const char * oname = String_val(o_name);
+  if ( !uwt_is_safe_string(o_name) ){
+    ret = VAL_UWT_INT_RESULT_ECHARSET;
+    goto endp;
+  }
   if ( *oname == 0 ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
@@ -2229,6 +2266,9 @@ uwt_realpath(value o_name, value o_uwt)
   value ret;
   const char * mname = String_val(o_name);
   void * name;
+  if ( !uwt_is_safe_string(o_name) ){
+    return VAL_UWT_INT_RESULT_ECHARSET;
+  }
   if ( *mname == '\0' ){
     return VAL_UWT_INT_RESULT_EINVAL;
   }

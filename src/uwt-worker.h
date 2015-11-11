@@ -71,6 +71,8 @@ char * uwt_utf16_to_utf8(const WCHAR* utf16_buffer, int * error);
 WCHAR * uwt_utf8_to_utf16(const char* utf8_buffer,int *error);
 #endif
 
+int uwt_is_safe_string (value);
+
 #ifdef __cplusplus
 }
 #endif
