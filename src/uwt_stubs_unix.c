@@ -2280,7 +2280,6 @@ uwt_realpath(value o_name, value o_uwt)
   int er;
   name = uwt_utf8_to_utf16(mname,&er);
   if ( name == NULL ){
-    er = uwt_translate_sys_error(er);
     return (Val_uwt_int_result(er));
   }
 #endif
