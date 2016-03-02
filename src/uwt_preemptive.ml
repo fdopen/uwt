@@ -141,8 +141,46 @@ let threads_count = ref 0
    | Preemptive threads management                                   |
    +-----------------------------------------------------------------+ *)
 
+module CELL :
+sig
+  type 'a t
+
+  val make : unit -> 'a t
+  val get : 'a t -> 'a
+  val set : 'a t -> 'a -> unit
+end =
+struct
+  type 'a t = {
+    m  : Mutex.t;
+    cv : Condition.t;
+    mutable cell : 'a option;
+  }
+
+  let make () = { m = Mutex.create (); cv = Condition.create (); cell = None }
+
+  let get t =
+    let rec await_value t =
+      match t.cell with
+      | None ->
+        Condition.wait t.cv t.m;
+        await_value t
+      | Some v ->
+        t.cell <- None;
+        Mutex.unlock t.m;
+        v
+    in
+    Mutex.lock t.m;
+    await_value t
+
+  let set t v =
+    Mutex.lock t.m;
+    t.cell <- Some v;
+    Mutex.unlock t.m;
+    Condition.signal t.cv
+end
+
 type thread = {
-  task_channel: (int * (unit -> unit)) Event.channel;
+  task_cell: (int * (unit -> unit)) CELL.t;
   (* Channel used to communicate notification id and tasks to the
      worker thread. *)
 
@@ -163,26 +201,20 @@ let waiters : thread Lwt.u Lwt_sequence.t = Lwt_sequence.create ()
 
 (* Code executed by a worker: *)
 let rec worker_loop worker =
-  match Event.sync (Event.receive worker.task_channel) with
-  | exception exn ->
-    (* TODO: debug, how it happens - and why only on some systems.
-       Invalid_argument "index out of bounds" is sometimes
-       thrown inside Event.sync *)
-    worker.exn <- Some exn
-  | id, task ->
-    task ();
-    (* If there is too much threads, exit. This can happen if the user
+  let id, task = CELL.get worker.task_cell in
+  task ();
+  (* If there is too much threads, exit. This can happen if the user
        decreased the maximum: *)
-    if !threads_count > !max_threads then worker.reuse <- false;
-    (* Tell the main thread that work is done: *)
-    send_notification id;
-    if worker.reuse then worker_loop worker
+  if !threads_count > !max_threads then worker.reuse <- false;
+  (* Tell the main thread that work is done: *)
+  send_notification id;
+  if worker.reuse then worker_loop worker
 
 (* create a new worker: *)
 let make_worker () =
   incr threads_count;
   let worker = {
-    task_channel = Event.new_channel ();
+    task_cell = CELL.make ();
     thread = Thread.self ();
     reuse = true;
     exn = None;
@@ -276,7 +308,7 @@ let detach f args =
       (fun () ->
          incr detached_cnt;
          (* Send the id and the task to the worker: *)
-         Event.sync (Event.send worker.task_channel (id, task));
+         CELL.set worker.task_cell (id, task);
          match worker.exn with
          | None -> waiter
          | Some x ->
@@ -333,7 +365,7 @@ let job_notification =
        ignore (thunk ()))
 
 let run_in_main f =
-  let channel = Event.new_channel () in
+  let cell = CELL.make () in
   (* Create the job. *)
   let job () =
     (* Execute [f] and wait for its result. *)
@@ -341,7 +373,7 @@ let run_in_main f =
       (fun ret -> Lwt.return (Value ret))
       (fun exn -> Lwt.return (Error exn)) >>= fun result ->
     (* Send the result. *)
-    Event.sync (Event.send channel result);
+    CELL.set cell result;
     Lwt.return_unit
   in
   (* Add the job to the queue. *)
@@ -351,6 +383,6 @@ let run_in_main f =
   (* Notify the main thread. *)
   send_notification job_notification;
   (* Wait for the result. *)
-  match Event.sync (Event.receive channel) with
+  match CELL.get cell with
   | Value ret -> ret
   | Error exn -> raise exn
