@@ -168,7 +168,6 @@ module type Fs_functions = sig
   with type symlink_mode = Fs_types.symlink_mode
   with type access_permission = Fs_types.access_permission
   with type stats = Fs_types.stats
-
   type 'a t
   val openfile : ?perm:int -> mode:uv_open_flag list -> string -> file t
   val read : ?pos:int -> ?len:int -> file -> buf:bytes -> int t
@@ -202,6 +201,7 @@ module type Fs_functions = sig
   val chown : string -> uid:int -> gid:int -> unit t
   val fchown : file -> uid:int -> gid:int -> unit t
   val scandir : string -> (file_kind * string) array t
+  val realpath: string -> string t
 end
 
 module Conv = struct

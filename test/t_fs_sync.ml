@@ -271,6 +271,11 @@ let l = [
      m_true ( fun () -> with_file ~mode:[O_RDWR] z @@ fun fd ->
               ftruncate fd ~len:777L >>= fun () ->
               fstat fd >>= fun s -> s.st_size = 777L |> return ));
+  ("realpath">::
+   fun _ctx ->
+     m_true ( fun () ->
+         let p1 = Sys.getcwd () in
+         realpath "." >>= fun p2 -> return (Common.fln_cmp p1 p2 = 0 )));
 ]
 
 let l = "Fs_sync">:::l

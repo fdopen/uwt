@@ -34,6 +34,9 @@
 #endif
 #define AR_SIZE(x) (sizeof(x) / sizeof((x)[0]) + _array_size_chk(x))
 
+#define UMIN_M(x, y) (((x) < (y)) ? (x) : (y))
+#define UMAX_M(x, y) (((x) > (y)) ? (x) : (y))
+
 #if defined(HAVE_TYPEOF) && defined(HAVE_STATEMENT_EXPRESSIONS)
 #define UMAX_REAL2(a,b,L)                       \
   ({ typeof (a) _a##L = (a);                    \
@@ -64,8 +67,8 @@
   UMIN_REAL(a,b,__LINE__)
 #endif
 #else
-#define UMIN(x, y) (((x) < (y)) ? (x) : (y))
-#define UMAX(x, y) (((x) > (y)) ? (x) : (y))
+#define UMIN UMIN_M
+#define UMAX UMAX_M
 #endif
 
 #define CEIL(a, b) (((a) / (b)) + (((a) % (b)) > 0 ? 1 : 0))

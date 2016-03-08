@@ -72,6 +72,9 @@ BY(uwt_fs_symlink_byte);
 P4(uwt_fs_stat);
 P4(uwt_fs_lstat);
 P4(uwt_fs_fstat);
+#if HAVE_DECL_UV_FS_REALPATH
+P4(uwt_fs_realpath);
+#endif
 
 P2(uwt_close_wait);
 P2(uwt_get_buffer_size_common_na);

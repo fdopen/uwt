@@ -105,7 +105,6 @@ P(getprotobyname);
 P(getprotobynumber);
 P(gethostname);
 P(lockf);
-P(realpath);
 #undef P
 
 CAMLextern value uwt_pipe(value);
@@ -2047,8 +2046,36 @@ uwt_pipe(value o_close_exec)
 }
 #endif
 
+/* realpath will only be used on windows (xp compatibility :))
+   or if uv_fs_realpath is not available */
+#if HAVE_DECL_UV_FS_REALPATH == 0 || defined(_WIN32)
+
+CAMLextern value uwt_realpath(value o_name, value o_uwt);
+CAMLextern value uwt_realpath_sync(value o_name);
+
+#define ALLOC_PATH_LEN_MAX 131072
+
+#ifndef _WIN32
+
+#if defined(PATH_MAX) && PATH_MAX > 0
+#define ALLOCA_PATH_LEN \
+  ((size_t)(UMIN_M(ALLOC_PATH_LEN_MAX,(UMAX_M(PATH_MAX + 1,ALLOCA_SIZE)))))
+#elif defined(MAXPATHLEN) && MAXPATHLEN > 0
+#define ALLOCA_PATH_LEN \
+  ((size_t)(UMIN_M(ALLOC_PATH_LEN_MAX,UMAX_M(MAXPATHLEN + 1,ALLOCA_SIZE))))
+#elif defined(NAME_MAX) && NAME_MAX > 0
+#define ALLOCA_PATH_LEN \
+  ((size_t)(UMIN_M(ALLOC_PATH_LEN_MAX,UMAX_M(NAME_MAX + 1,ALLOCA_SIZE))))
+#else
+#define ALLOCA_PATH_LEN ALLOCA_SIZE
+#endif
+
+#else /* ifndef _WIN32 */
+#define ALLOCA_PATH_LEN ((size_t)(UMAX_M(32767 + 17,MAX_PATH + 17)))
+#endif
+
 #ifdef _WIN32
-#define BSIZE ((size_t)(UMAX(32767 + 17,MAX_PATH + 17)))
+#define BSIZE ALLOCA_PATH_LEN
 static void
 realpath_worker_xp(uv_work_t *req)
 {
@@ -2229,14 +2256,17 @@ realpath_worker(uv_work_t *req)
   fp = realpath(name,NULL);
 #else
 #if defined(PATH_MAX) && PATH_MAX > 0
-#define TBUF_LEN (UMAX(PATH_MAX + 1,ALLOCA_SIZE))
+#define TBUF_LEN (UMAX_M(PATH_MAX + 1,ALLOCA_SIZE))
 #elif defined(MAXPATHLEN) && MAXPATHLEN > 0
-#define TBUF_LEN (UMAX(MAXPATHLEN + 1,ALLOCA_SIZE))
+#define TBUF_LEN (UMAX_M(MAXPATHLEN + 1,ALLOCA_SIZE))
 #elif defined(NAME_MAX) && NAME_MAX > 0
-#define TBUF_LEN (UMAX(NAME_MAX + 1,ALLOCA_SIZE))
+#define TBUF_LEN (UMAX_M(NAME_MAX + 1,ALLOCA_SIZE))
 #else
 #error "PATH_MAX not defined or not positive"
 #endif /* PATH_MAX */
+#if TBUF_LEN > ALLOC_PATH_LEN_MAX
+#error "PATH_MAX too long"
+#endif
   char buf[TBUF_LEN];
   errno = 0;
   fp = realpath(name,buf);
@@ -2291,3 +2321,76 @@ uwt_realpath(value o_name, value o_uwt)
                               NULL);
   return ret;
 }
+
+CAMLprim value
+uwt_realpath_sync(value o_name)
+{
+  CAMLparam1(o_name);
+  CAMLlocal2(ret,tmp);
+  char buf[ALLOCA_PATH_LEN];
+  const char * mname = String_val(o_name);
+  void * name;
+  uv_work_t req;
+  value val_er = Val_long(-1);
+
+  struct worker_params wp;
+  wp.p1 = NULL;
+  wp.p2 = NULL;
+
+  if ( !uwt_is_safe_string(o_name) ){
+    val_er = VAL_UWT_ERROR_ECHARSET;
+    goto endf;
+  }
+  if ( *mname == '\0' ){
+    val_er = VAL_UWT_ERROR_EINVAL;
+    goto endf;
+  }
+#ifndef _WIN32
+  if ( (name = strdup(mname)) == NULL ){
+    caml_raise_out_of_memory();
+  }
+#else
+  int er;
+  name = uwt_utf8_to_utf16(mname,&er);
+  if ( name == NULL ){
+    val_er = Val_uwt_error(er);
+    goto endf;
+  }
+#endif
+  caml_enter_blocking_section();
+  wp.p1 = name;
+  req.data = &wp;
+  realpath_worker(&req);
+
+  if ( wp.p1 == NULL ){
+    val_er = Val_uwt_error(POINTER_TO_INT(wp.p2));
+  }
+  caml_leave_blocking_section();
+
+endf:
+  if ( val_er != Val_long(-1) ){
+    ret = caml_alloc_small(1,Error_tag);
+    Field(ret,0) = val_er;
+  }
+  else {
+    size_t slen = strlen(wp.p1);
+    if ( slen >= ALLOCA_PATH_LEN ){
+      ret = caml_alloc_small(1,Error_tag);
+      Field(ret,0) = VAL_UWT_ERROR_E2BIG;
+    }
+    else {
+      memcpy(buf,wp.p1,slen);
+      buf[slen] = '\0';
+      free(wp.p1);
+      tmp = caml_alloc_string(slen);
+      if ( slen > 0 ){
+        memcpy(String_val(tmp),buf,slen);
+      }
+      ret = caml_alloc_small(1,Ok_tag);
+      Field(ret,0) = tmp;
+    }
+  }
+  CAMLreturn(ret);
+}
+
+#endif  /*  HAVE_DECL_UV_FS_REALPATH == 0 || defined(_WIN32) */

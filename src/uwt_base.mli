@@ -414,6 +414,7 @@ module type Fs_functions = sig
   val chown : string -> uid:int -> gid:int -> unit t
   val fchown : file -> uid:int -> gid:int -> unit t
   val scandir : string -> (file_kind * string) array t
+  val realpath: string -> string t
 end
 
 module Conv : sig

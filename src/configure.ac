@@ -12,6 +12,7 @@ AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_DECLS([strnlen], [], [], [#include <string.h>])
 AC_CHECK_DECLS([uv_os_homedir,UV_TTY_MODE_NORMAL,UV_TTY_MODE_RAW,UV_TTY_MODE_IO],[],[],[#include <uv.h>])
+AC_CHECK_DECLS([uv_fs_realpath],[AC_SUBST(HAVE_UV_REALPATH,1)],[AC_SUBST(HAVE_UV_REALPATH,0)],[#include <uv.h>])
 
 AC_HEADER_STDBOOL
 AC_SYS_LARGEFILE

@@ -2157,6 +2157,17 @@ FSSTART(fs_fstat,o_file,{
           });
 })
 
+#if HAVE_DECL_UV_FS_REALPATH
+#define fs_realpath_cb fs_readlink_cb
+FSSTART(fs_realpath,o_path,{
+    COPY_STR1(o_path,{
+        BLOCK({ret = uv_fs_realpath(loop,req,STRING_VAL(o_path),
+                                    cb);});
+      });
+})
+#endif
+
+
 CAMLprim value
 uwt_fs_free(value o_req)
 {

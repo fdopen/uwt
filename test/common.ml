@@ -159,3 +159,28 @@ let tmpdir () =
     in
     tmpdir := dir;
     dir
+
+let fln_cmp =
+  if not Sys.win32 then
+    String.compare
+  else
+    fun p1 p2 ->
+      let slen1 = String.length p1
+      and slen2 = String.length p2
+      and is_alpha = function
+      | 'a' .. 'z' | 'A' .. 'Z' -> true
+      | _ -> false
+      in
+      if slen1 <> slen2 || slen1 < 2 || p1.[1] <> ':' || p2.[1] <> ':' then
+        String.compare p1 p2
+      else
+        let d1 = p1.[0]
+        and d2 = p2.[0] in
+        if is_alpha d1 = false || is_alpha d2 = false ||
+           Char.lowercase d1 <> Char.lowercase d2 then
+          String.compare p1 p2
+        else
+          let len = slen1 - 1 in
+          String.compare
+            (String.sub p1 1 len)
+            (String.sub p2 1 len)

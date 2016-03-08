@@ -38,7 +38,7 @@ type loop_mode =
   | Lwt
   | Cb
 *)
-
+#include "config.inc"
 open Uwt_base
 include Fs_types
 
@@ -276,3 +276,28 @@ external scandir:
   string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_scandir"
 let scandir param : (file_kind * string) array result =
   cu (scandir param)
+
+#if HAVE_UV_REALPATH = 0
+external realpath: string -> string Uwt_base.result = "uwt_realpath_sync"
+#else
+external realpath:
+  string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_realpath"
+#if  HAVE_WINDOWS = 0
+let realpath param : string result = cu (realpath param)
+#else
+external realpath_o: string -> string Uwt_base.result = "uwt_realpath_sync"
+let use_own_realpath = ref (
+    match Uwt_base.Sys_info.win_version () with
+    | Ok(x) when x.Uwt_base.Sys_info.major_version < 6 -> true
+    | _ -> false )
+let realpath param  : string result =
+  match !use_own_realpath with
+  | true -> realpath_o param
+  | false ->
+    match cu (realpath param) with
+    | Uwt_base.Error (Uwt_base.UWT_EUNAVAIL|Uwt_base.ENOSYS) ->
+      use_own_realpath:= true;
+      realpath_o param
+    | x -> x
+#endif
+#endif

@@ -186,204 +186,6 @@ module Req = struct
     qli ~typ ~f ~name ~param >|= fun (x:int Int_result.t) -> (x :> int)
 end
 
-module Fs = struct
-  include Fs_types
-
-  let typ = Req.Fs
-
-  external openfile:
-    string -> uv_open_flag list -> int ->
-    loop -> Req.t -> file cb ->
-    Int_result.unit =
-    "uwt_fs_open_byte" "uwt_fs_open_native"
-
-  let openfile ?(perm=0o644) ~mode fln =
-    Req.ql ~typ ~name:"uv_fs_open" ~param:fln ~f:(openfile fln mode perm)
-
-  external read:
-    file -> 'a -> int -> int ->
-    loop -> Req.t -> int_cb ->
-    Int_result.unit =
-    "uwt_fs_read_byte" "uwt_fs_read_native"
-
-  let read ?(pos=0) ?len t ~buf ~dim =
-    let len =
-      match len with
-      | None -> dim - pos
-      | Some x -> x
-    in
-    if pos < 0 || len < 0 || pos > dim - len then
-      Lwt.fail (Invalid_argument "Uwt.Fs.read")
-    else
-      Req.qli ~typ ~name:"uv_fs_read" ~param ~f:(read t buf pos len)
-
-  let read_ba ?pos ?len t ~(buf:buf) =
-    let dim = Bigarray.Array1.dim buf in
-    read ?pos ?len ~dim ~buf t
-
-  let read ?pos ?len t ~buf =
-    let dim = Bytes.length buf in
-    read ?pos ?len ~dim ~buf t
-
-  external write:
-    file -> 'a -> int -> int ->
-    loop -> Req.t -> int_cb ->
-    Int_result.unit =
-    "uwt_fs_write_byte" "uwt_fs_write_native"
-
-  let write ?(pos=0) ?len ~dim t ~buf =
-    let len =
-      match len with
-      | None -> dim - pos
-      | Some x -> x
-    in
-    if pos < 0 || len < 0 || pos > dim - len then
-      Lwt.fail (Invalid_argument "Uwt.Fs.write")
-    else
-      Req.qli ~typ ~name:"uv_fs_write" ~param ~f:(write t buf pos len)
-
-  let write_ba ?pos ?len t ~(buf:buf) =
-    let dim = Bigarray.Array1.dim buf in
-    write ~dim ?pos ?len t ~buf
-
-  let write_string ?pos ?len t ~buf =
-    let dim = String.length buf in
-    write ~dim ?pos ?len t ~buf
-
-  let write ?pos ?len t ~buf =
-    let dim = Bytes.length buf in
-    write ~dim ?pos ?len t ~buf
-
-  external close:
-    file -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_close"
-
-  let close fd = Req.qlu ~typ ~f:(close fd) ~name:"close" ~param
-
-  external unlink:
-    string -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_unlink"
-  let unlink param = Req.qlu ~typ ~f:(unlink param) ~name:"unlink" ~param
-
-  external mkdir:
-    string -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_mkdir"
-  let mkdir ?(perm=0o777) param =
-    Req.qlu ~typ ~f:(mkdir param perm) ~name:"mkdir" ~param
-
-  external rmdir:
-    string -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_rmdir"
-  let rmdir param =
-    Req.qlu ~typ ~f:(rmdir param) ~name:"rmdir" ~param
-
-  external rename:
-    string -> string -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_rename"
-  let rename ~src ~dst =
-    Req.qlu ~typ ~f:(rename src dst) ~name:"rename" ~param:src
-
-  external link:
-    string -> string -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_link"
-  let link ~target ~link_name =
-    Req.qlu ~typ ~f:(link target link_name) ~name:"link" ~param:target
-
-  external fsync: file -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_fsync"
-  let fsync file =
-    Req.qlu ~typ ~f:(fsync file) ~name:"fsync" ~param
-
-  external fdatasync:
-    file -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_fsync"
-  let fdatasync file =
-    Req.qlu ~typ ~f:(fdatasync file) ~name:"fdatasync" ~param
-
-  external ftruncate:
-    file -> int64 -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_ftruncate"
-  let ftruncate file ~len =
-    Req.qlu ~typ ~f:(ftruncate file len) ~name:"ftruncate" ~param
-
-  external stat:
-    string -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_stat"
-  let stat param = Req.ql ~typ ~f:(stat param) ~name:"stat" ~param
-
-  external lstat:
-    string -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_lstat"
-  let lstat param = Req.ql ~typ ~f:(lstat param) ~name:"stat" ~param
-
-  external fstat:
-    file -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_fstat"
-  let fstat fd = Req.ql ~typ ~f:(fstat fd) ~name:"fstat" ~param
-
-  external symlink:
-    string -> string -> symlink_mode -> loop -> Req.t -> unit_cb ->
-    Int_result.unit = "uwt_fs_symlink_byte" "uwt_fs_symlink_native"
-  let symlink ?(mode=S_Default) ~src ~dst () =
-    Req.qlu ~typ ~f:(symlink src dst mode) ~name:"symlink" ~param:dst
-
-  external mkdtemp:
-    string -> loop -> Req.t -> string cb -> Int_result.unit = "uwt_fs_mkdtemp"
-  let mkdtemp param =
-    Req.ql ~typ ~f:(mkdtemp param) ~name:"mkdtemp" ~param
-
-  external sendfile:
-    file -> file -> int64 -> nativeint -> loop -> Req.t -> nativeint cb ->
-    Int_result.unit = "uwt_fs_sendfile_byte" "uwt_fs_sendfile_native"
-  let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () =
-    Req.ql ~typ ~f:(sendfile dst src pos len) ~name:"sendfile" ~param
-
-  external utime:
-    string -> float -> float -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_utime_byte" "uwt_fs_utime_native"
-  let utime s ~access ~modif =
-    Req.qlu ~typ ~f:(utime s access modif) ~name:"utime" ~param:s
-
-  external futime:
-    file -> float -> float -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_futime_byte" "uwt_fs_futime_native"
-  let futime fd ~access ~modif =
-    Req.qlu ~typ ~f:(futime fd access modif) ~name:"futime" ~param
-
-  external readlink:
-    string -> loop -> Req.t -> string cb -> Int_result.unit = "uwt_fs_readlink"
-  let readlink param =
-    Req.ql ~typ ~f:(readlink param) ~name:"readlink" ~param
-
-  external access:
-    string -> access_permission list -> loop -> Req.t -> unit_cb ->
-    Int_result.unit = "uwt_fs_access"
-  let access s al = Req.qlu ~typ ~f:(access s al) ~name:"access" ~param:s
-
-  external chmod:
-    string -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_chmod"
-  let chmod param ~perm =
-    Req.qlu ~typ ~f:(chmod param perm) ~name:"chmod" ~param
-
-  external fchmod:
-    file -> int -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_fchmod"
-  let fchmod fd ~perm =
-    Req.qlu ~typ ~f:(fchmod fd perm) ~name:"fchmod" ~param
-
-  external chown:
-    string -> int -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_chown_byte" "uwt_fs_chown_native"
-  let chown s ~uid ~gid =
-    Req.qlu ~typ ~f:(chown s uid gid) ~name:"chown" ~param:s
-
-  external fchown:
-    file -> int -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_fchown_byte" "uwt_fs_fchown_native"
-  let fchown fd ~uid ~gid =
-    Req.qlu ~typ ~f:(fchown fd uid gid) ~name:"fchown" ~param
-
-  external scandir:
-    string -> loop -> Req.t -> (file_kind * string) array cb ->
-    Int_result.unit = "uwt_fs_scandir"
-  let scandir param =
-    Req.ql ~typ ~f:(scandir param) ~name:"scandir" ~param
-end
-
 let qsu_common ~name sleeper (x: Int_result.unit) =
   if (x :> int) < 0 then
     LInt_result.mfail ~name ~param x
@@ -1204,24 +1006,6 @@ module Fs_event = struct
   let start s fl ~cb = start loop s fl cb
 end
 
-module Fs_poll = struct
-  type t = u
-  include ( Handle: (module type of Handle) with type t := t )
-  external to_handle : t -> Handle.t = "%identity"
-
-  type report = {
-    prev: Fs.stats;
-    curr: Fs.stats
-  }
-
-  external start:
-    loop -> string -> int -> (t -> report result -> unit) -> t result =
-    "uwt_fs_poll_start"
-
-  let start_exn s fl ~cb = start loop s fl cb |> to_exn "fs_poll_start"
-  let start s fl ~cb = start loop s fl cb
-end
-
 module Dns = struct
 
   type socket_domain = Unix.socket_domain =
@@ -1362,114 +1146,6 @@ module Async = struct
   external stop: t -> Int_result.unit = "uwt_async_stop_na" "noalloc"
 
   external send: t -> Int_result.unit = "uwt_async_send_na" "noalloc"
-end
-
-module Main = struct
-
-  open Exception
-
-  let fatal_found = ref false (* information for exit_hook and run *)
-
-
-  exception Main_error of error * string
-  exception Deferred of (exn * Printexc.raw_backtrace) list
-  exception Fatal of exn * Printexc.raw_backtrace
-
-  let enter_iter_hooks = Lwt_sequence.create ()
-  let leave_iter_hooks = Lwt_sequence.create ()
-  let yielded = Lwt_sequence.create ()
-  let yield () = Lwt.add_task_r yielded
-
-  let rec run ~nothing_cnt task =
-    Lwt.wakeup_paused ();
-    match Lwt.poll task with
-    | Some x -> x
-    | None ->
-      (* 255 is certainly too high. But I will perhaps postpone certain tasks
-         to the next loop iteration *)
-      if nothing_cnt > 255 then
-        raise (Main_error(EOF,"nothing to do in run"))
-      else (
-        (* Call enter hooks. *)
-        Lwt_sequence.iter_l (fun f -> f ()) enter_iter_hooks;
-        (* Do the main loop call. *)
-        let mode =
-          if Lwt.paused_count () = 0 && Lwt_sequence.is_empty yielded then
-            Run_once
-          else
-            Run_nowait
-        in
-        let lr = match uv_run_loop loop mode with
-        | lr -> lr
-        | exception e ->
-          fatal_found := true;
-          let bt = Printexc.get_raw_backtrace () in
-          raise (Fatal(e,bt))
-        in
-        (match !exceptions with
-         | [] -> ()
-         | l ->
-           exceptions:= [];
-           let l = List.rev l in
-           let l =
-             if Int_result.is_error lr then
-               (Main_error(Int_result.to_error lr,"run"),
-                Printexc.get_callstack 0)::l
-             else
-               l
-           in
-           raise (Deferred l));
-        if Int_result.is_error lr then
-          raise (Main_error(Int_result.to_error lr,"run"));
-        let nothing_cnt =
-          let lr : int = (lr :> int) in
-          if lr = 0 && mode = Run_once then
-            nothing_cnt + 1
-          else
-            0
-        in
-        Lwt.wakeup_paused ();
-        (* Wakeup yielded threads now. *)
-        if not (Lwt_sequence.is_empty yielded) then begin
-          let tmp = Lwt_sequence.create () in
-          Lwt_sequence.transfer_r yielded tmp;
-          Lwt_sequence.iter_l (fun wakener -> Lwt.wakeup wakener ()) tmp
-        end;
-        (* Call leave hooks. *)
-        Lwt_sequence.iter_l (fun f -> f ()) leave_iter_hooks;
-        run ~nothing_cnt task
-      )
-
-  external cleanup: unit -> unit = "uwt_cleanup_na" "noalloc"
-
-  let run (t:'a Lwt.t) : 'a =
-    if !fatal_found then
-      failwith "uwt loop unusuable";
-    run ~nothing_cnt:0 t
-
-  let exit_hooks = Lwt_sequence.create ()
-
-  let rec call_hooks () =
-    match Lwt_sequence.take_opt_l exit_hooks with
-    | None -> Lwt.return_unit
-    | Some f ->
-      Lwt.catch
-        (fun () -> f ())
-        (fun _  -> Lwt.return_unit) >>= fun () ->
-      call_hooks ()
-
-  let () = at_exit ( fun () ->
-      if !fatal_found then ()
-      else
-        try
-          run (call_hooks ())
-        with
-        | Main_error(UWT_EBUSY,"run") -> () )
-  (* The user has probably called Pervasives.exit inside a
-     lwt thread. I can't do anything. *)
-
-  let at_exit f = ignore (Lwt_sequence.add_l f exit_hooks)
-
 end
 
 module C_worker = struct
@@ -1691,9 +1367,359 @@ module Unix = struct
         | _ , ((Error _) as x) -> x
         | Ok _, Ok _ -> assert false
 
-  external realpath:
-    string -> string C_worker.u -> C_worker.t = "uwt_realpath"
+#if HAVE_UV_REALPATH = 0
+  external realpath: string -> string C_worker.u -> C_worker.t = "uwt_realpath"
   let realpath s = C_worker.call_internal ~name:"realpath" ~param:s realpath s
+#else
+  external realpath:
+    string -> loop -> Req.t -> string cb -> Int_result.unit = "uwt_fs_realpath"
+#if HAVE_WINDOWS <> 0
+  external realpath_o: string -> string C_worker.u -> C_worker.t = "uwt_realpath"
+  let use_own_realpath = ref (
+      match Uwt_base.Sys_info.win_version () with
+      | Ok(x) when x.Uwt_base.Sys_info.major_version < 6 -> true
+      | _ -> false )
+  let realpath param =
+    match !use_own_realpath with
+    | true -> realpath_o param
+    | false ->
+      Lwt.catch (fun () ->
+          Req.ql ~typ:Req.Fs ~f:(realpath param) ~name:"realpath" ~param)
+        (function
+        | Uwt_error((UWT_EUNAVAIL|ENOSYS),"realpath",x) when x = param ->
+          use_own_realpath := true;
+          realpath_o param
+        | x -> Lwt.fail x)
+#else
+  let realpath param = Req.ql ~typ:Req.Fs ~f:(realpath param) ~name:"realpath" ~param
+#endif
+#endif
+end
+
+module Fs = struct
+  include Fs_types
+
+  let typ = Req.Fs
+
+  external openfile:
+    string -> uv_open_flag list -> int ->
+    loop -> Req.t -> file cb ->
+    Int_result.unit =
+    "uwt_fs_open_byte" "uwt_fs_open_native"
+
+  let openfile ?(perm=0o644) ~mode fln =
+    Req.ql ~typ ~name:"uv_fs_open" ~param:fln ~f:(openfile fln mode perm)
+
+  external read:
+    file -> 'a -> int -> int ->
+    loop -> Req.t -> int_cb ->
+    Int_result.unit =
+    "uwt_fs_read_byte" "uwt_fs_read_native"
+
+  let read ?(pos=0) ?len t ~buf ~dim =
+    let len =
+      match len with
+      | None -> dim - pos
+      | Some x -> x
+    in
+    if pos < 0 || len < 0 || pos > dim - len then
+      Lwt.fail (Invalid_argument "Uwt.Fs.read")
+    else
+      Req.qli ~typ ~name:"uv_fs_read" ~param ~f:(read t buf pos len)
+
+  let read_ba ?pos ?len t ~(buf:buf) =
+    let dim = Bigarray.Array1.dim buf in
+    read ?pos ?len ~dim ~buf t
+
+  let read ?pos ?len t ~buf =
+    let dim = Bytes.length buf in
+    read ?pos ?len ~dim ~buf t
+
+  external write:
+    file -> 'a -> int -> int ->
+    loop -> Req.t -> int_cb ->
+    Int_result.unit =
+    "uwt_fs_write_byte" "uwt_fs_write_native"
+
+  let write ?(pos=0) ?len ~dim t ~buf =
+    let len =
+      match len with
+      | None -> dim - pos
+      | Some x -> x
+    in
+    if pos < 0 || len < 0 || pos > dim - len then
+      Lwt.fail (Invalid_argument "Uwt.Fs.write")
+    else
+      Req.qli ~typ ~name:"uv_fs_write" ~param ~f:(write t buf pos len)
+
+  let write_ba ?pos ?len t ~(buf:buf) =
+    let dim = Bigarray.Array1.dim buf in
+    write ~dim ?pos ?len t ~buf
+
+  let write_string ?pos ?len t ~buf =
+    let dim = String.length buf in
+    write ~dim ?pos ?len t ~buf
+
+  let write ?pos ?len t ~buf =
+    let dim = Bytes.length buf in
+    write ~dim ?pos ?len t ~buf
+
+  external close:
+    file -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_close"
+
+  let close fd = Req.qlu ~typ ~f:(close fd) ~name:"close" ~param
+
+  external unlink:
+    string -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_unlink"
+  let unlink param = Req.qlu ~typ ~f:(unlink param) ~name:"unlink" ~param
+
+  external mkdir:
+    string -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_mkdir"
+  let mkdir ?(perm=0o777) param =
+    Req.qlu ~typ ~f:(mkdir param perm) ~name:"mkdir" ~param
+
+  external rmdir:
+    string -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_rmdir"
+  let rmdir param =
+    Req.qlu ~typ ~f:(rmdir param) ~name:"rmdir" ~param
+
+  external rename:
+    string -> string -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_rename"
+  let rename ~src ~dst =
+    Req.qlu ~typ ~f:(rename src dst) ~name:"rename" ~param:src
+
+  external link:
+    string -> string -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_link"
+  let link ~target ~link_name =
+    Req.qlu ~typ ~f:(link target link_name) ~name:"link" ~param:target
+
+  external fsync: file -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_fsync"
+  let fsync file =
+    Req.qlu ~typ ~f:(fsync file) ~name:"fsync" ~param
+
+  external fdatasync:
+    file -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_fsync"
+  let fdatasync file =
+    Req.qlu ~typ ~f:(fdatasync file) ~name:"fdatasync" ~param
+
+  external ftruncate:
+    file -> int64 -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_ftruncate"
+  let ftruncate file ~len =
+    Req.qlu ~typ ~f:(ftruncate file len) ~name:"ftruncate" ~param
+
+  external stat:
+    string -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_stat"
+  let stat param = Req.ql ~typ ~f:(stat param) ~name:"stat" ~param
+
+  external lstat:
+    string -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_lstat"
+  let lstat param = Req.ql ~typ ~f:(lstat param) ~name:"stat" ~param
+
+  external fstat:
+    file -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_fstat"
+  let fstat fd = Req.ql ~typ ~f:(fstat fd) ~name:"fstat" ~param
+
+  external symlink:
+    string -> string -> symlink_mode -> loop -> Req.t -> unit_cb ->
+    Int_result.unit = "uwt_fs_symlink_byte" "uwt_fs_symlink_native"
+  let symlink ?(mode=S_Default) ~src ~dst () =
+    Req.qlu ~typ ~f:(symlink src dst mode) ~name:"symlink" ~param:dst
+
+  external mkdtemp:
+    string -> loop -> Req.t -> string cb -> Int_result.unit = "uwt_fs_mkdtemp"
+  let mkdtemp param =
+    Req.ql ~typ ~f:(mkdtemp param) ~name:"mkdtemp" ~param
+
+  external sendfile:
+    file -> file -> int64 -> nativeint -> loop -> Req.t -> nativeint cb ->
+    Int_result.unit = "uwt_fs_sendfile_byte" "uwt_fs_sendfile_native"
+  let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () =
+    Req.ql ~typ ~f:(sendfile dst src pos len) ~name:"sendfile" ~param
+
+  external utime:
+    string -> float -> float -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_utime_byte" "uwt_fs_utime_native"
+  let utime s ~access ~modif =
+    Req.qlu ~typ ~f:(utime s access modif) ~name:"utime" ~param:s
+
+  external futime:
+    file -> float -> float -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_futime_byte" "uwt_fs_futime_native"
+  let futime fd ~access ~modif =
+    Req.qlu ~typ ~f:(futime fd access modif) ~name:"futime" ~param
+
+  external readlink:
+    string -> loop -> Req.t -> string cb -> Int_result.unit = "uwt_fs_readlink"
+  let readlink param =
+    Req.ql ~typ ~f:(readlink param) ~name:"readlink" ~param
+
+  external access:
+    string -> access_permission list -> loop -> Req.t -> unit_cb ->
+    Int_result.unit = "uwt_fs_access"
+  let access s al = Req.qlu ~typ ~f:(access s al) ~name:"access" ~param:s
+
+  external chmod:
+    string -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_chmod"
+  let chmod param ~perm =
+    Req.qlu ~typ ~f:(chmod param perm) ~name:"chmod" ~param
+
+  external fchmod:
+    file -> int -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_fchmod"
+  let fchmod fd ~perm =
+    Req.qlu ~typ ~f:(fchmod fd perm) ~name:"fchmod" ~param
+
+  external chown:
+    string -> int -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_chown_byte" "uwt_fs_chown_native"
+  let chown s ~uid ~gid =
+    Req.qlu ~typ ~f:(chown s uid gid) ~name:"chown" ~param:s
+
+  external fchown:
+    file -> int -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
+    "uwt_fs_fchown_byte" "uwt_fs_fchown_native"
+  let fchown fd ~uid ~gid =
+    Req.qlu ~typ ~f:(fchown fd uid gid) ~name:"fchown" ~param
+
+  external scandir:
+    string -> loop -> Req.t -> (file_kind * string) array cb ->
+    Int_result.unit = "uwt_fs_scandir"
+  let scandir param =
+    Req.ql ~typ ~f:(scandir param) ~name:"scandir" ~param
+
+  let realpath = Unix.realpath
+end
+
+module Fs_poll = struct
+  type t = u
+  include ( Handle: (module type of Handle) with type t := t )
+  external to_handle : t -> Handle.t = "%identity"
+
+  type report = {
+    prev: Fs.stats;
+    curr: Fs.stats
+  }
+
+  external start:
+    loop -> string -> int -> (t -> report result -> unit) -> t result =
+    "uwt_fs_poll_start"
+
+  let start_exn s fl ~cb = start loop s fl cb |> to_exn "fs_poll_start"
+  let start s fl ~cb = start loop s fl cb
+end
+
+module Main = struct
+
+  open Exception
+
+  let fatal_found = ref false (* information for exit_hook and run *)
+
+
+  exception Main_error of error * string
+  exception Deferred of (exn * Printexc.raw_backtrace) list
+  exception Fatal of exn * Printexc.raw_backtrace
+
+  let enter_iter_hooks = Lwt_sequence.create ()
+  let leave_iter_hooks = Lwt_sequence.create ()
+  let yielded = Lwt_sequence.create ()
+  let yield () = Lwt.add_task_r yielded
+
+  let rec run ~nothing_cnt task =
+    Lwt.wakeup_paused ();
+    match Lwt.poll task with
+    | Some x -> x
+    | None ->
+      (* 255 is certainly too high. But I will perhaps postpone certain tasks
+         to the next loop iteration *)
+      if nothing_cnt > 255 then
+        raise (Main_error(EOF,"nothing to do in run"))
+      else (
+        (* Call enter hooks. *)
+        Lwt_sequence.iter_l (fun f -> f ()) enter_iter_hooks;
+        (* Do the main loop call. *)
+        let mode =
+          if Lwt.paused_count () = 0 && Lwt_sequence.is_empty yielded then
+            Run_once
+          else
+            Run_nowait
+        in
+        let lr = match uv_run_loop loop mode with
+        | lr -> lr
+        | exception e ->
+          fatal_found := true;
+          let bt = Printexc.get_raw_backtrace () in
+          raise (Fatal(e,bt))
+        in
+        (match !exceptions with
+         | [] -> ()
+         | l ->
+           exceptions:= [];
+           let l = List.rev l in
+           let l =
+             if Int_result.is_error lr then
+               (Main_error(Int_result.to_error lr,"run"),
+                Printexc.get_callstack 0)::l
+             else
+               l
+           in
+           raise (Deferred l));
+        if Int_result.is_error lr then
+          raise (Main_error(Int_result.to_error lr,"run"));
+        let nothing_cnt =
+          let lr : int = (lr :> int) in
+          if lr = 0 && mode = Run_once then
+            nothing_cnt + 1
+          else
+            0
+        in
+        Lwt.wakeup_paused ();
+        (* Wakeup yielded threads now. *)
+        if not (Lwt_sequence.is_empty yielded) then begin
+          let tmp = Lwt_sequence.create () in
+          Lwt_sequence.transfer_r yielded tmp;
+          Lwt_sequence.iter_l (fun wakener -> Lwt.wakeup wakener ()) tmp
+        end;
+        (* Call leave hooks. *)
+        Lwt_sequence.iter_l (fun f -> f ()) leave_iter_hooks;
+        run ~nothing_cnt task
+      )
+
+  external cleanup: unit -> unit = "uwt_cleanup_na" "noalloc"
+
+  let run (t:'a Lwt.t) : 'a =
+    if !fatal_found then
+      failwith "uwt loop unusuable";
+    run ~nothing_cnt:0 t
+
+  let exit_hooks = Lwt_sequence.create ()
+
+  let rec call_hooks () =
+    match Lwt_sequence.take_opt_l exit_hooks with
+    | None -> Lwt.return_unit
+    | Some f ->
+      Lwt.catch
+        (fun () -> f ())
+        (fun _  -> Lwt.return_unit) >>= fun () ->
+      call_hooks ()
+
+  let () = at_exit ( fun () ->
+      if !fatal_found then ()
+      else
+        try
+          run (call_hooks ())
+        with
+        | Main_error(UWT_EBUSY,"run") -> () )
+  (* The user has probably called Pervasives.exit inside a
+     lwt thread. I can't do anything. *)
+
+  let at_exit f = ignore (Lwt_sequence.add_l f exit_hooks)
+
 end
 
 module Valgrind = struct

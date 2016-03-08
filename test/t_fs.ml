@@ -268,6 +268,23 @@ let l = [
      Common.is_contingent ctx;
      let f () = Uwt.Fs.stat "." in
      cancel_test f);
+  ("realpath">::
+   fun ctx ->
+     let t = realpath "." >>= fun p1 ->
+       Uwt.Unix.getcwd () >|= fun p2 ->
+       fln_cmp p1 p2 = 0
+     in
+     m_true t;
+     no_win_xp ctx;
+     let dst = tmpdir () // "link" in
+     let t =
+       realpath Sys.executable_name >>= fun src ->
+       symlink ~src ~dst () >>= fun () ->
+       Lwt.finalize
+         ( fun () -> realpath dst >|= fun src' -> fln_cmp src' src = 0 )
+         ( fun () -> unlink dst )
+     in
+     m_true t );
 ]
 
 let l = "Fs">:::l

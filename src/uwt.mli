@@ -751,8 +751,11 @@ module Unix : sig
   val pipe_exn : ?cloexec: bool -> unit -> Pipe.t * Pipe.t
 
   (** wrapper around realpath under Unix and GetFinalPathNameByHandleW
-      or GetFullPathName under windows. *)
+      or GetFullPathName under windows.
+      Deprecated. Use Uwt.Fs.realpath instead, it will also work for
+      older libuv versions. *)
   val realpath: string -> string Lwt.t
+    [@@ocaml.deprecated "Use Uwt.Fs.realpath instead"]
 end
 
 module C_worker : sig

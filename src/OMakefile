@@ -63,8 +63,10 @@ section
 	export UWT_BASE
 
 section
+	.SCANNER: scan-ocaml-%: config.inc
 	MLFILES= uv_fs_sync
 	OCAML_LIBS+= uwt-base
+	OCAMLFINDFLAGS+= -pp cppo
 	Repeat_targets($(MLFILES))
 	UV_SYNC=$(MOCamlLibrary uv-fs-sync, $(MLFILES))
 	lib:: $(UV_SYNC)
