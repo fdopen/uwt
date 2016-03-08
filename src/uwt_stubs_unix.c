@@ -278,7 +278,7 @@ nomem1:
   return NULL;
 }
 
-#ifdef HAVE_GETxxxxBYyyyy_R_POSIX
+#ifdef HAVE_GETHOSTBYyyyy_R_POSIX
 static void *
 gethost_error_code(int hno)
 {
@@ -315,7 +315,7 @@ gethostbyname_worker(uv_work_t *req)
 {
   struct worker_params * w = req->data;
   char *name = w->p1;
-#ifdef HAVE_GETxxxxBYyyyy_R_POSIX
+#ifdef HAVE_GETHOSTBYyyyy_R_POSIX
   struct hostent result_buf;
   struct hostent *host = NULL;
   char buf[ALLOCA_SIZE];
@@ -471,7 +471,7 @@ gethostbyaddr_worker(uv_work_t *req)
     len = sizeof(struct in_addr);
     type = AF_INET;
   }
-#ifdef HAVE_GETxxxxBYyyyy_R_POSIX
+#ifdef HAVE_GETHOSTBYyyyy_R_POSIX
   struct hostent result_buf;
   struct hostent *host = NULL;
   char buf[ALLOCA_SIZE];
@@ -575,7 +575,7 @@ nomem1:
   return NULL;
 }
 
-#if defined(HAVE_GETxxxxBYyyyy_R_POSIX) || defined(HAVE_GETPWNAM_R) || defined(HAVE_GETPWUID_R) || defined(HAVE_GETGRNAM_R) || defined(HAVE_GETGRGID_R)
+#if defined(HAVE_GETSERVBYyyyy_R_POSIX) || defined(HAVE_GETPROTOBYyyyy_R_POSIX) || defined(HAVE_GETPWNAM_R) || defined(HAVE_GETPWUID_R) || defined(HAVE_GETGRNAM_R) || defined(HAVE_GETGRGID_R)
 static int
 geterror_helper(int err, void *p)
 {
@@ -602,7 +602,7 @@ getservbyname_worker(uv_work_t *req)
   char * name = w->p1;
   char * p2_orig = w->p2;
   const char * proto = *p2_orig == '\0' ? NULL : p2_orig;
-#ifdef HAVE_GETxxxxBYyyyy_R_POSIX
+#ifdef HAVE_GETSERVBYyyyy_R_POSIX
   struct servent result_buf;
   struct servent *serv = NULL;
   char buf[ALLOCA_SIZE];
@@ -756,7 +756,7 @@ getservbyport_worker(uv_work_t *req)
   memcpy(&port,p1_orig,sizeof port);
   const char * proto =
     p1_orig[sizeof port] == '\0' ? NULL : (p1_orig + sizeof port);
-#ifdef HAVE_GETxxxxBYyyyy_R_POSIX
+#ifdef HAVE_GETSERVBYyyyy_R_POSIX
   struct servent result_buf;
   struct servent *serv = NULL;
   char buf[ALLOCA_SIZE];
@@ -900,7 +900,7 @@ getprotobyname_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
   char * name = w->p1;
-#ifdef HAVE_GETxxxxBYyyyy_R_POSIX
+#ifdef HAVE_GETPROTOBYyyyy_R_POSIX
   struct protoent result_buf;
   struct protoent *proto = NULL;
   char buf[ALLOCA_SIZE];
@@ -963,7 +963,7 @@ getprotobynumber_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
   const int number = POINTER_TO_INT(w->p2);
-#ifdef HAVE_GETxxxxBYyyyy_R_POSIX
+#ifdef HAVE_GETPROTOBYyyyy_R_POSIX
   struct protoent result_buf;
   struct protoent *proto = NULL;
   char buf[ALLOCA_SIZE];

@@ -78,7 +78,7 @@ let gzip_test ?prog ?args () =
     | None -> "gzip"
     | Some x -> x
     and args = match args with
-    | None -> [ "gzip" ; "--fast" ]
+    | None -> [ "gzip" ; "-1" ]
     | Some x -> x
     in
     P.spawn_exn

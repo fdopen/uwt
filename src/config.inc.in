@@ -1,4 +1,7 @@
-#define HAVE_REENTRANT_POSIX @HAVE_REENTRANT_POSIX@
+#define HAVE_REENTRANT_HOST_POSIX @HAVE_REENTRANT_HOST_POSIX@
+#define HAVE_REENTRANT_PROTO_POSIX @HAVE_REENTRANT_PROTO_POSIX@
+#define HAVE_REENTRANT_SERV_POSIX @HAVE_REENTRANT_SERV_POSIX@
+
 #define HAVE_WINDOWS @HAVE_WINDOWS@
 #define HAVE_REENTRANT_PASSWD @HAVE_REENTRANT_PASSWD@
 #define HAVE_GETLOGIN_R @HAVE_GETLOGIN_R@
@@ -7,16 +10,24 @@
 
 #ifdef DEFINE_MUTEXES
 
-#if HAVE_REENTRANT_POSIX = 0
+#if HAVE_REENTRANT_HOST_POSIX = 0
   let host_mutex = Lwt_mutex.create ()
-  let serv_mutex = Lwt_mutex.create ()
-  let proto_mutex = Lwt_mutex.create ()
 #define host_protect(args) Lwt_mutex.with_lock host_mutex ( fun () -> args )
-#define serv_protect(args) Lwt_mutex.with_lock serv_mutex ( fun () -> args )
-#define proto_protect(args) Lwt_mutex.with_lock proto_mutex ( fun () -> args )
 #else
 #define host_protect(args) args
+#endif
+
+#if HAVE_REENTRANT_SERV_POSIX = 0
+  let serv_mutex = Lwt_mutex.create ()
+#define serv_protect(args) Lwt_mutex.with_lock serv_mutex ( fun () -> args )
+#else
 #define serv_protect(args) args
+#endif
+
+#if HAVE_REENTRANT_PROTO_POSIX = 0
+  let proto_mutex = Lwt_mutex.create ()
+#define proto_protect(args) Lwt_mutex.with_lock proto_mutex ( fun () -> args )
+#else
 #define proto_protect(args) args
 #endif
 

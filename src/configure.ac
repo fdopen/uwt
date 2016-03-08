@@ -181,7 +181,9 @@ fi
 AC_SEARCH_LIBS(gethostbyname_r, [socket nsl])
 AC_SEARCH_LIBS(getservbyname_r, [socket nsl])
 
-AH_TEMPLATE([HAVE_GETxxxxBYyyyy_R_POSIX], [Define if POSIX-style getXXXXbyYYYY_r functions are available.])
+AH_TEMPLATE([HAVE_GETHOSTBYyyyy_R_POSIX], [Define if POSIX-style gethostbyYYYY_r functions are available.])
+AH_TEMPLATE([HAVE_GETSERVBYyyyy_R_POSIX], [Define if POSIX-style getservbyYYYY_r functions are available.])
+AH_TEMPLATE([HAVE_GETPROTOBYyyyy_R_POSIX], [Define if POSIX-style getprotobyYYYY_r functions are available.])
 
 OS_MACRO=0
 AC_CHECK_DECLS([_WIN32],
@@ -234,9 +236,11 @@ AC_SUBST(OS_MACRO)
 
 
 if test "$OS_MACRO" = "Netbsd" ; then
-HAVE_REENTRANT_POSIX=0
+HAVE_REENTRANT_HOST_POSIX=0
+HAVE_REENTRANT_PROTO_POSIX=0
+HAVE_REENTRANT_SERV_POSIX=0
 else
-AC_MSG_CHECKING([for POSIX-style gethostbyXXXX_r and getservbyXXXX_r])
+AC_MSG_CHECKING([for POSIX-style gethostbyXXXX_r])
 AC_TRY_LINK([
 #define _POSIX_PTHREAD_SEMANTICS
 #include <netdb.h>
@@ -244,26 +248,63 @@ AC_TRY_LINK([
 ],
 [
 struct hostent *he;
-struct servent *se;
 he = gethostbyname_r((const char *)NULL, (struct hostent *)NULL,
 (char *)NULL, (int)0, (struct hostent **)NULL, (int *)NULL);
 he = gethostbyaddr_r((const char *)NULL, (int)0, (int)0,
 (struct hostent *)NULL, (char *)NULL, (int)0, (struct hostent **)NULL,
 (int *)NULL);
+],
+HAVE_REENTRANT_HOST_POSIX=1
+AC_DEFINE(HAVE_GETHOSTBYyyyy_R_POSIX)
+AC_MSG_RESULT([yes]),
+HAVE_REENTRANT_HOST_POSIX=0
+AC_MSG_RESULT([no])
+)
+
+AC_MSG_CHECKING([for POSIX-style getservbyXXXX_r])
+AC_TRY_LINK([
+#define _POSIX_PTHREAD_SEMANTICS
+#include <netdb.h>
+#include <stddef.h>
+],
+[
+struct servent *se;
 se = getservbyname_r((const char *)NULL, (const char *)NULL,
 (struct servent *)NULL, (char *)NULL, (int)0, (struct servent **)NULL);
 se = getservbyport_r((int)0, (const char *)NULL,
 (struct servent *)NULL, (char *)NULL, (int)0, (struct servent **)NULL);
 ],
-HAVE_REENTRANT_POSIX=1
-AC_DEFINE(HAVE_GETxxxxBYyyyy_R_POSIX)
+HAVE_REENTRANT_SERV_POSIX=1
+AC_DEFINE(HAVE_GETSERVBYyyyy_R_POSIX)
 AC_MSG_RESULT([yes]),
-HAVE_REENTRANT_POSIX=0
+HAVE_REENTRANT_SERV_POSIX=0
 AC_MSG_RESULT([no])
 )
+
+AC_MSG_CHECKING([for POSIX-style getprotobyXXXX_r])
+AC_TRY_LINK([
+#define _POSIX_PTHREAD_SEMANTICS
+#include <netdb.h>
+#include <stddef.h>
+],
+[
+int x;
+x = getprotobyname_r(NULL,NULL,NULL,(size_t)0,(struct protoent **)NULL);
+x = getprotobynumber_r(0,NULL,NULL,(size_t)0,(struct protoent **)NULL);
+],
+HAVE_REENTRANT_PROTO_POSIX=1
+AC_DEFINE(HAVE_GETPROTOBYyyyy_R_POSIX)
+AC_MSG_RESULT([yes]),
+HAVE_REENTRANT_PROTO_POSIX=0
+AC_MSG_RESULT([no])
+)
+
+
 fi
 
-AC_SUBST(HAVE_REENTRANT_POSIX)
+AC_SUBST(HAVE_REENTRANT_HOST_POSIX)
+AC_SUBST(HAVE_REENTRANT_SERV_POSIX)
+AC_SUBST(HAVE_REENTRANT_PROTO_POSIX)
 
 
 AC_CHECK_FUNCS(getlogin cuserid getpwnam getgrnam getpwuid getgrgid)
