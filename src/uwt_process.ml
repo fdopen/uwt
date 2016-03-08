@@ -154,9 +154,8 @@ let ignore_close chan = ignore (Uwt_io.close chan)
 
 class virtual common timeout proc channels =
   let wait = proc.sleeper in
-  let close = lazy(Lwt.join (List.map Uwt_io.close channels) >>= fun () -> wait) in
 object(self)
-
+  val mutable closed = false
   method pid = Uwt.Process.pid_exn proc.t
 
   method state =
@@ -172,7 +171,13 @@ object(self)
     if Lwt.state wait = Lwt.Sleep then
       Uwt.Process.process_kill_exn proc.t Sys.sigkill
 
-  method close = Lwt.protected (Lazy.force close) >|= status
+  method close =
+    if closed then self#status
+    else (
+      closed <- true;
+      Lwt.protected (Lwt.join (List.map Uwt_io.close channels))
+      >>= fun () -> self#status
+    )
   method status = Lwt.protected wait >|= status
 
   initializer
@@ -195,7 +200,7 @@ object(self)
                      Lwt.return_unit
                  | false ->
                      self#terminate;
-                     Lazy.force close >>= fun _ -> Lwt.return_unit)
+                     self#close >>= fun _ -> Lwt.return_unit)
               (fun _exn ->
                  (* The exception is dropped because it can be
                     obtained with self#close. *)
