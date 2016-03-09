@@ -123,6 +123,8 @@ and 'mode _channel = {
 
   typ : typ;
   (* Type of the channel. *)
+
+  id : int;
 }
 
 and typ =
@@ -151,7 +153,7 @@ let mode wrapper = wrapper.channel.mode
 
 module Outputs = Weak.Make(struct
                              type t = output_channel
-                             let hash = Hashtbl.hash
+                             let hash t = t.channel.id
                              let equal = ( == )
                            end)
 
@@ -509,6 +511,7 @@ let make :
     mode = mode;
     offset = 0L;
     typ = Type_normal(perform_io, fun pos cmd -> try seek pos cmd with e -> Lwt.fail e);
+    id = Oo.id (object end);
   } and wrapper = {
     state = Idle;
     channel = ch;
@@ -537,6 +540,7 @@ let of_bytes ~mode bytes =
     mode = mode;
     offset = 0L;
     typ = Type_bytes;
+    id = Oo.id (object end) ;
   } and wrapper = {
     state = Idle;
     channel = ch;
