@@ -14,3 +14,7 @@ fi
 omake distclean
 find . -type f -name '*.omc' -exec rm {} \+
 find . -type f -name '.omakedb*' -exec rm {} \+
+
+if [ -d .git ]; then
+    git clean -dxf
+fi
