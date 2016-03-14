@@ -1,4 +1,4 @@
-AC_INIT([uwt], [0.0.1],[uwt@ml.ignorelist.com],[uwt])
+AC_INIT([uwt], [0.1.0],[andreashauptmann@t-online.de],[uwt])
 
 AC_PROG_CC
 
@@ -235,7 +235,7 @@ fi
 AC_SUBST(OS_MACRO)
 
 
-if test "$OS_MACRO" = "Netbsd" ; then
+if test "$OS_MACRO" = "Netbsd" -o "$OS_MACRO" = "Windows" ; then
 HAVE_REENTRANT_HOST_POSIX=0
 HAVE_REENTRANT_PROTO_POSIX=0
 HAVE_REENTRANT_SERV_POSIX=0
@@ -346,8 +346,8 @@ uwt_translate(void)
      AC_DEFINE([HAVE_UV_TRANSLATE_SYSERROR], [1], [Define to 1 if libuv supports it.])],
     [AC_MSG_RESULT([no])])
 
-# realpath test breaks cross compiling, therefore we try to avoid it
-if test "$OS_MACRO" != "Windows" ; then
+# realpath test breaks cross compiling, try to avoid it
+if test "$OS_MACRO" != "Windows" -a "$ac_cv_have_decl_uv_fs_realpath" != "yes" ; then
 AC_CHECK_FUNCS(canonicalize_file_name)
 if test "$ac_cv_func_canonicalize_file_name" != "yes" ; then
 
@@ -387,6 +387,6 @@ fi
 
 fi
 
-fi # OS != Windows
+fi # test "$OS_MACRO" != "Windows" -a "$ac_cv_have_decl_uv_fs_realpath" != "yes"
 
 AC_OUTPUT
