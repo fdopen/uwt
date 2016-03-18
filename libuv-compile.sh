@@ -45,8 +45,8 @@ if [ "$unix" = "true" ]; then
             $make clean || true
             $make distclean || true
         fi
-        ./configure --enable-static --disable-shared CC="$CC" CFLAGS="$CFLAGS -DNDEBUG -Os -g0"
-        $make all CC="$CC" CFLAGS="$CFLAGS -DNDEBUG -Os -g0"
+        ./configure --enable-static --disable-shared CC="$CC" CFLAGS="$CFLAGS -DNDEBUG -Os -g"
+        $make all CC="$CC" CFLAGS="$CFLAGS -DNDEBUG -Os -g"
     fi
     cd ..
     lib="../libuv-v${version}/.libs/libuv.a"
@@ -67,7 +67,7 @@ else
                 ;;
         esac
         export CC CFLAGS
-        sed -i 's|D_WIN32_WINNT=0x0600|D_WIN32_WINNT=0x0502 -DNDEBUG -Os -g0|g' Makefile.mingw
+        sed -i 's|D_WIN32_WINNT=0x0600|D_WIN32_WINNT=0x0600 -DNDEBUG -Os -g|g' Makefile.mingw
         make -f Makefile.mingw
     fi
     cd ..
