@@ -72,7 +72,7 @@ static.=
 		$(ConfMsgError $''libuv version not supported'')
 	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))
 		export
-		OCAMLFLAGS= -g -bin-annot -safe-string -w A-4 #-32-33-37-39-48-4 -warn-error A-32-33-37-39-48-4
+		OCAMLFLAGS= -g -bin-annot -safe-string -w A-3-4 #-32-33-37-39-48-4 -warn-error A-32-33-37-39-48-4
 		CFLAGS= $(DEVCFLAGS)
 	else
 		export
