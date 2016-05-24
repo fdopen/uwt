@@ -8,7 +8,7 @@ BYTE_ENABLED=	true
 include OMakeIncludes
 include OMakeCFLAGS
 
-LIBUV_VERSION=1.8.0
+LIBUV_VERSION=1.9.1
 CompileLibuv()=
 	if $(equal $(OSTYPE),Win32)
 		x=$(shell-code sh libuv-compile.sh "$(LIBUV_VERSION)" "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" false)

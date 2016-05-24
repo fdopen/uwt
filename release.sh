@@ -1,7 +1,6 @@
 #!/bin/sh
 
-set -e
-set -u
+set -eu
 
 curdir="$(readlink -f "$0")"
 curdir="$(dirname "$curdir")"
@@ -21,6 +20,11 @@ fi
 
 stash="$(git stash create)"
 git archive --format=tar ${stash:-HEAD} | ( cd "$mtmpf" ; tar -xf- )
+libuv_archive=
+libuv_version="$(grep '^LIBUV_VERSION='  OMakefile | sed -s 's|.*=||g')"
+if [ -f "../libuv-v${libuv_version}.tar.gz" ]; then
+    libuv_archive="${curdir}/../libuv-v${libuv_version}.tar.gz"
+fi
 
 cd src
 omake error.ml uwt-error.h error_val.ml map_error.h configure
@@ -37,6 +41,10 @@ fi
 
 cd "$mtmpf"
 rm -f .git*
+
+if [ -n "$libuv_archive" ]; then
+    cp "$libuv_archive" .
+fi
 
 $find . -type f ! -executable ! -perm 644 -exec chmod 644 {} \+
 $find . -type f -executable ! -perm 755 -exec chmod 755 {} \+
