@@ -1,6 +1,6 @@
-.PHONY: clean all distclean install uninstall lib test examples
+.PHONY: clean all distclean install uninstall lib test examples minimal
 
-VERSION=0.0.2
+VERSION=0.1.0
 PROJNAME=uwt
 USE_OCAMLFIND= true
 BYTE_ENABLED=	true
@@ -50,7 +50,7 @@ static.=
 				value $(getvar BUILD_LIBUV)
 			default
 				value $''0''
-		if $(equal $(x),$''0'')
+		if $(or $(equal $(x),$''0''), $(equal $(x),$''false''))
 			$(ConfMsgError $''libuv missing'')
 		ConfMsgWarn($''libuv not found. I will try to compile it from source'')
 		LDFLAGS_LIBUV=$(CompileLibuv )

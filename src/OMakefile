@@ -1,5 +1,5 @@
 .DEFAULT: lib
-.PHONY: clean all distclean doc lib
+.PHONY: clean all distclean doc lib minimal
 
 CC= $(OCAMLC_CC)
 CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS)
@@ -59,7 +59,7 @@ section
 		Repeat_targets($(CPPOFILES))
 	Repeat_targets($(MLFILES))
 	UWT_BASE=$(MixedLibrary uwt-base, $(CPPOFILES) $(MLFILES), $(CFILES))
-	lib:: $(UWT_BASE)
+	minimal:: $(UWT_BASE)
 	export UWT_BASE
 
 section
@@ -69,8 +69,10 @@ section
 	OCAMLFINDFLAGS+= -pp cppo
 	Repeat_targets($(MLFILES))
 	UV_SYNC=$(MOCamlLibrary uv-fs-sync, $(MLFILES))
-	lib:: $(UV_SYNC)
+	minimal:: $(UV_SYNC)
 	export UV_SYNC
+
+lib:: minimal
 
 section
 	.SCANNER: scan-ocaml-%: config.inc
@@ -122,11 +124,12 @@ section
 
 ConfReplace(META)
 section
-	x=$(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE) uwt-worker.h uwt-error.h
+	x=$(UWT_BASE) $(UV_SYNC) uwt-worker.h uwt-error.h
+	y=$(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE)
 	if $(INTERNAL_LIBUV)
 		export
 		x+=libuv$(EXT_LIB) $(glob ../libuv-v$(LIBUV_VERSION)/include/*.h)
-	Install_helper($(PROJNAME),$(x))
+	Install_helper($(PROJNAME),$(x),$(y))
 
 clean::
 	clean-helper()

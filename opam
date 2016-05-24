@@ -1,6 +1,4 @@
 opam-version: "1.2"
-name: "uwt"
-version: "0.0.2"
 maintainer: "andreashauptmann@t-online.de"
 authors: [ "andreashauptmann@t-online.de" ]
 license: "LGPL-2.1+ with OCaml linking exception"
@@ -8,9 +6,16 @@ homepage: "https://github.com/fdopen/uwt"
 dev-repo: "https://github.com/fdopen/uwt.git"
 bug-reports: "https://github.com/fdopen/uwt/issues"
 tags: ["clib:libuv"]
-build: [["omake" "lib"]]
-install: [["omake" "install"]]
-build-test: [["omake" "test"]]
+build: [
+ ["omake" "-j%{jobs}%" "minimal"] {!lwt:installed}
+ ["omake" "-j%{jobs}%" "lib"] {lwt:installed}
+]
+install: [
+ ["omake" "install"]
+]
+build-test: [
+ ["omake" "test" ]
+]
 remove: [
   ["ocamlfind" "remove" "uwt"]
 ]
@@ -20,23 +25,20 @@ depends: [
   "base-bigarray"
   "base-threads"
   "base-bytes"
-  "conf-libuv" {build & >= "1"}
-  "result"
-  "lwt" {>= "2.4.7"}
+  "conf-autoconf" {build} # pin only
+  "conf-pkg-config" {build}
   "ocamlfind" {build}
+  "conf-libuv" # pin only, deptops for releases
   "cppo" {build}
   "omake" {build}
+  "result"
   "ounit" {test & >= "2.0"}
   "ppx_deriving" {test & >= "2.0"}
   "ppx_import" {test & >= "1.0"}
 ]
-depexts: [
-  [["debian"] ["libtool" "autoconf" "automake"]]
-  [["ubuntu"] ["libtool" "autoconf" "automake"]]
-  [["centos"] ["libtool" "autoconf" "automake"]]
-  [["freebsd"] ["pkgconf" "libuv"]]
-  [["osx" "homebrew"] ["libuv" "pkg-config"]]
+depopts: [
+  "lwt"
 ]
-post-messages: [
-  "Could not build uwt. The most common reason for that is a missing or old 'libuv' system package (version 0.x is not supported)." {failure}
+conflicts: [
+ "lwt" {< "2.4.7"}
 ]

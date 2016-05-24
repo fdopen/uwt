@@ -210,15 +210,16 @@ pkg_config_between_vers(name, libname, min_ver, too_high_ver) =
     value false
   export
 
-Install_helper(name, OBJFILES)=
+Install_helper(name, OBJFILES, OPT_OBJFILES)=
 	MLIS=
-		t1=$(replacesuffixes .cmo .cma .cmx .cmxa .cmxs .cmti .o .a, .mli .mli .mli .mli .mli .mli .mli .mli, $(OBJFILES))
+		t1=$(replacesuffixes .cmo .cma .cmx .cmxa .cmxs .cmti .o .a, .mli .mli .mli .mli .mli .mli .mli .mli, $(OBJFILES) $(OPT_OBJFILES))
 		t2=$(set $(filter %.mli, $(t1)))
 		value $(filter-exists $(t2))
 	IFILES= $(set $(filter-out %.o %.cmo, $(OBJFILES)) $(MLIS) )
-	CMTIFILES=$(set $(replacesuffixes .cmo, .cmti, $(filter %.cmo, $(OBJFILES))))
+	OPT_IFILES=$(set $(filter-out %.o %.cmo, $(OPT_OBJFILES) ))
+	CMTIFILES=$(set $(replacesuffixes .cmo, .cmti, $(filter %.cmo, $(OBJFILES) $(OPT_OBJFILES))))
 	install:: META $(OBJFILES)
 		$(OCAMLFIND) remove $(name) || true
-		$(OCAMLFIND) install -patch-version $(VERSION) $(name) META $(IFILES) -optional $(CMTIFILES)
+		$(OCAMLFIND) install -patch-version $(VERSION) $(name) META $(IFILES) -optional $(CMTIFILES) $(OPT_IFILES)
 	uninstall::
 		$(OCAMLFIND) remove $(name)
