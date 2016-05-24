@@ -1375,6 +1375,8 @@ module Unix = struct
     string -> loop -> Req.t -> string cb -> Int_result.unit = "uwt_fs_realpath"
 #if HAVE_WINDOWS <> 0
   external realpath_o: string -> string C_worker.u -> C_worker.t = "uwt_realpath"
+  let realpath_o s =
+    C_worker.call_internal ~name:"realpath" ~param:s realpath_o s
   let use_own_realpath = ref (
       match Uwt_base.Sys_info.win_version () with
       | Ok(x) when x.Uwt_base.Sys_info.major_version < 6 -> true
