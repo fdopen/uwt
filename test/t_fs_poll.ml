@@ -11,8 +11,8 @@ let poll_file () =
         Lwt.wakeup_exn waker (Failure msg)
       in
       let cb t = function
-      | Uwt.Error x -> abort t @@ Uwt.strerror x
-      | Uwt.Ok x ->
+      | Error x -> abort t @@ Uwt.strerror x
+      | Ok x ->
         let open Uwt.Fs_poll in
         let s1 = String.length @@ Show_uwt.show_stats x.curr
         and s2 = String.length @@ Show_uwt.show_stats x.prev in

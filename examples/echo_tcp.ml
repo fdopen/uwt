@@ -24,8 +24,8 @@ let on_listen server x =
     ignore(Uwt_io.printl "listen error")
   else
     match T.accept server with
-    | Uwt.Error _ -> Lwt.ignore_result(Uwt_io.printl "accept error")
-    | Uwt.Ok c -> ignore (echo_client c)
+    | Error _ -> Lwt.ignore_result(Uwt_io.printl "accept error")
+    | Ok c -> ignore (echo_client c)
 
 let echo_server () =
   let server = T.init () in

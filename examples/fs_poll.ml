@@ -2,8 +2,8 @@ module U = Uwt
 module UP = U.Fs_poll
 
 let cb _t = function
-| Uwt.Error x -> ignore ( Uwt.strerror x |> Uwt_io.printf "error: %s\n")
-| Uwt.Ok x ->
+| Error x -> ignore ( Uwt.strerror x |> Uwt_io.printf "error: %s\n")
+| Ok x ->
   let open UP in
   let open Show_uwt in
   let (-) = Int64.sub in

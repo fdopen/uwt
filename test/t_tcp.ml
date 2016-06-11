@@ -44,8 +44,8 @@ module Echo_server (X: Sockaddr) = struct
       ignore(Uwt_io.printl "listen error")
     else
       match accept server with
-      | Uwt.Error _ -> Lwt.ignore_result (Uwt_io.printl "accept error")
-      | Uwt.Ok c -> ignore (echo_client c)
+      | Error _ -> Lwt.ignore_result (Uwt_io.printl "accept error")
+      | Ok c -> ignore (echo_client c)
 
   let start () =
     let server = init () in
@@ -217,14 +217,14 @@ let l = [
        done;
        let sleeper,waker = Lwt.task () in
        let cb_read = function
-       | Uwt.Ok b ->
+       | Ok b ->
          for i = 0 to Bytes.length b - 1 do
            if Bytes.unsafe_get b i <> Char.chr (!bytes_read land 255) then
              Lwt.wakeup_exn waker (Failure "read wrong content");
            incr bytes_read;
          done
-       | Uwt.Error Uwt.EOF -> Lwt.wakeup waker ()
-       | Uwt.Error _ -> Lwt.wakeup_exn waker (Failure "fatal error!")
+       | Error Uwt.EOF -> Lwt.wakeup waker ()
+       | Error _ -> Lwt.wakeup_exn waker (Failure "fatal error!")
        in
        let cb_write () =
          bytes_written := buf_len + !bytes_written;

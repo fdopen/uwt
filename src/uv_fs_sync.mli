@@ -7,4 +7,4 @@
 *)
 
 include Uwt_base.Fs_functions
-  with type 'a t := 'a Uwt_base.result
+  with type 'a t := 'a Uwt_base.uv_result

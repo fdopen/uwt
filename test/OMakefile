@@ -2,7 +2,7 @@
 .DEFAULT: build-tests
 
 section
-	OCAMLPACKS= unix
+	OCAMLPACKS+= unix
 	FILES=lock_helper
 	Repeat_targets($(FILES))
 	LOCKH=$(OCamlProgram lock_helper,$(FILES))

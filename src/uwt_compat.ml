@@ -364,8 +364,8 @@ module Lwt_unix = struct
     | Tcp _ -> Lwt.return_none
     | Pipe fd ->
       match Uwt.Pipe.fileno fd with
-      | Uwt.Error _ -> Lwt.return_none
-      | Uwt.Ok fd ->
+      | Error _ -> Lwt.return_none
+      | Ok fd ->
         Uwt.Conv.file_of_file_descr fd |> Lwt.return)
     >>= function
     | None -> Lwt.return_false
@@ -591,29 +591,29 @@ module Lwt_unix = struct
     | Uwt.Uwt_error(x,y,z) -> raise (U.Unix_error(er_code x,y,z))
 
   external epipe:
-    bool -> (U.file_descr * U.file_descr) Uwt.result = "uwt_pipe"
+    bool -> (U.file_descr * U.file_descr) Uwt.uv_result = "uwt_pipe"
 
   let pclose x =
     try U.close x with U.Unix_error _ -> ()
 
   let pipe_in () =
     match epipe true with
-    | Uwt.Error x -> raise (U.Unix_error(er_code x,"pipe",""))
-    | Uwt.Ok (out_fd, in_fd) ->
+    | Error x -> raise (U.Unix_error(er_code x,"pipe",""))
+    | Ok (out_fd, in_fd) ->
       match Uwt.Pipe.openpipe out_fd with
-      | Uwt.Ok x -> Pipe x,in_fd
-      | Uwt.Error x ->
+      | Ok x -> Pipe x,in_fd
+      | Error x ->
         pclose out_fd;
         pclose in_fd;
         raise (U.Unix_error(er_code x,"pipe",""))
 
   let pipe_out () =
     match epipe true with
-    | Uwt.Error x -> raise (U.Unix_error(er_code x,"pipe",""))
-    | Uwt.Ok (out_fd, in_fd) ->
+    | Error x -> raise (U.Unix_error(er_code x,"pipe",""))
+    | Ok (out_fd, in_fd) ->
       match Uwt.Pipe.openpipe in_fd with
-      | Uwt.Ok x -> out_fd,Pipe x
-      | Uwt.Error x ->
+      | Ok x -> out_fd,Pipe x
+      | Error x ->
         pclose out_fd;
         pclose in_fd;
         raise (U.Unix_error(er_code x,"pipe",""))

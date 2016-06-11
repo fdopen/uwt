@@ -8,8 +8,8 @@ module US = Uv_fs_sync
 module UF = Uwt_base.Fs_types
 
 let rexn s = function
-| Uwt_base.Ok x -> x
-| Uwt_base.Error r ->
+| Ok x -> x
+| Error r ->
   Printf.eprintf "%s %s:%s\n%!" s (Uwt_base.err_name r) (Uwt_base.strerror r);
   raise Exit
 

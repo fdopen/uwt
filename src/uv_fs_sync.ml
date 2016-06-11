@@ -39,11 +39,12 @@ type loop_mode =
   | Cb
 *)
 #include "config.inc"
+
 open Uwt_base
 include Fs_types
 
 type loop
-external uv_default_loop: int -> loop result = "uwt_default_loop"
+external uv_default_loop: int -> loop uv_result = "uwt_default_loop"
 let loop =
   match uv_default_loop 0 with (* Lwt of disabled loop_mode *)
   | Error _ ->
@@ -170,7 +171,7 @@ external openfile:
   Int_result.int =
   "uwt_fs_open_byte" "uwt_fs_open_native"
 
-let openfile ?(perm=0o644) ~mode fln : file result =
+let openfile ?(perm=0o644) ~mode fln : file uv_result =
   cu (openfile fln mode perm)
 
 
@@ -248,54 +249,54 @@ external sendfile:
   file -> file -> int64 -> nativeint -> loop -> Req.t -> unit ->
   Int_result.int = "uwt_fs_sendfile_byte" "uwt_fs_sendfile_native"
 
-let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () : nativeint result =
+let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () : nativeint uv_result =
   cu (sendfile dst src pos len)
 
 external stat:
   string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_stat"
 
-let stat param : stats result = cu (stat param)
+let stat param : stats uv_result = cu (stat param)
 
 external lstat:
   string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_lstat"
-let lstat param : stats result = cu (lstat param)
+let lstat param : stats uv_result = cu (lstat param)
 
 external fstat:
   file -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_fstat"
-let fstat fd : stats result = cu (fstat fd)
+let fstat fd : stats uv_result = cu (fstat fd)
 
 external mkdtemp:
   string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_mkdtemp"
-let mkdtemp param : string result = cu (mkdtemp param)
+let mkdtemp param : string uv_result = cu (mkdtemp param)
 
 external readlink:
   string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_readlink"
-let readlink param : string result = cu (readlink param)
+let readlink param : string uv_result = cu (readlink param)
 
 external scandir:
   string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_scandir"
-let scandir param : (file_kind * string) array result =
+let scandir param : (file_kind * string) array uv_result =
   cu (scandir param)
 
 #if HAVE_UV_REALPATH = 0
-external realpath: string -> string Uwt_base.result = "uwt_realpath_sync"
+external realpath: string -> string Uwt_base.uv_result = "uwt_realpath_sync"
 #else
 external realpath:
   string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_realpath"
 #if  HAVE_WINDOWS = 0
-let realpath param : string result = cu (realpath param)
+let realpath param : string uv_result = cu (realpath param)
 #else
-external realpath_o: string -> string Uwt_base.result = "uwt_realpath_sync"
+external realpath_o: string -> string Uwt_base.uv_result = "uwt_realpath_sync"
 let use_own_realpath = ref (
     match Uwt_base.Sys_info.win_version () with
     | Ok(x) when x.Uwt_base.Sys_info.major_version < 6 -> true
     | _ -> false )
-let realpath param  : string result =
+let realpath param  : string uv_result =
   match !use_own_realpath with
   | true -> realpath_o param
   | false ->
     match cu (realpath param) with
-    | Uwt_base.Error (Uwt_base.UWT_EUNAVAIL|Uwt_base.ENOSYS) ->
+    | Error (Uwt_base.UWT_EUNAVAIL|Uwt_base.ENOSYS) ->
       use_own_realpath:= true;
       realpath_o param
     | x -> x

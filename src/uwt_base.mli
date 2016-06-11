@@ -135,10 +135,7 @@ val strerror: error -> string
 (** error name for the given error code *)
 val err_name: error -> string
 
-type ('a , 'b) o_result = ('a, 'b) Result.result =
-  | Ok of 'a
-  | Error of 'b
-type 'a result = ('a , error) o_result
+type 'a uv_result = ('a , error) result
 
 module Int_result : sig
   (** [Int_result.t] is used instead of ['a result], if a function returns either an
@@ -488,33 +485,33 @@ module Misc : sig
 
   val guess_handle: file -> handle_type
 
-  val resident_set_memory : unit -> int64 result
+  val resident_set_memory : unit -> int64 uv_result
   val resident_set_memory_exn : unit -> int64
 
-  val uptime : unit -> float result
+  val uptime : unit -> float uv_result
   val uptime_exn : unit -> float
 
-  val getrusage : unit -> rusage result
+  val getrusage : unit -> rusage uv_result
   val getrusage_exn : unit -> rusage
 
-  val cpu_info : unit -> cpu_info array result
+  val cpu_info : unit -> cpu_info array uv_result
   val cpu_info_exn : unit -> cpu_info array
 
-  val interface_addresses: unit -> interface_address array result
+  val interface_addresses: unit -> interface_address array uv_result
   val interface_addresses_exn: unit -> interface_address array
 
   val load_avg: unit -> float * float * float
 
-  val ip4_addr: string -> int -> sockaddr result
+  val ip4_addr: string -> int -> sockaddr uv_result
   val ip4_addr_exn: string -> int -> sockaddr
 
-  val ip4_name: sockaddr -> string result
+  val ip4_name: sockaddr -> string uv_result
   val ip4_name_exn: sockaddr -> string
 
-  val ip6_addr: string -> int -> sockaddr result
+  val ip6_addr: string -> int -> sockaddr uv_result
   val ip6_addr_exn: string -> int -> sockaddr
 
-  val ip6_name: sockaddr -> string result
+  val ip6_name: sockaddr -> string uv_result
   val ip6_name_exn: sockaddr -> string
 
   val get_total_memory: unit -> int64
@@ -528,11 +525,11 @@ module Misc : sig
   val version: unit -> version
   val version_raw: unit -> int
   val version_string: unit -> string
-  val os_homedir: unit -> string result
+  val os_homedir: unit -> string uv_result
 
   (** like Sys.executable_name , but utf-8 encoded under windows
       and perhaps more reliable under niche operating systems *)
-  val exepath: unit -> string result
+  val exepath: unit -> string uv_result
 end
 
 module Sys_info : sig
@@ -569,5 +566,5 @@ module Sys_info : sig
       UWT_EUNAVAIL] on non windows systems.
       Your application must be manifested, otherwise you will get
       wrong informations on windows 8.1 and newer *)
-  val win_version: unit -> win_version result
+  val win_version: unit -> win_version uv_result
 end

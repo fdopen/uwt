@@ -58,7 +58,7 @@ module LInt_result = struct
       Lwt.fail_invalid_arg "Uwt.Int_result.fail"
 end
 
-type 'a cb = 'a result Lwt.u
+type 'a cb = 'a uv_result Lwt.u
 
 type int_cb = Int_result.int Lwt.u
 type unit_cb = Int_result.unit Lwt.u
@@ -93,7 +93,7 @@ let () = Callback.register "uwt.wakeup" Lwt.wakeup
 (* external uv_loop_close: loop -> Int_result.unit = "uwt_loop_close" *)
 external uv_run_loop: loop -> uv_run_mode -> Int_result.int = "uwt_run_loop"
 
-external uv_default_loop: int -> loop result = "uwt_default_loop"
+external uv_default_loop: int -> loop uv_result = "uwt_default_loop"
 let loop =
   match uv_default_loop 1 with (* Lwt of disabled loop_mode *)
   | Error _ ->
@@ -284,7 +284,7 @@ end
 
 module Handle_fileno = struct
   type t = u
-  external fileno: u -> Unix.file_descr result = "uwt_fileno"
+  external fileno: u -> Unix.file_descr uv_result = "uwt_fileno"
   let fileno_exn s = fileno s |> to_exn "uv_fileno"
 end
 
@@ -296,7 +296,7 @@ module Stream = struct
   external write_queue_size : t -> int = "uwt_write_queue_size_na" "noalloc"
 
   external read_start:
-    t  -> cb:(Bytes.t result -> unit) -> Int_result.unit = "uwt_read_start"
+    t  -> cb:(Bytes.t uv_result -> unit) -> Int_result.unit = "uwt_read_start"
   let read_start_exn a ~cb = read_start a ~cb |> to_exnu "uv_read_start"
 
   external iread_stop: t -> bool -> Int_result.unit = "uwt_read_stop"
@@ -488,11 +488,11 @@ module Pipe = struct
   include (Handle_ext: (module type of Handle_ext) with type t := t)
   include (Handle_fileno: (module type of Handle_fileno) with type t := t)
 
-  external e_openpipe : loop -> Unix.file_descr -> bool -> t result = "uwt_pipe_open"
+  external e_openpipe : loop -> Unix.file_descr -> bool -> t uv_result = "uwt_pipe_open"
   let openpipe_exn ?(ipc=false) f = e_openpipe loop f ipc |> to_exn "pipe_open"
   let openpipe ?(ipc=false) f = e_openpipe loop f ipc
 
-  external e_init : loop -> bool -> t result = "uwt_pipe_init"
+  external e_init : loop -> bool -> t uv_result = "uwt_pipe_init"
   let init ?(ipc=false) () =
     match e_init loop ipc with
     | Ok x -> x
@@ -508,7 +508,7 @@ module Pipe = struct
     t -> path:string -> Int_result.unit = "uwt_pipe_bind_na" "noalloc"
   let bind_exn a ~path = bind a ~path |> to_exnu "pipe_bind"
 
-  external getsockname: t -> string result = "uwt_pipe_getsockname"
+  external getsockname: t -> string uv_result = "uwt_pipe_getsockname"
   let getsockname_exn a = getsockname a |> to_exn "pipe_getsockname"
 
   external pending_instances:
@@ -559,7 +559,7 @@ module Tty = struct
   include (Handle_fileno: (module type of Handle_fileno) with type t := t)
   external to_stream : t -> Stream.t = "%identity"
 
-  external init: loop -> file -> bool -> t result = "uwt_tty_init"
+  external init: loop -> file -> bool -> t uv_result = "uwt_tty_init"
   let init_exn f ~read = init loop f read |> to_exn "tty_init"
   let init f ~read = init loop f read
 
@@ -581,7 +581,7 @@ module Tty = struct
     width: int;
     height: int;
   }
-  external get_winsize:  t -> winsize result = "uwt_tty_get_winsize"
+  external get_winsize:  t -> winsize uv_result = "uwt_tty_get_winsize"
   let get_winsize_exn t = get_winsize t |> to_exn "tty_get_winsize"
 end
 
@@ -595,7 +595,7 @@ module Tcp = struct
   type mode =
     | Ipv6_only
 
-  external init_raw: loop -> t result = "uwt_tcp_init"
+  external init_raw: loop -> t uv_result = "uwt_tcp_init"
   let init () =
     match init_raw loop with
     | Ok x -> x
@@ -635,10 +635,10 @@ module Tcp = struct
   let simultaneous_accepts_exn t x =
     simultaneous_accepts t x |> to_exnu "tcp_simultaneous_accepts"
 
-  external getsockname: t -> sockaddr result = "uwt_tcp_getsockname"
+  external getsockname: t -> sockaddr uv_result = "uwt_tcp_getsockname"
   let getsockname_exn t = getsockname t |> to_exn "tcp_getsockname"
 
-  external getpeername: t -> sockaddr result = "uwt_tcp_getpeername"
+  external getpeername: t -> sockaddr uv_result = "uwt_tcp_getpeername"
   let getpeername_exn t = getpeername t |> to_exn "tcp_getpeername"
 
   external connect:
@@ -698,7 +698,7 @@ module Udp = struct
   external send_queue_size: t -> int = "uwt_udp_send_queue_size_na" "noalloc"
   external send_queue_count: t -> int = "uwt_udp_send_queue_count_na" "noalloc"
 
-  external init_raw: loop -> t result = "uwt_udp_init"
+  external init_raw: loop -> t uv_result = "uwt_udp_init"
   let init () =
     match init_raw loop with
     | Ok x -> x
@@ -728,7 +728,7 @@ module Udp = struct
   let bind_exn ?(mode=[]) t ~addr () = bind t addr mode |> to_exnu "udp_bind"
   let bind ?(mode=[]) t ~addr () = bind t addr mode
 
-  external getsockname: t -> sockaddr result = "uwt_udp_getsockname"
+  external getsockname: t -> sockaddr uv_result = "uwt_udp_getsockname"
   let getsockname_exn t = getsockname t |> to_exn "udp_getsockname"
 
   type membership =
@@ -927,7 +927,7 @@ module Timer = struct
   external to_handle : t -> Handle.t = "%identity"
 
   external start:
-    loop -> ( t -> unit ) -> int -> int -> t result = "uwt_timer_start"
+    loop -> ( t -> unit ) -> int -> int -> t uv_result = "uwt_timer_start"
 
   let start ~repeat ~timeout ~cb =
     if repeat < 0 || timeout < 0 then
@@ -954,7 +954,7 @@ module Signal = struct
   external to_handle : t -> Handle.t = "%identity"
 
   external start:
-    loop -> int -> (t -> int -> unit) -> t result = "uwt_signal_start"
+    loop -> int -> (t -> int -> unit) -> t uv_result = "uwt_signal_start"
 
   let sigbreak = -50
   let sigwinch = -51
@@ -975,7 +975,7 @@ module Poll = struct
     | Readable_writable
 
   external start:
-    loop -> Unix.file_descr -> event -> ( t -> event result -> unit ) -> t result
+    loop -> Unix.file_descr -> event -> ( t -> event uv_result -> unit ) -> t uv_result
     = "uwt_poll_start"
 
   let start_exn f e ~cb = start loop f e cb |> to_exn "poll_start"
@@ -996,10 +996,10 @@ module Fs_event = struct
     | Stat
     | Recursive
 
-  type cb = t -> (string * event list) result -> unit
+  type cb = t -> (string * event list) uv_result -> unit
 
   external start:
-    loop -> string -> flags list -> cb -> t result =
+    loop -> string -> flags list -> cb -> t uv_result =
     "uwt_fs_event_start"
 
   let start_exn s fl ~cb = start loop s fl cb |> to_exn "fs_event_start"
@@ -1083,7 +1083,7 @@ module Process = struct
     string array * string option ->
     exit_cb option ->
     string * string array ->
-    t result = "uwt_spawn"
+    t uv_result = "uwt_spawn"
 
   let spawn ?stdin ?stdout ?stderr ?uid ?gid ?(verbatim_arguments=false)
       ?(detach=false) ?(hide=true) ?(env=[]) ?cwd ?exit_cb exe args
@@ -1139,7 +1139,7 @@ module Async = struct
   include (Handle: (module type of Handle) with type t := t )
   external to_handle : t -> Handle.t = "%identity"
 
-  external create: loop -> ( t -> unit ) -> t result = "uwt_async_create"
+  external create: loop -> ( t -> unit ) -> t uv_result = "uwt_async_create"
   let create cb = create loop cb
 
   external start: t -> Int_result.unit = "uwt_async_start_na" "noalloc"
@@ -1150,7 +1150,7 @@ end
 
 module C_worker = struct
   type t = unit Int_result.t
-  type 'a u = loop * Req.t * 'a result Lwt.u
+  type 'a u = loop * Req.t * 'a uv_result Lwt.u
 
   let call_internal ?(param="") ?(name="") (f: 'a -> 'b u -> t) (a:'a) : 'b Lwt.t =
     let sleeper,waker = Lwt.task ()
@@ -1336,7 +1336,7 @@ module Unix = struct
     Timer.sleep msi
 
   external pipe:
-    bool -> (Unix.file_descr * Unix.file_descr) result = "uwt_pipe"
+    bool -> (Unix.file_descr * Unix.file_descr) uv_result = "uwt_pipe"
 
   let close_noerr x =
     try Unix.close x with Unix.Unix_error _ -> ()
@@ -1609,7 +1609,7 @@ module Fs_poll = struct
   }
 
   external start:
-    loop -> string -> int -> (t -> report result -> unit) -> t result =
+    loop -> string -> int -> (t -> report uv_result -> unit) -> t uv_result =
     "uwt_fs_poll_start"
 
   let start_exn s fl ~cb = start loop s fl cb |> to_exn "fs_poll_start"

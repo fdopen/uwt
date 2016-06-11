@@ -1475,8 +1475,8 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) sockaddr
         Uwt.Tcp.close_noerr server
       else
         match Uwt.Tcp.accept server with
-        | Uwt.Error _ -> ()
-        | Uwt.Ok client ->
+        | Error _ -> ()
+        | Ok client ->
           ignore (Uwt.Tcp.nodelay client true);
           let s_client = Uwt.Tcp.to_stream client in
           f_cb s_client

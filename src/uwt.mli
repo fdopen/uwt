@@ -71,7 +71,7 @@
 
 include module type of Uwt_base
   with type error = Uwt_base.error
-  with type 'a result = 'a Uwt_base.result
+  with type 'a uv_result = 'a Uwt_base.uv_result
   with type file = Uwt_base.file
   with type sockaddr = Uwt_base.sockaddr
   with type 'a Int_result.t = 'a Uwt_base.Int_result.t
@@ -245,7 +245,7 @@ module Handle_fileno : sig
 
       - Don't pass the file descriptor to functions like {!Pipe.openpipe}
         or {!Poll.start}  *)
-  val fileno : t -> Unix.file_descr result
+  val fileno : t -> Unix.file_descr uv_result
   val fileno_exn : t -> Unix.file_descr
 end
 
@@ -257,8 +257,8 @@ module Stream : sig
   val is_readable : t -> bool
   val is_writable : t -> bool
 
-  val read_start : t -> cb:(Bytes.t result -> unit) -> Int_result.unit
-  val read_start_exn : t -> cb:(Bytes.t result -> unit) -> unit
+  val read_start : t -> cb:(Bytes.t uv_result -> unit) -> Int_result.unit
+  val read_start_exn : t -> cb:(Bytes.t uv_result -> unit) -> unit
 
   val read_stop : t -> Int_result.unit
   val read_stop_exn : t -> unit
@@ -334,13 +334,13 @@ module Pipe : sig
      pipe (or tcp socket,...) you can trigger assert failures inside libuv.
      @param ipc is false by default
   *)
-  val openpipe : ?ipc:bool -> Unix.file_descr -> t result
+  val openpipe : ?ipc:bool -> Unix.file_descr -> t uv_result
   val openpipe_exn : ?ipc:bool -> Unix.file_descr -> t
 
   val bind: t -> path:string -> Int_result.unit
   val bind_exn : t -> path:string -> unit
 
-  val getsockname: t -> string result
+  val getsockname: t -> string uv_result
   val getsockname_exn : t -> string
 
   val pending_instances: t -> int -> Int_result.unit
@@ -385,7 +385,7 @@ module Tcp : sig
     | Ipv6_only
 
   (** See comment to {!Pipe.openpipe} *)
-  val opentcp : Unix.file_descr -> t result
+  val opentcp : Unix.file_descr -> t uv_result
   val opentcp_exn : Unix.file_descr -> t
 
   (** @param mode: default is the empty list *)
@@ -401,16 +401,16 @@ module Tcp : sig
   val simultaneous_accepts : t -> bool -> Int_result.unit
   val simultaneous_accepts_exn : t -> bool -> unit
 
-  val getsockname : t -> sockaddr result
+  val getsockname : t -> sockaddr uv_result
   val getsockname_exn : t -> sockaddr
 
-  val getpeername : t -> sockaddr result
+  val getpeername : t -> sockaddr uv_result
   val getpeername_exn : t -> sockaddr
 
   val connect : t -> addr:sockaddr -> unit Lwt.t
 
   (** initializes a new client and calls accept_raw with it *)
-  val accept: t -> t result
+  val accept: t -> t uv_result
   val accept_exn: t -> t
 
   (** See comments to {!Pipe.with_pipe} *)
@@ -434,7 +434,7 @@ module Udp : sig
   val init : unit -> t
 
   (** See comment to {!Pipe.openpipe} *)
-  val openudp : Unix.file_descr -> t result
+  val openudp : Unix.file_descr -> t uv_result
   val openudp_exn : Unix.file_descr -> t
 
   type mode =
@@ -445,7 +445,7 @@ module Udp : sig
   val bind : ?mode:mode list -> t -> addr:sockaddr -> unit -> Int_result.unit
   val bind_exn : ?mode:mode list -> t -> addr:sockaddr -> unit -> unit
 
-  val getsockname : t -> sockaddr result
+  val getsockname : t -> sockaddr uv_result
   val getsockname_exn : t -> sockaddr
 
   type membership =
@@ -525,7 +525,7 @@ module Tty : sig
   include module type of Stream with type t := t
   include module type of Handle_fileno with type t := t
   val to_stream: t -> Stream.t
-  val init : file -> read:bool -> t result
+  val init : file -> read:bool -> t uv_result
   val init_exn : file -> read:bool -> t
 
   type mode =
@@ -543,7 +543,7 @@ module Tty : sig
     width: int;
     height: int;
   }
-  val get_winsize : t -> winsize result
+  val get_winsize : t -> winsize uv_result
   val get_winsize_exn : t -> winsize
 end
 
@@ -557,7 +557,7 @@ module Timer : sig
   (** Timers, that are executed only once (repeat=0), are automatically closed.
       After their callback have been executed, their handles are invalid.
       Call {!close} to stop a repeating timer *)
-  val start : repeat:int -> timeout:int -> cb:(t -> unit) -> t result
+  val start : repeat:int -> timeout:int -> cb:(t -> unit) -> t uv_result
   val start_exn : repeat:int -> timeout:int -> cb:(t -> unit) -> t
 end
 
@@ -573,7 +573,7 @@ module Signal : sig
   val sigwinch: int
 
   (** use Sys.sigterm, Sys.sigstop, etc *)
-  val start : int -> cb:(t -> int -> unit) -> t result
+  val start : int -> cb:(t -> int -> unit) -> t uv_result
   val start_exn : int -> cb:(t -> int -> unit) -> t
 end
 
@@ -590,8 +590,8 @@ module Poll : sig
 
   (** start and start_exn are only supported under windows, if the
       [Unix.file_descr] is a wrapper around a SOCKET, not a HANDLE *)
-  val start : Unix.file_descr -> event -> cb:(t -> event result -> unit) -> t result
-  val start_exn : Unix.file_descr -> event -> cb:(t -> event result -> unit) -> t
+  val start : Unix.file_descr -> event -> cb:(t -> event uv_result -> unit) -> t uv_result
+  val start_exn : Unix.file_descr -> event -> cb:(t -> event uv_result -> unit) -> t
 end
 
 module Fs_event : sig
@@ -608,9 +608,9 @@ module Fs_event : sig
     | Stat
     | Recursive
 
-  type cb = t -> (string * event list) result -> unit
+  type cb = t -> (string * event list) uv_result -> unit
 
-  val start : string -> flags list -> cb:cb -> t result
+  val start : string -> flags list -> cb:cb -> t uv_result
   val start_exn : string -> flags list -> cb:cb -> t
 end
 
@@ -624,8 +624,8 @@ module Fs_poll : sig
     curr : Fs.stats;
   }
 
-  val start : string -> int -> cb:(t -> report result -> unit) -> t result
-  val start_exn : string -> int -> cb:(t -> report result -> unit) -> t
+  val start : string -> int -> cb:(t -> report uv_result -> unit) -> t uv_result
+  val start_exn : string -> int -> cb:(t -> report uv_result -> unit) -> t
 end
 
 module Process : sig
@@ -659,7 +659,7 @@ module Process : sig
     ?exit_cb:exit_cb ->
     string ->
     string list ->
-    t result
+    t uv_result
 
   val spawn_exn :
     ?stdin:stdio ->
@@ -747,7 +747,7 @@ module Unix : sig
   val sleep : float -> unit Lwt.t
 
   (** @param cloexec is true by default *)
-  val pipe : ?cloexec: bool -> unit -> (Pipe.t * Pipe.t) result
+  val pipe : ?cloexec: bool -> unit -> (Pipe.t * Pipe.t) uv_result
   val pipe_exn : ?cloexec: bool -> unit -> Pipe.t * Pipe.t
 
   (** wrapper around realpath under Unix and GetFinalPathNameByHandleW
@@ -775,7 +775,7 @@ module Async : sig
   type t
   include module type of Handle with type t := t
   val to_handle: t -> Handle.t
-  val create: ( t -> unit ) -> t result
+  val create: ( t -> unit ) -> t uv_result
   val start: t -> Int_result.unit
   val stop: t -> Int_result.unit
   val send: t -> Int_result.unit

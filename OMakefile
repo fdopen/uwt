@@ -84,6 +84,15 @@ static.=
 
 ConfReplace(_oasis)
 
+if $(or $(lt $(OCAMLC_VERSION_MAJOR),4),$(and $(eq 4,$(OCAMLC_VERSION_MAJOR)),$(lt $(OCAMLC_VERSION_MINOR),3)))
+	OCAMLFINDFLAGS+= -open Result
+	OCAMLPACKS+= result
+	RESULT_PKG = $'' result''
+	export
+else
+	RESULT_PKG = $(EMPTY)
+	export
+
 .DEFAULT: all
 .SUBDIRS: src examples test
 

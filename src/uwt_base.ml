@@ -35,10 +35,7 @@
 #include "error.ml"
 #include "config.inc"
 
-type ('a , 'b) o_result = ('a, 'b) Result.result =
-| Ok of 'a
-| Error of 'b
-type 'a result = ('a , error) o_result
+type 'a uv_result = ('a , error) result
 
 external strerror: error -> string = "uwt_strerror"
 exception Uwt_error of error * string * string
@@ -288,34 +285,34 @@ module Misc = struct
     file -> handle_type = "uwt_guess_handle_na" "noalloc"
 
   external resident_set_memory:
-    unit -> int64 result = "uwt_resident_set_memory"
+    unit -> int64 uv_result = "uwt_resident_set_memory"
   let resident_set_memory_exn () =
     resident_set_memory () |> to_exn "uv_resident_set_memory"
 
-  external uptime: unit -> float result = "uwt_uptime"
+  external uptime: unit -> float uv_result = "uwt_uptime"
   let uptime_exn () = uptime () |> to_exn "uv_uptime"
 
-  external getrusage : unit -> rusage result = "uwt_getrusage"
+  external getrusage : unit -> rusage uv_result = "uwt_getrusage"
   let getrusage_exn () = getrusage () |> to_exn "uv_getrusage"
 
-  external cpu_info: unit -> cpu_info array result = "uwt_cpu_info"
+  external cpu_info: unit -> cpu_info array uv_result = "uwt_cpu_info"
   let cpu_info_exn () = cpu_info () |> to_exn "uv_cpu_info"
 
   external interface_addresses:
-    unit -> interface_address array result = "uwt_interface_addresses"
+    unit -> interface_address array uv_result = "uwt_interface_addresses"
   let interface_addresses_exn () =
     interface_addresses () |> to_exn "uv_interface_addresses"
 
   external load_avg: unit -> float * float * float = "uwt_load_avg"
 
-  external ip4_addr: string -> int -> sockaddr result = "uwt_ip4_addr"
+  external ip4_addr: string -> int -> sockaddr uv_result = "uwt_ip4_addr"
   let ip4_addr_exn s i = ip4_addr s i |> to_exn "uv_ip4_addr"
-  external ip4_name: sockaddr -> string result = "uwt_ip4_name"
+  external ip4_name: sockaddr -> string uv_result = "uwt_ip4_name"
   let ip4_name_exn s = ip4_name s |> to_exn "uv_ip4_name"
 
-  external ip6_addr: string -> int -> sockaddr result = "uwt_ip6_addr"
+  external ip6_addr: string -> int -> sockaddr uv_result = "uwt_ip6_addr"
   let ip6_addr_exn s i = ip6_addr s i |> to_exn "uv_ip6_addr"
-  external ip6_name: sockaddr -> string result = "uwt_ip6_name"
+  external ip6_name: sockaddr -> string uv_result = "uwt_ip6_name"
   let ip6_name_exn s = ip6_name s |> to_exn "uv_ip6_name"
 
   external get_total_memory: unit -> int64 = "uwt_get_total_memory"
@@ -337,8 +334,8 @@ module Misc = struct
     }
 
   external version_string: unit -> string = "uwt_version_string"
-  external os_homedir: unit -> string result = "uwt_os_homedir"
-  external exepath: unit -> string result = "uwt_exepath"
+  external os_homedir: unit -> string uv_result = "uwt_os_homedir"
+  external exepath: unit -> string uv_result = "uwt_exepath"
 
 end
 
@@ -371,6 +368,6 @@ module Sys_info = struct
 #if HAVE_WINDOWS = 0
   let win_version () = Error UWT_EUNAVAIL
 #else
-  external win_version: unit -> win_version result = "uwt_win_version"
+  external win_version: unit -> win_version uv_result = "uwt_win_version"
 #endif
 end

@@ -7,8 +7,8 @@ let print_event_list l =
   "[ " ^ s ^ " ]"
 
 let cb _t = function
-| Uwt.Error x -> ignore (Uwt.strerror x |> Uwt_io.printf "error: %s\n")
-| Uwt.Ok(fln,events) ->
+| Error x -> ignore (Uwt.strerror x |> Uwt_io.printf "error: %s\n")
+| Ok(fln,events) ->
   ignore (print_event_list events |> Uwt_io.printf "%s: %s\n%!" fln)
 
 let () =

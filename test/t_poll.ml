@@ -41,8 +41,8 @@ let on_listen server x =
     failwith "on_listen error"
   else
     match Uwt.Tcp.accept server with
-    | Uwt.Error _ -> failwith "accept error"
-    | Uwt.Ok c -> ignore (write_strings server c)
+    | Error _ -> failwith "accept error"
+    | Ok c -> ignore (write_strings server c)
 
 let poll_read () =
   let server = Uwt.Tcp.init () in
@@ -65,8 +65,8 @@ let poll_read () =
           let buf = Buffer.create 128 in
           let cb_called = ref 0 in
           let cb s = function
-          | Uwt.Error x -> abort s (Uwt.err_name x)
-          | Uwt.Ok x ->
+          | Error x -> abort s (Uwt.err_name x)
+          | Ok x ->
             match x with
             | Uwt.Poll.Readable_writable
             | Uwt.Poll.Writable -> abort s "writable not requested"

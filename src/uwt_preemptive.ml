@@ -95,8 +95,8 @@ let rec call_notifications async_handle =
 
 let async_handle =
   match Uwt.Async.create call_notifications with
-  | Uwt.Error _ -> failwith "can't create async handle for uwt_preemptive"
-  | Uwt.Ok x -> x
+  | Error _ -> failwith "can't create async handle for uwt_preemptive"
+  | Ok x -> x
 
 let () =
   Uwt.Main.at_exit ( fun () -> Uwt.Async.close_noerr async_handle;
@@ -366,8 +366,8 @@ let run_in_main f =
   let job () =
     (* Execute [f] and wait for its result. *)
     Lwt.try_bind f
-      (fun ret -> Lwt.return (Uwt.Ok ret))
-      (fun exn -> Lwt.return (Uwt.Error exn)) >>= fun result ->
+      (fun ret -> Lwt.return (Ok ret))
+      (fun exn -> Lwt.return (Error exn)) >>= fun result ->
     (* Send the result. *)
     CELL.set cell result;
     Lwt.return_unit
@@ -380,5 +380,5 @@ let run_in_main f =
   send_notification job_notification;
   (* Wait for the result. *)
   match CELL.get cell with
-  | Uwt.Ok ret -> ret
-  | Uwt.Error exn -> raise exn
+  | Ok ret -> ret
+  | Error exn -> raise exn

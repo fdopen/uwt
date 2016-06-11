@@ -20,12 +20,12 @@ let test () =
   let error = ref false in
   let sleep,waker = Lwt.task () in
   let cb t = function
-  | Uwt.Error x ->
+  | Error x ->
     assert ( 0 < String.length @@ Uwt.err_name x);
     Uwt.Fs_event.close_noerr t;
     error:= true;
     Lwt.wakeup waker ()
-  | Uwt.Ok x  ->
+  | Ok x  ->
     (* I don't test the content, because the results
        differ from platform to platform *)
     let s = Show_uwt.Fs_event.show_cb_res x in
