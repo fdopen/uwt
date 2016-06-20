@@ -41,7 +41,14 @@ static.=
 			value false
 		else
 			value $(pkg_config_between_vers LIBUV,libuv,1.0,2.0)
-	if $(x)
+	force=
+		x=
+			try
+				value $(getvar BUILD_LIBUV)
+			default
+				value $''0''
+		value $(or $(equal $(x),$'1'), $(equal $(x),$'true'))
+	if $(and $(x), $(not $(force)))
 		export
 		INTERNAL_LIBUV=false
 	else
