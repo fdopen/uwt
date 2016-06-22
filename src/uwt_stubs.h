@@ -180,6 +180,8 @@ P1(uwt_get_total_memory);
 P1(uwt_hrtime);
 P1(uwt_getrusage);
 P1(uwt_os_homedir);
+P1(uwt_os_tmpdir);
+P1(uwt_get_passwd);
 P1(uwt_exepath);
 
 P6(uwt_getaddrinfo_native);

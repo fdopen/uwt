@@ -4944,19 +4944,19 @@ uwt_hrtime(value unit)
   return (caml_copy_int64(uv_hrtime()));
 }
 
-CAMLprim value
-uwt_os_homedir(value unit)
+#if HAVE_DECL_UV_OS_HOMEDIR || HAVE_DECL_UV_OS_TMPDIR
+typedef int(*os_dir)(char *, size_t *);
+static value
+uwt_os_dir(os_dir fdir_func)
 {
-#if HAVE_DECL_UV_OS_HOMEDIR
-#define BSIZE 8192
   CAMLparam0();
   CAMLlocal1(p);
+#define BSIZE 16384
   value ret;
   char buffer[BSIZE];
   size_t size = BSIZE;
   int tag;
-  (void)unit;
-  const int r = uv_os_homedir(buffer,&size);
+  const int r = fdir_func(buffer,&size);
   if ( r == 0 && size > 0 && size <= BSIZE ){
     p = caml_alloc_string(size);
     memcpy(String_val(p), buffer, size);
@@ -4970,11 +4970,109 @@ uwt_os_homedir(value unit)
   Field(ret,0) = p;
   CAMLreturn(ret);
 #undef BSIZE
-#else
-  (void)unit;
+}
+#endif
+
+#if !HAVE_DECL_UV_OS_HOMEDIR || !HAVE_DECL_UV_OS_TMPDIR || !HAVE_DECL_UV_OS_GET_PASSWD
+static value
+result_eunavail(void)
+{
   value ret = caml_alloc_small(1,Error_tag);
   Field(ret,0) = VAL_UWT_ERROR_UWT_EUNAVAIL;
   return ret;
+}
+#endif
+
+CAMLprim value
+uwt_os_homedir(value unit)
+{
+  (void)unit;
+#if HAVE_DECL_UV_OS_HOMEDIR
+  return (uwt_os_dir(uv_os_homedir));
+#else
+  return (result_eunavail());
+#endif
+}
+
+CAMLprim value
+uwt_os_tmpdir(value unit)
+{
+  (void)unit;
+#if HAVE_DECL_UV_OS_TMPDIR
+  return (uwt_os_dir(uv_os_tmpdir));
+#else
+  return (result_eunavail());
+#endif
+}
+
+CAMLprim value
+uwt_get_passwd(value unit)
+{
+  (void)unit;
+#if !HAVE_DECL_UV_OS_GET_PASSWD
+  return (result_eunavail());
+#else
+  uv_passwd_t pwd;
+  value eret;
+  int i;
+  /* Test the normal case */
+  i = uv_os_get_passwd(&pwd);
+  if ( i != 0 ){
+  error_ret:
+    eret = caml_alloc_small(1,Error_tag);
+    Field(eret,0) = Val_uwt_error(i);
+    return eret;
+  }
+  else {
+#define BSIZE 8192
+    value name = Val_unit, empty = Val_unit;
+    value dir = Val_unit, shell = Val_unit;
+    value res = Val_unit;
+
+    char buf[3][BSIZE];
+    const char * const to_copy[3] = {pwd.shell,pwd.homedir,pwd.username};
+    for ( i = 0 ; i < 3 ; i++ ){
+      const char * const src = to_copy[i];
+      char *dst = buf[i];
+      if ( src == NULL ){
+        dst[0] = 0 ;
+      }
+      else {
+        const size_t l = strlen(src);
+        if ( l >= BSIZE ){
+          uv_os_free_passwd(&pwd);
+          i = UV_UWT_EFATAL;
+          goto error_ret;
+        }
+        memcpy(dst,src,l+1);
+      }
+    }
+#undef BSIZE
+    long uid = pwd.uid;
+    long gid = pwd.gid;
+    uv_os_free_passwd(&pwd);
+
+    Begin_roots4 (name, empty, dir, shell);
+
+    shell = caml_copy_string(buf[0]);
+    dir = caml_copy_string(buf[1]);
+    name = caml_copy_string(buf[2]);
+
+    empty = caml_copy_string("");
+    res = caml_alloc_small(7, 0);
+    Field(res, 0) = name;
+    Field(res, 1) = empty;
+    Field(res, 2) = Val_long(uid);
+    Field(res, 3) = Val_long(gid);
+    Field(res, 4) = empty;
+    Field(res, 5) = dir;
+    Field(res, 6) = shell;
+    shell = res;
+    name = caml_alloc_small(1,Ok_tag);
+    Field(name,0) = shell;
+    End_roots();
+    return name;
+  }
 #endif
 }
 

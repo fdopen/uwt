@@ -533,6 +533,13 @@ module Misc : sig
   val version_raw: unit -> int
   val version_string: unit -> string
   val os_homedir: unit -> string uv_result
+  val os_tmpdir: unit -> string uv_result
+
+  (** [pw_passwd] and [pw_gecos] will currently
+      always contain an empty string.
+      This function does work on Windows (unlike [Unix.getpwnam]
+      or [Unix.getwuid] )  *)
+  val get_passwd: unit -> Unix.passwd_entry uv_result
 
   (** like Sys.executable_name , but utf-8 encoded under windows
       and perhaps more reliable under niche operating systems *)

@@ -65,6 +65,47 @@ let l = [
       | Error _ -> false
       in
       assert_equal true p);
+  ("os_tmpdir">:: fun _ ->
+      let open Uwt in
+      let p = match os_tmpdir () with
+      | Ok "" -> false
+      | Error UWT_EUNAVAIL ->
+        let {major;minor;_} = version () in
+        if major > 1 || minor >= 9 then
+          false
+        else
+          true
+      | Ok _ -> true
+      | Error _ -> false
+      in
+      assert_equal true p);
+  ("get_passwd">:: fun _ ->
+      let p = match get_passwd () with
+      | Error Uwt.UNKNOWN when Sys.win32 ->
+        (* TODO: get_passwd doesn't work, when user is logged in
+           via cygwin's ssh. Find out why and propose a fix
+           upstream *)
+        true
+      | Error Uwt.UWT_EUNAVAIL ->
+        let {major;minor;_} = version () in
+        if major > 1 || minor >= 9 then false else true
+      | Error _ -> false
+      | Ok x ->
+        let open Unix in
+        match Sys.win32 with
+        | true ->
+          x.pw_name <> "" &&
+          x.pw_dir <> "" &&
+          Sys.is_directory x.pw_dir
+        | false ->
+          let x2 = Unix.getuid () |> Unix.getpwuid in
+          x.pw_name = x2.pw_name &&
+          x.pw_dir = x2.pw_dir &&
+          x.pw_uid = x2.pw_uid &&
+          x.pw_gid = x2.pw_gid &&
+          x.pw_shell = x2.pw_shell
+      in
+      assert_equal true p );
   ("exepath">:: fun ctx ->
       (* doesn't work very well on various *nixes *)
       let do_skip = Uwt.Sys_info.(os <> Windows && os <> Linux) in

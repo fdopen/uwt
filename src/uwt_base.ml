@@ -426,7 +426,8 @@ module Misc = struct
   external version_string: unit -> string = "uwt_version_string"
   external os_homedir: unit -> string uv_result = "uwt_os_homedir"
   external exepath: unit -> string uv_result = "uwt_exepath"
-
+  external os_tmpdir: unit -> string uv_result = "uwt_os_tmpdir"
+  external get_passwd: unit -> Unix.passwd_entry uv_result = "uwt_get_passwd"
 end
 
 module Sys_info = struct

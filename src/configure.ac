@@ -11,7 +11,7 @@ AC_MSG_CHECKING([posix source 200809L])
 AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h grp.h pwd.h sys/param.h byteswap.h sys/byteswap.h sys/endian.h)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_DECLS([strnlen], [], [], [#include <string.h>])
-AC_CHECK_DECLS([uv_os_homedir,UV_TTY_MODE_NORMAL,UV_TTY_MODE_RAW,UV_TTY_MODE_IO],[],[],[#include <uv.h>])
+AC_CHECK_DECLS([uv_os_homedir,uv_os_tmpdir,uv_os_get_passwd,UV_TTY_MODE_NORMAL,UV_TTY_MODE_RAW,UV_TTY_MODE_IO],[],[],[#include <uv.h>])
 AC_CHECK_DECLS([uv_fs_realpath],[AC_SUBST(HAVE_UV_REALPATH,1)],[AC_SUBST(HAVE_UV_REALPATH,0)],[#include <uv.h>])
 
 AC_HEADER_STDBOOL
