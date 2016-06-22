@@ -143,6 +143,27 @@ safe_convert_flag_list(value list, const int flags[],size_t flags_size)
 #define SAFE_CONVERT_FLAG_LIST(a,b)             \
   safe_convert_flag_list(a,b,AR_SIZE(b))
 
+static value
+safe_rev_convert_flag_list(int res, const int flags[],size_t flags_size)
+{
+  CAMLparam0();
+  CAMLlocal2(l,tmp);
+  size_t i;
+  l = Val_unit;
+  for ( i = flags_size; i != 0 ; ){
+    --i;
+    if ( res & flags[i] ){
+      tmp = caml_alloc_small(2,0);
+      Field(tmp,0) = Val_long(i);
+      Field(tmp,1) = l;
+      l = tmp;
+    }
+  }
+  CAMLreturn(l);
+}
+#define SAFE_REV_CONVERT_FLAG_LIST(a,b)         \
+  safe_rev_convert_flag_list(a,b,AR_SIZE(b))
+
 enum cb_type {
   CB_SYNC = 0,
   CB_LWT = 1,
@@ -4233,6 +4254,15 @@ uwt_signal_start(value o_loop,
 /* }}} Signal end */
 
 /* {{{ Poll start */
+static const int poll_flag_table[3] = {
+  UV_READABLE, UV_WRITABLE,
+#if HAVE_DECL_UV_DISCONNECT
+  UV_DISCONNECT
+#else
+  4
+#endif
+};
+
 static void
 poll_cb(uv_poll_t* handle, int status, int events)
 {
@@ -4244,30 +4274,23 @@ poll_cb(uv_poll_t* handle, int status, int events)
   }
   else {
     int tag = Ok_tag;
-    value val;
+    value val = Val_unit;
+    value param = Val_unit;
+    Begin_roots2(val,param);
     if ( status < 0 ){
       tag = Error_tag;
       val = Val_uwt_error(status);
     }
     else {
-      if ( events & UV_READABLE ){
-        if ( events & UV_WRITABLE ){
-          val = Val_long(2);
-        }
-        else {
-          val = Val_long(0);
-        }
-      }
-      else if ( events & UV_WRITABLE ){
-        val = Val_long(1);
-      }
-      else {
+      val = SAFE_REV_CONVERT_FLAG_LIST(events,poll_flag_table);
+      if ( val == Val_unit ){
         tag = Error_tag;
         val = VAL_UWT_ERROR_UWT_EFATAL;
       }
     }
-    value param = caml_alloc_small(1,tag);
+    param = caml_alloc_small(1,tag);
     Field(param,0) = val;
+    End_roots();
     value cb = GET_CB_VAL(h->cb_read);
     value t = GET_CB_VAL(h->cb_listen);
     ret = caml_callback2_exn(cb,t,param);
@@ -4296,14 +4319,14 @@ uwt_poll_start(value o_loop,
   const uv_os_sock_t sock = Socket_val(o_sock_or_fd);
   const int orig_fd = CRT_fd_val(o_sock_or_fd);
 #endif
-  int event;
-  switch( Long_val(o_event) ){
-  case 0: event = UV_READABLE; break;
-  case 1: event = UV_WRITABLE; break;
-  default: assert(false);  /* fall */
-  case 2:
-    event = UV_READABLE | UV_WRITABLE; break;
+  const int event = SAFE_CONVERT_FLAG_LIST(o_event,poll_flag_table);
+#if !HAVE_DECL_UV_DISCONNECT
+  if ( event & 4 ){
+    ret = caml_alloc_small(1,Error_tag);
+    Field(ret,0) = VAL_UWT_ERROR_UWT_EUNAVAIL;
+    goto endp;
   }
+#endif
   GR_ROOT_ENLARGE();
   v = handle_create(UV_POLL,l);
   struct handle * h = Handle_val(v);
@@ -4340,6 +4363,9 @@ uwt_poll_start(value o_loop,
     Field(ret,0) = Val_uwt_error(erg);
     Tag_val(ret) = Error_tag;
   }
+#if !HAVE_DECL_UV_DISCONNECT
+endp:
+#endif
   CAMLreturn(ret);
 }
 /* }}} Poll End */

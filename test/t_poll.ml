@@ -68,9 +68,7 @@ let poll_read () =
           | Error x -> abort s (Uwt.err_name x)
           | Ok x ->
             match x with
-            | Uwt.Poll.Readable_writable
-            | Uwt.Poll.Writable -> abort s "writable not requested"
-            | Uwt.Poll.Readable ->
+            | [Uwt.Poll.Readable] ->
               let b = Bytes.create 128 in
               let len = really_read fd b 0 128 in
               if len = 0 then
@@ -80,8 +78,9 @@ let poll_read () =
               else
                 let () = incr cb_called in
                 Buffer.add_subbytes buf b 0 len;
+            | _ -> abort s "writable/disconnect not requested"
           in
-          let s = Uwt.Poll.start_exn fd Uwt.Poll.Readable ~cb in
+          let s = Uwt.Poll.start_exn fd [Uwt.Poll.Readable] ~cb in
           Lwt.finalize ( fun () ->
               Lwt.pick [ sleeper ; Uwt.Timer.sleep 2_000 ] >|= fun () ->
               !cb_called > 1 && !cb_called <= List.length test_strings &&

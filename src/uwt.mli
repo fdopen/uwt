@@ -588,12 +588,12 @@ module Poll : sig
   type event =
     | Readable
     | Writable
-    | Readable_writable
+    | Disconnect
 
   (** start and start_exn are only supported under windows, if the
       [Unix.file_descr] is a wrapper around a SOCKET, not a HANDLE *)
-  val start : Unix.file_descr -> event -> cb:(t -> event uv_result -> unit) -> t uv_result
-  val start_exn : Unix.file_descr -> event -> cb:(t -> event uv_result -> unit) -> t
+  val start : Unix.file_descr -> event list -> cb:(t -> event list uv_result -> unit) -> t uv_result
+  val start_exn : Unix.file_descr -> event list -> cb:(t -> event list uv_result -> unit) -> t
 end
 
 module Fs_event : sig

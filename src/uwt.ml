@@ -972,10 +972,10 @@ module Poll = struct
   type event =
     | Readable
     | Writable
-    | Readable_writable
+    | Disconnect
 
   external start:
-    loop -> Unix.file_descr -> event -> ( t -> event uv_result -> unit ) -> t uv_result
+    loop -> Unix.file_descr -> event list -> ( t -> event list uv_result -> unit ) -> t uv_result
     = "uwt_poll_start"
 
   let start_exn f e ~cb = start loop f e cb |> to_exn "poll_start"
