@@ -223,3 +223,9 @@ Install_helper(name, OBJFILES, OPT_OBJFILES)=
 		$(OCAMLFIND) install -patch-version $(VERSION) $(name) META $(IFILES) -optional $(CMTIFILES) $(OPT_IFILES)
 	uninstall::
 		$(OCAMLFIND) remove $(name)
+
+NULL_DEVICE=
+	if $(not $(equal $(OSTYPE), Win32))
+		value /dev/null
+	else
+		value NUL

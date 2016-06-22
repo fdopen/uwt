@@ -7,14 +7,15 @@ dev-repo: "https://github.com/fdopen/uwt.git"
 bug-reports: "https://github.com/fdopen/uwt/issues"
 tags: ["clib:libuv"]
 build: [
- ["omake" "-j%{jobs}%" "minimal"] {!lwt:installed}
- ["omake" "-j%{jobs}%" "lib"] {lwt:installed}
+  ["omake" "-j%{jobs}%" "lib"]
+# ["omake" "-j%{jobs}%" "lib" "BUILD_LIBUV=true"] {!conf-libuv:installed}
+# ["omake" "-j%{jobs}%" "lib" "BUILD_LIBUV=false"] {conf-libuv:installed}
 ]
 install: [
- ["omake" "install"]
+  ["omake" "install"]
 ]
 build-test: [
- ["omake" "test" ]
+  ["omake" "test" ]
 ]
 remove: [
   ["ocamlfind" "remove" "uwt"]
@@ -32,12 +33,14 @@ depends: [
   "cppo" {build}
   "omake" {build}
   "result"
+  "lwt" {test}
   "ounit" {test & >= "2.0"}
   "ppx_deriving" {test & >= "2.0"}
   "ppx_import" {test & >= "1.0"}
 ]
 depopts: [
   "lwt"
+# "conf-libuv"
 ]
 conflicts: [
  "lwt" {< "2.4.7"}

@@ -1,5 +1,5 @@
 .DEFAULT: lib
-.PHONY: clean all distclean doc lib minimal
+.PHONY: clean all distclean doc lib minimal lwtlib
 
 CC= $(OCAMLC_CC)
 CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS)
@@ -72,7 +72,7 @@ section
 	minimal:: $(UV_SYNC)
 	export UV_SYNC
 
-lib:: minimal
+lwtlib:: minimal
 
 section
 	.SCANNER: scan-ocaml-%: config.inc
@@ -82,7 +82,7 @@ section
 	OCAML_LIBS+= uwt-base
 	Repeat_targets($(MLFILES))
 	UWT_CORE=$(MOCamlLibrary uwt, $(MLFILES))
-	lib:: $(UWT_CORE)
+	lwtlib:: $(UWT_CORE)
 	export UWT_CORE
 
 section
@@ -96,7 +96,7 @@ section
 		OCAMLFINDFLAGS+= -pp cppo
 		Repeat_targets($(CPPOFILES))
 	UWT_EXT=$(MOCamlLibrary uwt-ext, $(FILES) $(CPPOFILES))
-	lib:: $(UWT_EXT)
+	lwtlib:: $(UWT_EXT)
 	export UWT_EXT
 
 section
@@ -106,7 +106,7 @@ section
 	FILES= uwt_preemptive
 	Repeat_targets($(FILES))
 	UWT_PREEMPTIVE=$(MOCamlLibrary uwt-preemptive,$(FILES))
-	lib:: $(UWT_PREEMPTIVE)
+	lwtlib:: $(UWT_PREEMPTIVE)
 	export UWT_PREEMPTIVE
 
 section
@@ -115,7 +115,7 @@ section
 	FILES= uwt_compat
 	Repeat_targets($(FILES))
 	UWT_COMPAT=$(MOCamlLibrary uwt-compat,$(FILES))
-	lib:: $(UWT_COMPAT)
+	lwtlib:: $(UWT_COMPAT)
 	export UWT_COMPAT
 
 section
@@ -129,7 +129,10 @@ section
 	if $(INTERNAL_LIBUV)
 		export
 		x+=libuv$(EXT_LIB) $(glob ../libuv-v$(LIBUV_VERSION)/include/*.h)
-	Install_helper($(PROJNAME),$(x),$(y))
+	if $(equal $(HAVE_LWT), true)
+		Install_helper($(PROJNAME),$(x) $(y),$(EMPTY))
+	else
+		Install_helper($(PROJNAME),$(x),$(EMPTY))
 
 clean::
 	clean-helper()
@@ -137,5 +140,10 @@ clean::
 
 distclean:: clean
 	rm -f *~
+
+if $(equal $(HAVE_LWT), true)
+	lib:: lwtlib
+else
+	lib:: minimal
 
 all:: lib

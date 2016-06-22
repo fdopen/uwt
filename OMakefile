@@ -1,6 +1,6 @@
 .PHONY: clean all distclean install uninstall lib test examples minimal
 
-VERSION=0.1.0
+VERSION=0.0.9
 PROJNAME=uwt
 USE_OCAMLFIND= true
 BYTE_ENABLED=	true
@@ -59,7 +59,8 @@ static.=
 				value $''0''
 		if $(or $(equal $(x),$''0''), $(equal $(x),$''false''))
 			$(ConfMsgError $''libuv missing'')
-		ConfMsgWarn($''libuv not found. I will try to compile it from source'')
+		if $(not $(or $(equal $(x),$'1'), $(equal $(x),$'true')))
+			ConfMsgWarn($''libuv not found. I will try to compile it from source'')
 		LDFLAGS_LIBUV=$(CompileLibuv )
 		if $(eq 0, $(LDFLAGS_LIBUV.length))
 			$(ConfMsgError $''couldn't compile libuv'')
@@ -72,11 +73,12 @@ static.=
 				value -I$(x)
 		INTERNAL_LIBUV=true
 		export CFLAGS_LIBUV LDFLAGS_LIBUV INTERNAL_LIBUV
+	HAVE_LWT=
+		t=$(shell-code $(OCAMLFIND) query lwt >$(NULL_DEVICE))
+		value $(if $(equal $(t),0), true, false)
 	x=$(Check_prog_in_path cppo)
 	if $(equal $(x), false)
 		$(ConfMsgError $''cppo missing'')
-	if $(not $(x))
-		$(ConfMsgError $''libuv version not supported'')
 	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))
 		export
 		OCAMLFLAGS= -g -bin-annot -safe-string -w A-3-4 #-32-33-37-39-48-4 -warn-error A-32-33-37-39-48-4
@@ -110,10 +112,10 @@ setup.ml: _oasis
 
 clean::
 	clean-helper()
-	rm -f oUnit*.log setup.data setup.log *.tar*
+	rm -f oUnit*.log setup.data setup.log
 
 distclean:: clean
-	rm -f *~ .*~ setup.ml _oasis *.xz *.gz
+	rm -f *~ .*~ setup.ml _oasis *.xz *.gz  *.tar.*
 	rm -rf libuv-v*
 
 .PHONY: echo-pkg
