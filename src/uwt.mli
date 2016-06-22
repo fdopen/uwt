@@ -552,6 +552,8 @@ module Timer : sig
   include module type of Handle with type t := t
   val to_handle: t -> Handle.t
 
+  (** [sleep d] is a thread that remains suspended for [d] milliseconds
+      and then terminates. *)
   val sleep : int -> unit Lwt.t
 
   (** Timers, that are executed only once (repeat=0), are automatically closed.
