@@ -82,95 +82,7 @@ module Lwt_unix = struct
   let stdout = File Uwt.stdout
   let stderr = File Uwt.stderr
 
-  let er_code x =
-    match x with
-    | Uwt.E2BIG -> U.E2BIG
-    | Uwt.EACCES -> U.EACCES
-    | Uwt.EADDRINUSE -> U.EADDRINUSE
-    | Uwt.EADDRNOTAVAIL -> U.EADDRNOTAVAIL
-    | Uwt.EAFNOSUPPORT -> U.EAFNOSUPPORT
-    | Uwt.EAGAIN -> U.EAGAIN
-    | Uwt.EALREADY -> U.EALREADY
-    | Uwt.EBADF -> U.EBADF
-    | Uwt.EBUSY -> U.EBUSY
-    | Uwt.ECONNABORTED -> U.ECONNABORTED
-    | Uwt.ECONNREFUSED -> U.ECONNREFUSED
-    | Uwt.ECONNRESET -> U.ECONNRESET
-    | Uwt.EDESTADDRREQ -> U.EDESTADDRREQ
-    | Uwt.EEXIST -> U.EEXIST
-    | Uwt.EFAULT -> U.EFAULT
-    | Uwt.EFBIG -> U.EFBIG
-    | Uwt.EHOSTUNREACH -> U.EHOSTUNREACH
-    | Uwt.EINTR -> U.EINTR
-    | Uwt.EINVAL -> U.EINVAL
-    | Uwt.EIO -> U.EIO
-    | Uwt.EISCONN -> U.EISCONN
-    | Uwt.EISDIR -> U.EISDIR
-    | Uwt.ELOOP -> U.ELOOP
-    | Uwt.EMFILE -> U.EMFILE
-    | Uwt.EMLINK -> U.EMLINK
-    | Uwt.EMSGSIZE -> U.EMSGSIZE
-    | Uwt.ENAMETOOLONG -> U.ENAMETOOLONG
-    | Uwt.ENETDOWN -> U.ENETDOWN
-    | Uwt.ENETUNREACH -> U.ENETUNREACH
-    | Uwt.ENFILE -> U.ENFILE
-    | Uwt.ENOBUFS -> U.ENOBUFS
-    | Uwt.ENODEV -> U.ENODEV
-    | Uwt.ENOENT -> U.ENOENT
-    | Uwt.ENOMEM -> U.ENOMEM
-    | Uwt.ENOPROTOOPT -> U.ENOPROTOOPT
-    | Uwt.ENOSPC -> U.ENOSPC
-    | Uwt.ENOSYS -> U.ENOSYS
-    | Uwt.ENOTCONN -> U.ENOTCONN
-    | Uwt.ENOTDIR -> U.ENOTDIR
-    | Uwt.ENOTEMPTY -> U.ENOTEMPTY
-    | Uwt.ENOTSOCK -> U.ENOTSOCK
-    | Uwt.ENXIO -> U.ENXIO
-    | Uwt.EPERM -> U.EPERM
-    | Uwt.EPIPE -> U.EPIPE
-    | Uwt.EPROTONOSUPPORT -> U.EPROTONOSUPPORT
-    | Uwt.EPROTOTYPE -> U.EPROTOTYPE
-    | Uwt.ERANGE -> U.ERANGE
-    | Uwt.EROFS -> U.EROFS
-    | Uwt.ESHUTDOWN -> U.ESHUTDOWN
-    | Uwt.ESPIPE -> U.ESPIPE
-    | Uwt.ESRCH -> U.ESRCH
-    | Uwt.ETIMEDOUT -> U.ETIMEDOUT
-    | Uwt.EXDEV -> U.EXDEV
-    | Uwt.UWT_EBADF -> U.EBADF
-    | Uwt.UWT_EBUSY -> U.EBUSY
-    | Uwt.UWT_EINVAL -> U.EINVAL
-    | Uwt.UWT_ENOENT -> U.ENOENT
-    | Uwt.ETXTBSY
-    | Uwt.UNKNOWN
-    | Uwt.UWT_EFATAL
-    | Uwt.UWT_ENOTACTIVE
-    | Uwt.UWT_UNKNOWN
-    | Uwt.UWT_EUNAVAIL
-    | Uwt.EAI_ADDRFAMILY
-    | Uwt.EAI_AGAIN
-    | Uwt.EAI_BADFLAGS
-    | Uwt.EAI_BADHINTS
-    | Uwt.EAI_CANCELED
-    | Uwt.EAI_FAIL
-    | Uwt.EAI_FAMILY
-    | Uwt.EAI_MEMORY
-    | Uwt.EAI_NODATA
-    | Uwt.EAI_NONAME
-    | Uwt.EAI_OVERFLOW
-    | Uwt.EAI_PROTOCOL
-    | Uwt.EAI_SERVICE
-    | Uwt.ECANCELED
-    | Uwt.ECHARSET
-    | Uwt.ENONET
-    | Uwt.ENOTSUP
-    | Uwt.EOF
-    | Uwt.EPROTO
-    | Uwt.EAI_SOCKTYPE -> U.EUNKNOWNERR (Obj.magic x)
-
-  let trans_exn = function
-  | Uwt.Uwt_error(x,y,z) -> Lwt.fail(U.Unix_error(er_code x,y,z))
-  | x -> Lwt.fail x
+  let trans_exn x = Lwt.fail (Uwt.to_unix_exn x)
 
   let trans_of accu = function
   | U.O_RDONLY -> Uwt.Fs_types.O_RDONLY :: accu
@@ -240,7 +152,7 @@ module Lwt_unix = struct
       if Uwt.Int_result.is_ok s then
         Lwt.return_unit
       else
-        let ec = er_code @@ Uwt_base.Int_result.to_error s in
+        let ec = Uwt.to_unix_error @@ Uwt_base.Int_result.to_error s in
         ufail ec "close"
     in
     let fd = to_com fd in
@@ -588,7 +500,7 @@ module Lwt_unix = struct
       let fd1,fd2 = UU.pipe_exn () in
       Pipe fd1, Pipe fd2
     with
-    | Uwt.Uwt_error(x,y,z) -> raise (U.Unix_error(er_code x,y,z))
+    | Uwt.Uwt_error(x,y,z) -> raise (U.Unix_error(Uwt.to_unix_error x,y,z))
 
   external epipe:
     bool -> (U.file_descr * U.file_descr) Uwt.uv_result = "uwt_pipe"
@@ -598,25 +510,25 @@ module Lwt_unix = struct
 
   let pipe_in () =
     match epipe true with
-    | Error x -> raise (U.Unix_error(er_code x,"pipe",""))
+    | Error x -> raise (U.Unix_error(Uwt.to_unix_error x,"pipe",""))
     | Ok (out_fd, in_fd) ->
       match Uwt.Pipe.openpipe out_fd with
       | Ok x -> Pipe x,in_fd
       | Error x ->
         pclose out_fd;
         pclose in_fd;
-        raise (U.Unix_error(er_code x,"pipe",""))
+        raise (U.Unix_error(Uwt.to_unix_error x,"pipe",""))
 
   let pipe_out () =
     match epipe true with
-    | Error x -> raise (U.Unix_error(er_code x,"pipe",""))
+    | Error x -> raise (U.Unix_error(Uwt.to_unix_error x,"pipe",""))
     | Ok (out_fd, in_fd) ->
       match Uwt.Pipe.openpipe in_fd with
       | Ok x -> out_fd,Pipe x
       | Error x ->
         pclose out_fd;
         pclose in_fd;
-        raise (U.Unix_error(er_code x,"pipe",""))
+        raise (U.Unix_error(Uwt.to_unix_error x,"pipe",""))
 
   let system s =
     let s = Uwt_process.shell s in

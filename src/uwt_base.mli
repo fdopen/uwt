@@ -135,6 +135,13 @@ val strerror: error -> string
 (** error name for the given error code *)
 val err_name: error -> string
 
+(** map error to [Unix.error] , [Unix.EUNKNOWNERR] is
+    used, if mapping is not possible *)
+val to_unix_error: error -> Unix.error
+
+(** transforms [Uwt_error] exceptions to [Unix.Unix_error].*)
+val to_unix_exn: exn -> exn
+
 type 'a uv_result = ('a , error) result
 
 module Int_result : sig

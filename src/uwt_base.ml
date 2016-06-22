@@ -40,6 +40,96 @@ type 'a uv_result = ('a , error) result
 external strerror: error -> string = "uwt_strerror"
 exception Uwt_error of error * string * string
 
+let to_unix_error x =
+  match x with
+  | E2BIG -> Unix.E2BIG
+  | EACCES -> Unix.EACCES
+  | EADDRINUSE -> Unix.EADDRINUSE
+  | EADDRNOTAVAIL -> Unix.EADDRNOTAVAIL
+  | EAFNOSUPPORT -> Unix.EAFNOSUPPORT
+  | EAGAIN -> Unix.EAGAIN
+  | EALREADY -> Unix.EALREADY
+  | EBADF -> Unix.EBADF
+  | EBUSY -> Unix.EBUSY
+  | ECONNABORTED -> Unix.ECONNABORTED
+  | ECONNREFUSED -> Unix.ECONNREFUSED
+  | ECONNRESET -> Unix.ECONNRESET
+  | EDESTADDRREQ -> Unix.EDESTADDRREQ
+  | EEXIST -> Unix.EEXIST
+  | EFAULT -> Unix.EFAULT
+  | EFBIG -> Unix.EFBIG
+  | EHOSTUNREACH -> Unix.EHOSTUNREACH
+  | EINTR -> Unix.EINTR
+  | EINVAL -> Unix.EINVAL
+  | EIO -> Unix.EIO
+  | EISCONN -> Unix.EISCONN
+  | EISDIR -> Unix.EISDIR
+  | ELOOP -> Unix.ELOOP
+  | EMFILE -> Unix.EMFILE
+  | EMLINK -> Unix.EMLINK
+  | EMSGSIZE -> Unix.EMSGSIZE
+  | ENAMETOOLONG -> Unix.ENAMETOOLONG
+  | ENETDOWN -> Unix.ENETDOWN
+  | ENETUNREACH -> Unix.ENETUNREACH
+  | ENFILE -> Unix.ENFILE
+  | ENOBUFS -> Unix.ENOBUFS
+  | ENODEV -> Unix.ENODEV
+  | ENOENT -> Unix.ENOENT
+  | ENOMEM -> Unix.ENOMEM
+  | ENOPROTOOPT -> Unix.ENOPROTOOPT
+  | ENOSPC -> Unix.ENOSPC
+  | ENOSYS -> Unix.ENOSYS
+  | ENOTCONN -> Unix.ENOTCONN
+  | ENOTDIR -> Unix.ENOTDIR
+  | ENOTEMPTY -> Unix.ENOTEMPTY
+  | ENOTSOCK -> Unix.ENOTSOCK
+  | ENXIO -> Unix.ENXIO
+  | EPERM -> Unix.EPERM
+  | EPIPE -> Unix.EPIPE
+  | EPROTONOSUPPORT -> Unix.EPROTONOSUPPORT
+  | EPROTOTYPE -> Unix.EPROTOTYPE
+  | ERANGE -> Unix.ERANGE
+  | EROFS -> Unix.EROFS
+  | ESHUTDOWN -> Unix.ESHUTDOWN
+  | ESPIPE -> Unix.ESPIPE
+  | ESRCH -> Unix.ESRCH
+  | ETIMEDOUT -> Unix.ETIMEDOUT
+  | EXDEV -> Unix.EXDEV
+  | UWT_EBADF -> Unix.EBADF
+  | UWT_EBUSY -> Unix.EBUSY
+  | UWT_EINVAL -> Unix.EINVAL
+  | UWT_ENOENT -> Unix.ENOENT
+  | ETXTBSY
+  | UNKNOWN
+  | UWT_EFATAL
+  | UWT_ENOTACTIVE
+  | UWT_UNKNOWN
+  | UWT_EUNAVAIL
+  | EAI_ADDRFAMILY
+  | EAI_AGAIN
+  | EAI_BADFLAGS
+  | EAI_BADHINTS
+  | EAI_CANCELED
+  | EAI_FAIL
+  | EAI_FAMILY
+  | EAI_MEMORY
+  | EAI_NODATA
+  | EAI_NONAME
+  | EAI_OVERFLOW
+  | EAI_PROTOCOL
+  | EAI_SERVICE
+  | ECANCELED
+  | ECHARSET
+  | ENONET
+  | ENOTSUP
+  | EOF
+  | EPROTO
+  | EAI_SOCKTYPE -> Unix.EUNKNOWNERR (Obj.magic x)
+
+let to_unix_exn = function
+| Uwt_error(x,y,z) -> Unix.Unix_error(to_unix_error x,y,z)
+| x -> x
+
 module Int_result = struct
   type 'a t = int
 
