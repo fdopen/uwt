@@ -120,6 +120,8 @@ P3(uwt_pipe_connect);
 
 P1(uwt_tcp_init);
 P1(uwt_udp_init);
+P2(uwt_tcp_init_ex);
+P2(uwt_udp_init_ex);
 P2(uwt_tcp_open_na);
 P2(uwt_udp_open_na);
 P3(uwt_tcp_bind_na);

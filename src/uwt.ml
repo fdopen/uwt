@@ -582,6 +582,10 @@ module Tty = struct
   let get_winsize_exn t = get_winsize t |> to_exn "tty_get_winsize"
 end
 
+type ipv_x =
+  | PF_INET
+  | PF_INET6
+
 module Tcp = struct
   type t = u
   include (Stream: (module type of Stream) with type t := t )
@@ -598,6 +602,12 @@ module Tcp = struct
     | Ok x -> x
     | Error ENOMEM -> raise Out_of_memory
     | Error x -> eraise "tcp_init" x
+
+  external init_ex: loop -> ipv_x -> t uv_result = "uwt_tcp_init_ex"
+  let init_ipv4 () = init_ex loop PF_INET
+  let init_ipv4_exn () = init_ex loop PF_INET |> to_exn "tcp_init_ipv4"
+  let init_ipv6 () = init_ex loop PF_INET6
+  let init_ipv6_exn () = init_ex loop PF_INET6 |> to_exn "tcp_init_ipv6"
 
   external opentcp:
     t -> Unix.file_descr -> Int_result.unit = "uwt_tcp_open_na" "noalloc"
@@ -701,6 +711,12 @@ module Udp = struct
     | Ok x -> x
     | Error ENOMEM -> raise Out_of_memory
     | Error x -> eraise "init_tcp" x
+
+  external init_ex: loop -> ipv_x -> t uv_result = "uwt_udp_init_ex"
+  let init_ipv4 () = init_ex loop PF_INET
+  let init_ipv4_exn () = init_ex loop PF_INET |> to_exn "udp_init_ipv4"
+  let init_ipv6 () = init_ex loop PF_INET6
+  let init_ipv6_exn () = init_ex loop PF_INET6 |> to_exn "udp_init_ipv6"
 
   external openudp: t -> Unix.file_descr -> Int_result.unit = "uwt_udp_open_na" "noalloc"
   let openudp s =

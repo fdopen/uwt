@@ -164,6 +164,21 @@ let with_client_c4 f =
   let t = with_connect ~addr:Server.sockaddr @@ fun t -> f t in
   m_true t
 
+let use_ext = Uwt.Misc.((version ()).minor) >= 7
+let with_connect_own ~addr f =
+  server_init ();
+  let t =
+    if use_ext = false then
+      Uwt.Tcp.init ()
+    else if  Unix.PF_INET6 = (Uwt.Conv.to_unix_sockaddr_exn addr
+                              |> Unix.domain_of_sockaddr) then
+      Uwt.Tcp.init_ipv6_exn ()
+    else
+      Uwt.Tcp.init_ipv4_exn ()
+  in
+  Lwt.finalize (fun () -> Uwt.Tcp.connect t ~addr >>= fun () -> f t)
+    (fun () -> Uwt.Tcp.close_noerr t; Lwt.return_unit)
+
 let with_exit_exception_hook f =
   let caught = ref false in
   server_init ();
@@ -216,8 +231,7 @@ let l = [
      m_raises (Uwt.EADDRINUSE,"listen","") (l sockaddr));
   ("write_allot">::
    fun ctx ->
-     let l addr = with_client @@ fun client ->
-       connect client ~addr >>= fun () ->
+     let l addr = with_connect_own ~addr @@ fun client ->
        let buf_len = 65_536 in
        let x = max 1 (multiplicand ctx) in
        let buf_cnt = 64 * x in

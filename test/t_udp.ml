@@ -78,8 +78,17 @@ let start_server_cb addr : bool Lwt.t =
       sleeper
     ) ( fun () -> Uwt.Udp.close_wait server )
 
+let use_ext = Uwt.Misc.((version ()).minor) >= 7
 let start_client ~raw ~iter ~length addr =
-  let client = Uwt.Udp.init () in
+  let client =
+    if use_ext = false then
+      Uwt.Udp.init ()
+    else if  Unix.PF_INET6 = (Uwt.Conv.to_unix_sockaddr_exn addr
+                              |> Unix.domain_of_sockaddr) then
+      Uwt.Udp.init_ipv6_exn ()
+    else
+      Uwt.Udp.init_ipv4_exn ()
+  in
   let buf = rbytes_create length in
   let buf_recv = Bytes.create length in
   let send = match raw with

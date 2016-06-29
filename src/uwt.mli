@@ -380,6 +380,12 @@ module Tcp : sig
   (** See comment to {!Pipe.init} *)
   val init : unit -> t
 
+  (** wrappers around uv_tcp_init_ex *)
+  val init_ipv4 : unit -> t uv_result
+  val init_ipv4_exn : unit -> t
+  val init_ipv6 : unit -> t uv_result
+  val init_ipv6_exn : unit -> t
+
   type mode =
     | Ipv6_only
 
@@ -431,6 +437,12 @@ module Udp : sig
 
   (** See comment to {!Pipe.init} *)
   val init : unit -> t
+
+  (** wrappers around uv_udp_init_ex *)
+  val init_ipv4 : unit -> t uv_result
+  val init_ipv4_exn: unit -> t
+  val init_ipv6 : unit -> t uv_result
+  val init_ipv6_exn : unit -> t
 
   (** See comment to {!Pipe.openpipe} *)
   val openudp : Unix.file_descr -> t uv_result

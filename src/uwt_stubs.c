@@ -3677,7 +3677,7 @@ uwt_pipe_connect(value o_pipe,value o_path,value o_cb)
 /* {{{ Tcp start */
 #define UDP_TCP_INIT(name,TYPE)                                         \
   CAMLprim value                                                        \
-  uwt_ ## name ## _init(value o_loop)                                   \
+    uwt_ ## name ## _init(value o_loop)                                 \
   {                                                                     \
     INIT_LOOP_WRAP(l,o_loop);                                           \
     CAMLparam1(o_loop);                                                 \
@@ -3688,11 +3688,12 @@ uwt_pipe_connect(value o_pipe,value o_path,value o_cb)
     value ret = caml_alloc_small(1,Ok_tag);                             \
     Field(ret,0) = v;                                                   \
     h->close_executed = 0;                                              \
-    int erg = uv_ ## name ## _init(&l->loop,                            \
-                                   (uv_ ## name ## _t*)h->handle);      \
+    const int erg = uv_ ## name ## _init(&l->loop,                      \
+                                         (uv_ ## name ## _t*)h->handle); \
     if ( erg < 0 ){                                                     \
       Field(v,1) = 0;                                                   \
       Field(ret,0) = Val_uwt_error(erg);                                \
+      Tag_val(ret) = Error_tag;                                         \
       free_mem_uv_handle_t(h);                                          \
       free_struct_handle(h);                                            \
     }                                                                   \
@@ -3702,6 +3703,75 @@ uwt_pipe_connect(value o_pipe,value o_path,value o_cb)
 UDP_TCP_INIT(tcp,UV_TCP)
 UDP_TCP_INIT(udp,UV_UDP)
 #undef UDP_TCP_INIT
+
+ATTR_UNUSED static value
+result_eunavail(void)
+{
+  value ret = caml_alloc_small(1,Error_tag);
+  Field(ret,0) = VAL_UWT_ERROR_UWT_EUNAVAIL;
+  return ret;
+}
+
+#if HAVE_DECL_UV_UDP_INIT_EX || HAVE_DECL_UV_TCP_INIT_EX
+#define UDP_TCP_INIT_EX(name,TYPE)                                      \
+  CAMLprim value                                                        \
+    uwt_ ## name ## _init_ex(value o_loop, value o_mode)                \
+  {                                                                     \
+    INIT_LOOP_WRAP(l,o_loop);                                           \
+    CAMLparam1(o_loop);                                                 \
+    CAMLlocal1(v);                                                      \
+    v = handle_create(TYPE,l);                                          \
+    struct handle * h = Handle_val(v);                                  \
+    h->close_executed = 1;                                              \
+    value ret = caml_alloc_small(1,Ok_tag);                             \
+    Field(ret,0) = v;                                                   \
+    h->close_executed = 0;                                              \
+    h->initialized = 1;                                                 \
+    const int mode = Long_val(o_mode) == 0 ? AF_INET : AF_INET6 ;       \
+    const int erg = uv_ ## name ## _init_ex(&l->loop,                   \
+                                            (uv_ ## name ## _t*)h->handle, \
+                                            mode );                     \
+    if ( erg < 0 ){                                                     \
+      Field(v,1) = 0;                                                   \
+      Field(ret,0) = Val_uwt_error(erg);                                \
+      Tag_val(ret) = Error_tag;                                         \
+      free_mem_uv_handle_t(h);                                          \
+      free_struct_handle(h);                                            \
+    }                                                                   \
+    CAMLreturn(ret);                                                    \
+  }
+#endif
+
+#if !HAVE_DECL_UV_UDP_INIT_EX || !HAVE_DECL_UV_TCP_INIT_EX
+#define UDP_TCP_INIT_EX_NO(name)                \
+  CAMLprim value                                \
+    uwt_ ## name ## _init_ex(value a, value b)  \
+  {                                             \
+    (void)a;                                    \
+    (void)b;                                    \
+    return (result_eunavail());                 \
+  }
+#endif
+
+#if HAVE_DECL_UV_TCP_INIT_EX
+UDP_TCP_INIT_EX(tcp,UV_TCP)
+#else
+UDP_TCP_INIT_EX_NO(tcp)
+#endif
+
+#if HAVE_DECL_UV_UDP_INIT_EX
+UDP_TCP_INIT_EX(udp,UV_UDP)
+#else
+UDP_TCP_INIT_EX_NO(udp)
+#endif
+
+#ifdef UDP_TCP_INIT_EX
+#undef UDP_TCP_INIT_EX
+#endif
+
+#ifdef UDP_TCP_INIT_EX_NO
+#undef UDP_TCP_INIT_EX_NO
+#endif
 
 static value
 uwt_tcp_udp_open(value o_tcp, value o_fd, bool tcp)
@@ -5122,15 +5192,6 @@ uwt_os_dir(os_dir fdir_func)
 }
 #endif
 
-#if !HAVE_DECL_UV_OS_HOMEDIR || !HAVE_DECL_UV_OS_TMPDIR || !HAVE_DECL_UV_OS_GET_PASSWD
-static value
-result_eunavail(void)
-{
-  value ret = caml_alloc_small(1,Error_tag);
-  Field(ret,0) = VAL_UWT_ERROR_UWT_EUNAVAIL;
-  return ret;
-}
-#endif
 
 CAMLprim value
 uwt_os_homedir(value unit)
