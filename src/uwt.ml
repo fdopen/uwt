@@ -76,11 +76,8 @@ type uv_run_mode =
   (* | Run_default *)
 
 module Exception = struct
-  let exceptions = ref []
 
-  let add_exception (e:exn) =
-    let bt = Printexc.get_raw_backtrace () in
-    exceptions := (e,bt)::!exceptions
+  let add_exception (e:exn) = !Lwt.async_exception_hook e
 
   let () = Callback.register "uwt.add_exception" add_exception
 end
@@ -1618,13 +1615,9 @@ end
 
 module Main = struct
 
-  open Exception
-
   let fatal_found = ref false (* information for exit_hook and run *)
 
-
   exception Main_error of error * string
-  exception Deferred of (exn * Printexc.raw_backtrace) list
   exception Fatal of exn * Printexc.raw_backtrace
 
   let enter_iter_hooks = Lwt_sequence.create ()
@@ -1658,19 +1651,6 @@ module Main = struct
           let bt = Printexc.get_raw_backtrace () in
           raise (Fatal(e,bt))
         in
-        (match !exceptions with
-         | [] -> ()
-         | l ->
-           exceptions:= [];
-           let l = List.rev l in
-           let l =
-             if Int_result.is_error lr then
-               (Main_error(Int_result.to_error lr,"run"),
-                Printexc.get_callstack 0)::l
-             else
-               l
-           in
-           raise (Deferred l));
         if Int_result.is_error lr then
           raise (Main_error(Int_result.to_error lr,"run"));
         let nothing_cnt =
@@ -1766,15 +1746,6 @@ let () =
     | Main.Main_error(e,s) ->
       let msg = err_name e in
       Some (Printf.sprintf "Uwt.Main.Main_error(Uwt.%s, %S)" msg s)
-    | Main.Deferred(l) ->
-      let l =
-        List.map ( fun (exn,bt) ->
-            "(" ^ (Printexc.to_string exn) ^ ",\n" ^
-            (Printexc.raw_backtrace_to_string bt) ^ ");")
-          l
-      in
-      let s = "Uwt.Main.Deferred([\n" ^ String.concat "\n" l ^ "\n])" in
-      Some s
     | Main.Fatal(e,bt) ->
       let s =
         "Uwt.Main.Fatal(" ^

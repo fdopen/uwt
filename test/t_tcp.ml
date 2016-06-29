@@ -164,6 +164,18 @@ let with_client_c4 f =
   let t = with_connect ~addr:Server.sockaddr @@ fun t -> f t in
   m_true t
 
+let with_exit_exception_hook f =
+  let caught = ref false in
+  server_init ();
+  let hook = function
+  | Exit -> caught := true
+  | _ -> exit 2
+  in
+  let orig_hook = !Lwt.async_exception_hook in
+  Lwt.async_exception_hook := hook;
+  nm_try_finally f caught ( fun () ->
+      Lwt.async_exception_hook := orig_hook ) ()
+
 open OUnit2
 let test_port = 8931
 let l = [
@@ -280,6 +292,67 @@ let l = [
      | Unix.ADDR_INET(y,x) ->
        Lwt.return (server_port = x && server_ip = Unix.string_of_inet_addr y)
      | Unix.ADDR_UNIX _ -> Lwt.return_false);
+  ("raise_exn1">::
+   (* This test is not tcp related. It's just here to make sure that
+      exceptions in iterative callbacks are passed to
+      !Lwt.async_exception_hook *)
+   fun _ctx ->
+     with_exit_exception_hook @@ fun caught ->
+     let t = with_connect ~addr:Server.sockaddr @@ fun t ->
+       let cnt = ref 0 in
+       let cb _ =
+         incr cnt ;
+         if !cnt = 2 then raise Exit;
+       in
+       Uwt.Tcp.read_start_exn t ~cb;
+       let buf = rba_create 8192 in
+       let rec iter n =
+         if n = 0 then (close_noerr t; Lwt.return_unit )
+         else
+           write_ba t ~buf >>= fun () ->
+           iter (pred n)
+       in
+       iter 900 >>= fun () -> Uwt.Timer.sleep 0
+     in
+     let () = Uwt.Main.run t in
+     assert_equal true !caught );
+  ("raise_exn2">::
+   fun _ctx ->
+     (* Similar to raise_exn1, but the exception outside the callbacks
+        should not be passed to async_exception hook *)
+     with_exit_exception_hook @@ fun caught ->
+     let client = ref None in
+     let t = with_connect ~addr:Server.sockaddr @@ fun t ->
+       client := Some t;
+       let blen = 8192 in
+       let buf = rba_create blen in
+       for _i = 1 to 300 do
+         ignore ( write_ba t ~buf );
+       done;
+       let buf = Uwt_bytes.create blen in
+       let rec iter i =
+         if i = 3 then
+           raise Exit
+         else
+           read_ba ~buf t >>= function
+           | 0 -> Lwt.return_false
+           | _ -> iter (pred i)
+       in
+       iter 200
+     in
+     let res =
+       try
+         Uwt.Main.run t
+       with
+       | x ->
+         (match !client with
+         | Some t -> close_noerr t
+         | None -> ());
+         match x with
+         | Exit -> true
+         | _ -> false
+     in
+     assert_equal true (res && !caught = false));
   (* The following test the same as 'write_abort' above (regarding TCP).
      The intention is to ensure, that lwt behaves as expected *)
   ("write_abort_pick">::

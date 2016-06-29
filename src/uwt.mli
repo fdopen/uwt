@@ -99,31 +99,30 @@ module Main : sig
 
   (** You shouldn't raise exceptions, if you are using uwt. Always use
       {!Lwt.fail}. If you throw exceptions nevertheless, uwt can
-      usually not propagate the exceptions to the OCaml runtime
-      immediately. The exceptions are stored internally an are
-      re-thrown as soon as possible ([Deferred]). You can catch these
-      exceptions below {!run}.
+      sometines not propagate the exceptions to the OCaml runtime
+      immediately. This applies for example to exceptions that occur
+      inside iterative callbacks (like [Stream.read_start],
+      [Timer.start], [Poll.start], etc. ). They are passed to
+      [Lwt.async_exception_hook] instead.
 
       However, uwt cannot catch all exceptions at the right
-      moment. These exceptions are wrapped inside [Fatal]. Don't call
-      any uwt function (especially {!run}) again, if you catch such an
-      exception below {!run}. A workaround is currently not
-      implemented, because only rare exceptions like [Out_of_memory]
-      are 'fatal' under certain circumstances - and they usually mean
-      you are in unrecoverable trouble anyway.
+      moment. Don't call any uwt function (especially {!run}) again,
+      if you catch such an exception below {!run}. A workaround is
+      currently not implemented, because only rare exceptions like
+      [Out_of_memory] and [Stackoverflow] are 'fatal' under rare
+      conditions - and they usually mean you are in unrecoverable
+      trouble anyway.
 
       {[
         let rec main t1  =
           match Uwt.Main.run t1 with
-          | exception Uwt.Main.Deferred(l) ->
-            log_deferred l ; main t2 (* safe *)
           | exception Uwt.Main.Fatal(e,p) -> (* fatal, restart your process *)
             log_fatal e p ; cleanup () ; exit 2
           | exception x -> log_normal x ; main t3 (* safe *)
           | result -> let y = ... (* no error *)
       ]}
   *)
-  exception Deferred of (exn * Printexc.raw_backtrace) list
+
   exception Fatal of exn * Printexc.raw_backtrace
 
   val enter_iter_hooks : (unit -> unit) Lwt_sequence.t
