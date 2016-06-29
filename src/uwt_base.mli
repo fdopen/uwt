@@ -534,6 +534,13 @@ module Misc : sig
   val version: unit -> version
   val version_raw: unit -> int
   val version_string: unit -> string
+
+  (** Many of the functions below are not thread safe
+      and might block.
+      Functions like [cwd] are useful nevertheless,
+      if you target windows. Unlike [Sys.getcwd()] they
+      return UTF8-encoded names *)
+
   val os_homedir: unit -> string uv_result
   val os_tmpdir: unit -> string uv_result
 
@@ -548,6 +555,7 @@ module Misc : sig
   val exepath: unit -> string uv_result
 
   val cwd: unit -> string uv_result
+  val chdir: string -> Int_result.unit
 
   (** The following two functions don't work reliable,
       especially with byte code. And set_process_title won't

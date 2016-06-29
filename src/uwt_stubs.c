@@ -5233,6 +5233,25 @@ uwt_os_tmpdir(value unit)
 }
 
 CAMLprim value
+uwt_chdir(value o_string)
+{
+  int r;
+  if ( !uwt_is_safe_string(o_string) ){
+    return VAL_UWT_INT_RESULT_ECHARSET;
+  }
+  char * s = strdup(String_val(o_string));
+  if ( s == NULL ){
+    return VAL_UWT_INT_RESULT_ENOMEM;
+  }
+  caml_enter_blocking_section();
+  r = uv_chdir(s);
+  caml_leave_blocking_section();
+  free(s);
+
+  return (VAL_UWT_INT_RESULT(r));
+}
+
+CAMLprim value
 uwt_get_passwd(value unit)
 {
   (void)unit;

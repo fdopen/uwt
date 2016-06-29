@@ -190,6 +190,7 @@ P1(uwt_get_process_title);
 P2(uwt_set_process_title_na);
 P2(uwt_print_all_handles);
 P2(uwt_print_active_handles);
+P1(uwt_chdir);
 
 P6(uwt_getaddrinfo_native);
 BY(uwt_getaddrinfo_byte);

@@ -1284,7 +1284,7 @@ module Unix = struct
   let getcwd () = C_worker.call_internal ~name:"getcwd" getcwd ()
 
   external chdir:
-    string -> unit C_worker.u -> C_worker.t = "uwt_chdir"
+    string -> unit C_worker.u -> C_worker.t = "uwt_chdir_async"
   let chdir s = C_worker.call_internal ~name:"chdir" ~param:s chdir s
 
   external getlogin:

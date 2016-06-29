@@ -430,6 +430,8 @@ module Misc = struct
   external get_passwd: unit -> Unix.passwd_entry uv_result = "uwt_get_passwd"
 
   external cwd: unit -> string uv_result = "uwt_cwd"
+  external chdir: string -> Int_result.unit = "uwt_chdir"
+
   external get_process_title:
     string array -> string uv_result = "uwt_get_process_title"
   let get_process_title () = get_process_title Sys.argv

@@ -142,6 +142,20 @@ let l = [
       assert_equal (p :> int) 0;
       let pt' = get_process_title () in
       assert_equal (Ok pt) pt' );
+  ("chdir">:: fun _ ->
+      let o_dir = match cwd () with
+      | Error _ -> assert false
+      | Ok x -> x in
+      let tdir = match os_tmpdir () with
+      | Ok x -> x
+      | Error _ -> Filename.get_temp_dir_name () in
+      nm_try_finally ( fun tdir ->
+          let t = Uwt_base.Misc.chdir tdir in
+          assert_equal 0 (t :> int);
+          let tdir' = Uwt_base.Misc.cwd () in
+          assert_equal (Ok tdir) (tdir')
+        ) tdir ( fun o_dir ->
+          Uwt_base.Misc.chdir o_dir ) o_dir );
 ]
 
 let l = "Misc">:::l

@@ -91,7 +91,7 @@
 
 P(getlogin);
 P(getcwd);
-P(chdir);
+P(chdir_async);
 P(getpwnam);
 P(getpwuid);
 P(getgrnam);
@@ -1110,7 +1110,7 @@ chdir_worker(uv_work_t * req)
 }
 
 CAMLprim value
-uwt_chdir(value o_path, value o_uwt)
+uwt_chdir_async(value o_path, value o_uwt)
 {
   value ret;
   char * cpath;
