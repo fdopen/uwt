@@ -204,3 +204,7 @@ let stream_read_own_test t =
   in
   Lwt.join [rt 0; wt] >|= fun () ->
   wbuf = rbuf && !bt_read = blen
+
+let uv_version = Uwt.Misc.version ()
+let uv_minor = uv_version.Uwt.Misc.minor
+let uv_major = uv_version.Uwt.Misc.major

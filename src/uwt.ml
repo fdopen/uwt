@@ -508,6 +508,9 @@ module Pipe = struct
   external getsockname: t -> string uv_result = "uwt_pipe_getsockname"
   let getsockname_exn a = getsockname a |> to_exn "pipe_getsockname"
 
+  external getpeername: t -> string uv_result = "uwt_pipe_getpeername"
+  let getpeername_exn a = getpeername a |> to_exn "pipe_getpeername"
+
   external pending_instances:
     t -> int -> Int_result.unit = "uwt_pipe_pending_instances_na" "noalloc"
   let pending_instances_exn a b =

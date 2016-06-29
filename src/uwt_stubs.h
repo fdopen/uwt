@@ -113,6 +113,7 @@ P3(uwt_pipe_open);
 P2(uwt_pipe_init);
 P2(uwt_pipe_bind_na);
 P1(uwt_pipe_getsockname);
+P1(uwt_pipe_getpeername);
 P2(uwt_pipe_pending_instances_na);
 P1(uwt_pipe_pending_count_na);
 P1(uwt_pipe_pending_type_na);

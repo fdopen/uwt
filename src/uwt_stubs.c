@@ -1121,6 +1121,13 @@ req_create(uv_req_type typ, struct loop *l)
 #define VAL_UWT_INT_RESULT(x)                   \
   ( (x) < 0 ? Val_uwt_int_result(x) : Val_long(x))
 
+ATTR_UNUSED static value
+result_eunavail(void)
+{
+  value ret = caml_alloc_small(1,Error_tag);
+  Field(ret,0) = VAL_UWT_ERROR_UWT_EUNAVAIL;
+  return ret;
+}
 
 static void
 close_garbage_collected_handles(void)
@@ -3552,8 +3559,9 @@ uwt_pipe_bind_na(value o_pipe, value o_name)
   return (VAL_UWT_UNIT_RESULT(ret));
 }
 
-CAMLprim value
-uwt_pipe_getsockname(value o_pipe)
+typedef int(*pipe_name)(const uv_pipe_t*, char*, size_t*);
+static value
+uwt_pipe_name(value o_pipe,pipe_name pfunc)
 {
   HANDLE_NO_UNINIT_CLOSED_WRAP(o_pipe);
   CAMLparam1(o_pipe);
@@ -3563,7 +3571,7 @@ uwt_pipe_getsockname(value o_pipe)
   char name[s];
   char * lname = NULL;
   uv_pipe_t* p = (uv_pipe_t*)op->handle;
-  int erg = uv_pipe_getsockname(p,name,&s);
+  int erg = pfunc(p,name,&s);
   int etag;
   if ( erg == UV_ENOBUFS ){
     ++s;
@@ -3572,7 +3580,7 @@ uwt_pipe_getsockname(value o_pipe)
       erg = UV_ENOMEM;
     }
     else {
-      erg = uv_pipe_getsockname(p,lname,&s);
+      erg = pfunc(p,lname,&s);
     }
   }
   if ( erg < 0 ){
@@ -3583,15 +3591,13 @@ uwt_pipe_getsockname(value o_pipe)
     char * ms = lname ? lname : name;
 #if UV_VERSION_MAJOR < 1
 #error "libuv too old"
-#elif (UV_VERSION_MAJOR > 1) || ( UV_VERSION_MINOR > 2 )
-    o_str = caml_alloc_string(s);
-    memcpy(String_val(o_str),ms,s);
-#else
+#endif
+#if (UV_VERSION_MAJOR == 1) && (UV_VERSION_MINOR < 3)
     --s;
     assert(ms[s] == '\0');
+#endif
     o_str =  caml_alloc_string(s);
     memcpy(String_val(o_str),ms,s);
-#endif
     etag = Ok_tag;
   }
   if ( lname ){
@@ -3600,6 +3606,23 @@ uwt_pipe_getsockname(value o_pipe)
   value ret = caml_alloc_small(1,etag);
   Field(ret,0) = o_str;
   CAMLreturn(ret);
+}
+
+CAMLprim value
+uwt_pipe_getsockname(value o_pipe)
+{
+  return(uwt_pipe_name(o_pipe,uv_pipe_getsockname));
+}
+
+CAMLprim value
+uwt_pipe_getpeername(value o_pipe)
+{
+#if HAVE_DECL_UV_PIPE_GETPEERNAME
+  return (uwt_pipe_name(o_pipe,uv_pipe_getpeername));
+#else
+  (void) o_pipe;
+  return (result_eunavail());
+#endif
 }
 
 CAMLprim value
@@ -3711,14 +3734,6 @@ uwt_pipe_connect(value o_pipe,value o_path,value o_cb)
 UDP_TCP_INIT(tcp,UV_TCP)
 UDP_TCP_INIT(udp,UV_UDP)
 #undef UDP_TCP_INIT
-
-ATTR_UNUSED static value
-result_eunavail(void)
-{
-  value ret = caml_alloc_small(1,Error_tag);
-  Field(ret,0) = VAL_UWT_ERROR_UWT_EUNAVAIL;
-  return ret;
-}
 
 #if HAVE_DECL_UV_UDP_INIT_EX || HAVE_DECL_UV_TCP_INIT_EX
 #define UDP_TCP_INIT_EX(name,TYPE)                                      \

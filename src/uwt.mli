@@ -342,6 +342,9 @@ module Pipe : sig
   val getsockname: t -> string uv_result
   val getsockname_exn : t -> string
 
+  val getpeername: t -> string uv_result
+  val getpeername_exn : t -> string
+
   val pending_instances: t -> int -> Int_result.unit
   val pending_instances_exn : t -> int -> unit
 

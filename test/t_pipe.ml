@@ -35,17 +35,19 @@ module Echo_server = struct
       else
         ignore(echo_client client)
 
+  let server = ref None
   let start () =
-    let server = init () in
+    let serv = init () in
     Lwt.finalize ( fun () ->
-        bind_exn server ~path:addr;
-        let addr2 = getsockname_exn server in
+        bind_exn serv ~path:addr;
+        server := Some serv;
+        let addr2 = getsockname_exn serv in
         if addr2 <> addr then
           failwith "pipe address differ";
-        listen_exn server ~max:8 ~cb:on_listen;
+        listen_exn serv ~max:8 ~cb:on_listen;
         let (s:unit Lwt.t),_ = Lwt.task () in
         s
-      ) ( fun () -> close_noerr server ; Lwt.return_unit )
+      ) ( fun () -> close_noerr serv ; server := None; Lwt.return_unit )
 end
 
 module Client = struct
@@ -300,6 +302,23 @@ let l = [
          ( fun () -> Uwt_io.shutdown_server server ; Lwt.return_unit)
      in
      m_true t);
+  ("sockname/peername">::
+   fun _ctx ->
+     with_client_connect @@ fun client ->
+     let server = match !Echo_server.server with
+     | None -> assert false
+     | Some x -> x
+     in
+     let sname = getsockname server in
+     assert_equal sname (Ok Echo_server.addr);
+     let pname = getpeername client in
+     let ret =
+       if uv_minor > 2 || uv_major > 1 then
+         pname = (Ok Echo_server.addr)
+       else
+         pname = (Error Uwt.UWT_EUNAVAIL)
+     in
+     Lwt.return ret );
 ]
 
 let l  = "Pipe">:::l
