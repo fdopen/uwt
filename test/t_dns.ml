@@ -15,9 +15,8 @@ let getnameinfo x l =
   let module UD = Uwt.Dns in
   help ( fun () -> UD.getnameinfo x l ) >>= function
   | Exn ( Uwt.Uwt_error(Uwt.ENOENT,_,_) as exn ) ->
-    let addr = Uwt.Conv.to_unix_sockaddr_exn x in
     let ok =
-      try ignore (Unix.getnameinfo addr l); false with Not_found -> true
+      try ignore (Unix.getnameinfo x l); false with Not_found -> true
     in
     if ok then Lwt.return_none else Lwt.fail exn
   | Exn x -> Lwt.fail x

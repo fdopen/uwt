@@ -16,7 +16,6 @@ let tests =
     T_spawn.l;
     T_fs_event.l;
     T_udp.l;
-    T_conv.l;
     T_pipe.l;
     T_dns.l;
     T_misc.l;

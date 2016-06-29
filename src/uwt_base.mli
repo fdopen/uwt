@@ -278,8 +278,7 @@ end
 (** abstract type for a file descriptor *)
 type file
 
-(** similar to [Unix.sockaddr], but abstract *)
-type sockaddr
+type sockaddr = Unix.sockaddr
 
 type buf =
   (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
@@ -424,14 +423,11 @@ module type Fs_functions = sig
 end
 
 module Conv : sig
-  (** be careful in case of [Unix.ADDR_UNIX path]. If path is very
-      long, {!of_unix_sockaddr} will raise an exception
-      ([Unix.Unix_error]) and {!to_unix_sockaddr} might return a
-      truncated string.  [Unix.ADDR_UNIX] is not supported on windows,
-      {!of_unix_sockaddr} will also raise an exception in this
-      case. *)
-  val of_unix_sockaddr_exn : Unix.sockaddr -> sockaddr
-  val to_unix_sockaddr_exn : sockaddr -> Unix.sockaddr
+
+  val of_unix_sockaddr_exn :
+    Unix.sockaddr -> sockaddr [@@ocaml.deprecated "useless now"]
+  val to_unix_sockaddr_exn :
+    sockaddr -> Unix.sockaddr [@@ocaml.deprecated "useless now"]
 
   (** the following functions always succeed on Unix - but not on windows *)
   val file_of_file_descr : Unix.file_descr -> file option
@@ -480,8 +476,8 @@ module Misc : sig
     name: string;
     phys_addr: string;
     is_internal: bool;
-    address: sockaddr;
-    netmask: sockaddr;
+    address: sockaddr option;
+    netmask: sockaddr option;
   }
 
   type handle_type =

@@ -19,8 +19,9 @@ let nm_try_finally f x finallly' y =
 let has_ip6 =
   Uwt_base.Misc.interface_addresses_exn () |> Array.to_list |>
   List.exists ( fun x ->
-      Uwt.Conv.to_unix_sockaddr_exn x.Uwt_base.Misc.address
-      |> Unix.domain_of_sockaddr = Unix.PF_INET )
+      match x.Uwt_base.Misc.address with
+      | None -> false
+      | Some x -> Unix.domain_of_sockaddr x = Unix.PF_INET6 )
 
 let ip6_option =
   OUnit2.Conf.make_bool "no_ip6" false "force ignoring of ip6 related tests"

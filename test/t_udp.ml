@@ -10,7 +10,7 @@ open Uwt.Udp
 open Common
 
 let bind_exn s sockaddr =
-  match Uwt.Conv.to_unix_sockaddr_exn sockaddr |> Unix.domain_of_sockaddr with
+  match Unix.domain_of_sockaddr sockaddr with
   | Unix.PF_INET6 -> bind_exn ~mode:[Ipv6_only;Reuse_addr] s ~addr:sockaddr ()
   | Unix.PF_INET -> bind_exn ~mode:[Reuse_addr] s ~addr:sockaddr ()
   | Unix.PF_UNIX -> assert false
@@ -71,8 +71,7 @@ let start_server_cb addr : bool Lwt.t =
   Lwt.finalize ( fun () ->
       let () = bind_exn server addr in
       let addr2 = Uwt.Udp.getsockname_exn server in
-      if Uwt.Conv.to_unix_sockaddr_exn addr <>
-         Uwt.Conv.to_unix_sockaddr_exn addr2 then
+      if addr <> addr2 then
         failwith "udp server sockaddr differ";
       let () = Uwt.Udp.recv_start_exn server ~cb in
       sleeper
@@ -83,8 +82,7 @@ let start_client ~raw ~iter ~length addr =
   let client =
     if use_ext = false then
       Uwt.Udp.init ()
-    else if  Unix.PF_INET6 = (Uwt.Conv.to_unix_sockaddr_exn addr
-                              |> Unix.domain_of_sockaddr) then
+    else if  Unix.PF_INET6 = Unix.domain_of_sockaddr addr then
       Uwt.Udp.init_ipv6_exn ()
     else
       Uwt.Udp.init_ipv4_exn ()

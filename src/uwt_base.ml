@@ -177,7 +177,7 @@ type file = Unix.file_descr
 type buf =
   (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
-type sockaddr
+type sockaddr = Unix.sockaddr
 
 let stdin : file = Unix.stdin
 let stdout : file = Unix.stdout
@@ -292,14 +292,9 @@ module type Fs_functions = sig
 end
 
 module Conv = struct
-  type usockaddr = Unix.sockaddr =
-    | ADDR_UNIX of string
-    | ADDR_INET of Unix.inet_addr * int
 
-  external of_unix_sockaddr_exn :
-    usockaddr -> sockaddr = "uwt_of_sockaddr"
-  external to_unix_sockaddr_exn :
-    sockaddr -> usockaddr = "uwt_to_sockaddr"
+  external of_unix_sockaddr_exn : sockaddr -> sockaddr = "%identity"
+  external to_unix_sockaddr_exn : sockaddr -> sockaddr = "%identity"
 
 #if HAVE_WINDOWS = 0
   let file_of_file_descr s = Some s
@@ -359,8 +354,8 @@ module Misc = struct
     name: string;
     phys_addr: string;
     is_internal: bool;
-    address: sockaddr;
-    netmask: sockaddr;
+    address: sockaddr option;
+    netmask: sockaddr option;
   }
 
   type handle_type =

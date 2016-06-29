@@ -205,9 +205,6 @@ P2(uwt_kill_na);
 
 P1(uwt_get_fd);
 P1(uwt_set_crtfd_na);
-P1(uwt_to_sockaddr);
-P1(uwt_of_sockaddr);
-P1(uwt_sun_path);
 
 P6(uwt_lseek_native);
 BY(uwt_lseek_byte);

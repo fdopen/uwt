@@ -1351,18 +1351,18 @@ let with_file ?buffer ?flags ?perm ~mode filename f =
 
 let file_length filename = with_file ~mode:input filename length
 
-external get_sun_path: Uwt.sockaddr -> string option = "uwt_sun_path"
 let invalid_path="\x00"
 let open_connection ?in_buffer ?out_buffer sockaddr =
   let path = ref invalid_path in
   let module E = struct type t = Ok of Uwt.Stream.t | Exn of exn end in
   let o_stream =
     try
-      E.Ok(match get_sun_path sockaddr with
-        | Some x ->
+      E.Ok(
+        match sockaddr with
+        | Unix.ADDR_UNIX x ->
           path := x;
           Uwt.Pipe.init () |> Uwt.Pipe.to_stream
-        | None ->
+        | Unix.ADDR_INET _ ->
           Uwt.Tcp.init () |> Uwt.Tcp.to_stream)
     with
     | s -> E.Exn s
@@ -1417,7 +1417,7 @@ type server = {
   server: Uwt.Stream.t;
 }
 
-let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) sockaddr f =
+let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) addr f =
   let f_cb s_client =
     let close () =
       Uwt.Stream.close_noerr s_client;
@@ -1448,9 +1448,8 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) sockaddr
       {
         shutdown = Lazy.from_fun shutdown;
         server = server
-      }
-  and addr = Uwt.Conv.of_unix_sockaddr_exn sockaddr in
-  match sockaddr with
+      } in
+  match addr with
   | Unix.ADDR_UNIX path ->
     let server = Uwt.Pipe.init () in
     let s_server = Uwt.Pipe.to_stream server in

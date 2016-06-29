@@ -18,9 +18,7 @@ sig
 end
 
 let bind_exn s addr =
-  if  Unix.PF_INET6 = (Uwt.Conv.to_unix_sockaddr_exn addr
-                       |> Unix.domain_of_sockaddr)
-  then
+  if  Unix.PF_INET6 = Unix.domain_of_sockaddr addr then
     bind_exn ~mode:[ Ipv6_only ] s ~addr ()
   else
     bind_exn s ~addr ()
@@ -52,11 +50,7 @@ module Echo_server (X: Sockaddr) = struct
     Lwt.finalize ( fun () ->
         bind_exn server sockaddr;
         let sockaddr2 = getsockname_exn server in
-        (* I'm sure about this test. Does the ocaml unix library
-           support equality compare for the abstract type
-           Unix.inet_addr ? *)
-        if Uwt.Conv.to_unix_sockaddr_exn sockaddr <>
-           Uwt.Conv.to_unix_sockaddr_exn sockaddr2 then
+        if sockaddr <> sockaddr2 then
           failwith "server sockaddr differ";
         listen_exn server ~max:server_backlog ~cb:on_listen;
         let (s:unit Lwt.t),_ = Lwt.task () in
@@ -170,8 +164,7 @@ let with_connect_own ~addr f =
   let t =
     if use_ext = false then
       Uwt.Tcp.init ()
-    else if  Unix.PF_INET6 = (Uwt.Conv.to_unix_sockaddr_exn addr
-                              |> Unix.domain_of_sockaddr) then
+    else if  Unix.PF_INET6 = Unix.domain_of_sockaddr addr then
       Uwt.Tcp.init_ipv6_exn ()
     else
       Uwt.Tcp.init_ipv4_exn ()
@@ -328,7 +321,7 @@ let l = [
   ("getpeername">::
    fun _ctx ->
      with_client_c4 @@ fun client ->
-     match getpeername_exn client |> Uwt.Conv.to_unix_sockaddr_exn with
+     match getpeername_exn client with
      | Unix.ADDR_INET(y,x) ->
        Lwt.return (server_port = x && server_ip = Unix.string_of_inet_addr y)
      | Unix.ADDR_UNIX _ -> Lwt.return_false);

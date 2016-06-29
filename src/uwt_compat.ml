@@ -485,14 +485,13 @@ module Lwt_unix = struct
         ai_socktype = a.Uwt.Dns.ai_socktype;
         ai_protocol = a.Uwt.Dns.ai_protocol;
         ai_canonname = a.Uwt.Dns.ai_canonname;
-        ai_addr = Uwt.Conv.to_unix_sockaddr_exn a.Uwt.Dns.ai_addr }
+        ai_addr = a.Uwt.Dns.ai_addr }
     in
     Lwt.return (List.map f l)
 
   let getaddrinfo = help3 getaddrinfo
 
   let getnameinfo addr l =
-    let addr = Uwt.Conv.of_unix_sockaddr_exn addr in
     help2n "getnameinfo" Uwt.Dns.getnameinfo addr l
 
   let pipe () =
