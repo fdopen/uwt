@@ -5163,20 +5163,18 @@ uwt_hrtime(value unit)
   return (caml_copy_int64(uv_hrtime()));
 }
 
-#if HAVE_DECL_UV_OS_HOMEDIR || HAVE_DECL_UV_OS_TMPDIR
 typedef int(*os_dir)(char *, size_t *);
 static value
 uwt_os_dir(os_dir fdir_func)
 {
   CAMLparam0();
   CAMLlocal1(p);
-#define BSIZE 16384
   value ret;
-  char buffer[BSIZE];
-  size_t size = BSIZE;
+  char buffer[ALLOCA_PATH_LEN];
+  size_t size = ALLOCA_PATH_LEN;
   int tag;
   const int r = fdir_func(buffer,&size);
-  if ( r == 0 && size > 0 && size <= BSIZE ){
+  if ( r == 0 && size > 0 && size <= ALLOCA_PATH_LEN ){
     p = caml_alloc_string(size);
     memcpy(String_val(p), buffer, size);
     tag = Ok_tag;
@@ -5188,10 +5186,21 @@ uwt_os_dir(os_dir fdir_func)
   ret = caml_alloc_small(1,tag);
   Field(ret,0) = p;
   CAMLreturn(ret);
-#undef BSIZE
 }
-#endif
 
+CAMLprim value
+uwt_exepath(value unit)
+{
+  (void)unit;
+  return (uwt_os_dir(uv_exepath));
+}
+
+CAMLprim value
+uwt_cwd(value unit)
+{
+  (void)unit;
+  return (uwt_os_dir(uv_cwd));
+}
 
 CAMLprim value
 uwt_os_homedir(value unit)
@@ -5286,24 +5295,85 @@ uwt_get_passwd(value unit)
 #endif
 }
 
-CAMLprim value
-uwt_exepath(value unit)
+static char ** uv_setup_args_ret = NULL;
+static char ** dummy_argv = NULL;
+
+static int
+uwt_setup_args(value sys_argv)
 {
-#define BSIZE 8192
+  if ( sys_argv == Atom(0) || Wosize_val(sys_argv) == 0 ){
+    uv_setup_args_ret = NULL;
+    return 0;
+  }
+  else {
+    const int argc = Wosize_val(sys_argv);
+    int size = 0;
+    char ** argv;
+    char *p;
+    char * memb;
+    int i;
+
+    argv = malloc( (argc+1) * sizeof (char**) );
+    if ( argv == NULL ) {
+      return UV_ENOMEM;
+    }
+
+    for ( i = 0; i < argc; i++ ) {
+      value s = Field(sys_argv,i);
+      if ( !uwt_is_safe_string(s) ){
+        return UV_ECHARSET;
+      }
+      size += strlen(String_val(s)) + 1;
+    }
+
+    memb = malloc(size);
+    if ( memb == NULL ){
+      free(argv);
+      return UV_ENOMEM;
+    }
+
+    /* libuv want the argv arguments in this order in memory.
+       Otherwise an assert failure is triggered,.... */
+    p = memb;
+    for ( i = 0; i < argc ; i++ ) {
+      size_t n = strlen(String_val(Field(sys_argv,i)));
+      argv[i] = p;
+      memcpy(p,String_val(Field(sys_argv,i)),n + 1);
+      p = p + n + 1;
+    }
+    argv[argc] = NULL;
+
+    uv_setup_args_ret = uv_setup_args(argc,argv);
+    dummy_argv = argv;
+
+    return 0;
+  }
+}
+
+CAMLprim value
+uwt_get_process_title(value sys_argv)
+{
   CAMLparam0();
   CAMLlocal1(p);
+#define BSIZE 16384
   value ret;
   char buffer[BSIZE];
-  size_t size = BSIZE;
   int tag;
-  (void)unit;
-  const int r = uv_exepath(buffer,&size);
-  if ( r == 0 && size > 0 && size <= BSIZE ){
-    p = caml_alloc_string(size);
-    memcpy(String_val(p), buffer, size);
+  int r;
+  if ( uv_setup_args_ret == NULL ){
+    r = uwt_setup_args(sys_argv);
+    if ( r ){
+      goto error_end;
+    }
+  }
+  r = uv_get_process_title(buffer,BSIZE - 1);
+  if ( r == 0 ){
+    buffer[BSIZE-1] = '\0';
+    p = caml_copy_string(buffer);
     tag = Ok_tag;
   }
   else {
+  error_end:
     p = Val_uwt_error(r);
     tag = Error_tag;
   }
@@ -5312,6 +5382,24 @@ uwt_exepath(value unit)
   CAMLreturn(ret);
 #undef BSIZE
 }
+
+CAMLprim value
+uwt_set_process_title_na(value sys_argv, value o_str)
+{
+  int r;
+  if ( !uwt_is_safe_string(o_str) ){
+    return VAL_UWT_INT_RESULT_ECHARSET;
+  }
+  if ( uv_setup_args_ret == NULL ){
+    r = uwt_setup_args(sys_argv);
+    if ( r ){
+      return (VAL_UWT_INT_RESULT(r));
+    }
+  }
+  r = uv_set_process_title(String_val(o_str));
+  return (VAL_UWT_INT_RESULT(r));
+}
+
 
 #ifdef _WIN32
 char *

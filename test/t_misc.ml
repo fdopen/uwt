@@ -134,6 +134,14 @@ let l = [
           let slen = D.show_win_version x |> String.length in
           let open Uwt_base.Sys_info in
           assert_equal true ( slen > 30 && x.major_version >= 5 ));
+  ("cwd">:: fun _ -> assert_equal (Ok (Sys.getcwd ())) (cwd ()));
+  ("process_title">:: fun ctx ->
+      is_contingent ctx;
+      let pt = "uwt test" in
+      let p = set_process_title pt in
+      assert_equal (p :> int) 0;
+      let pt' = get_process_title () in
+      assert_equal (Ok pt) pt' );
 ]
 
 let l = "Misc">:::l

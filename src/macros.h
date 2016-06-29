@@ -321,3 +321,24 @@ strdup (const char *s)
   return n;
 }
 #endif
+
+#ifndef _WIN32
+#define ALLOC_PATH_LEN_MAX 131072
+#define ALLOC_PATH_LEN_MIN  16384
+
+#if defined(PATH_MAX) && PATH_MAX > 0 && ALLOC_PATH_LEN_MIN < PATH_MAX
+#define ALLOCA_PATH_LEN \
+  ((size_t)(UMIN_M(ALLOC_PATH_LEN_MAX,(UMAX_M(PATH_MAX + 1,ALLOCA_SIZE)))))
+#elif defined(MAXPATHLEN) && MAXPATHLEN > 0 && ALLOC_PATH_LEN_MIN < MAXPATHLEN
+#define ALLOCA_PATH_LEN \
+  ((size_t)(UMIN_M(ALLOC_PATH_LEN_MAX,UMAX_M(MAXPATHLEN + 1,ALLOCA_SIZE))))
+#elif defined(NAME_MAX) && NAME_MAX > 0 && ALLOC_PATH_LEN_MIN < NAME_MAX
+#define ALLOCA_PATH_LEN \
+  ((size_t)(UMIN_M(ALLOC_PATH_LEN_MAX,UMAX_M(NAME_MAX + 1,ALLOCA_SIZE))))
+#else
+#define ALLOCA_PATH_LEN ALLOC_PATH_LEN_MIN
+#endif
+
+#else /* ifndef _WIN32 */
+#define ALLOCA_PATH_LEN ((size_t)(UMAX_M(32767 + 17,MAX_PATH + 17)))
+#endif

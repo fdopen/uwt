@@ -428,6 +428,15 @@ module Misc = struct
   external exepath: unit -> string uv_result = "uwt_exepath"
   external os_tmpdir: unit -> string uv_result = "uwt_os_tmpdir"
   external get_passwd: unit -> Unix.passwd_entry uv_result = "uwt_get_passwd"
+
+  external cwd: unit -> string uv_result = "uwt_cwd"
+  external get_process_title:
+    string array -> string uv_result = "uwt_get_process_title"
+  let get_process_title () = get_process_title Sys.argv
+  external set_process_title:
+    string array -> string -> Int_result.unit = "uwt_set_process_title_na" "noalloc"
+  let set_process_title s = set_process_title Sys.argv s
+
 end
 
 module Sys_info = struct

@@ -185,6 +185,9 @@ P1(uwt_os_homedir);
 P1(uwt_os_tmpdir);
 P1(uwt_get_passwd);
 P1(uwt_exepath);
+P1(uwt_cwd);
+P1(uwt_get_process_title);
+P2(uwt_set_process_title_na);
 
 P6(uwt_getaddrinfo_native);
 BY(uwt_getaddrinfo_byte);

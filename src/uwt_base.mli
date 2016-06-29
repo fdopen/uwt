@@ -546,6 +546,14 @@ module Misc : sig
   (** like Sys.executable_name , but utf-8 encoded under windows
       and perhaps more reliable under niche operating systems *)
   val exepath: unit -> string uv_result
+
+  val cwd: unit -> string uv_result
+
+  (** The following two functions don't work reliable,
+      especially with byte code. And set_process_title won't
+      necessary report an error, if it fails ... *)
+  val set_process_title: string -> Int_result.unit
+  val get_process_title: unit -> string uv_result
 end
 
 module Sys_info : sig

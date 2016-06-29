@@ -2053,27 +2053,6 @@ uwt_pipe(value o_close_exec)
 CAMLextern value uwt_realpath(value o_name, value o_uwt);
 CAMLextern value uwt_realpath_sync(value o_name);
 
-#define ALLOC_PATH_LEN_MAX 131072
-
-#ifndef _WIN32
-
-#if defined(PATH_MAX) && PATH_MAX > 0
-#define ALLOCA_PATH_LEN \
-  ((size_t)(UMIN_M(ALLOC_PATH_LEN_MAX,(UMAX_M(PATH_MAX + 1,ALLOCA_SIZE)))))
-#elif defined(MAXPATHLEN) && MAXPATHLEN > 0
-#define ALLOCA_PATH_LEN \
-  ((size_t)(UMIN_M(ALLOC_PATH_LEN_MAX,UMAX_M(MAXPATHLEN + 1,ALLOCA_SIZE))))
-#elif defined(NAME_MAX) && NAME_MAX > 0
-#define ALLOCA_PATH_LEN \
-  ((size_t)(UMIN_M(ALLOC_PATH_LEN_MAX,UMAX_M(NAME_MAX + 1,ALLOCA_SIZE))))
-#else
-#define ALLOCA_PATH_LEN ALLOCA_SIZE
-#endif
-
-#else /* ifndef _WIN32 */
-#define ALLOCA_PATH_LEN ((size_t)(UMAX_M(32767 + 17,MAX_PATH + 17)))
-#endif
-
 #ifdef _WIN32
 #define BSIZE ALLOCA_PATH_LEN
 static void
