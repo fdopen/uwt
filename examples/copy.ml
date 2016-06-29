@@ -79,4 +79,4 @@ let () =
     prerr_endline usage;
     exit 1
 
-let () = Uwt.valgrind_happy ()
+let () = Uwt.Debug.valgrind_happy ()

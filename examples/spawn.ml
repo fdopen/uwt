@@ -41,4 +41,4 @@ let () =
   let p = cat_test () in
   Uwt.Main.run p
 
-let () = Uwt.valgrind_happy ()
+let () = Uwt.Debug.valgrind_happy ()

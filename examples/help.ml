@@ -27,7 +27,7 @@ let wait () =
     ( fun () -> Lwt.pick ts )
     ( fun () -> close_all () )
 
-let clean () = Uwt.valgrind_happy ()
+let clean () = Uwt.Debug.valgrind_happy ()
 let chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 let chars_len = String.length chars
 

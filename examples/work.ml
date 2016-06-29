@@ -26,4 +26,4 @@ let () =
   flush stdout;
   flush stderr
 
-let () = Uwt.valgrind_happy ()
+let () = Uwt.Debug.valgrind_happy ()

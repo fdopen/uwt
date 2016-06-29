@@ -15,4 +15,4 @@ let () =
   in
   Uwt.Main.run f
 
-let () = Uwt.valgrind_happy ()
+let () = Uwt.Debug.valgrind_happy ()

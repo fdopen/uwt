@@ -782,10 +782,15 @@ module C_worker : sig
 end
 
 (**/**)
-(* Only for debugging.
-   - Don't call it, while Main.run is active.
-   - After you've called it, you can't run any uwt related functions *)
-val valgrind_happy : unit -> unit
+module Debug : sig
+  val print_all_handles: file -> Int_result.unit
+  val print_active_handles: file -> Int_result.unit
+
+  (* Only for debugging.
+     - Don't call it, while Main.run is active.
+     - After you've called it, you can't run any uwt related functions *)
+  val valgrind_happy : unit -> unit
+end
 
 (* Don't use it. It's currently only intended for Uwt_preemptive. *)
 module Async : sig

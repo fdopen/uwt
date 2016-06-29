@@ -33,4 +33,4 @@ let () =
   Uwt.Main.run (L.join [ once () ; sleep (); three_times () ])
 
 
-let () = Uwt.valgrind_happy ()
+let () = Uwt.Debug.valgrind_happy ()

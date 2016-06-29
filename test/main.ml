@@ -41,6 +41,23 @@ let main () =
   Unix.putenv "OUNIT_RUNNER" "sequential";
   ignore (OUnit2.run_test_tt_main ~exit:mexit tests)
 
+let cleanup () =
+  let open Lwt.Infix in
+  let t =
+    (* close callbacks are defered, remove them first *)
+    Uwt.Main.yield () >>= fun () ->
+    Uwt.Main.yield () >>= fun () ->
+    let _  : unit Uwt.uv_result = T_fs_sync.with_file
+        ~mode:Uwt.Fs.[O_CREAT;O_TRUNC;O_WRONLY]
+        "p_end.log" @@ fun fd ->
+      ignore (Uwt.Debug.print_all_handles fd);
+      Ok ()
+    in
+    Lwt.return_unit
+  in
+  Uwt.Main.run t ;
+  Uwt.Debug.valgrind_happy ()
+
 let () =
   try
     main ();
@@ -48,9 +65,9 @@ let () =
   with
   | Do_exit i ->
     (match Sys.getenv "WITH_VALGRIND" with
+    | exception Not_found -> cleanup ()
     | "false" | "0" | "" | "FALSE" -> ()
-    | _ -> Uwt.valgrind_happy ()
-    | exception Not_found -> Uwt.valgrind_happy ());
+    | _ -> cleanup () );
     exit i
   | exn ->
     Printexc.to_string exn |> prerr_endline ;

@@ -2652,6 +2652,14 @@ timer_once_cb(uv_timer_t * handle)
     }                                             \
   } while(0)
 
+#define INIT_LOOP_INT_RESULT(x,y)                 \
+  struct loop * x = Loop_val(y);                  \
+  do {                                            \
+    if (unlikely( !x || x->init_called == 0 ) ){  \
+      return VAL_UWT_INT_RESULT_UWT_EFATAL;       \
+    }                                             \
+  } while(0)
+
 CAMLprim value
 uwt_timer_start(value o_loop, value o_cb,
                 value o_timeout, value o_repeat)
@@ -5499,6 +5507,59 @@ uwt_win_version(value unit)
   return ret;
 }
 #endif /* _WIN32 */
+
+#if HAVE_DECL_UV_PRINT_ALL_HANDLES || HAVE_DECL_UV_PRINT_ACTIVE_HANDLES
+typedef void(*print_handles)(uv_loop_t*, FILE*);
+static value
+uwt_print_handles(value o_loop, value o_fd, print_handles phandles)
+{
+  INIT_LOOP_INT_RESULT(l,o_loop);
+  int fd ;
+  FILE * fp;
+#ifdef _WIN32
+  fd = _dup(FD_VAL(o_fd));
+#else
+  fd = dup(FD_VAL(o_fd));
+#endif
+  if ( fd == -1 ){
+    return VAL_UWT_UNIT_RESULT(-errno);
+  }
+#ifdef _WIN32
+  fp = _fdopen(fd,"w");
+#else
+  fp = fdopen(fd,"w");
+#endif
+  if ( fp == NULL ){
+    return VAL_UWT_UNIT_RESULT(-errno);
+  }
+  phandles(&l->loop,fp);
+  if ( fclose(fp) ){
+    return(VAL_UWT_UNIT_RESULT(-errno));
+  }
+  return Val_unit;
+}
+#endif
+
+CAMLprim value
+uwt_print_all_handles(value a, value b)
+{
+#if HAVE_DECL_UV_PRINT_ALL_HANDLES
+  return uwt_print_handles(a,b,uv_print_all_handles);
+#else
+  return VAL_UWT_INT_RESULT_UWT_EUNAVAIL;
+#endif
+}
+
+CAMLprim value
+uwt_print_active_handles(value a, value b)
+{
+#if HAVE_DECL_UV_PRINT_ACTIVE_HANDLES
+  return uwt_print_handles(a,b,uv_print_active_handles);
+#else
+  return VAL_UWT_INT_RESULT_UWT_EUNAVAIL;
+#endif
+}
+
 /* }}} Misc end */
 
 /* {{{ DNS start */

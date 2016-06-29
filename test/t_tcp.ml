@@ -231,6 +231,7 @@ let l = [
      m_raises (Uwt.EADDRINUSE,"listen","") (l sockaddr));
   ("write_allot">::
    fun ctx ->
+     let first_round = ref true in
      let l addr = with_connect_own ~addr @@ fun client ->
        let buf_len = 65_536 in
        let x = max 1 (multiplicand ctx) in
@@ -244,6 +245,31 @@ let l = [
        let sleeper,waker = Lwt.task () in
        let cb_read = function
        | Ok b ->
+         if !first_round = true then (
+           first_round := false;
+           let l = [ ("p_all.log",Uwt.Debug.print_all_handles);
+                     ("p_active.log",Uwt.Debug.print_active_handles) ] in
+           l |> List.iter @@ fun (log,f_fd) ->
+           let t1 = T_fs_sync.with_file
+               ~mode:Uwt.Fs.[O_CREAT;O_TRUNC;O_WRONLY] log @@ fun fd ->
+             let x : Uwt.Int_result.unit = f_fd fd in
+             let x = ( x :> int ) in
+             let v = Uwt.Misc.version () in
+             if Uwt.Misc.( v.minor < 8 && v.major = 1) then (
+               assert_equal (Uwt.Int_result.uwt_eunavail :> int) x;
+               Ok ()
+             )
+             else (
+               assert_equal 0 x;
+               let x = match Uv_fs_sync.stat log with
+               | Error _ -> false
+               | Ok x -> x.Uv_fs_sync.st_size > 0L in
+               assert_equal true x;
+               Ok ()
+             )
+           in
+           assert_equal t1 (Ok ())
+         );
          for i = 0 to Bytes.length b - 1 do
            if Bytes.unsafe_get b i <> Char.chr (!bytes_read land 255) then
              Lwt.wakeup_exn waker (Failure "read wrong content");

@@ -1754,7 +1754,17 @@ module Valgrind = struct
 
 end
 
-let valgrind_happy = Valgrind.valgrind_happy
+module Debug = struct
+  external print_all_handles:
+    loop -> file -> Int_result.unit = "uwt_print_all_handles"
+  let print_all_handles x = print_all_handles loop x
+
+  external print_active_handles:
+    loop -> file -> Int_result.unit = "uwt_print_active_handles"
+  let print_active_handles x = print_active_handles loop x
+
+  let valgrind_happy = Valgrind.valgrind_happy
+end
 
 let () =
   Printexc.register_printer

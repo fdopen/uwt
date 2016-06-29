@@ -46,4 +46,4 @@ let () =
   in
   Uwt.Main.run t
 
-let () = Uwt.valgrind_happy ()
+let () = Uwt.Debug.valgrind_happy ()
