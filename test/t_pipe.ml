@@ -132,6 +132,15 @@ let with_client f =
   server_init ();
   with_pipe f
 
+let with_client_connect f =
+  server_init ();
+  let t =
+    with_pipe ~ipc:false @@ fun t ->
+    connect t ~path:Echo_server.addr >>= fun () ->
+    f t
+  in
+  m_true t
+
 open OUnit2
 let l = [
   ("echo_server">::
@@ -142,52 +151,48 @@ let l = [
      m_true ( Client.test false ));
   ("write_allot">::
    fun ctx ->
-     server_init ();
-     let t = with_client @@ fun client ->
-       connect client ~path:Echo_server.addr >>= fun () ->
-       let buf_len = 65536 in
-       let x = max 1 (multiplicand ctx) in
-       let buf_cnt = 64 * x in
-       let bytes_read = ref 0 in
-       let bytes_written = ref 0 in
-       let buf = Uwt_bytes.create buf_len in
-       for i = 0 to pred buf_len do
-         buf.{i} <- Char.chr (i land 255);
-       done;
-       let sleeper,waker = Lwt.task () in
-       let cb_read = function
-       | Ok b ->
-         for i = 0 to Bytes.length b - 1 do
-           if Bytes.unsafe_get b i <> Char.chr (!bytes_read land 255) then
-             Lwt.wakeup_exn waker (Failure "read wrong content");
-           incr bytes_read;
-         done
-       | Error Uwt.EOF -> Lwt.wakeup waker ()
-       | Error _ -> Lwt.wakeup_exn waker (Failure "fatal error!")
-       in
-       let cb_write () =
-         bytes_written := buf_len + !bytes_written;
-         Lwt.return_unit
-       in
-       for _i = 1 to buf_cnt do
-         ignore ( write_ba client ~buf >>= cb_write );
-       done;
-       if write_queue_size client = 0 then
-         Lwt.wakeup_exn waker
-           (Failure "write queue size empty after write requests");
-       read_start_exn client ~cb:cb_read;
-       let t_shutdown = shutdown client >>= fun () ->
-         if write_queue_size client <> 0 then
-           Lwt.fail (Failure "write queue size not empty after shutdown")
-         else
-           Lwt.return_unit
-       in
-       Lwt.join [ t_shutdown ; sleeper ] >>= fun () ->
-       close_wait client >|= fun () ->
-       !bytes_read = !bytes_written &&
-       !bytes_read = buf_len * buf_cnt
+     with_client_connect @@ fun client ->
+     let buf_len = 65536 in
+     let x = max 1 (multiplicand ctx) in
+     let buf_cnt = 64 * x in
+     let bytes_read = ref 0 in
+     let bytes_written = ref 0 in
+     let buf = Uwt_bytes.create buf_len in
+     for i = 0 to pred buf_len do
+       buf.{i} <- Char.chr (i land 255);
+     done;
+     let sleeper,waker = Lwt.task () in
+     let cb_read = function
+     | Ok b ->
+       for i = 0 to Bytes.length b - 1 do
+         if Bytes.unsafe_get b i <> Char.chr (!bytes_read land 255) then
+           Lwt.wakeup_exn waker (Failure "read wrong content");
+         incr bytes_read;
+       done
+     | Error Uwt.EOF -> Lwt.wakeup waker ()
+     | Error _ -> Lwt.wakeup_exn waker (Failure "fatal error!")
      in
-     m_true t);
+     let cb_write () =
+       bytes_written := buf_len + !bytes_written;
+       Lwt.return_unit
+     in
+     for _i = 1 to buf_cnt do
+       ignore ( write_ba client ~buf >>= cb_write );
+     done;
+     if write_queue_size client = 0 then
+       Lwt.wakeup_exn waker
+         (Failure "write queue size empty after write requests");
+     read_start_exn client ~cb:cb_read;
+     let t_shutdown = shutdown client >>= fun () ->
+       if write_queue_size client <> 0 then
+         Lwt.fail (Failure "write queue size not empty after shutdown")
+       else
+         Lwt.return_unit
+     in
+     Lwt.join [ t_shutdown ; sleeper ] >>= fun () ->
+     close_wait client >|= fun () ->
+     !bytes_read = !bytes_written &&
+     !bytes_read = buf_len * buf_cnt );
   ("fileno">::
    fun _ctx ->
      let (fd1,fd2) = Unix.pipe () in
@@ -219,35 +224,33 @@ let l = [
   ("write_abort">::
    fun ctx ->
      no_win_xp ctx; (* no, i won't debug obsolete systems ... *)
-     let t = with_client @@ fun client ->
-       connect client ~path:Echo_server.addr >>= fun () ->
-       let write_thread = write_much client in
-       Uwt.Pipe.read_start_exn client ~cb:(fun _ -> ());
-       close_wait client >>= fun () ->
-       Lwt.catch ( fun () -> write_thread )
-         (function
-         | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
-         | x -> Lwt.fail x)
-     in
-     m_true t);
+     with_client_connect @@ fun client ->
+     let write_thread = write_much client in
+     Uwt.Pipe.read_start_exn client ~cb:(fun _ -> ());
+     close_wait client >>= fun () ->
+     Lwt.catch ( fun () -> write_thread )
+       (function
+       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+       | x -> Lwt.fail x) );
   ("read_abort">::
    fun _ctx ->
-     let t = with_client @@ fun client ->
-       connect client ~path:Echo_server.addr >>= fun () ->
-       let read_thread =
-         let buf = Bytes.create 128 in
-         read client ~buf >>= fun _ ->
-         Lwt.fail (Failure "read successful!")
-       in
-       let _ : unit Lwt.t =
-         Uwt.Timer.sleep 40 >>= fun () ->
-         close_noerr client ; Lwt.return_unit
-       in
-       Lwt.catch ( fun () -> read_thread )(function
-         | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
-         | x -> Lwt.fail x )
+     with_client_connect @@ fun client ->
+     let read_thread =
+       let buf = Bytes.create 128 in
+       read client ~buf >>= fun _ ->
+       Lwt.fail (Failure "read successful!")
      in
-     m_true t);
+     let _ : unit Lwt.t =
+       Uwt.Timer.sleep 40 >>= fun () ->
+       close_noerr client ; Lwt.return_unit
+     in
+     Lwt.catch ( fun () -> read_thread )(function
+       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+       | x -> Lwt.fail x )  );
+  ("read_own">::
+   fun _ctx ->
+     with_client_connect @@ fun t ->
+     stream_read_own_test (to_stream t));
   ("echo_pipe_uwt_io">::
    fun _ctx ->
      let path =

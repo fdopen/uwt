@@ -2,7 +2,6 @@ open OUnit2
 open Lwt.Infix
 open Common
 
-let (//) = Filename.concat
 let l = [
   ("stub_test">::
    fun _ctx ->

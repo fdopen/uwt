@@ -869,7 +869,7 @@ getprotoent_value(uv_req_t * req)
     Field(ret,1) = aliases;
     Field(ret,2) = Val_long(entry->p_proto);
     aliases = ret;
-    ret = caml_alloc_small(1,0);
+    ret = caml_alloc_small(1,Ok_tag);
     Field(ret,0) = aliases;
     End_roots();
   }

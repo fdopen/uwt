@@ -732,12 +732,15 @@ module Udp = struct
     | Leave_group
     | Join_group
 
-  external set_membership:
-    t -> multicast:string -> interface:string -> membership -> Int_result.unit =
+  external set_membershipr:
+    t -> multicast:string -> interface:string option -> membership -> Int_result.unit =
     "uwt_udp_set_membership_na" "noalloc"
 
-  let set_membership_exn t ~multicast ~interface m =
-    set_membership t ~multicast ~interface m |> to_exnu "udp_set_membership"
+  let set_membership ?interface t ~multicast m =
+    set_membershipr t ~multicast ~interface m
+
+  let set_membership_exn ?interface t ~multicast m =
+    set_membershipr t ~multicast ~interface m |> to_exnu "udp_set_membership"
 
   external set_multicast_loop:
     t -> bool -> Int_result.unit = "uwt_udp_set_multicast_loop_na" "noalloc"
@@ -750,7 +753,7 @@ module Udp = struct
     set_multicast_ttl a b |> to_exnu "udp_set_multicast_ttl"
 
   external set_multicast_interface:
-    t -> string -> Int_result.unit =
+    t -> string option -> Int_result.unit =
     "uwt_udp_set_multicast_interface_na" "noalloc"
   let set_multicast_interface_exn a b =
     set_multicast_interface a b |> to_exnu "udp_set_multicast_interface"

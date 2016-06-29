@@ -46,7 +46,7 @@ include Fs_types
 type loop
 external uv_default_loop: int -> loop uv_result = "uwt_default_loop"
 let loop =
-  match uv_default_loop 0 with (* Lwt of disabled loop_mode *)
+  match uv_default_loop 0 with (* sync of disabled loop_mode *)
   | Error _ ->
     prerr_endline "Can't init default loop";
     exit(3)

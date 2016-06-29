@@ -4,11 +4,12 @@ B src
 S examples
 B examples
 PKG lwt
-PKG ppx_include
 PKG ppx_deriving.show
 PKG ppx_import
 PKG unix
 PKG bigarray
 PKG threads
 PKG oUnit
+PKG result
 B +threads
+FLG -open Result

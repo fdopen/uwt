@@ -6,12 +6,6 @@ open Uv_fs_sync
 let bind v f = match v with Ok v -> f v | Error _ as e -> e
 let ( >>= ) = bind
 
-let finalize f finallly' =
-  let res =
-    try f () with exn -> finallly' (); raise exn in
-  finallly' ();
-  res
-
 let no_win = Common.no_win
 
 let rec really_write ?(pos=0) ?len buf fd =

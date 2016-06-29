@@ -60,7 +60,9 @@ type error =
   | ECANCELED
   | ECHARSET (** Windows filenames (and similar parameters) are
                  expected to be in utf8. ECHARSET is returned, if one
-                 parameter contains invalid unicode *)
+                 parameter contains invalid unicode.
+                 Futhermore, ECHARSET will be returned, if your strings
+                 contain null bytes (on *nix, too!) *)
   | ECONNABORTED
   | ECONNREFUSED
   | ECONNRESET

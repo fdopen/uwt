@@ -194,7 +194,8 @@ static unsigned int uwt_global_caml_root_size = 0;
 static unsigned int uwt_global_caml_root_n = 0;
 static unsigned int * uwt_global_caml_root_free_pos = NULL;
 
-#define GR_ROOT_INIT_SIZE 128
+#define GR_ROOT_INIT_SIZE_P2 12u
+#define GR_ROOT_INIT_SIZE (1u << GR_ROOT_INIT_SIZE_P2)
 #define UWT_WAKEUP_STRING "uwt.wakeup"
 #define UWT_ADD_EXCEPTION_STRING "uwt.add_exception"
 
@@ -209,70 +210,108 @@ static unsigned int * uwt_global_caml_root_free_pos = NULL;
 typedef unsigned int cb_t;
 #define CB_INVALID UINT_MAX
 
-#define CAML_CALLBACK1(_wp,_ct,_val)                              \
-  ( assert((_wp)->cb_type == CB_LWT),                             \
-    (caml_callback2_exn(*uwt_global_wakeup,                       \
-                        Field(uwt_global_caml_root,((_wp)->_ct)), \
-                        (_val))) )
+#define GET_CB_VAL__I(x)                              \
+  ((unsigned int)(x) / (1u << GR_ROOT_INIT_SIZE_P2))
+#define GET_CB_VAL__J(x)                                      \
+  ((unsigned int)(x) & ((1u << GR_ROOT_INIT_SIZE_P2) - 1u))
 
-#if 0
-#define CAML_CALLBACK1(_wp,_ct,_exn)                                    \
-  ((_wp)->cb_type == CB_LWT) ?                                          \
-  (caml_callback2_exn(*uwt_global_wakeup,                               \
-                      Field(uwt_global_caml_root,((_wp)->_ct)),         \
-                      (_exn))) :                                        \
-  (caml_callback_exn(Field(uwt_global_caml_root,((_wp)->_ct)),(_exn)))
-#endif
+#define GET_CB_VAL(cb)                                                  \
+  (Field(Field(uwt_global_caml_root,GET_CB_VAL__I(cb)),GET_CB_VAL__J(cb)))
+#define SET_CB_VAL(cb,x)                        \
+  do {                                          \
+    const unsigned cb_ = cb;                    \
+    const unsigned i_ = GET_CB_VAL__I(cb_);     \
+    const unsigned j_ = GET_CB_VAL__J(cb_);     \
+    value ar_ = Field(uwt_global_caml_root,i_); \
+    Store_field(ar_,j_,x);                      \
+  } while (0)
 
-#define GET_CB_VAL(cb) Field(uwt_global_caml_root,(cb))
+#define CAML_CALLBACK1(_wp,_ct,_val)            \
+  caml_callback2_exn(*uwt_global_wakeup,        \
+                     GET_CB_VAL((_wp)->_ct),    \
+                     (_val))
 
 static void
 gr_root_enlarge__(void)
 {
   CAMLparam0();
   CAMLlocal1(nroot);
-  unsigned int nsize;
-  unsigned int osize;
   unsigned int i;
   unsigned int * t;
   if ( uwt_global_caml_root == Val_unit ){
-    osize = 0;
-    nsize = GR_ROOT_INIT_SIZE;
-  }
-  else {
-    assert( Wosize_val(uwt_global_caml_root) == uwt_global_caml_root_size );
-    osize = uwt_global_caml_root_size;
-    nsize = osize*2;
-  }
-  nroot = caml_alloc(nsize,0);
-  for ( i = 0; i< nsize; ++i ){
-    Field(nroot,i) = Val_unit;
-  }
-  t = malloc(nsize * sizeof(*t));
-  if ( t == NULL ){
-    caml_raise_out_of_memory();
-  }
-  if ( uwt_global_caml_root == Val_unit ){
-    uwt_global_caml_root = nroot;
+    enum { AR_INIT_SIZE = 2};
+    nroot = caml_alloc(GR_ROOT_INIT_SIZE,0);
+    for ( i = 0 ; i < GR_ROOT_INIT_SIZE ; ++i ){
+      Field(nroot,i) = Val_unit;
+    }
+    uwt_global_caml_root = caml_alloc_small(AR_INIT_SIZE,0);
+    Field(uwt_global_caml_root,0) = nroot;
+    for ( i = 1 ; i < AR_INIT_SIZE ; ++i ){
+      Field(uwt_global_caml_root,i) = Val_unit;
+    }
+    t = malloc(AR_INIT_SIZE * GR_ROOT_INIT_SIZE * sizeof(*t));
+    if ( t == NULL ){
+      caml_raise_out_of_memory();
+    }
+    for ( i = 0; i < GR_ROOT_INIT_SIZE; ++i ){
+      t[i] = i;
+    }
+    uwt_global_caml_root_free_pos = t;
+    uwt_global_caml_root_size = GR_ROOT_INIT_SIZE;
     caml_register_generational_global_root(&uwt_global_caml_root);
   }
   else {
-    for ( i = 0; i < osize; ++i ){
-      value tmp = Field(uwt_global_caml_root,i);
-      if ( tmp != Val_unit ){
-        Store_field(nroot,i,tmp);
-      }
+    const unsigned int ri = (uwt_global_caml_root_size + (GR_ROOT_INIT_SIZE - 1))
+                            / GR_ROOT_INIT_SIZE;
+    const size_t ar_size = Wosize_val(uwt_global_caml_root);
+    const unsigned int nroot_size =
+      uwt_global_caml_root_size + GR_ROOT_INIT_SIZE;
+    if ( uwt_global_caml_root_size > nroot_size ){
+      caml_failwith("too many lwt threads waiting for i/o");
     }
-    caml_modify_generational_global_root(&uwt_global_caml_root,nroot);
-    memcpy(t,uwt_global_caml_root_free_pos,osize*sizeof(*t));
-    free(uwt_global_caml_root_free_pos);
+    if ( ri >= ar_size ){
+      uint64_t cn_size = ar_size * (uint64_t)(2 * GR_ROOT_INIT_SIZE);
+      if ( cn_size > UINT_MAX ){
+        cn_size = UINT_MAX;
+      }
+      nroot = caml_alloc(ar_size*2,0);
+      for ( i = 0 ; i < ar_size ; ++i ){
+        Store_field(nroot,i,Field(uwt_global_caml_root,i));
+      }
+      for ( i = ar_size ; i < ar_size * 2 ; ++i ){
+        Field(nroot,i) = Val_unit;
+      }
+      t = realloc(uwt_global_caml_root_free_pos,cn_size * sizeof(*t));
+      if ( t == NULL ){
+        caml_raise_out_of_memory();
+      }
+      caml_modify_generational_global_root(&uwt_global_caml_root,nroot);
+      uwt_global_caml_root_free_pos = t;
+    }
+    nroot = caml_alloc(GR_ROOT_INIT_SIZE,0);
+    unsigned int j;
+    for ( i = 0, j = uwt_global_caml_root_size ;
+          i < GR_ROOT_INIT_SIZE ;
+          ++i, ++j ){
+      Field(nroot,i) = Val_unit;
+      uwt_global_caml_root_free_pos[j] = j;
+    }
+    Store_field(uwt_global_caml_root,ri,nroot);
+    uwt_global_caml_root_size = nroot_size;
   }
-  uwt_global_caml_root_free_pos = t;
-  for ( i = osize; i < nsize; ++i ){
-    uwt_global_caml_root_free_pos[i] = i;
-  }
-  uwt_global_caml_root_size = nsize;
   CAMLreturn0;
+}
+
+static void
+gr_root_unregister(unsigned int *a)
+{
+  const unsigned int n = *a;
+  if ( n != CB_INVALID ){
+    SET_CB_VAL(n,Val_unit);
+    --uwt_global_caml_root_n;
+    uwt_global_caml_root_free_pos[uwt_global_caml_root_n] = n;
+    *a = CB_INVALID;
+  }
 }
 
 static void
@@ -283,8 +322,7 @@ gr_root_register__(unsigned int *a,value x)
   }
   const unsigned pos = uwt_global_caml_root_free_pos[uwt_global_caml_root_n];
   uwt_global_caml_root_n++;
-  assert(Field(uwt_global_caml_root,pos) == Val_unit);
-  Store_field(uwt_global_caml_root,pos,x);
+  SET_CB_VAL(pos,x);
   *a = pos;
 }
 
@@ -299,19 +337,6 @@ gr_root_register__(unsigned int *a,value x)
     }                                                                   \
   } while(0)
 
-static void
-gr_root_unregister(unsigned int *a)
-{
-  const unsigned int n = *a;
-  if ( n != CB_INVALID ){
-    Store_field(uwt_global_caml_root,n,Val_unit);
-    assert(uwt_global_caml_root_n);
-    --uwt_global_caml_root_n;
-    uwt_global_caml_root_free_pos[uwt_global_caml_root_n] = n;
-    *a = CB_INVALID;
-  }
-}
-
 #define STACK_START_SIZE 256
 struct stack {
     void ** s;
@@ -324,21 +349,32 @@ struct stack {
     unsigned int gc_n;      /* from time to time */
 };
 
-static void
-stack_resize_add(struct stack * s,void *p)
+static bool
+stack_resize_add(struct stack * s,void *p,bool do_free)
 {
   void **ns;
   const unsigned int nsize = s->size == 0 ? STACK_START_SIZE : (s->size*2);
+  if (unlikely( nsize < s->size )){
+    if (do_free){
+      --s->created;
+      free(p);
+    }
+    return false;
+  }
   ns = realloc(s->s,nsize * (sizeof(void*)));
   if (unlikely( !ns )){
-    --s->created;
-    free(p);
+    if (do_free){
+      --s->created;
+      free(p);
+    }
+    return false;
   }
   else {
     s->s = ns;
     s->size = nsize;
     s->s[s->pos] = p;
     s->pos = s->pos+1;
+    return true;
   }
 }
 
@@ -350,7 +386,7 @@ mem_stack_free(struct stack * s, void *p)
     ++s->pos;
   }
   else {
-    stack_resize_add(s,p);
+    stack_resize_add(s,p,true);
   }
 }
 
@@ -358,9 +394,12 @@ static inline void *
 mem_stack_pop(struct stack * x)
 {
   if (unlikely( x->pos == 0 )){
-    ++x->created;
     x->pos_min = 0;
-    return (malloc(x->malloc_size));
+    void * p = malloc(x->malloc_size);
+    if ( p ){
+      ++x->created;
+    }
+    return p;
   }
   else {
     --x->pos;
@@ -397,18 +436,18 @@ struct ATTR_PACKED req {
     struct worker_params c;
     uv_req_t * req;
     struct loop * loop;
+    size_t offset;
     req_c_cb c_cb;
     clean_cb clean_cb;
     uv_buf_t buf;
     cb_t cb;
     cb_t sbuf;
-    unsigned int offset;
     int c_param;
     unsigned int in_use : 1;
     unsigned int finalize_called: 1; /* message from ocaml garbage collector,
                                         that it can be freed */
     unsigned int cb_type : 2; /* 0: sync, 1: lwt, 2: normal callback */
-    unsigned int buf_contains_ba: 1; /* used for other purpose, if buf not used */
+    unsigned int buf_contains_ba: 1; /* used for other purpose, if not used */
     unsigned int in_cb: 1;
 };
 
@@ -418,14 +457,14 @@ struct ATTR_PACKED req {
 struct ATTR_PACKED handle {
     uv_handle_t * handle;
     struct loop * loop;
+    size_t obuf_offset; /* for read_own */
+    size_t c_read_size; /* passed to the alloc function */
     void * ba_read; /* pointer to bigarray for reading */
     cb_t cb_listen;
     cb_t cb_listen_server;
     cb_t cb_read;
     cb_t cb_close;
     cb_t obuf;
-    unsigned int obuf_offset; /* for read_own */
-    unsigned int c_read_size; /* passed to the alloc function */
 #ifdef _WIN32
     int orig_fd; /* when converting to and back from Unix.file_descr, I have to
                     save the original crt fd in order to avoid descriptor
@@ -470,6 +509,7 @@ static void req_finalize(value v)
 {
   struct req * wp = Req_val(v);
   if ( wp != NULL ){
+    Field(v,1) = 0; /* Mantis: #7279 */
     if ( wp->in_use != 0 || wp->in_cb != 0 ){
       wp->finalize_called = 1;
     }
@@ -499,6 +539,12 @@ handle_cmp(value a, value b)
 {
   uintnat p1 = Field(a,2);
   uintnat p2 = Field(b,2);
+  int x = (p1 > p2) - (p1 < p2);
+  if (x) {
+    return x;
+  }
+  p1 = Field(a,3);
+  p2 = Field(b,3);
   return ((p1 > p2) - (p1 < p2));
 }
 
@@ -565,6 +611,9 @@ static struct stack stack_struct_handle =
   { NULL, 0, 0, sizeof(struct handle),0,0,0};
 static struct stack stacks_req_t[UV_REQ_TYPE_MAX];
 static struct stack stacks_handle_t[UV_HANDLE_TYPE_MAX];
+
+static struct stack stack_struct_handles_to_close =
+  { NULL, 0, 0, sizeof (struct handle),0,0,0};
 
 #define MIN_BUCKET_SIZE_LOG2 8u
 #define MAX_BUCKET_SIZE_LOG2 17u
@@ -659,7 +708,7 @@ which_buf(unsigned int len)
 }
 
 static void
-malloc_uv_buf_t(uv_buf_t * buf, unsigned int len, enum cb_type cb_type)
+malloc_uv_buf_t(uv_buf_t * buf, size_t len, enum cb_type cb_type)
 {
   if ( len == 0 ){
     buf->base = NULL;
@@ -840,7 +889,7 @@ handle_create(int handle_type, struct loop *l)
   struct handle * wp;
   static uintnat hcnt;
   const enum cb_type cb_type = l->loop_type;
-  res = caml_alloc_custom(&ops_uwt_handle, sizeof(intnat)*2, 0, 1);
+  res = caml_alloc_custom(&ops_uwt_handle, sizeof(intnat)*3, 0, 1);
   Field(res,1) = 0;
   wp = malloc_struct_handle();
   if ( !wp ){
@@ -883,6 +932,10 @@ handle_create(int handle_type, struct loop *l)
   wp->read_waiting = 0;
   Field(res,1) = (intnat)wp;
   Field(res,2) = hcnt++;
+  /* to get the similar behaviour as with file descriptors:
+     the hash value and equality won't change after close.
+  */
+  Field(res,3) = (intnat)wp;
   return res;
 }
 
@@ -914,8 +967,8 @@ static void
 handle_finalize_close_cb(uv_handle_t *h)
 {
   struct handle * s = h->data;
-  free_mem_uv_handle_t(s);
   if ( s ){
+    free_mem_uv_handle_t(s);
     if ( s->cb_listen != CB_INVALID ||
          s->cb_listen_server != CB_INVALID ||
          s->cb_read != CB_INVALID ||
@@ -949,6 +1002,7 @@ handle_finalize(value p)
   if ( !s ){
     return;
   }
+  Field(p,1) = 0; /* Mantis: #7279 */
   s->finalize_called = 1;
   if ( s->close_executed ){
     if ( s->handle ){
@@ -975,7 +1029,26 @@ handle_finalize(value p)
         s->obuf = CB_INVALID;
       }
     }
-    handle_finalize_close(s);
+    if ( s->handle == NULL ){
+      handle_free_common(s);
+      free_struct_handle(s);
+    }
+    else {
+      /* we might be in the wrong thread, defer the close call to later */
+      if ( stack_struct_handles_to_close.pos <
+           stack_struct_handles_to_close.size ){
+        stack_struct_handles_to_close.s[stack_struct_handles_to_close.pos] = s;
+        ++stack_struct_handles_to_close.pos;
+      }
+      else {
+        bool added = stack_resize_add(&stack_struct_handles_to_close,s,false);
+        if ( !added ){
+          handle_free_common(s);
+          DEBUG_PF("out of memory, handle can't be closed");
+          /* handle_finalize_close(s);*/
+        }
+      }
+    }
   }
 }
 
@@ -991,7 +1064,6 @@ static size_t get_req_t_size(uv_req_type typ)
   case UV_GETNAMEINFO: return (sizeof(uv_getnameinfo_t));
   case UV_WORK: return (sizeof(uv_work_t));
   default:
-    assert(false);
     caml_failwith("fatal: unsupported uv_req_t type");
   }
 }
@@ -1049,6 +1121,23 @@ req_create(uv_req_type typ, struct loop *l)
 #define VAL_UWT_INT_RESULT(x)                   \
   ( (x) < 0 ? Val_uwt_int_result(x) : Val_long(x))
 
+
+static void
+close_garbage_collected_handles(void)
+{
+  unsigned int i;
+  for ( i = 0 ; i < stack_struct_handles_to_close.pos ; ++i ){
+    handle_finalize_close(stack_struct_handles_to_close.s[i]);
+    stack_struct_handles_to_close.s[i] = NULL;
+  }
+  stack_struct_handles_to_close.pos = 0;
+  if ( stack_struct_handles_to_close.size > 128 ){
+    free(stack_struct_handles_to_close.s);
+    stack_struct_handles_to_close.s = NULL;
+    stack_struct_handles_to_close.size = 0;
+  }
+}
+
 CAMLprim value
 uwt_run_loop(value o_loop,value o_mode)
 {
@@ -1065,6 +1154,10 @@ uwt_run_loop(value o_loop,value o_mode)
     uv_loop_t * loop = &wp->loop;
     uv_run_mode m;
     int erg;
+    wp->in_use = 1;
+    if (stack_struct_handles_to_close.pos){
+      close_garbage_collected_handles();
+    }
     switch ( Long_val(o_mode) ){
     case 0: m = UV_RUN_ONCE; break;
     case 1: m = UV_RUN_NOWAIT; break;
@@ -1072,13 +1165,15 @@ uwt_run_loop(value o_loop,value o_mode)
     case 2: /*fall*/
       m = UV_RUN_DEFAULT;
     }
-    wp->in_use = 1;
     assert( uwt_global_runtime_released == false );
     wp->exn_caught = 0;
     erg = uv_run(loop, m);
     if ( uwt_global_runtime_released == true ){
       uwt_global_runtime_released = false;
       caml_leave_blocking_section();
+    }
+    if (stack_struct_handles_to_close.pos){
+      close_garbage_collected_handles();
     }
     wp->in_use = 0;
     ret = VAL_UWT_INT_RESULT(erg);
@@ -1143,6 +1238,7 @@ loop_finalize(value v)
 {
   struct loop * x = Loop_val(v);
   if ( x &&  in_default_loops(x) < 0 ){
+    Field(v,1) = 0; /* Mantis: #7279 */
     if ( x->in_use == 1 ){
       x->do_clean = 1; /* TODO: handle this case */
     }
@@ -1270,7 +1366,7 @@ uwt_req_create(value o_loop, value o_type)
   case 1: type = UV_GETADDRINFO; break;
   case 2: type = UV_GETNAMEINFO; break;
   case 3: type = UV_WORK; break;
-  default: /* fall */
+  default:
     assert(false);
     caml_failwith("invalid request typ");
   }
@@ -1641,40 +1737,44 @@ fs_read_cb(uv_req_t * r)
 FSSTART(fs_read,o_file,o_buf,o_offset,o_len,{
   const size_t slen = (size_t)Long_val(o_len);
   struct req * wp = wp_req;
-  const unsigned int offset = Long_val(o_offset);
+  size_t offset = Long_val(o_offset);
   const int ba = slen && (Tag_val(o_buf) != String_tag);
   const int fd = FD_VAL(o_file);
-  if ( ba ){
-    wp->buf.len = slen;
-    wp->buf.base = Ba_buf_val(o_buf) + offset;
+  if ( slen > ULONG_MAX ){
+    ret = UV_UWT_EINVAL;
   }
   else {
-    malloc_uv_buf_t(&wp->buf,slen,wp->cb_type);
-  }
-  if ( slen && wp->buf.base == NULL ){
-    ret = UV_ENOMEM;
-  }
-  else {
-    wp->offset = offset;
-    wp->buf_contains_ba = ba;
-    BLOCK({
-        ret = uv_fs_read(loop, req, fd, &wp->buf, 1, -1, cb);
-        });
-    if ( ret >= 0 ){
-      gr_root_register(&wp->sbuf,o_buf);
+    if ( ba ){
+      wp->buf.len = slen;
+      wp->buf.base = Ba_buf_val(o_buf) + offset;
     }
     else {
-      if ( !ba ){
-        free_uv_buf_t(&wp->buf,wp->cb_type);
+      malloc_uv_buf_t(&wp->buf,slen,wp->cb_type);
+    }
+    if ( slen && wp->buf.base == NULL ){
+      ret = UV_ENOMEM;
+    }
+    else {
+      wp->offset = offset;
+      wp->buf_contains_ba = ba;
+      BLOCK({
+          ret = uv_fs_read(loop, req, fd, &wp->buf, 1, -1, cb);
+        });
+      if ( ret >= 0 ){
+        gr_root_register(&wp->sbuf,o_buf);
       }
-      wp->offset = 0;
-      wp->buf_contains_ba = 0;
-      wp->buf.len = 0;
-      wp->buf.base = NULL;
+      else {
+        if ( !ba ){
+          free_uv_buf_t(&wp->buf,wp->cb_type);
+        }
+        wp->offset = 0;
+        wp->buf_contains_ba = 0;
+        wp->buf.len = 0;
+        wp->buf.base = NULL;
+      }
     }
   }
-  }
-  )
+  })
 
 static value
 fs_write_cb(uv_req_t * r)
@@ -1700,42 +1800,47 @@ FSSTART(fs_write,
         o_buf,
         o_pos,
         o_len,{
-  const unsigned int slen = (size_t)Long_val(o_len);
+  const size_t slen = (size_t)Long_val(o_len);
   struct req * wp = wp_req;
   const int ba = slen && (Tag_val(o_buf) != String_tag);
   const int fd = FD_VAL(o_file);
-  if ( ba ){
-    wp->buf.base = Ba_buf_val(o_buf) + Long_val(o_pos);
-    wp->buf.len = slen;
+  if ( slen > ULONG_MAX ){
+    ret = UV_UWT_EINVAL;
   }
   else {
-    malloc_uv_buf_t(&wp->buf,slen,wp->cb_type);
-  }
-  if ( slen && wp->buf.base == NULL ){
-    ret = UV_ENOMEM;
-  }
-  else {
-    if ( slen && ba == 0 ){
-      memcpy(wp->buf.base,
-             String_val(o_buf) + Long_val(o_pos),
-             slen);
-    }
-    wp->buf_contains_ba = ba;
-    BLOCK({
-     ret = uv_fs_write(loop, req, fd, &wp->buf, 1, -1, cb);
-      });
-    if ( ret >= 0 ){
-      if ( ba ){
-        gr_root_register(&wp->sbuf,o_buf);
-      }
+    if ( ba ){
+      wp->buf.base = Ba_buf_val(o_buf) + Long_val(o_pos);
+      wp->buf.len = slen;
     }
     else {
-      if ( ba == 0 ){
-        free_uv_buf_t(&wp->buf,wp->cb_type);
+      malloc_uv_buf_t(&wp->buf,slen,wp->cb_type);
+    }
+    if ( slen && wp->buf.base == NULL ){
+      ret = UV_ENOMEM;
+    }
+    else {
+      if ( slen && ba == 0 ){
+        memcpy(wp->buf.base,
+               String_val(o_buf) + Long_val(o_pos),
+               slen);
       }
-      wp->buf_contains_ba = 0;
-      wp->buf.base = NULL;
-      wp->buf.len = 0;
+      wp->buf_contains_ba = ba;
+      BLOCK({
+          ret = uv_fs_write(loop, req, fd, &wp->buf, 1, -1, cb);
+        });
+      if ( ret >= 0 ){
+        if ( ba ){
+          gr_root_register(&wp->sbuf,o_buf);
+        }
+      }
+      else {
+        if ( ba == 0 ){
+          free_uv_buf_t(&wp->buf,wp->cb_type);
+        }
+        wp->buf_contains_ba = 0;
+        wp->buf.base = NULL;
+        wp->buf.len = 0;
+      }
     }
   }
 })
@@ -2564,8 +2669,7 @@ uwt_timer_start(value o_loop, value o_cb,
   ret = caml_alloc_small(1,Ok_tag);
   h->close_executed = 0;
   Field(ret,0) = v;
-  uv_timer_t * t = (uv_timer_t *)h->handle;
-  int erg = uv_timer_init(&l->loop,t);
+  int erg = uv_timer_init(&l->loop,(uv_timer_t *)h->handle);
   if ( erg < 0 ){
     free_mem_uv_handle_t(h);
     free_struct_handle(h);
@@ -2723,7 +2827,7 @@ read_start_alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
   }
   else {
     const struct handle * h = handle->data;
-    const unsigned int len = UMIN(suggested_size,h->c_read_size);
+    const size_t len = UMIN(suggested_size,h->c_read_size);
     malloc_uv_buf_t(buf,len,h->cb_type);
   }
 }
@@ -2971,7 +3075,7 @@ alloc_read_own(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
     buf->len = h->c_read_size;
   }
   else {
-    unsigned int len;
+    size_t len;
     len = UMIN(suggested_size,h->c_read_size);
     malloc_uv_buf_t(buf,len,h->cb_type);
   }
@@ -2999,8 +3103,8 @@ uwt_read_own(value o_s,value o_buf,value o_offset,value o_len,value o_cb)
       erg = uv_read_start(stream,alloc_read_own,read_own_cb);
     }
     if ( erg >= 0 ){
-      unsigned int len = Long_val(o_len);
-      unsigned int offset = Long_val(o_offset);
+      size_t len = Long_val(o_len);
+      size_t offset = Long_val(o_offset);
       gr_root_register(&s->cb_read,o_cb);
       gr_root_register(&s->obuf,o_buf);
       ++s->in_use_cnt;
@@ -3008,7 +3112,7 @@ uwt_read_own(value o_s,value o_buf,value o_offset,value o_len,value o_cb)
       s->read_waiting = 1;
       s->use_read_ba = ba;
       if ( ba == 0 ){
-        s->obuf_offset = Long_val(o_offset);
+        s->obuf_offset = offset;
       }
       else {
         s->ba_read = Ba_buf_val(o_buf) + offset;
@@ -3050,14 +3154,16 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
   if ( o_sock == Val_unit ){
     HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream);
   }
+  const size_t len = Long_val(o_len);
+  if ( len > ULONG_MAX ){
+    return VAL_UWT_INT_RESULT_UWT_EINVAL;
+  }
   HANDLE_NINIT(s,o_stream,o_buf,o_sock,o_cb);
-  const intnat len = Long_val(o_len);
   const int ba = len > 0 && Tag_val(o_buf) != String_tag;
   struct req * wp;
   wp = req_create( o_sock == Val_unit ? UV_WRITE : UV_UDP_SEND,
                    s->loop );
   value ret = Val_unit;
-  assert( len >= 0 );
   if ( ba ){
     wp->buf.base = Ba_buf_val(o_buf) + Long_val(o_pos);
     wp->buf.len = len;
@@ -3153,11 +3259,14 @@ uwt_write2_native(value o_stream,
                   value o_len,
                   value o_cb)
 {
+  const size_t len = Long_val(o_len);
+  if ( len > ULONG_MAX ){
+    return VAL_UWT_INT_RESULT_UWT_EINVAL;
+  }
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream);
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream_send);
   HANDLE_NINIT2(s1,o_stream,s2,o_stream_send,o_cb,o_buf);
   value ret = Val_unit;
-  const intnat len = Long_val(o_len);
   struct req * wp = req_create(UV_WRITE,s1->loop);
   uv_write_t* req = (uv_write_t*)wp->req;
   const int ba = len > 0 && Tag_val(o_buf) != String_tag;
@@ -3771,7 +3880,17 @@ uwt_udp_set_membership_na(value o_udp, value o_mul,
   HANDLE_NO_UNINIT_NA(u);
   uv_membership membership = Long_val(o_mem) ? UV_JOIN_GROUP : UV_LEAVE_GROUP;
   const char* multicast_addr = String_val(o_mul);
-  const char* interface_addr = String_val(o_int);
+  char* interface_addr = NULL;
+  if ( !uwt_is_safe_string(o_mul) ){
+    return VAL_UWT_INT_RESULT_ECHARSET;
+  }
+  if ( o_int != Val_unit ){
+    value s = Field(o_int,0);
+    if ( !uwt_is_safe_string(s) ){
+      return VAL_UWT_INT_RESULT_ECHARSET;
+    }
+    interface_addr = String_val(s);
+  }
   int ret = uv_udp_set_membership((uv_udp_t*)u->handle,
                                   multicast_addr,
                                   interface_addr,
@@ -3806,11 +3925,15 @@ uwt_udp_set_multicast_interface_na(value o_udp, value o_inter)
 {
   HANDLE_NINIT_NA(u,o_udp);
   HANDLE_NO_UNINIT_NA(u);
-  if ( !uwt_is_safe_string(o_inter) ){
-    return VAL_UWT_INT_RESULT_ECHARSET;
+  char * iface = NULL;
+  if ( o_inter != Val_unit ){
+    value s = Field(o_inter,0);
+    if ( !uwt_is_safe_string(s) ){
+      return VAL_UWT_INT_RESULT_ECHARSET;
+    }
+    iface = String_val(s);
   }
-  int ret = uv_udp_set_multicast_interface((uv_udp_t*)u->handle,
-                                           String_val(o_inter));
+  int ret = uv_udp_set_multicast_interface((uv_udp_t*)u->handle,iface);
   return (VAL_UWT_UNIT_RESULT(ret));
 }
 
@@ -3855,7 +3978,7 @@ alloc_recv_result(ssize_t nread,
 {
   CAMLparam0();
   CAMLlocal3(param,msock_addr,bytes_t);
-  if ( nread > 0 && buf->base && buf->len >= (size_t)nread ){
+  if ( nread > 0 && buf->base ){
     if ( (size_t)nread > buf->len ){
       param = caml_alloc_small(1,Transmission_error);
       Field(param,0) = VAL_UWT_ERROR_UWT_EFATAL;
@@ -4099,8 +4222,8 @@ uwt_udp_recv_own(value o_udp,value o_buf,value o_offset,value o_len,value o_cb)
       erg = uv_udp_recv_start(ux,alloc_read_own,uwt_udp_recv_own_cb);
     }
     if ( erg >= 0 ){
-      const unsigned int len = Long_val(o_len);
-      const unsigned int offset = Long_val(o_offset);
+      size_t len = Long_val(o_len);
+      size_t offset = Long_val(o_offset);
       gr_root_register(&u->cb_read,o_cb);
       gr_root_register(&u->obuf,o_buf);
       ++u->in_use_cnt;
@@ -5414,12 +5537,20 @@ uwt_getaddrinfo_native(value o_node,
     node = NULL;
   }
   else {
+    if ( !uwt_is_safe_string(o_node) ){
+      erg = UV_ECHARSET;
+      goto einval;
+    }
     node = String_val(o_node);
   }
   if ( caml_string_length(o_serv) == 0 ){
     serv = NULL;
   }
   else {
+    if ( !uwt_is_safe_string(o_serv) ){
+      erg = UV_ECHARSET;
+      goto einval;
+    }
     serv = String_val(o_serv);
   }
 
@@ -5531,28 +5662,37 @@ uwt_disable_stdio_inheritance_na(value unit){
 }
 
 static char **
-caml_string_array_to_c_array(value p)
+caml_string_array_to_c_array(value p, int * e)
 {
   const size_t len = Wosize_val(p);
   if ( len == 0 ){
+    *e = UV_EINVAL;
     return NULL;
   }
   char ** env = malloc( (len + 1) * sizeof(char*) );
   if ( !env ){
+    *e = UV_ENOMEM;
     return NULL;
   }
   size_t i;
   for ( i = 0; i < len; i++ ){
-    env[i] = String_val(Field(p,i));
+    value s = Field(p,i);
+    if ( !uwt_is_safe_string(s) ){
+      *e = UV_ECHARSET;
+      free(env);
+      return NULL;
+    }
+    env[i] = String_val(s);
   }
   env[len] = NULL;
+  *e = 0;
   return env;
 }
 
 static struct handle *
 get_handle(value o_s)
 {
-  if ( !Is_block(o_s) || Wosize_val(o_s) != 3 ){
+  if ( !Is_block(o_s) || Wosize_val(o_s) != 4 ){
     return NULL;
   }
   struct handle * s = Handle_val(o_s);
@@ -5652,43 +5792,46 @@ uwt_spawn(value p1, value p2, value p3, value p4)
   }
   t.exit_cb = spawn_exit_cb;
 
-  if ( !uwt_is_safe_string(Field(p4,0)) ){
+  tmp = Field(p4,0) ;
+  if ( !uwt_is_safe_string(tmp) ){
     erg = UV_ECHARSET;
     goto error_end;
   }
-  t.file = String_val(Field(p4,0));
+  t.file = String_val(tmp);
 
   tmp = Field(p4,1);
   if ( tmp == Atom(0) || Wosize_val(tmp) == 0 ){
     t.args = NULL;
   }
   else {
-    mlsize_t alen = Wosize_val(tmp);
-    mlsize_t j;
-    for ( j = 0; j < alen; j++ ){
-      if ( !uwt_is_safe_string(Field(tmp, j)) ){
-        erg = UV_ECHARSET;
-        goto error_end;
-      }
-    }
-    t.args = caml_string_array_to_c_array(tmp);
+    t.args = caml_string_array_to_c_array(tmp,&erg);
     if ( t.args == NULL ){
-      erg = UV_ENOMEM;
       goto error_end;
     }
   }
 
-  if ( Wosize_val(Field(p2,0)) == 0 ){
+  tmp = Field(p2,0);
+  if ( Wosize_val(tmp) == 0 ){
     t.env =  NULL;
   }
   else {
-    t.env = caml_string_array_to_c_array(Field(p2,0));
+    t.env = caml_string_array_to_c_array(tmp,&erg);
     if ( !t.env ){
-      erg = UV_ENOMEM;
       goto error_end;
     }
   }
-  t.cwd = Field(p2,1) == Val_unit ? NULL : String_val(Field(Field(p2,1),0));
+  tmp = Field(p2,1);
+  if ( tmp == Val_unit ){
+    t.cwd = NULL;
+  }
+  else {
+    tmp = Field(tmp,0);
+    if ( !uwt_is_safe_string(tmp) ){
+      erg = UV_ECHARSET;
+      goto error_end;
+    }
+    t.cwd = String_val(tmp);
+  }
   t.flags = Long_val(Field(p1,3));
   t.stdio_count = 3;
   t.stdio = stdio;
@@ -6291,12 +6434,20 @@ uwt_free_all_memory(value unit)
   (void) unit;
   if ( uwt_global_caml_root != Val_unit ){
     unsigned int found = 0;
-    for ( i = 0; i < uwt_global_caml_root_size; ++i ){
-      if ( Field(uwt_global_caml_root,i) != Val_unit ){
-        ++found;
+    unsigned int ar_size = Wosize_val(uwt_global_caml_root);
+    for ( i = 0 ; i < ar_size ; ++i ){
+      value aro = Field(uwt_global_caml_root,i);
+      if ( aro == Val_unit ){
+        continue;
+      }
+      unsigned int ar_size2 = Wosize_val(aro);
+      unsigned int j;
+      for ( j = 0 ; j < ar_size2 ; ++j ){
+        if ( Field(aro,j) != Val_unit ){
+          ++found;
+        }
       }
     }
-    assert(found == uwt_global_caml_root_n);
     if ( !found ){
       uwt_global_caml_root_size = 0;
       uwt_global_caml_root_n = 0;
@@ -6306,7 +6457,7 @@ uwt_free_all_memory(value unit)
       uwt_global_caml_root_free_pos = NULL;
     }
     else {
-      DEBUG_PF("uwt_global_caml_root still in use, found %d elements\n",found);
+      DEBUG_PF("uwt_global_caml_root still in use, found %u elements\n",found);
     }
   }
 
@@ -6331,6 +6482,17 @@ uwt_free_all_memory(value unit)
       uv_loop_close(&uwt_global_def_loop[i].loop);
       uwt_global_def_loop[i].in_use = 0;
     }
+  }
+
+  if ( stack_struct_handles_to_close.pos != 0 ){
+    DEBUG_PF("there are still %u handles ot close\n",
+             stack_struct_handles_to_close.pos);
+  }
+  else {
+    stack_struct_handles_to_close.pos = 0;
+    free(stack_struct_handles_to_close.s);
+    stack_struct_handles_to_close.s = NULL;
+    stack_struct_handles_to_close.size = 0;
   }
   return Val_unit;
 }

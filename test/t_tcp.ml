@@ -353,6 +353,11 @@ let l = [
          | _ -> false
      in
      assert_equal true (res && !caught = false));
+  ("read_own">::
+   fun _ctx ->
+     (* test if emulation of pull read works *)
+     with_client_c4 @@ fun t ->
+     stream_read_own_test (to_stream t) );
   (* The following test the same as 'write_abort' above (regarding TCP).
      The intention is to ensure, that lwt behaves as expected *)
   ("write_abort_pick">::

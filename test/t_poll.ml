@@ -9,23 +9,6 @@ let rec really_read fd buf ofs len =
 
 open Lwt.Infix
 
-let connect () =
-  let rec iter accu i =
-    if i = 0 then
-      Lwt.fail accu
-    else
-      let fd = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
-      let addr = Unix.inet_addr_of_string server_ip in
-      let addr = Unix.ADDR_INET(addr,server_port) in
-      match Unix.connect fd addr with
-      | () -> Lwt.return fd
-      | exception (Unix.Unix_error _ as x) ->
-        Unix.close fd;
-        Uwt.Timer.sleep 5 >>= fun () ->
-        iter x (pred i)
-  in
-  iter Not_found 20
-
 let write_strings server client =
   let rec iter = function
   | [] -> Uwt.Tcp.close_noerr server; Lwt.return_unit

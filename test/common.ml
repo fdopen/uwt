@@ -184,3 +184,23 @@ let fln_cmp =
           String.compare
             (String.sub p1 1 len)
             (String.sub p2 1 len)
+
+let stream_read_own_test t =
+  (* test if emulation of classic lwt read works *)
+  let open Uwt.Stream in
+  let open Lwt.Infix in
+  let blen = 262_144 in
+  let wbuf = rba_create blen
+  and rbuf = Uwt_bytes.create blen
+  and bt_read = ref 0 in
+  let wt = write_ba t ~buf:wbuf in
+  let rec rt pos =
+    if pos >= blen then Lwt.return_unit else
+    let len = min (blen - pos) 128 in
+    read_ba ~buf:rbuf ~pos ~len t >>= fun i ->
+    bt_read := !bt_read + i;
+    Uwt.Timer.sleep 10 >>= fun () ->
+    rt (pos + i)
+  in
+  Lwt.join [rt 0; wt] >|= fun () ->
+  wbuf = rbuf && !bt_read = blen

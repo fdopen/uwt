@@ -452,9 +452,9 @@ module Udp : sig
     | Join_group
 
   val set_membership :
-    t -> multicast:string -> interface:string -> membership -> Int_result.unit
+    ?interface:string -> t -> multicast:string -> membership -> Int_result.unit
   val set_membership_exn :
-    t -> multicast:string -> interface:string -> membership -> unit
+    ?interface:string -> t -> multicast:string -> membership -> unit
 
   val set_multicast_loop : t -> bool -> Int_result.unit
   val set_multicast_loop_exn : t -> bool -> unit
@@ -462,8 +462,8 @@ module Udp : sig
   val set_multicast_ttl : t -> int -> Int_result.unit
   val set_multicast_ttl_exn : t -> int -> unit
 
-  val set_multicast_interface : t -> string -> Int_result.unit
-  val set_multicast_interface_exn : t -> string -> unit
+  val set_multicast_interface : t -> string option -> Int_result.unit
+  val set_multicast_interface_exn : t -> string option -> unit
 
   val set_broadcast : t -> bool -> Int_result.unit
   val set_broadcast_exn : t -> bool -> unit
@@ -705,6 +705,10 @@ module Dns : sig
     ai_canonname : string;
   }
 
+  (**
+     Be careful. [getaddrinfo] returns raw error codes,
+     whereas [Unix.getaddrinfo] returns the empty list
+  *)
   val getaddrinfo :
     host:string -> service:string ->
     getaddrinfo_option list -> addr_info list Lwt.t
