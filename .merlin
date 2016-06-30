@@ -1,4 +1,3 @@
-PRJ libuv
 S src
 B src
 S examples

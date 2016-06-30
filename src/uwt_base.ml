@@ -37,6 +37,12 @@
 
 type 'a uv_result = ('a , error) result
 
+type ('a , 'b) o_result = ('a, 'b) result =
+  | Ok of 'a
+  | Error of 'b
+
+type 'a result = ('a , error) o_result
+
 external strerror: error -> string = "uwt_strerror"
 exception Uwt_error of error * string * string
 

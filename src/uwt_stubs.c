@@ -800,7 +800,7 @@ uwt_init_stacks_na(value unit)
 
 #define INVALID_BUF UINT_MAX
 static inline unsigned int
-which_buf(unsigned int len)
+which_buf(size_t len)
 {
   unsigned int ret;
   if ( len <= (1u << MIN_BUCKET_SIZE_LOG2) ){
@@ -2127,7 +2127,7 @@ fs_mkdtemp_cb(uv_req_t * r)
     Field(param,0) =  VAL_UWT_ERROR_UWT_EFATAL;
   }
   else {
-    value s = s_caml_copy_string(req->path);
+    value s = caml_copy_string(req->path);
     Begin_roots1(s);
     param = caml_alloc_small(1,Ok_tag);
     Field(param,0) = s;
@@ -2158,7 +2158,7 @@ fs_readlink_cb(uv_req_t * r)
   }
   else {
     /* libuv has added the trailing zero for us */
-    value s = s_caml_copy_string(req->ptr);
+    value s = caml_copy_string(req->ptr);
     Begin_roots1(s);
     param = caml_alloc_small(1,Ok_tag);
     Field(param,0) = s;
@@ -4444,10 +4444,13 @@ uwt_udp_recv_own(value o_udp,value o_buf,value o_offset,value o_len,value o_cb)
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_udp);
   HANDLE_NINIT(u,o_udp,o_buf,o_cb);
   const int ba = Tag_val(o_buf) != String_tag;
+  size_t len = Long_val(o_len);
   value ret;
-  assert( u->cb_type == CB_LWT );
   if ( u->cb_read != CB_INVALID ){
     ret = VAL_UWT_INT_RESULT_UWT_EBUSY;
+  }
+  else if ( len > ULONG_MAX ){
+    ret = VAL_UWT_INT_RESULT_UWT_EINVAL;
   }
   else {
     int erg;
@@ -4460,7 +4463,6 @@ uwt_udp_recv_own(value o_udp,value o_buf,value o_offset,value o_len,value o_cb)
       erg = uv_udp_recv_start(ux,alloc_read_own,uwt_udp_recv_own_cb);
     }
     if ( erg >= 0 ){
-      size_t len = Long_val(o_len);
       size_t offset = Long_val(o_offset);
       gr_root_register(&u->cb_read,o_cb);
       gr_root_register(&u->obuf,o_buf);
@@ -5212,7 +5214,7 @@ uwt_cpu_info(value unit)
   const int r = uv_cpu_info(&cpu_infos,&n_cpu);
   int tag;
   (void) unit;
-  if ( r < 0 || n_cpu < 0 ){
+  if ( r < 0 || n_cpu <= 0 ){
     ar_out = Val_uwt_error(r);
     tag = Error_tag;
   }
@@ -5264,6 +5266,11 @@ uwt_interface_addresses(value unit)
   if ( r < 0 || n_addresses < 0 ){
     ar_out = Val_uwt_error(r);
     tag = Error_tag;
+  }
+  else if ( n_addresses == 0 ){
+    ar_out = Atom(0);
+    tag = Ok_tag;
+    uv_free_interface_addresses(addresses,n_addresses);
   }
   else {
     tag = Ok_tag;
@@ -5350,7 +5357,23 @@ uwt_os_dir(os_dir fdir_func)
   char buffer[ALLOCA_PATH_LEN];
   size_t size = ALLOCA_PATH_LEN;
   int tag;
+#if HAVE_DECL_UV_OS_HOMEDIR
+  if ( fdir_func == uv_cwd || fdir_func == uv_os_homedir )
+#else
+  if ( fdir_func == uv_cwd )
+#endif
+  {
+    caml_enter_blocking_section();
+  }
   const int r = fdir_func(buffer,&size);
+#if HAVE_DECL_UV_OS_HOMEDIR
+  if ( fdir_func == uv_cwd || fdir_func == uv_os_homedir )
+#else
+  if ( fdir_func == uv_cwd )
+#endif
+  {
+    caml_leave_blocking_section();
+  }
   if ( r == 0 && size > 0 && size <= ALLOCA_PATH_LEN ){
     p = caml_alloc_string(size);
     memcpy(String_val(p), buffer, size);
@@ -5430,8 +5453,9 @@ uwt_get_passwd(value unit)
   uv_passwd_t pwd;
   value eret;
   int i;
-  /* Test the normal case */
+  caml_enter_blocking_section();
   i = uv_os_get_passwd(&pwd);
+  caml_leave_blocking_section();
   if ( i != 0 ){
   error_ret:
     eret = caml_alloc_small(1,Error_tag);
@@ -5456,7 +5480,7 @@ uwt_get_passwd(value unit)
         const size_t l = strlen(src);
         if ( l >= BSIZE ){
           uv_os_free_passwd(&pwd);
-          i = UV_UWT_EFATAL;
+          i = UV_UWT_UNKNOWN;
           goto error_ret;
         }
         memcpy(dst,src,l+1);
@@ -5709,7 +5733,7 @@ uwt_print_handles(value o_loop, value o_fd, print_handles phandles)
   fd = dup(FD_VAL(o_fd));
 #endif
   if ( fd == -1 ){
-    return VAL_UWT_UNIT_RESULT(-errno);
+    return VAL_UWT_UNIT_RESULT(UWT_TRANSLATE_ERRNO(errno));
   }
 #ifdef _WIN32
   fp = _fdopen(fd,"w");
@@ -5717,11 +5741,11 @@ uwt_print_handles(value o_loop, value o_fd, print_handles phandles)
   fp = fdopen(fd,"w");
 #endif
   if ( fp == NULL ){
-    return VAL_UWT_UNIT_RESULT(-errno);
+    return VAL_UWT_UNIT_RESULT(UWT_TRANSLATE_ERRNO(errno));
   }
   phandles(&l->loop,fp);
   if ( fclose(fp) ){
-    return(VAL_UWT_UNIT_RESULT(-errno));
+    return(VAL_UWT_UNIT_RESULT(UWT_TRANSLATE_ERRNO(errno)));
   }
   return Val_unit;
 }
@@ -5946,20 +5970,12 @@ uwt_getaddrinfo_native(value o_node,
     node = NULL;
   }
   else {
-    if ( !uwt_is_safe_string(o_node) ){
-      erg = UV_ECHARSET;
-      goto einval;
-    }
     node = String_val(o_node);
   }
   if ( caml_string_length(o_serv) == 0 ){
     serv = NULL;
   }
   else {
-    if ( !uwt_is_safe_string(o_serv) ){
-      erg = UV_ECHARSET;
-      goto einval;
-    }
     serv = String_val(o_serv);
   }
 
@@ -6041,7 +6057,7 @@ uwt_getnameinfo(value o_sockaddr, value o_list, value o_loop,
   struct loop * loop = Loop_val(o_loop);
   struct req * req = Req_val(o_req);
   RETURN_INT_RESULT_INVALID_LOOP_REQ(loop,req);
-  CAMLparam3(o_sockaddr,o_cb,o_req);
+  CAMLparam2(o_cb,o_req);
   const int flags = SAFE_CONVERT_FLAG_LIST(o_list, getnameinfo_flag_table);
   GR_ROOT_ENLARGE();
   const int erg = uv_getnameinfo(&loop->loop,
@@ -6376,22 +6392,22 @@ common_after_work_cb(uv_work_t *req, int status)
   }
   else {
     CAMLparam0();
-    CAMLlocal1(exn);
+    CAMLlocal1(param);
     r = req->data;
     r->in_cb = 1;
     if ( status != 0 ){
-      exn = caml_alloc_small(1,Error_tag);
-      Field(exn,0) = Val_uwt_error(status);
+      param = caml_alloc_small(1,Error_tag);
+      Field(param,0) = Val_uwt_error(status);
     }
     else {
-      exn = r->c_cb((uv_req_t *)req);
+      param = r->c_cb((uv_req_t *)req);
       if ( r->buf_contains_ba == 1 ){
         value t = caml_alloc_small(1,Ok_tag);
-        Field(t,0) = exn;
-        exn = t;
+        Field(t,0) = param;
+        param = t;
       }
     }
-    exn = CAML_CALLBACK1(r,cb,exn);
+    value exn = CAML_CALLBACK1(r,cb,param);
     if ( Is_exception_result(exn) ){
       add_exception(r->loop,exn);
     }
@@ -6411,7 +6427,6 @@ uwt_add_worker_common(value o_uwt,
                       bool wrap)
 {
   CAMLparam1(o_uwt);
-  CAMLlocal1(o_cb);
   struct loop * loop = Loop_val(Field(o_uwt,0));
   struct req * req = Req_val(Field(o_uwt,1));
   int erg;
@@ -6424,8 +6439,6 @@ uwt_add_worker_common(value o_uwt,
     goto endp;
   }
   GR_ROOT_ENLARGE();
-
-  o_cb = Field(o_uwt,2);
 
   req->c.p1 = p1;
   req->c.p2 = p2;
@@ -6440,8 +6453,13 @@ uwt_add_worker_common(value o_uwt,
     if ( cleaner != NULL ){
       cleaner((void*)req->req);
     }
+    value o_req = Field(o_uwt,1);
+    Field(o_req,1) = 0;
+    req->finalize_called = 1;
+    req_free_most(req);
   }
   else {
+    value o_cb = Field(o_uwt,2);
     gr_root_register(&req->cb,o_cb);
     req->c_cb = camlval;
     req->clean_cb = cleaner;
@@ -6477,6 +6495,49 @@ int uwt_add_worker_result(value a,
 #ifdef HAVE_UV_TRANSLATE_SYSERROR
 extern int uv_translate_sys_error(int);
 #endif
+
+/* mapping is arbitrary under Windows, -errno doesn't work */
+int
+uwt_translate_errno(int x)
+{
+  switch ( x ) {
+  case ENOEXEC: /* fall */
+  case ENOENT: return UV_ENOENT;
+  case E2BIG: return UV_E2BIG;
+  case EACCES: return UV_EACCES;
+  case EAGAIN: return UV_EAGAIN;
+  case EBADF: return UV_EBADF;
+  case EBUSY: return UV_EBUSY;
+  case EEXIST: return UV_EEXIST;
+  case EFAULT: return UV_EFAULT;
+  case EFBIG: return UV_EFBIG;
+  case EINTR: return UV_EINTR;
+  case EINVAL: return UV_EINVAL;
+  case EIO: return UV_EIO;
+  case EISDIR: return UV_EISDIR;
+  case EMFILE: return UV_EMFILE;
+  case EMLINK: return UV_EMLINK;
+  case ENAMETOOLONG: return UV_ENAMETOOLONG;
+  case ENFILE: return UV_ENFILE;
+  case ENODEV: return UV_ENODEV;
+  case ENOMEM: return UV_ENOMEM;
+  case ENOSPC: return UV_ENOSPC;
+  case ENOSYS: return UV_ENOSYS;
+  case ENOTDIR: return UV_ENOTDIR;
+  case ENOTEMPTY: return UV_ENOTEMPTY;
+  case ENXIO: return UV_ENXIO;
+  case EPERM: return UV_EPERM;
+  case EPIPE: return UV_EPIPE;
+  case ERANGE: return UV_ERANGE;
+  case EROFS: return UV_EROFS;
+  case ESPIPE: return UV_ESPIPE;
+  case ESRCH: return UV_ESRCH;
+  case EXDEV: return UV_EXDEV;
+  default:
+    return UV_UNKNOWN;
+  }
+}
+
 int
 uwt_translate_sys_error(DWORD sys_errno)
 {

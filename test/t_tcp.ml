@@ -160,7 +160,10 @@ let with_client_c4 f =
 
 let use_ext = Uwt.Misc.((version ()).minor) >= 7
 let with_connect_own ~addr f =
-  server_init ();
+  if Unix.domain_of_sockaddr addr = Unix.PF_INET6 then
+    server6_init ()
+  else
+    server_init ();
   let t =
     if use_ext = false then
       Uwt.Tcp.init ()

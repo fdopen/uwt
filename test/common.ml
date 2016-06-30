@@ -195,15 +195,17 @@ let stream_read_own_test t =
   and rbuf = Uwt_bytes.create blen
   and bt_read = ref 0 in
   let wt = write_ba t ~buf:wbuf in
-  let rec rt pos =
+  let rec rt ~cnt pos =
     if pos >= blen then Lwt.return_unit else
     let len = min (blen - pos) 128 in
     read_ba ~buf:rbuf ~pos ~len t >>= fun i ->
     bt_read := !bt_read + i;
-    Uwt.Timer.sleep 10 >>= fun () ->
-    rt (pos + i)
+    (if cnt mod 13 = 0 then Uwt.Timer.sleep 10 else
+       Uwt.Main.yield () )
+    >>= fun () ->
+    rt ~cnt:(succ cnt) (pos + i)
   in
-  Lwt.join [rt 0; wt] >|= fun () ->
+  Lwt.join [rt ~cnt:0 0; wt] >|= fun () ->
   wbuf = rbuf && !bt_read = blen
 
 let uv_version = Uwt.Misc.version ()

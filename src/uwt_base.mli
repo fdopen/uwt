@@ -146,10 +146,17 @@ val to_unix_exn: exn -> exn
 
 type 'a uv_result = ('a , error) result
 
+type ('a , 'b) o_result = ('a, 'b) result =
+  | Ok of 'a
+  | Error of 'b [@@ocaml.deprecated "please use Result.result instead"]
+
+type 'a result = ('a , error) o_result
+  [@@ocaml.deprecated "please use Result.result or uv_result instead"]
+
 module Int_result : sig
-  (** [Int_result.t] is used instead of ['a result], if a function returns either an
-      error or a non-negative integer (including unit/bool).
-      This way, we can avoid an extra allocation. *)
+  (** [Int_result.t] is used instead of ['a result], if a function
+      returns either an error or a non-negative integer (including
+      unit/bool).  This way, we can avoid an extra allocation. *)
   type 'a t = private int
 
   type real_int = int
