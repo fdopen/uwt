@@ -2576,6 +2576,9 @@ close_cb(uv_handle_t* handle)
     GET_RUNTIME();
     ++s->in_callback_cnt;
     exn = CAML_CALLBACK1(s,cb_close,Val_unit);
+    if (unlikely( Is_exception_result(exn) )){
+      add_exception(s->loop,exn);
+    }
     --s->in_callback_cnt;
     handle_free_common(s);
     s->close_executed = 1;
@@ -2587,9 +2590,6 @@ close_cb(uv_handle_t* handle)
     }
     else {
       DEBUG_PF("close_cb not the last callback?");
-    }
-    if (unlikely( Is_exception_result(exn) )){
-      add_exception(s->loop,exn);
     }
   }
 }
@@ -3097,6 +3097,9 @@ cancel_reader(struct handle *h)
     ++h->in_use_cnt;
     assert( h->close_called == 1 );
     exn = caml_callback2_exn(*uwt_global_wakeup,cb,param);
+    if (unlikely( Is_exception_result(exn) )){
+      add_exception(h->loop,exn);
+    }
     --h->in_callback_cnt;
     --h->in_use_cnt;
     if ( h->in_use_cnt ){
@@ -3106,9 +3109,6 @@ cancel_reader(struct handle *h)
          But I should add debug code to the close callback, if the
          reference count mechanism works as intended. */
       --h->in_use_cnt;
-    }
-    if (unlikely( Is_exception_result(exn) )){
-      add_exception(h->loop,exn);
     }
   }
 }
