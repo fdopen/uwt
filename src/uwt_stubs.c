@@ -3686,42 +3686,37 @@ uwt_pipe_name(value o_pipe,pipe_name pfunc)
   HANDLE_NO_UNINIT_CLOSED_WRAP(o_pipe);
   CAMLparam1(o_pipe);
   CAMLlocal1(o_str);
+  enum { init_size = 2048 };
   struct handle * op = Handle_val(o_pipe);
-  size_t s = 1024;
-  char name[s];
-  char * lname = NULL;
+  size_t s = init_size;
+  char name[init_size];
+  o_str = Val_unit;
   uv_pipe_t* p = (uv_pipe_t*)op->handle;
   int erg = pfunc(p,name,&s);
   int etag;
   if ( erg == UV_ENOBUFS ){
     ++s;
-    lname = malloc(s);
-    if ( lname == NULL ){
-      erg = UV_ENOMEM;
-    }
-    else {
-      erg = pfunc(p,lname,&s);
-    }
+    o_str = caml_alloc_string(s);
+    erg = pfunc(p,String_val(o_str),&s);
   }
   if ( erg < 0 ){
     o_str = Val_uwt_error(erg);
     etag = Error_tag;
   }
   else {
-    char * ms = lname ? lname : name;
-#if UV_VERSION_MAJOR < 1
-#error "libuv too old"
-#endif
+    etag = Ok_tag;
 #if (UV_VERSION_MAJOR == 1) && (UV_VERSION_MINOR < 3)
     --s;
-    assert(ms[s] == '\0');
 #endif
-    o_str =  caml_alloc_string(s);
-    memcpy(String_val(o_str),ms,s);
-    etag = Ok_tag;
-  }
-  if ( lname ){
-    free(lname);
+    if ( o_str != Val_unit ){
+      value tmp = caml_alloc_string(s);
+      memcpy(String_val(tmp),String_val(o_str),s);
+      o_str = tmp;
+    }
+    else {
+      o_str =  caml_alloc_string(s);
+      memcpy(String_val(o_str),name,s);
+    }
   }
   value ret = caml_alloc_small(1,etag);
   Field(ret,0) = o_str;
