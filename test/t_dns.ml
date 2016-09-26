@@ -14,7 +14,7 @@ let help f =
 let getnameinfo x l =
   let module UD = Uwt.Dns in
   help ( fun () -> UD.getnameinfo x l ) >>= function
-  | Exn ( Uwt.Uwt_error(Uwt.ENOENT,_,_) as exn ) ->
+  | Exn ( Unix.Unix_error(Unix.ENOENT,_,_) as exn ) ->
     let ok =
       try ignore (Unix.getnameinfo x l); false with Not_found -> true
     in
@@ -64,14 +64,17 @@ open OUnit2
 let l = [
   ("getaddrinfo/getnameinfo">::
    fun ctx ->
-     let open Uwt in
      m_true (dnstest ctx "google.com");
      let t =
        Lwt.catch ( fun () ->
            dnstest ctx "asdfli4uqoi5tukjgakjlhadfkogle.com"
            >|= fun _ -> false )
          (function
-         | Uwt_error((EAI_NONAME|ENOENT|EAI_NODATA),_,_) -> Lwt.return_true
+         | Unix.Unix_error(Unix.ENOENT,_,_) -> Lwt.return_true
+         | Unix.Unix_error(Unix.EUNKNOWNERR(x),_,_) when
+             x = (Uwt.Int_result.eai_noname:>int) ||
+             x = (Uwt.Int_result.eai_nodata:>int) ->
+           Lwt.return_true
          | x -> Lwt.fail x )
      in
      m_true t);

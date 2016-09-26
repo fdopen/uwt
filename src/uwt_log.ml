@@ -191,8 +191,7 @@ let syslog_connect paths =
                   Lwt.return (DGRAM, p)
                 )
                 (function
-                | Unix.Unix_error(Unix.EPROTOTYPE, _, _)
-                | Uwt.Uwt_error(Uwt.EPROTOTYPE, _, _) ->
+                | Unix.Unix_error(Unix.EPROTOTYPE, _, _) ->
                   (* Then try with a stream socket: *)
                   let fd = Unix.socket Unix.PF_UNIX Unix.SOCK_STREAM 0 in
                   Lwt.catch
@@ -265,7 +264,6 @@ let syslog ?(template="$(date) $(name)[$(pid)]: $(section): $(message)") ?(paths
                               write_string fd (make_line socket_type line) >>= fun () ->
                               print socket_type fd lines)
                             (function
-                            | Uwt.Uwt_error _
                             | Unix.Unix_error(_, _, _) ->
                                 (* Try to reconnect *)
                                 shutdown fd >>= fun () ->

@@ -135,7 +135,7 @@ let l = [
              let server = server addr in
              let client = start_client ~raw ~iter:100 ~length:999 addr in
              Lwt.pick [ server ; client ]);
-           m_raises (Uwt.EMSGSIZE,"udp_send","") (
+           m_raises (Unix.EMSGSIZE,"udp_send","") (
              let server = server addr in
              let client = start_client ~raw ~iter:2 ~length:65536 addr in
              Lwt.pick [ server ; client ]);
@@ -161,7 +161,9 @@ let l = [
      in
      close_noerr client;
      Lwt.catch ( fun () -> read_thread ) (function
-       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+       | Unix.Unix_error(Unix.EUNKNOWNERR(x),_,_)
+         when x = (Uwt.Int_result.ecanceled :> int)
+         -> Lwt.return_true
        | x -> Lwt.fail x ));
   ("write_allot">::
    fun ctx ->

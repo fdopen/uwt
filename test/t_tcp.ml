@@ -221,10 +221,10 @@ let l = [
        Lwt.return_unit
      in
      let sockaddr = Uwt_base.Misc.ip4_addr_exn "0.0.0.0" test_port in
-     m_raises (Uwt.EADDRINUSE,"listen","") (l sockaddr);
+     m_raises (Unix.EADDRINUSE,"listen","") (l sockaddr);
      ip6_only ctx;
      let sockaddr = Uwt_base.Misc.ip6_addr_exn "::0" test_port in
-     m_raises (Uwt.EADDRINUSE,"listen","") (l sockaddr));
+     m_raises (Unix.EADDRINUSE,"listen","") (l sockaddr));
   ("write_allot">::
    fun ctx ->
      let first_round = ref true in
@@ -252,7 +252,7 @@ let l = [
              let x = ( x :> int ) in
              let v = Uwt.Misc.version () in
              if Uwt.Misc.( v.minor < 8 && v.major = 1) then (
-               assert_equal (Uwt.Int_result.uwt_eunavail :> int) x;
+               assert_equal (Uwt.Int_result.enosys :> int) x;
                Ok ()
              )
              else (
@@ -307,7 +307,8 @@ let l = [
      close_wait client >>= fun () ->
      Lwt.catch ( fun () -> write_thread )
        ( function
-       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+       | Unix.Unix_error(x,_,_) when Uwt.of_unix_error x = Uwt.ECANCELED ->
+         Lwt.return_true
        | x -> Lwt.fail x ));
   ("read_abort">::
    fun _ctx ->
@@ -319,7 +320,8 @@ let l = [
      in
      let _:unit Lwt.t = Uwt.Timer.sleep 40 >|= fun () -> close_noerr client in
      Lwt.catch ( fun () -> read_thread )(function
-       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+       | Unix.Unix_error(x,_,_) when Uwt.of_unix_error x = Uwt.ECANCELED ->
+         Lwt.return_true
        | x -> Lwt.fail x ));
   ("getpeername">::
    fun _ctx ->
@@ -409,7 +411,8 @@ let l = [
    fun _ctx ->
      with_client_c4 @@ fun client ->
      let write_thread = Lwt.catch ( fun () -> write_much client ) (function
-       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+       | Unix.Unix_error(x,_,_) when Uwt.of_unix_error x = Uwt.ECANCELED ->
+         Lwt.return_true
        | x -> Lwt.fail x )
      in
      let close_thread = close_wait client >|= fun () -> false in

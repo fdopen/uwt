@@ -55,7 +55,7 @@ let l = [
       let open Uwt in
       let p = match os_homedir () with
       | Ok "" -> false
-      | Error UWT_EUNAVAIL ->
+      | Error ENOSYS ->
         let {major;minor;_} = version () in
         if major > 1 || minor >= 6 then
           false
@@ -69,7 +69,7 @@ let l = [
       let open Uwt in
       let p = match os_tmpdir () with
       | Ok "" -> false
-      | Error UWT_EUNAVAIL ->
+      | Error ENOSYS ->
         let {major;minor;_} = version () in
         if major > 1 || minor >= 9 then
           false
@@ -86,7 +86,7 @@ let l = [
            via cygwin's ssh. Find out why and propose a fix
            upstream *)
         true
-      | Error Uwt.UWT_EUNAVAIL ->
+      | Error Uwt.ENOSYS ->
         let {major;minor;_} = version () in
         if major > 1 || minor >= 9 then false else true
       | Error _ -> false
@@ -123,7 +123,7 @@ let l = [
   ("win_version">:: fun _ ->
       let v = Uwt_base.Sys_info.win_version () in
       if not Sys.win32 then
-        assert_equal v (Error Uwt.UWT_EUNAVAIL)
+        assert_equal v (Error Uwt.ENOSYS)
       else
         match v with
         | Error s ->

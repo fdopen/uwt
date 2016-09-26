@@ -32,7 +32,6 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
-(** UWT_- error codes are introduced by uwt. *)
 type error =
   | E2BIG
   | EACCES
@@ -113,23 +112,9 @@ type error =
   | EOF
   | ENXIO
   | EMLINK
-  | UWT_UNKNOWN (** Can't translate the error code. Perhaps your libuv version
-                    is too new or too old *)
   | UWT_EFATAL (** something happened that the author of uwt didn't expect.
                    Probably a bug or a the api of libuv has changed in the
                    meanwhile *)
-  | UWT_EBADF  (** you've already closed this handle/request *)
-  | UWT_EINVAL (** one of your parameters doesn't look valid, e.g. negative
-                   integer when only positive integers are expected *)
-  | UWT_ENOTACTIVE (** e.g. you've tried to stop a timer, that wasn't active *)
-  | UWT_EBUSY (** e.g. reported, if you try to use Uwt.Stream.read_start,
-                  while you've already registered another callback for this
-                  event *)
-  | UWT_ENOENT (** entry not found, [Not_found] message for callbacks *)
-  | UWT_EUNAVAIL (** you've tried to call a function, that is not supported,
-                     either by your os or your libuv installation *)
-
-exception Uwt_error of error * string * string
 
 (** error message for the given error code *)
 val strerror: error -> string
@@ -141,8 +126,9 @@ val err_name: error -> string
     used, if mapping is not possible *)
 val to_unix_error: error -> Unix.error
 
-(** transforms [Uwt_error] exceptions to [Unix.Unix_error].*)
-val to_unix_exn: exn -> exn
+(** get back the original Uwt.error from an exception
+    raised by a Uwt function *)
+val of_unix_error : Unix.error -> error
 
 type 'a uv_result = ('a , error) result
 
@@ -272,14 +258,7 @@ module Int_result : sig
   val eof : int
   val enxio : int
   val emlink : int
-  val uwt_unknown : int
   val uwt_efatal : int
-  val uwt_ebadf : int
-  val uwt_einval : int
-  val uwt_enotactive : int
-  val uwt_ebusy : int
-  val uwt_enoent: int
-  val uwt_eunavail: int
 end
 
 (** abstract type for a file descriptor *)
@@ -598,7 +577,7 @@ module Sys_info : sig
   }
 
   (** Wrapper around GetVersionEx. It will always return [Error
-      UWT_EUNAVAIL] on non windows systems.
+      ENOSYS] on non windows systems.
       Your application must be manifested, otherwise you will get
       wrong informations on windows 8.1 and newer *)
   val win_version: unit -> win_version uv_result

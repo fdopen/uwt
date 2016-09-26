@@ -382,7 +382,7 @@ val open_file :
       file with name [filename] and returns a channel for
       reading/writing it.
 
-      @raise Uwt.Uwt_error on error.
+      @raise Unix.Unix_error on error.
   *)
 
 val with_file :
@@ -404,7 +404,7 @@ val open_connection :
     The connection is completly closed when you close both
     channels.
 
-    @raise Uwt.Uwt_error on error.
+    @raise Unix.Unix_error on error.
 *)
 
 val with_connection :

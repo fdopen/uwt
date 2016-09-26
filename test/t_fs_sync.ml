@@ -30,7 +30,7 @@ let with_file ~mode fln f =
     erg
   with
   | exn when !close_called = false ->
-    (try ignore (close fd) with Uwt_base.Uwt_error _ -> ());
+    (try ignore (close fd) with Unix.Unix_error _ -> ());
     raise exn
 
 let file_to_bytes s =
@@ -112,7 +112,9 @@ let random_bytes = Common.rbytes_create random_bytes_length
 
 let to_exn = function
 | Ok x -> x
-| Error s -> raise (Uwt_error(s,"",""))
+| Error s ->
+  let s = Uwt_base.to_unix_error s in
+  raise (Unix.Unix_error(s,"",""))
 
 let return s = Ok s
 let m_equal s t = assert_equal s (t () |> to_exn )
@@ -120,7 +122,7 @@ let m_true t = m_equal true t
 
 let m_raises a (t: unit -> 'a) =
   assert_raises
-    (Uwt.Uwt_error(a,"",""))
+    (Unix.Unix_error(a,"",""))
     ( fun () -> t () |> to_exn )
 
 let tmpdir = Common.tmpdir
@@ -240,7 +242,7 @@ let l = [
      let z = tmpdir () // "z" in
      let x = tmpdir () // "zz" in
      m_raises
-       Uwt.ENOENT
+       Unix.ENOENT
        (fun () -> access x [Read]);
      m_equal () (fun () -> access z [Read]);
      m_equal () (fun () -> access Sys.executable_name [Exec]);
@@ -257,7 +259,7 @@ let l = [
      in
      skip_if (shadow == invalid) "no shadow";
      m_raises
-       Uwt.EACCES
+       Unix.EACCES
        (fun () -> access shadow [Read]) );
   ("ftruncate">::
    fun _ctx ->

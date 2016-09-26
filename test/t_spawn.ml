@@ -268,8 +268,10 @@ let pipeline ?(wrong_args=false) () =
 
 let exn_ok = function
 | Failure t when t = gzip_error_message -> Lwt.return_true
-| Uwt.Uwt_error(Uwt.ENOTCONN,"write",_)
-| Uwt.Uwt_error((Uwt.EPIPE|Uwt.EOF),_,_) -> Lwt.return_true
+| Unix.Unix_error(Unix.ENOTCONN,"write",_)
+| Unix.Unix_error(Unix.EPIPE,_,_) -> Lwt.return_true
+| Unix.Unix_error(Unix.EUNKNOWNERR(x),_,_)
+  when x = (Uwt.Int_result.eof:>int) -> Lwt.return_true
 | x -> Lwt.fail x
 
 let l = [
@@ -318,8 +320,8 @@ let l = [
       let t =
         Lwt.catch ( fun () -> pipeline ~wrong_args:true () >|= fun l -> not l )
           (function
-          | Uwt.Uwt_error(Uwt.EPIPE,_,_)
-          | Uwt.Uwt_error(_,("write"|"read"),_) ->  Lwt.return_true
+          | Unix.Unix_error(Unix.EPIPE,_,_)
+          | Unix.Unix_error(_,("write"|"read"),_) ->  Lwt.return_true
           | x -> Lwt.fail x)
       in
       m_true t);

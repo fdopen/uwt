@@ -344,7 +344,9 @@ let read_opt read ic =
   Lwt.catch
     (fun () -> read ic >|= fun x -> Some x)
     (function
-    | Uwt.Uwt_error ((Uwt.EPIPE|Uwt.EOF), _, _) | End_of_file ->
+    | End_of_file -> Lwt.return_none
+    | Unix.Unix_error(Unix.EPIPE, _, _) when Sys.win32 -> Lwt.return_none
+    | Unix.Unix_error(x, _, _)  when Uwt.of_unix_error x = Uwt.EOF ->
       Lwt.return_none
     | exn -> Lwt.fail exn)
 

@@ -64,7 +64,7 @@ let () =
       let t = Uwt.Fs_event.start_exn fln [] ~cb in
       Uwt.Fs_event.close_noerr t
     with
-    | Uwt.Uwt_error _ -> ()
+    | Unix.Unix_error _ -> ()
 
 let l = [
   ("tmpdir watcher">::

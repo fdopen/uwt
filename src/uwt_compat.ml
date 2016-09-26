@@ -82,7 +82,11 @@ module Lwt_unix = struct
   let stdout = File Uwt.stdout
   let stderr = File Uwt.stderr
 
-  let trans_exn x = Lwt.fail (Uwt.to_unix_exn x)
+  let trans_exn = function
+  | U.Unix_error(U.EUNKNOWNERR(i),b,c) when
+      i = (Uwt_base.Int_result.echarset :> int) ->
+    Lwt.fail (U.Unix_error(U.ENOENT,b,c))
+  | x -> Lwt.fail x
 
   let trans_of accu = function
   | U.O_RDONLY -> Uwt.Fs_types.O_RDONLY :: accu
@@ -107,7 +111,7 @@ module Lwt_unix = struct
     Lwt.catch
       t
       (function
-      | Uwt.Uwt_error(Uwt.ENONET,s,_) when s = n -> Lwt.fail Not_found
+      | Unix.Unix_error(Unix.ENOENT,s,_) when s = n -> Lwt.fail Not_found
       | x -> trans_exn x)
 
   let help f =
@@ -292,7 +296,7 @@ module Lwt_unix = struct
       (fun () -> Uwt.Fs.stat name)
       (fun _ -> Lwt.return_true)
       (function
-      | Uwt.Uwt_error(Uwt.ENOENT, _, _) -> Lwt.return_false
+      | Unix.Unix_error(Unix.ENOENT, _, _) -> Lwt.return_false
       | x -> trans_exn x)
 
   module LargeFile = struct
@@ -495,11 +499,8 @@ module Lwt_unix = struct
     help2n "getnameinfo" Uwt.Dns.getnameinfo addr l
 
   let pipe () =
-    try
-      let fd1,fd2 = UU.pipe_exn () in
-      Pipe fd1, Pipe fd2
-    with
-    | Uwt.Uwt_error(x,y,z) -> raise (U.Unix_error(Uwt.to_unix_error x,y,z))
+    let fd1,fd2 = UU.pipe_exn () in
+    Pipe fd1, Pipe fd2
 
   external epipe:
     bool -> (U.file_descr * U.file_descr) Uwt.uv_result = "uwt_pipe"

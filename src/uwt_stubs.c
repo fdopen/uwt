@@ -1234,10 +1234,10 @@ req_create(uv_req_type typ, struct loop *l)
   ( (x) < 0 ? Val_uwt_int_result(x) : Val_long(x))
 
 ATTR_UNUSED static value
-result_eunavail(void)
+result_enosys(void)
 {
   value ret = caml_alloc_small(1,Error_tag);
-  Field(ret,0) = VAL_UWT_ERROR_UWT_EUNAVAIL;
+  Field(ret,0) = VAL_UWT_ERROR_ENOSYS;
   return ret;
 }
 
@@ -1264,10 +1264,10 @@ uwt_run_loop(value o_loop,value o_mode)
   wp = Loop_val(o_loop);
   value ret;
   if (unlikely( !wp )){
-    ret = VAL_UWT_INT_RESULT_UWT_EBADF;
+    ret = VAL_UWT_INT_RESULT_EBADF;
   }
   else if (unlikely( wp->in_use != 0 )){
-    ret = VAL_UWT_INT_RESULT_UWT_EBUSY;
+    ret = VAL_UWT_INT_RESULT_EBUSY;
   }
   else {
     uv_loop_t * loop = &wp->loop;
@@ -1325,10 +1325,10 @@ uwt_loop_close(value o_loop)
   struct loop * wp;
   wp = Loop_val(o_loop);
   if ( !wp || !wp->loop ){
-    ret = VAL_UWT_INT_RESULT_UWT_EBADF;
+    ret = VAL_UWT_INT_RESULT_EBADF;
   }
   else if ( wp->in_use ){
-    ret = VAL_UWT_INT_RESULT_UWT_EBUSY;
+    ret = VAL_UWT_INT_RESULT_EBUSY;
   }
   else {
     uv_loop_t * loop = wp->loop;
@@ -1789,7 +1789,7 @@ fs_open_cb(uv_req_t * r)
         }
       }
       ret = caml_alloc_small(1,Error_tag);
-      Field(ret,0) = VAL_UWT_ERROR_UWT_UNKNOWN;
+      Field(ret,0) = VAL_UWT_ERROR_UNKNOWN;
     }
     else {
       value p = win_alloc_handle(handle);
@@ -1825,7 +1825,7 @@ fs_read_cb(uv_req_t * r)
   value param;
   const ssize_t result = req->result;
   struct req * wp = r->data;
-  if ( result == UV_EOF || result == 0 ){
+  if ( result == 0 ){
     param = Val_long(0);
   }
   else if ( result < 0 ){
@@ -1860,7 +1860,7 @@ FSSTART(fs_read,o_file,o_buf,o_offset,o_len,{
   const int ba = slen && (Tag_val(o_buf) != String_tag);
   const int fd = FD_VAL(o_file);
   if ( slen > ULONG_MAX ){
-    ret = UV_UWT_EINVAL;
+    ret = UV_EINVAL;
   }
   else {
     if ( ba ){
@@ -1924,7 +1924,7 @@ FSSTART(fs_write,
   const int ba = slen && (Tag_val(o_buf) != String_tag);
   const int fd = FD_VAL(o_file);
   if ( slen > ULONG_MAX ){
-    ret = UV_UWT_EINVAL;
+    ret = UV_EINVAL;
   }
   else {
     if ( ba ){
@@ -2496,7 +2496,7 @@ uwt_fs_free(value o_req)
 #define HANDLE_NCHECK(_xs)                      \
   do {                                          \
     if ( HANDLE_IS_INVALID(_xs) ){              \
-      return VAL_UWT_INT_RESULT_UWT_EBADF;      \
+      return VAL_UWT_INT_RESULT_EBADF;          \
     }                                           \
   } while (0)
 
@@ -2504,7 +2504,7 @@ uwt_fs_free(value o_req)
   do {                                                    \
     struct handle * p_ = Handle_val(xs);                  \
     if ( HANDLE_IS_INVALID_UNINIT(p_) ){                  \
-      return VAL_UWT_INT_RESULT_UWT_EBADF;                \
+      return VAL_UWT_INT_RESULT_EBADF;                    \
     }                                                     \
   } while (0)
 
@@ -2513,7 +2513,7 @@ uwt_fs_free(value o_req)
     struct handle * p_ = Handle_val(xs);                  \
     if ( HANDLE_IS_INVALID_UNINIT(p_) ){                  \
       value ret = caml_alloc_small(1,Error_tag);          \
-      Field(ret,0) = VAL_UWT_ERROR_UWT_EBADF;             \
+      Field(ret,0) = VAL_UWT_ERROR_EBADF;                 \
       return ret;                                         \
     }                                                     \
   } while (0)
@@ -2521,7 +2521,7 @@ uwt_fs_free(value o_req)
 #define HANDLE_NO_UNINIT_NA(_xs)                \
   do {                                          \
     if (unlikely( _xs->initialized == 0 )){     \
-      return VAL_UWT_INT_RESULT_UWT_EBADF;      \
+      return VAL_UWT_INT_RESULT_EBADF;          \
     }                                           \
   } while (0)
 
@@ -2603,10 +2603,10 @@ uwt_close_wait(value o_stream,value o_cb)
 {
   struct handle * s = Handle_val(o_stream);
   if ( HANDLE_IS_INVALID(s) ){
-    return VAL_UWT_INT_RESULT_UWT_EBADF;
+    return VAL_UWT_INT_RESULT_EBADF;
   }
   if (unlikely( s->cb_close != CB_INVALID )){
-    return VAL_UWT_INT_RESULT_UWT_EBUSY;
+    return VAL_UWT_INT_RESULT_EBUSY;
   }
   CAMLparam2(o_stream,o_cb);
   GR_ROOT_ENLARGE();
@@ -2630,7 +2630,7 @@ CAMLprim value
 uwt_close_nowait(value o_stream)
 {
   struct handle * s = Handle_val(o_stream);
-  value ret = VAL_UWT_INT_RESULT_UWT_EBADF;
+  value ret = VAL_UWT_INT_RESULT_EBADF;
   if ( s && s->handle && s->close_called == 0 ){
     s->close_called = 1;
     Field(o_stream,1) = 0;
@@ -2912,7 +2912,7 @@ uwt_listen(value o_stream,value o_backlog,value o_cb)
   int ret;
   if ( s->cb_listen_server != CB_INVALID ||
        s->cb_listen != CB_INVALID ){
-    ret = UV_UWT_EBUSY;
+    ret = UV_EBUSY;
   }
   else {
     uv_stream_t* stream = (uv_stream_t*)s->handle;
@@ -2933,7 +2933,7 @@ uwt_accept_raw_na(value o_serv,
   struct handle * serv = Handle_val(o_serv);
   struct handle * client = Handle_val(o_client);
   if ( HANDLE_IS_INVALID_UNINIT(serv) || HANDLE_IS_INVALID(client) ){
-    return VAL_UWT_INT_RESULT_UWT_EBADF;
+    return VAL_UWT_INT_RESULT_EBADF;
   }
   int ret = uv_accept((uv_stream_t*)serv->handle,
                       (uv_stream_t*)client->handle);
@@ -3026,7 +3026,7 @@ uwt_read_start(value o_stream,
   HANDLE_NINIT(s,o_stream,o_cb);
   value ret;
   if ( s->cb_read != CB_INVALID ){
-    ret = VAL_UWT_INT_RESULT_UWT_EBUSY;
+    ret = VAL_UWT_INT_RESULT_EBUSY;
   }
   else {
     int erg = 0;
@@ -3058,7 +3058,8 @@ uwt_read_stop(value o_stream, value o_abort)
   value ret;
   if ( (s->read_waiting == 1 && Long_val(o_abort) == 0 ) ||
        (s->cb_read == CB_INVALID && s->cb_read_removed_by_cb != 1) ){
-    ret = VAL_UWT_INT_RESULT_UWT_ENOTACTIVE;
+    /* Yes, dubious, but upstream libuv also doesn't report any error */
+    ret = Val_long(0);
   }
   else {
     uv_stream_t* stream = (uv_stream_t*)s->handle;
@@ -3218,7 +3219,7 @@ uwt_read_own(value o_s,value o_buf,value o_offset,value o_len,value o_cb)
   value ret;
   assert( s->cb_type == CB_LWT );
   if ( s->cb_read != CB_INVALID ){
-    ret = VAL_UWT_INT_RESULT_UWT_EBUSY;
+    ret = VAL_UWT_INT_RESULT_EBUSY;
   }
   else {
     int erg;
@@ -3281,7 +3282,7 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
 {
   const size_t len = Long_val(o_len);
   if ( len > ULONG_MAX ){
-    return VAL_UWT_INT_RESULT_UWT_EINVAL;
+    return VAL_UWT_INT_RESULT_EINVAL;
   }
   union all_sockaddr addr;
   if ( o_sock == Val_unit ){
@@ -3289,7 +3290,7 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
   }
   else {
     if ( !uwt_get_sockaddr(o_sock,&addr) ){
-      return VAL_UWT_INT_RESULT_UWT_UNKNOWN;
+      return VAL_UWT_INT_RESULT_UNKNOWN;
     }
   }
   HANDLE_NINIT(s,o_stream,o_buf,o_sock,o_cb);
@@ -3395,7 +3396,7 @@ uwt_write2_native(value o_stream,
 {
   const size_t len = Long_val(o_len);
   if ( len > ULONG_MAX ){
-    return VAL_UWT_INT_RESULT_UWT_EINVAL;
+    return VAL_UWT_INT_RESULT_EINVAL;
   }
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream);
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream_send);
@@ -3480,7 +3481,7 @@ uwt_udp_try_send_na(value o_stream,value o_buf,value o_pos,
   else {
     union all_sockaddr addr;
     if ( ! uwt_get_sockaddr(o_sock,&addr) ) {
-      return VAL_UWT_INT_RESULT_UWT_UNKNOWN;
+      return VAL_UWT_INT_RESULT_UNKNOWN;
     }
     else {
       ret = uv_udp_try_send((uv_udp_t*)s->handle,&buf,1,&addr.addr);
@@ -3614,7 +3615,7 @@ uwt_pipe_open(value o_loop, value o_fd,value o_ipc)
 #ifdef _WIN32
   if ( o_fd != FD_INVALID && set_crt_fd(o_fd) == false ){
     value ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = VAL_UWT_ERROR_UWT_EBADF;
+    Field(ret,0) = VAL_UWT_ERROR_EBADF;
     return ret;
   }
 #endif
@@ -3741,7 +3742,7 @@ uwt_pipe_getpeername(value o_pipe)
   return (uwt_pipe_name(o_pipe,uv_pipe_getpeername));
 #else
   (void) o_pipe;
-  return (result_eunavail());
+  return (result_enosys());
 #endif
 }
 
@@ -3892,7 +3893,7 @@ UDP_TCP_INIT(udp,UV_UDP)
   {                                             \
     (void)a;                                    \
     (void)b;                                    \
-    return (result_eunavail());                 \
+    return (result_enosys());                   \
   }
 #endif
 
@@ -3926,7 +3927,7 @@ uwt_tcp_udp_open(value o_tcp, value o_fd, bool tcp)
 #else
   uv_os_sock_t s;
   if ( Descr_kind_val(o_fd) != KIND_SOCKET ){
-    ret = UV_UWT_EINVAL;
+    ret = UV_EINVAL;
     goto endp;
   }
   s = Socket_val(o_fd);
@@ -3963,7 +3964,7 @@ uwt_tcp_bind_na(value o_tcp, value o_sock, value o_flags)
   HANDLE_NINIT_NA(t,o_tcp);
   union all_sockaddr addr;
   if ( !uwt_get_sockaddr(o_sock,&addr) ){
-    return VAL_UWT_INT_RESULT_UWT_UNKNOWN;
+    return VAL_UWT_INT_RESULT_UNKNOWN;
   }
   unsigned int flags = o_flags == Val_unit ? 0 : UV_TCP_IPV6ONLY;
   int ret = uv_tcp_bind((uv_tcp_t *)t->handle,&addr.addr,flags);
@@ -4025,7 +4026,7 @@ uwt_tcp_getsockpeername(value o_tcp, getsock_f func)
     sock = uwt_alloc_sockaddr(&addr);
     if ( sock == Val_unit ){
       ret = caml_alloc_small(1,Error_tag);
-      Field(ret,0) = VAL_UWT_ERROR_UWT_UNKNOWN;
+      Field(ret,0) = VAL_UWT_ERROR_UNKNOWN;
     }
     else {
       ret = caml_alloc_small(1,Ok_tag);
@@ -4058,7 +4059,7 @@ uwt_tcp_connect(value o_tcp,value o_sock,value o_cb)
 {
   union all_sockaddr addr;
   if ( ! uwt_get_sockaddr(o_sock,&addr) ){
-    return VAL_UWT_INT_RESULT_UWT_UNKNOWN;
+    return VAL_UWT_INT_RESULT_UNKNOWN;
   }
   HANDLE_NINIT(s,o_tcp,o_sock,o_cb);
   struct req * wp = req_create(UV_CONNECT,s->loop);
@@ -4090,7 +4091,7 @@ CAMLprim value
 uwt_udp_bind_na(value o_udp, value o_sock, value o_flags){
   union all_sockaddr addr;
   if ( !uwt_get_sockaddr(o_sock,&addr) ){
-    return VAL_UWT_INT_RESULT_UWT_UNKNOWN;
+    return VAL_UWT_INT_RESULT_UNKNOWN;
   }
   HANDLE_NINIT_NA(t,o_udp);
   const unsigned int flags = SAFE_CONVERT_FLAG_LIST(o_flags,udp_bin_flag_table);
@@ -4143,7 +4144,7 @@ uwt_udp_set_multicast_ttl_na(value o_udp, value o_ttl)
   HANDLE_NO_UNINIT_NA(u);
   int ttl = Long_val(o_ttl);
   if ( ttl < 1 || ttl > 255 ){
-    return VAL_UWT_INT_RESULT_UWT_EINVAL;
+    return VAL_UWT_INT_RESULT_EINVAL;
   }
   int ret = uv_udp_set_multicast_ttl((uv_udp_t*)u->handle,ttl);
   return (VAL_UWT_UNIT_RESULT(ret));
@@ -4183,7 +4184,7 @@ uwt_udp_set_ttl_na(value o_udp, value o_ttl)
   int ttl = Long_val(o_ttl);
   int ret;
   if ( ttl < 1 || ttl > 255 ){
-    return VAL_UWT_INT_RESULT_UWT_EINVAL;
+    return VAL_UWT_INT_RESULT_EINVAL;
   }
   ret = uv_udp_set_ttl((uv_udp_t*)u->handle,ttl);
   return (VAL_UWT_UNIT_RESULT(ret));
@@ -4244,7 +4245,7 @@ alloc_recv_result(ssize_t nread,
     msock_addr = uwt_alloc_sockaddr((union all_sockaddr *)addr);
     if ( msock_addr == Val_unit ){
       param = caml_alloc_small(1,Transmission_error);
-      Field(param,0) = VAL_UWT_ERROR_UWT_UNKNOWN;
+      Field(param,0) = VAL_UWT_ERROR_UNKNOWN;
     }
     else {
       param = caml_alloc_small(1,Empty_from);
@@ -4304,7 +4305,7 @@ uwt_udp_recv_start(value o_udp, value o_cb)
   HANDLE_NINIT(u,o_udp,o_cb);
   value ret;
   if ( u->cb_read != CB_INVALID ){
-    ret = VAL_UWT_INT_RESULT_UWT_EBUSY;
+    ret = VAL_UWT_INT_RESULT_EBUSY;
   }
   else {
     int erg = 0;
@@ -4337,7 +4338,8 @@ uwt_udp_recv_stop(value o_udp, value o_abort)
   value ret;
   if ( u->cb_read == CB_INVALID ||
        (u->read_waiting == 1 && Long_val(o_abort) == 0 )){
-    ret = VAL_UWT_INT_RESULT_UWT_ENOTACTIVE;
+    /* Yes, dubious, but upstream libuv also doesn't report any error */
+    ret = Val_long(0);
   }
   else {
     const int erg = uv_udp_recv_stop((uv_udp_t*)u->handle);
@@ -4447,10 +4449,10 @@ uwt_udp_recv_own(value o_udp,value o_buf,value o_offset,value o_len,value o_cb)
   size_t len = Long_val(o_len);
   value ret;
   if ( u->cb_read != CB_INVALID ){
-    ret = VAL_UWT_INT_RESULT_UWT_EBUSY;
+    ret = VAL_UWT_INT_RESULT_EBUSY;
   }
   else if ( len > ULONG_MAX ){
-    ret = VAL_UWT_INT_RESULT_UWT_EINVAL;
+    ret = VAL_UWT_INT_RESULT_EINVAL;
   }
   else {
     int erg;
@@ -4671,7 +4673,7 @@ uwt_poll_start(value o_loop,
 #ifdef _WIN32
   if ( Descr_kind_val(o_sock_or_fd) != KIND_SOCKET ){
     value ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = VAL_UWT_ERROR_UWT_EINVAL;
+    Field(ret,0) = VAL_UWT_ERROR_EINVAL;
     return ret;
   }
 #endif
@@ -4686,7 +4688,7 @@ uwt_poll_start(value o_loop,
 #if !HAVE_DECL_UV_DISCONNECT
   if ( event & 4 ){
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = VAL_UWT_ERROR_UWT_EUNAVAIL;
+    Field(ret,0) = VAL_UWT_ERROR_ENOSYS;
     goto endp;
   }
 #endif
@@ -5104,7 +5106,7 @@ uwt_uptime(value unit)
         value so = uwt_alloc_sockaddr((union all_sockaddr *)&addr);     \
         if ( so == Val_unit ){                                          \
           ret = caml_alloc_small(1,Error_tag);                          \
-          Field(ret,0) = VAL_UWT_ERROR_UWT_UNKNOWN;                     \
+          Field(ret,0) = VAL_UWT_ERROR_UNKNOWN;                         \
         }                                                               \
         else {                                                          \
           Begin_roots1(so);                                             \
@@ -5409,7 +5411,7 @@ uwt_os_homedir(value unit)
 #if HAVE_DECL_UV_OS_HOMEDIR
   return (uwt_os_dir(uv_os_homedir));
 #else
-  return (result_eunavail());
+  return (result_enosys());
 #endif
 }
 
@@ -5420,7 +5422,7 @@ uwt_os_tmpdir(value unit)
 #if HAVE_DECL_UV_OS_TMPDIR
   return (uwt_os_dir(uv_os_tmpdir));
 #else
-  return (result_eunavail());
+  return (result_enosys());
 #endif
 }
 
@@ -5448,7 +5450,7 @@ uwt_get_passwd(value unit)
 {
   (void)unit;
 #if !HAVE_DECL_UV_OS_GET_PASSWD
-  return (result_eunavail());
+  return (result_enosys());
 #else
   uv_passwd_t pwd;
   value eret;
@@ -5480,7 +5482,7 @@ uwt_get_passwd(value unit)
         const size_t l = strlen(src);
         if ( l >= BSIZE ){
           uv_os_free_passwd(&pwd);
-          i = UV_UWT_UNKNOWN;
+          i = UV_UNKNOWN;
           goto error_ret;
         }
         memcpy(dst,src,l+1);
@@ -5522,7 +5524,7 @@ static int
 uwt_setup_args(value sys_argv)
 {
   if ( sys_argv == Atom(0) || Wosize_val(sys_argv) == 0 ){
-    return UV_UWT_UNKNOWN;
+    return UV_UNKNOWN;
   }
   else {
     const int argc = Wosize_val(sys_argv);
@@ -5757,7 +5759,7 @@ uwt_print_all_handles(value a, value b)
 #if HAVE_DECL_UV_PRINT_ALL_HANDLES
   return uwt_print_handles(a,b,uv_print_all_handles);
 #else
-  return VAL_UWT_INT_RESULT_UWT_EUNAVAIL;
+  return VAL_UWT_INT_RESULT_ENOSYS;
 #endif
 }
 
@@ -5767,7 +5769,7 @@ uwt_print_active_handles(value a, value b)
 #if HAVE_DECL_UV_PRINT_ACTIVE_HANDLES
   return uwt_print_handles(a,b,uv_print_active_handles);
 #else
-  return VAL_UWT_INT_RESULT_UWT_EUNAVAIL;
+  return VAL_UWT_INT_RESULT_ENOSYS;
 #endif
 }
 
@@ -5867,7 +5869,7 @@ ret_addrinfo_list(uv_req_t * rdd)
     }
     if ( list_head == Val_long(0) && error_found == true ) {
       ifo = caml_alloc_small(1,Error_tag);
-      Field(ifo,0) = VAL_UWT_ERROR_UWT_UNKNOWN;
+      Field(ifo,0) = VAL_UWT_ERROR_UNKNOWN;
     }
     else {
       ifo = caml_alloc_small(1,Ok_tag);
@@ -5936,14 +5938,14 @@ uwt_getaddrinfo_native(value o_node,
       switch ( Tag_val(v) ){
       case 0: /* AI_FAMILY of socket_domain */
         if ( i >= AR_SIZE(socket_domain_table) ){
-          erg = UV_UWT_EINVAL;
+          erg = UV_EINVAL;
           goto einval;
         }
         hints.ai_family = socket_domain_table[i];
         break;
       case 1: /* AI_SOCKTYPE of socket_type */
         if ( i >= AR_SIZE(socket_type_table) ){
-          erg = UV_UWT_EINVAL;
+          erg = UV_EINVAL;
           goto einval;
         }
         hints.ai_socktype = socket_type_table[i];
@@ -6052,7 +6054,7 @@ uwt_getnameinfo(value o_sockaddr, value o_list, value o_loop,
 {
   union all_sockaddr addr;
   if ( !uwt_get_sockaddr(o_sockaddr,&addr) ){
-    return VAL_UWT_INT_RESULT_UWT_UNKNOWN;
+    return VAL_UWT_INT_RESULT_UNKNOWN;
   }
   struct loop * loop = Loop_val(o_loop);
   struct req * req = Req_val(o_req);
@@ -6200,7 +6202,7 @@ uwt_spawn(value p1, value p2, value p3, value p4)
       else {
         h = get_handle(cur);
         if ( h == NULL ){
-          erg = UV_UWT_EBADF;
+          erg = UV_EBADF;
           goto error_end;
         }
         stdio[i].data.stream = (uv_stream_t*)h->handle;

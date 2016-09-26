@@ -71,7 +71,7 @@ let l = [
      m_equal U.PF_INET (
        UU.gethostbyname "google.com" >|= fun s -> s.U.h_addrtype);
      let name = "verylongandinvalidadzuarztgjbgf.com" in
-     m_raises (Uwt.ENOENT,"gethostbyname",name)(
+     m_raises (Unix.ENOENT,"gethostbyname",name)(
        UU.gethostbyname name));
   ("gethostbyaddr">::
    fun ctx ->
@@ -85,26 +85,26 @@ let l = [
      and ip6_invalid = U.inet_addr_of_string s_invalid in
      m_equal U.PF_INET6 (
        UU.gethostbyaddr ip6 >|= fun s -> s.U.h_addrtype);
-     m_raises (Uwt.ENOENT,"gethostbyaddr","")(
+     m_raises (Unix.ENOENT,"gethostbyaddr","")(
        UU.gethostbyaddr ip6_invalid >>= fun e1 ->
        let e2 = U.gethostbyaddr ip6_invalid in
        (* workaround for broken gethostbyaddr implementations.  Test
           against the results of the standard Unix-Module doesn't
           work, because ipv6 is sometimes supported by libuv, but not OCaml *)
        if e1 = e2 || e1.Unix.h_name = s_invalid then
-         Lwt.fail(Uwt_base.Uwt_error(Uwt_base.ENOENT,"gethostbyaddr",""))
+         Lwt.fail(Unix.Unix_error(Unix.ENOENT,"gethostbyaddr",""))
        else
          Lwt.return e1
      ));
   ("getprotobyname">::
    fun _ctx ->
      unix_equal UU.getprotobyname U.getprotobyname "icmp";
-     m_raises (Uwt.ENOENT,"getprotobyname","uwt")(
+     m_raises (Unix.ENOENT,"getprotobyname","uwt")(
        UU.getprotobyname "uwt" >|= fun s -> s.U.p_proto));
   ("getprotobynumber">::
    fun _ctx ->
      unix_equal UU.getprotobynumber U.getprotobynumber 17;
-     m_raises (Uwt.ENOENT,"getprotobynumber","")(
+     m_raises (Unix.ENOENT,"getprotobynumber","")(
        UU.getprotobynumber max_int >|= fun s -> s.U.p_proto));
   ("getservbyname">::
    fun _ctx ->
@@ -112,7 +112,7 @@ let l = [
        UU.getservbyname ~name:"www" ~protocol:"" >|= fun s -> is_http s );
      m_true (
        UU.getservbyname ~name:"www" ~protocol:"tcp" >|= fun s -> is_http s );
-     m_raises (Uwt.ENOENT,"getservbyname","uwt")(
+     m_raises (Unix.ENOENT,"getservbyname","uwt")(
        UU.getservbyname ~name:"uwt" ~protocol:"udp" >|= fun s -> s.U.s_name));
   ("getservbyport">::
    fun _ctx ->
@@ -120,11 +120,11 @@ let l = [
        UU.getservbyport 80 "" >|= fun s -> is_http s);
      m_true (
        UU.getservbyport 80 "tcp" >|= fun s -> is_http s);
-     m_raises (Uwt.ENOENT,"getservbyport","udp")(
+     m_raises (Unix.ENOENT,"getservbyport","udp")(
        UU.getservbyport 54325 "udp" >>= fun e1 ->
        let e2 = U.getservbyport 54325 "udp" in
        if e1 = e2 then
-         Lwt.fail(Uwt_base.Uwt_error(Uwt_base.ENOENT,"getservbyport","udp"))
+         Lwt.fail(Unix.Unix_error(Unix.ENOENT,"getservbyport","udp"))
        else
          Lwt.return e1));
   ("getcwd">::
@@ -141,7 +141,7 @@ let l = [
   ("realpath_enoent">::
    fun _ ->
      let t = UU.realpath invalid_path in
-     m_raises (Uwt.ENOENT,"realpath",invalid_path) t);
+     m_raises (Unix.ENOENT,"realpath",invalid_path) t);
   ("chdir">::
    fun _ ->
      let orig = Sys.getcwd () in
@@ -152,7 +152,7 @@ let l = [
                  UU.realpath s >|= fun cwd_real ->
                  cwd_real = real_tmpdir &&
                  tmpdir () <> orig);
-         m_raises (Uwt.ENOENT,"chdir",invalid_path)(UU.chdir invalid_path)
+         m_raises (Unix.ENOENT,"chdir",invalid_path)(UU.chdir invalid_path)
        ) () U.chdir orig );
   ("getlogin">::
    fun ctx ->
@@ -175,7 +175,7 @@ let l = [
      let s2 = ruwt @@ UUnix.getpwnam user in
      adv_equal s1 s2;
      let pwnam = "adfklXakja" in
-     m_raises (Uwt.ENOENT,"getpwnam",pwnam)(
+     m_raises (Unix.ENOENT,"getpwnam",pwnam)(
        UU.getpwnam pwnam));
   ("getpwuid">::
    fun ctx ->
@@ -184,7 +184,7 @@ let l = [
      let s1 = runix U.getpwuid user in
      let s2 = ruwt @@ UUnix.getpwuid user in
      adv_equal s1 s2;
-     m_raises (Uwt.ENOENT,"getpwuid","")(
+     m_raises (Unix.ENOENT,"getpwuid","")(
        UU.getpwuid (user*79 + 17) ));
   ("getgrnam">::
    fun ctx ->
@@ -195,7 +195,7 @@ let l = [
      let s2 = ruwt @@ UUnix.getgrnam name in
      adv_equal s1 s2;
      let grnam = "adfklXakja" in
-     m_raises (Uwt.ENOENT,"getgrnam",grnam)(
+     m_raises (Unix.ENOENT,"getgrnam",grnam)(
        UU.getgrnam grnam));
   ("getgrgid">::
    fun ctx ->
@@ -204,7 +204,7 @@ let l = [
      let s1 = runix U.getgrgid gid in
      let s2 = ruwt @@ UUnix.getgrgid gid in
      adv_equal s1 s2;
-     m_raises (Uwt.ENOENT,"getgrgid","")(
+     m_raises (Unix.ENOENT,"getgrgid","")(
        UU.getgrgid (gid*79 + 17)));
   ("lockf">::
    fun _ ->
@@ -235,7 +235,7 @@ let l = [
            UU.lockf fd U.F_TLOCK 0L >>= fun () -> Lwt.return_false
          ) ( fun exn ->
            match exn with
-           | Uwt.Uwt_error((Uwt.EBUSY|Uwt.EACCES|Uwt.EAGAIN),"lockf",_) ->
+           | Unix.Unix_error((Unix.EBUSY|Unix.EACCES|Unix.EAGAIN),"lockf",_) ->
              Lwt.return_true
            | x -> Lwt.fail x )
      in

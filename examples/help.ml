@@ -49,7 +49,7 @@ let write_something tmp_dir =
         close fd >>= fun () -> Uwt.Timer.sleep 1_000 >>= fun () ->
         Uwt.Fs.unlink fln >>= fun () -> Lwt.return_unit
       ) ( function
-      | Uwt.Uwt_error(Uwt.EEXIST,_,_) -> Lwt.return_unit
+      | Unix.Unix_error(Unix.EEXIST,_,_) -> Lwt.return_unit
       | x -> Lwt.fail x )
     >>= fun () -> iter (succ n)
   in

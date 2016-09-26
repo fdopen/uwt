@@ -7,11 +7,11 @@ CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS)
 if $(equal $(OSTYPE),Win32)
 	configure config.h.in: configure.ac
 		if $(or $(not $(file-exists configure)),$(not $(file-exists config.h.in)))
-			bash.exe autoreconf -fi
+			sh.exe autoreconf -fi
 		else
 			touch configure config.h.in
 	config.h config.inc: config.h.in configure config.inc.in
-		bash.exe configure CC="$(OCAMLC_CC)" CFLAGS="$(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS) $(LDFLAGS_LIBUV)"
+		sh.exe configure CC="$(OCAMLC_CC)" CFLAGS="$(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS) $(LDFLAGS_LIBUV)"
 else
 	configure config.h.in: configure.ac
 		if $(or $(not $(file-exists configure)),$(not $(file-exists config.h.in)))

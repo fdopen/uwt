@@ -25,8 +25,10 @@ let get_infos (hosts:string list) =
         Lwt.return_unit )
       (function (* not all domains have ip6 entries. error codes differs
                    from operating system to operating system, ... *)
-      | Uwt.Uwt_error((Uwt.EAI_NONAME|Uwt.ENOENT|Uwt.EAI_NODATA),_,_)
-        when ip6 = true ->
+      | Unix.Unix_error(Unix.ENOENT,_,_) when ip6 = true-> Lwt.return_unit
+      | Unix.Unix_error(Unix.EUNKNOWNERR(x),_,_) when ip6 = true && (
+          x = (Uwt.Int_result.eai_noname:>int) ||
+          x = (Uwt.Int_result.eai_nodata:>int) ) ->
         Lwt.return_unit
       | x -> Lwt.fail x )
   in

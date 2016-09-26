@@ -9,9 +9,6 @@ module Lwt_chan = Uwt_chan
 (** everything inside Lwt_unix is implemented with funcions from Uwt.
     The sole purpose is to make it easier to test existing code with
     uwt.
-
-    Unlike the modules above, functions from Lwt_unix always fail with
-    [Unix.Unix_error], not [Uwt.Uwt_error].
 *)
 module Lwt_unix :
   sig

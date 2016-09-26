@@ -100,8 +100,9 @@ let loop =
 
 let param = ""
 
-let efail ?(param="") name x = Lwt.fail (Uwt_error(x,name,param))
-let eraise ?(param="") name x = raise (Uwt_error(x,name,param))
+let get_exn ?(param="") name x = Unix.Unix_error(to_unix_error x,name,param)
+let efail ?param name x = get_exn ?param name x |> Lwt.fail
+let eraise ?param name x = raise (get_exn ?param name x)
 
 module Req = struct
   type t
@@ -129,7 +130,7 @@ module Req = struct
         if Lwt.is_sleeping sleeper then (
           (match x with
           | Ok x -> Lwt.wakeup waker x
-          | Error x -> Lwt.wakeup_exn waker (Uwt_error(x,name,param)));
+          | Error x -> get_exn ~param name x |> Lwt.wakeup_exn waker);
           canceled)
         else
           match x with
@@ -220,7 +221,7 @@ let qsu5 ~f ~name a b c d e =
 
 let to_exn n = function
 | Ok x -> x
-| Error x -> raise (Uwt_error(x,n,param))
+| Error x -> eraise n x
 
 let to_exni name (n: Int_result.int) =
   if Int_result.is_error n then
@@ -338,7 +339,7 @@ module Stream = struct
       | Some x -> x
     in
     if pos < 0 || len < 0 || pos > dim - len then
-      Int_result.uwt_einval
+      Int_result.einval
     else
       try_write s buf pos len
 
@@ -798,7 +799,7 @@ module Udp = struct
     | Some x -> x
     in
     if pos < 0 || len < 0 || pos > dim - len then
-      Int_result.uwt_einval
+      Int_result.einval
     else
       try_send t buf pos len s
 
@@ -950,7 +951,7 @@ module Timer = struct
 
   let start ~repeat ~timeout ~cb =
     if repeat < 0 || timeout < 0 then
-      Error UWT_EINVAL
+      Error EINVAL
     else
       start loop cb timeout repeat
 
@@ -1188,7 +1189,7 @@ module C_worker = struct
           if Lwt.is_sleeping sleeper then (
             (match x with
             | Ok x -> Lwt.wakeup waker x
-            | Error x -> Lwt.wakeup_exn waker (Uwt_error(x,name,param)));
+            | Error x -> get_exn ~param name x |> Lwt.wakeup_exn waker);
             Req.canceled)
           else
             match x with
@@ -1407,7 +1408,7 @@ module Unix = struct
       Lwt.catch (fun () ->
           Req.ql ~typ:Req.Fs ~f:(realpath param) ~name:"realpath" ~param)
         (function
-        | Uwt_error((UWT_EUNAVAIL|ENOSYS),"realpath",x) when x = param ->
+        | Unix.Unix_error(ENOSYS,"realpath",x) when x = param ->
           use_own_realpath := true;
           realpath_o param
         | x -> Lwt.fail x)
@@ -1718,7 +1719,7 @@ module Main = struct
         try
           run (call_hooks ())
         with
-        | Main_error(UWT_EBUSY,"run") -> () )
+        | Main_error(EBUSY,"run") -> () )
   (* The user has probably called Pervasives.exit inside a
      lwt thread. I can't do anything. *)
 
@@ -1772,9 +1773,6 @@ end
 let () =
   Printexc.register_printer
     (function
-    | Uwt_error (e, s, s') ->
-      let msg = err_name e in
-      Some (Printf.sprintf "Uwt.Uwt_error(Uwt.%s, %S, %S)" msg s s')
     | Main.Main_error(e,s) ->
       let msg = err_name e in
       Some (Printf.sprintf "Uwt.Main.Main_error(Uwt.%s, %S)" msg s)

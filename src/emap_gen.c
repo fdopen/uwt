@@ -13,27 +13,13 @@
 
 #define AR_SIZE(x) ((sizeof (x)) / (sizeof *(x)))
 
-#define UV_UWT_UNKNOWN (int16_t)(INT16_MAX + 16)
 #define UV_UWT_EFATAL (int16_t)(INT16_MAX + 17)
-#define UV_UWT_EBADF (int16_t)(INT16_MAX + 18)
-#define UV_UWT_EINVAL (int16_t)(INT16_MAX + 19)
-#define UV_UWT_ENOTACTIVE (int16_t)(INT16_MAX + 20)
-#define UV_UWT_EBUSY (int16_t)(INT16_MAX + 21)
-#define UV_UWT_ENOENT (int16_t)(INT16_MAX + 22)
-#define UV_UWT_EUNAVAIL (int16_t)(INT16_MAX + 23)
 
 static const char *
 get_er_msg(unsigned int d)
 {
   switch(d){
-  case UV_UWT_UNKNOWN: return "unknown uv error";
   case UV_UWT_EFATAL: return "fatal uwt error";
-  case UV_UWT_EBADF: return "bad uwt handle";
-  case UV_UWT_EINVAL: return "invalid parameter";
-  case UV_UWT_ENOTACTIVE: return "handle not active";
-  case UV_UWT_EBUSY: return "handle busy";
-  case UV_UWT_ENOENT: return "entry not found";
-  case UV_UWT_EUNAVAIL: return "libuv version too old or too recent";
   default: assert(0);
   }
   return "unknown uv error";
@@ -116,28 +102,14 @@ int er_map [] = {
   UV_EOF,
   UV_ENXIO,
   UV_EMLINK,
-  UV_UWT_UNKNOWN,
   UV_UWT_EFATAL,
-  UV_UWT_EBADF,
-  UV_UWT_EINVAL,
-  UV_UWT_ENOTACTIVE,
-  UV_UWT_EBUSY,
-  UV_UWT_ENOENT,
-  UV_UWT_EUNAVAIL
 };
 
 static const char *
 err_name(int i)
 {
   switch (i){
-  case UV_UWT_UNKNOWN: return "UWT_UNKNOWN"; break;
   case UV_UWT_EFATAL: return "UWT_EFATAL";
-  case UV_UWT_EBADF: return "UWT_EBADF";
-  case UV_UWT_EINVAL: return "UWT_EINVAL";
-  case UV_UWT_ENOTACTIVE: return "UWT_ENOTACTIVE";
-  case UV_UWT_EBUSY: return "UWT_EBUSY";
-  case UV_UWT_ENOENT: return "UWT_ENOENT";
-  case UV_UWT_EUNAVAIL: return "UWT_EUNAVAIL";
   default: return (uv_err_name(i));
   }
 }
@@ -168,7 +140,7 @@ static inline int neg_result(unsigned int x)
 int main(void)
 {
   unsigned int i;
-  unsigned int uwt_unknown = UINT_MAX;
+  unsigned int uv_unknown = UINT_MAX;
 
   FILE * c = fopen("map_error.h","w");
   FILE * c2 = fopen("uwt-error.h","w");
@@ -183,8 +155,8 @@ int main(void)
   for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
-    if ( val == UV_UWT_UNKNOWN ){
-      uwt_unknown = i;
+    if ( val == UV_UNKNOWN ){
+      uv_unknown = i;
     }
     if ( x[0] == 'U' && x[1] == 'W' && x[2] == 'T' ){
       fprintf(c2,"  UV_%s = (%d),\n",x,val);
@@ -192,7 +164,7 @@ int main(void)
   }
   fputs("} uv_uwt_errno_t;\n\n",c2);
 
-  assert( uwt_unknown != UINT_MAX );
+  assert( uv_unknown != UINT_MAX );
 
   fputs("#pragma GCC diagnostic push\n"
     "#pragma GCC diagnostic ignored \"-Wenum-compare\"\n",c);
@@ -244,7 +216,7 @@ int main(void)
     const char * x = err_name(val);
     fprintf(c,"  case UV_%s: erg = Val_long(%u) ; break;\n",x,i);
   }
-  fputs("  default: erg = VAL_UWT_ERROR_UWT_UNKNOWN;\n"
+  fputs("  default: erg = VAL_UWT_ERROR_UNKNOWN;\n"
         "  }\n"
         "  return erg;\n"
         "}\n",c);
@@ -268,7 +240,7 @@ int main(void)
   fprintf(c,"  default: erg = Val_long(%d) ;\n"
           "  }\n"
           "  return erg;\n"
-          "}\n",neg_result(uwt_unknown));
+          "}\n",neg_result(uv_unknown));
 
   fputs("\n",c);
 
@@ -351,6 +323,21 @@ int main(void)
     fprintf(c,"val %s : int\n",x);
     free(x);
   }
+  fputs("\n\nlet int_to_error = function\n",ml);
+  for ( i = 0 ; i < AR_SIZE(er_map) ; ++i ){
+    int val = er_map[i];
+    const char * x = err_name(val);
+    fprintf(ml,"| %d -> %s\n",neg_result(i),x);
+  }
+  fputs("| _ -> EINTR\n\n",ml);
+
+  fputs("let error_to_int = function\n",ml);
+  for ( i = 0 ; i < AR_SIZE(er_map) ; ++i ){
+    int val = er_map[i];
+    const char * x = err_name(val);
+    fprintf(ml,"| %s -> %d\n",x,neg_result(i));
+  }
+
   if ( fclose(ml) || fclose(c) ){
     fputs("i/o error\n",stderr);
   }

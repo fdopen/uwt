@@ -389,7 +389,7 @@ gethostent_value(uv_req_t * req)
   const struct hostent * entry = w->p1;
   if ( entry == NULL ){
     value t = Val_uwt_error(POINTER_TO_INT(w->p2));
-    if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
+    if ( t == VAL_UWT_ERROR_UNKNOWN ){
       t = VAL_UWT_ERROR_ENOENT;
     }
     ret = caml_alloc_small(1,Error_tag);
@@ -511,7 +511,7 @@ uwt_gethostbyaddr(value o_ip, value o_uwt)
   void *p2;
   if ( caml_string_length(o_ip) == 16 ){
 #ifndef GET_INET6_ADDR
-    return VAL_UWT_INT_RESULT_UWT_EUNAVAIL;
+    return VAL_UWT_INT_RESULT_ENOSYS;
 #else
     struct in6_addr * s = malloc(sizeof *s);
     if ( !s ){
@@ -664,7 +664,7 @@ getservent_value(uv_req_t * req)
   const struct servent *entry = w->p1;
   if ( entry == NULL ){
     value t = Val_uwt_error(POINTER_TO_INT(w->p2));
-    if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
+    if ( t == VAL_UWT_ERROR_UNKNOWN ){
       t = VAL_UWT_ERROR_ENOENT;
     }
     ret = caml_alloc_small(1,Error_tag);
@@ -853,7 +853,7 @@ getprotoent_value(uv_req_t * req)
   const struct protoent *entry = w->p1;
   if ( entry == NULL ){
     value t = Val_uwt_error(POINTER_TO_INT(w->p2));
-    if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
+    if ( t == VAL_UWT_ERROR_UNKNOWN ){
       t = VAL_UWT_ERROR_ENOENT;
     }
     ret = caml_alloc_small(1,Error_tag);
@@ -1217,7 +1217,7 @@ uwt_getlogin(value o_void, value o_uwt)
 }
 
 #else /* defined(_WIN32) || defined(HAVE_GETLOGIN) || defined(HAVE_GETLOGIN_R) || defined(HAVE_CUSERID) */
-F_EUNAVAIL2(getlogin)
+F_ENOSYS2(getlogin)
 #endif
 
 #if defined(HAVE_GETPWNAM_R) || defined(HAVE_GETPWNAM)
@@ -1285,7 +1285,7 @@ passwd_camlval(uv_req_t * req)
   value erg;
   if ( w->p1 == NULL ){
     value t = Val_uwt_error(POINTER_TO_INT(w->p2));
-    if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
+    if ( t == VAL_UWT_ERROR_UNKNOWN ){
       t = VAL_UWT_ERROR_ENOENT;
     }
     erg = caml_alloc_small(1,Error_tag);
@@ -1386,7 +1386,7 @@ endp:
 }
 
 #else
-F_EUNAVAIL2(getpwnam)
+F_ENOSYS2(getpwnam)
 #endif
 
 #if defined(HAVE_GETPWUID_R) || defined(HAVE_GETPWUID)
@@ -1436,7 +1436,7 @@ uwt_getpwuid(value o_uid, value o_uwt)
   return ret;
 }
 #else
-F_EUNAVAIL2(getpwuid)
+F_ENOSYS2(getpwuid)
 #endif
 
 #if defined(HAVE_GETGRNAM_R) || defined(HAVE_GETGRNAM)
@@ -1491,7 +1491,7 @@ group_camlval(uv_req_t * req)
   value erg;
   if ( w->p1 == NULL ){
     value t = Val_uwt_error(POINTER_TO_INT(w->p2));
-    if ( t == VAL_UWT_ERROR_UWT_UNKNOWN ){
+    if ( t == VAL_UWT_ERROR_UNKNOWN ){
       t = VAL_UWT_ERROR_ENOENT;
     }
     erg = caml_alloc_small(1,Error_tag);
@@ -1582,7 +1582,7 @@ endp:
 }
 
 #else
-F_EUNAVAIL2(getgrnam)
+F_ENOSYS2(getgrnam)
 #endif
 
 #if defined(HAVE_GETGRGID_R) || defined(HAVE_GETGRGID)
@@ -1632,7 +1632,7 @@ uwt_getgrgid(value o_gid, value o_uwt)
   return ret;
 }
 #else
-F_EUNAVAIL2(getgrgid)
+F_ENOSYS2(getgrgid)
 #endif
 
 #ifdef HAVE_CHROOT
@@ -1679,7 +1679,7 @@ endp:
   return ret;
 }
 #else
-F_EUNAVAIL2(chroot)
+F_ENOSYS2(chroot)
 #endif
 
 #if defined(HAVE_LOCKF) || (defined(F_GETLK) && defined(F_SETLK) && defined(F_SETLKW))
@@ -1939,7 +1939,7 @@ uwt_lockf(value o_t, value o_uwt)
   return ret;
 }
 #else
-F_EUNAVAIL2(lockf)
+F_ENOSYS2(lockf)
 #endif
 
 #ifndef _WIN32

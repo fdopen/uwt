@@ -40,6 +40,7 @@ else
 fi
 
 cd "$mtmpf"
+touch src/configure
 rm -f .git*
 
 if [ -n "$libuv_archive" ]; then

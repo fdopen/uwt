@@ -209,7 +209,6 @@ let perform_io : type mode. mode _channel -> int Lwt.t = fun ch -> match ch.main
                         Lwt.catch
                           (fun () -> perform_io ch.buffer ptr len)
                           (function
-                          | Uwt.Uwt_error ((Uwt.EPIPE|Uwt.EOF), _, _)
                           | Unix.Unix_error(Unix.EPIPE, _, _) ->
                             Lwt.return 0
                           | exn -> Lwt.fail exn)
@@ -1377,7 +1376,7 @@ let open_connection ?in_buffer ?out_buffer sockaddr =
             Lwt.catch ( fun () ->
                 Uwt.Stream.shutdown stream
               ) ( function
-              | Uwt.Uwt_error(Uwt.ENOTCONN,_,_) -> Lwt.return_unit
+              | Unix.Unix_error(Unix.ENOTCONN,_,_) -> Lwt.return_unit
               | x -> Lwt.fail x )
           else
             Lwt.return_unit

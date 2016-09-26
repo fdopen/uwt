@@ -273,13 +273,13 @@
 #define INT_TO_POINTER(i) ((void *) (intnat)(i))
 #define POINTER_TO_INT(p) ((intnat) (intnat) (p))
 
-#define F_EUNAVAIL2(name)                       \
+#define F_ENOSYS2(name)                         \
   CAMLprim value                                \
     uwt_ ## name (value o1, value o2)           \
   {                                             \
     (void) o1;                                  \
     (void) o2;                                  \
-    return VAL_UWT_INT_RESULT_UWT_EUNAVAIL;     \
+    return VAL_UWT_INT_RESULT_ENOSYS;           \
   }
 
 static FORCE_INLINE char *

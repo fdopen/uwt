@@ -16,8 +16,9 @@ let () =
         Uwt.Unix.lseek (Obj.magic 1000) 0L Unix.SEEK_END >>= fun _l ->
         Uwt_io.printl "magic seek ok!"
       ) ( function
-      | Uwt.Uwt_error(a,b,c) ->
-        Uwt_io.printf "Uwt_error(%s,%s,%s)\n" (Uwt.strerror a) b c
+      | Unix.Unix_error(a,b,c) ->
+        let a = Uwt.of_unix_error a in
+        Uwt_io.printf "Unix_error(%s,%s,%s)\n" (Uwt.strerror a) b c
       | x -> Lwt.fail x )
   in
   Uwt.Main.run t

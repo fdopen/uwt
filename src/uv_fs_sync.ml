@@ -296,7 +296,7 @@ let realpath param  : string uv_result =
   | true -> realpath_o param
   | false ->
     match cu (realpath param) with
-    | Error (Uwt_base.UWT_EUNAVAIL|Uwt_base.ENOSYS) ->
+    | Error Uwt_base.ENOSYS ->
       use_own_realpath:= true;
       realpath_o param
     | x -> x

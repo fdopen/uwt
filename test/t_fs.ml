@@ -212,7 +212,7 @@ let l = [
    fun ctx ->
      let z = tmpdir () // "z" in
      let x = tmpdir () // "zz" in
-     m_raises (Uwt.ENOENT,"access",x) (access x [Read]);
+     m_raises (Unix.ENOENT,"access",x) (access x [Read]);
      m_equal () (access z [Read]);
      m_equal () (access Sys.executable_name [Exec]);
      no_win ctx;
@@ -227,7 +227,7 @@ let l = [
          invalid
      in
      skip_if (shadow == invalid) "no shadow";
-     m_raises (Uwt.EACCES,"access",shadow) (access shadow [Read]));
+     m_raises (Unix.EACCES,"access",shadow) (access shadow [Read]));
   ("ftruncate">::
    fun _ctx ->
      let z = tmpdir() // "z"

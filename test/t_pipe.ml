@@ -219,7 +219,7 @@ let l = [
      Uwt.Pipe.close_noerr p2;
      let open U in
      let is_error = match Uwt.Pipe.fileno p1 with
-     | Error(EBADF|UWT_EBADF) -> true
+     | Error EBADF -> true
      | Ok _ | Error _ -> false
      in
      assert_equal true is_error);
@@ -232,7 +232,8 @@ let l = [
      close_wait client >>= fun () ->
      Lwt.catch ( fun () -> write_thread )
        (function
-       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
+       | Unix.Unix_error(x,_,_) when Uwt.of_unix_error x = Uwt.ECANCELED ->
+         Lwt.return_true
        | x -> Lwt.fail x) );
   ("read_abort">::
    fun _ctx ->
@@ -247,8 +248,9 @@ let l = [
        close_noerr client ; Lwt.return_unit
      in
      Lwt.catch ( fun () -> read_thread )(function
-       | Uwt.Uwt_error(Uwt.ECANCELED,_,_) -> Lwt.return_true
-       | x -> Lwt.fail x )  );
+       | Unix.Unix_error(a,_,_) when Uwt.of_unix_error a = Uwt.ECANCELED ->
+         Lwt.return_true
+       | x -> Lwt.fail x ));
   ("read_own">::
    fun _ctx ->
      with_client_connect @@ fun t ->
@@ -316,7 +318,7 @@ let l = [
        if uv_minor > 2 || uv_major > 1 then
          pname = (Ok Echo_server.addr)
        else
-         pname = (Error Uwt.UWT_EUNAVAIL)
+         pname = (Error Uwt.ENOSYS)
      in
      Lwt.return ret );
 ]

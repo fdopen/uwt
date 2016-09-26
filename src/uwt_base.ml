@@ -44,10 +44,28 @@ type ('a , 'b) o_result = ('a, 'b) result =
 type 'a result = ('a , error) o_result
 
 external strerror: error -> string = "uwt_strerror"
-exception Uwt_error of error * string * string
 
-let to_unix_error x =
-  match x with
+module Int_result = struct
+  type 'a t = int
+
+  type real_int = int
+  type real_unit = unit
+  type int = real_int t
+  type unit = real_unit t
+
+  let is_ok (x: 'a t) = x >= 0
+  let is_error (x: 'a t) = x < 0
+
+  let to_int (x: int) : real_int =
+    if x < 0 then
+      invalid_arg "Uwt.Int_result.to_int";
+    x
+
+  external plain : 'a t -> real_int = "%identity"
+
+#include "error_val.ml"
+
+  let to_unix_error = function
   | E2BIG -> Unix.E2BIG
   | EACCES -> Unix.EACCES
   | EADDRINUSE -> Unix.EADDRINUSE
@@ -101,82 +119,109 @@ let to_unix_error x =
   | ESRCH -> Unix.ESRCH
   | ETIMEDOUT -> Unix.ETIMEDOUT
   | EXDEV -> Unix.EXDEV
-  | UWT_EBADF -> Unix.EBADF
-  | UWT_EBUSY -> Unix.EBUSY
-  | UWT_EINVAL -> Unix.EINVAL
-  | UWT_ENOENT -> Unix.ENOENT
-  | ETXTBSY
-  | UNKNOWN
-  | UWT_EFATAL
-  | UWT_ENOTACTIVE
-  | UWT_UNKNOWN
-  | UWT_EUNAVAIL
-  | EAI_ADDRFAMILY
-  | EAI_AGAIN
-  | EAI_BADFLAGS
-  | EAI_BADHINTS
-  | EAI_CANCELED
-  | EAI_FAIL
-  | EAI_FAMILY
-  | EAI_MEMORY
-  | EAI_NODATA
-  | EAI_NONAME
-  | EAI_OVERFLOW
-  | EAI_PROTOCOL
-  | EAI_SERVICE
-  | ECANCELED
-  | ECHARSET
-  | ENONET
-  | ENOTSUP
-  | EOF
-  | EPROTO
-  | EAI_SOCKTYPE -> Unix.EUNKNOWNERR (Obj.magic x)
+  | ENOTSUP -> Unix.EOPNOTSUPP
+  | (UWT_EFATAL|EAI_ADDRFAMILY|EAI_AGAIN|EAI_BADFLAGS|EAI_BADHINTS|
+     EAI_CANCELED|EAI_FAIL|EAI_FAMILY|EAI_MEMORY|EAI_NODATA|EAI_NONAME|
+     EAI_OVERFLOW|EAI_PROTOCOL|EAI_SERVICE|EAI_SOCKTYPE|ECANCELED|
+     ECHARSET|ENONET|EPROTO|ETXTBSY|UNKNOWN|EOF)
+    as x -> Unix.EUNKNOWNERR (error_to_int x)
 
-let to_unix_exn = function
-| Uwt_error(x,y,z) -> Unix.Unix_error(to_unix_error x,y,z)
-| x -> x
-
-module Int_result = struct
-  type 'a t = int
-
-  type real_int = int
-  type real_unit = unit
-  type int = real_int t
-  type unit = real_unit t
-
-  let is_ok (x: 'a t) = x >= 0
-  let is_error (x: 'a t) = x < 0
-
-  let to_int (x: int) : real_int =
-    if x < 0 then
-      invalid_arg "Uwt.Int_result.to_int";
-    x
-
-  external plain : 'a t -> real_int = "%identity"
-
-  let transform x =
-    let y = (x * (-1)) - 1 in
-    Obj.magic y
+  let of_unix_error = function
+  | Unix.E2BIG -> E2BIG
+  | Unix.EACCES -> EACCES
+  | Unix.EADDRINUSE -> EADDRINUSE
+  | Unix.EADDRNOTAVAIL -> EADDRNOTAVAIL
+  | Unix.EAFNOSUPPORT -> EAFNOSUPPORT
+  | Unix.EAGAIN -> EAGAIN
+  | Unix.EALREADY -> EALREADY
+  | Unix.EBADF -> EBADF
+  | Unix.EBUSY -> EBUSY
+  | Unix.ECONNABORTED -> ECONNABORTED
+  | Unix.ECONNREFUSED -> ECONNREFUSED
+  | Unix.ECONNRESET -> ECONNRESET
+  | Unix.EDESTADDRREQ -> EDESTADDRREQ
+  | Unix.EEXIST -> EEXIST
+  | Unix.EFAULT -> EFAULT
+  | Unix.EFBIG -> EFBIG
+  | Unix.EHOSTUNREACH -> EHOSTUNREACH
+  | Unix.EINTR -> EINTR
+  | Unix.EINVAL -> EINVAL
+  | Unix.EIO -> EIO
+  | Unix.EISCONN -> EISCONN
+  | Unix.EISDIR -> EISDIR
+  | Unix.ELOOP -> ELOOP
+  | Unix.EMFILE -> EMFILE
+  | Unix.EMLINK -> EMLINK
+  | Unix.EMSGSIZE -> EMSGSIZE
+  | Unix.ENAMETOOLONG -> ENAMETOOLONG
+  | Unix.ENETDOWN -> ENETDOWN
+  | Unix.ENETUNREACH -> ENETUNREACH
+  | Unix.ENFILE -> ENFILE
+  | Unix.ENOBUFS -> ENOBUFS
+  | Unix.ENODEV -> ENODEV
+  | Unix.ENOENT -> ENOENT
+  | Unix.ENOMEM -> ENOMEM
+  | Unix.ENOPROTOOPT -> ENOPROTOOPT
+  | Unix.ENOSPC -> ENOSPC
+  | Unix.ENOSYS -> ENOSYS
+  | Unix.ENOTCONN -> ENOTCONN
+  | Unix.ENOTDIR -> ENOTDIR
+  | Unix.ENOTEMPTY -> ENOTEMPTY
+  | Unix.ENOTSOCK -> ENOTSOCK
+  | Unix.ENXIO -> ENXIO
+  | Unix.EPERM -> EPERM
+  | Unix.EPIPE -> EPIPE
+  | Unix.EPROTONOSUPPORT -> EPROTONOSUPPORT
+  | Unix.EPROTOTYPE -> EPROTOTYPE
+  | Unix.ERANGE -> ERANGE
+  | Unix.EROFS -> EROFS
+  | Unix.ESHUTDOWN -> ESHUTDOWN
+  | Unix.ESPIPE -> ESPIPE
+  | Unix.ESRCH -> ESRCH
+  | Unix.ETIMEDOUT -> ETIMEDOUT
+  | Unix.EXDEV -> EXDEV
+  | Unix.EOPNOTSUPP -> ENOTSUP
+  | Unix.ECHILD
+  | Unix.EDEADLK
+  | Unix.EDOM
+  | Unix.ENOEXEC
+  | Unix.ENOLCK
+  | Unix.ENOTTY
+  | Unix.EWOULDBLOCK
+  | Unix.EINPROGRESS
+  | Unix.ESOCKTNOSUPPORT
+  | Unix.EPFNOSUPPORT
+  | Unix.ENETRESET
+  | Unix.ETOOMANYREFS
+  | Unix.EHOSTDOWN
+  | Unix.EOVERFLOW -> UNKNOWN
+  | Unix.EUNKNOWNERR (i) ->
+    match int_to_error i with
+    | EINTR -> UNKNOWN
+    | x -> x
 
   let to_error (x: 'a t) : error =
     if x >= 0 then
       invalid_arg "Uwt.Int_result.to_error";
-    transform x
+    int_to_error x
+
+  let h x = int_to_error x |> to_unix_error
 
   let raise_exn ?(name="") ?(param="") (x: 'a t) =
     if x >= 0 then
       invalid_arg "Uwt.Int_result.raise_exn"
     else
-      raise (Uwt_error(transform x,name,param))
+      raise (Unix.Unix_error(h x,name,param))
 
   let to_exn ?(name="") ?(param="") (x: 'a t) =
     if x >= 0 then
       Invalid_argument "Uwt.Int_result.to_exn"
     else
-      Uwt_error(transform x,name,param)
-
-#include "error_val.ml"
+      Unix.Unix_error(h x,name,param)
 end
+
+let to_unix_error = Int_result.to_unix_error
+let of_unix_error = Int_result.of_unix_error
 
 type file = Unix.file_descr
 
@@ -317,7 +362,7 @@ module Misc = struct
 
   let to_exn n = function
   | Ok x -> x
-  | Error x -> raise (Uwt_error(x,n,""))
+  | Error x -> raise (Unix.Unix_error(to_unix_error x,n,""))
 
   type timeval = {
     sec: int; usec: int;
@@ -469,7 +514,7 @@ module Sys_info = struct
     csd_version: string;
   }
 #if HAVE_WINDOWS = 0
-  let win_version () = Error UWT_EUNAVAIL
+  let win_version () = Error ENOSYS
 #else
   external win_version: unit -> win_version uv_result = "uwt_win_version"
 #endif

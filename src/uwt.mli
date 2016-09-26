@@ -738,7 +738,7 @@ module Unix : sig
   val gethostname : unit -> string Lwt.t
 
   (** These function don't fail with Not_found.
-      but with [Uwt_error(Uwt.ENOENT,"function_name",x)] *)
+      but with [Unix_error(Unix.ENOENT,"function_name",x)] *)
   val gethostbyname: string -> Unix.host_entry Lwt.t
   val gethostbyaddr: Unix.inet_addr -> Unix.host_entry Lwt.t
 
