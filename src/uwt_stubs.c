@@ -1089,6 +1089,7 @@ handle_finalize_close_cb(uv_handle_t *h)
   }
 }
 
+static void cancel_reader(struct handle *h);
 static void
 handle_finalize_close(struct handle * s)
 {
@@ -1099,6 +1100,9 @@ handle_finalize_close(struct handle * s)
   }
   else {
     s->close_called = 1;
+    if ( s->read_waiting ){
+      cancel_reader(s);
+    }
     uv_close(h,handle_finalize_close_cb);
   }
 }
@@ -2594,7 +2598,6 @@ close_cb(uv_handle_t* handle)
   }
 }
 
-static void cancel_reader(struct handle *h);
 CAMLprim value
 uwt_close_wait(value o_stream,value o_cb)
 {
@@ -3083,6 +3086,7 @@ cancel_reader(struct handle *h)
        h->obuf != CB_INVALID ){
     value exn;
     value param;
+    h->read_waiting = 0;
     if ( h->handle->type == UV_UDP ){
       param = caml_alloc_small(1,Error_tag);
       Field(param,0) = VAL_UWT_ERROR_ECANCELED;
@@ -3111,6 +3115,7 @@ cancel_reader(struct handle *h)
       --h->in_use_cnt;
     }
   }
+  h->read_waiting = 0;
 }
 
 static void
@@ -3921,7 +3926,7 @@ uwt_tcp_udp_open(value o_tcp, value o_fd, bool tcp)
 #else
   uv_os_sock_t s;
   if ( Descr_kind_val(o_fd) != KIND_SOCKET ){
-    ret = UV_UWT_EBADF;
+    ret = UV_UWT_EINVAL;
     goto endp;
   }
   s = Socket_val(o_fd);
