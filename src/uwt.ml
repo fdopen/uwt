@@ -36,11 +36,11 @@
 #include "config.inc"
 
 open Lwt.Infix
-external init_stacks : unit -> unit = "uwt_init_stacks_na" "noalloc"
+external init_stacks : unit -> unit = "uwt_init_stacks_na" NOALLOC
 let () = init_stacks ()
 
 #if HAVE_WINDOWS <> 0
-external init_unix_windows : unit -> unit = "uwt_unix_windows_init_na" "noalloc"
+external init_unix_windows : unit -> unit = "uwt_unix_windows_init_na" NOALLOC
 let () = init_unix_windows ()
 #endif
 
@@ -110,7 +110,7 @@ module Req = struct
 
   external create: loop -> type' -> t = "uwt_req_create"
   external cancel_noerr: t -> unit = "uwt_req_cancel_noerr"
-  external finalize: t -> unit = "uwt_req_finalize_na" "noalloc"
+  external finalize: t -> unit = "uwt_req_finalize_na" NOALLOC
 
   let canceled = Lwt.fail Lwt.Canceled
   let ql ~typ ~f ~name ~param =
@@ -243,19 +243,19 @@ module Handle = struct
   external close: t -> Int_result.unit = "uwt_close_nowait"
   let close_noerr t =  ignore ( close t )
 
-  external is_active: t -> bool = "uwt_is_active_na" "noalloc"
+  external is_active: t -> bool = "uwt_is_active_na" NOALLOC
 
-  external ref': t -> unit = "uwt_ref_na" "noalloc"
-  external unref: t -> unit = "uwt_unref_na" "noalloc"
-  external has_ref: t -> bool = "uwt_has_ref_na" "noalloc"
+  external ref': t -> unit = "uwt_ref_na" NOALLOC
+  external unref: t -> unit = "uwt_unref_na" NOALLOC
+  external has_ref: t -> bool = "uwt_has_ref_na" NOALLOC
 end
 
 external get_buffer_size_common:
-  u -> bool -> Int_result.int = "uwt_get_buffer_size_common_na" "noalloc"
+  u -> bool -> Int_result.int = "uwt_get_buffer_size_common_na" NOALLOC
 
 external set_buffer_size_common:
   u -> int -> bool -> Int_result.unit =
-  "uwt_set_buffer_size_common_na" "noalloc"
+  "uwt_set_buffer_size_common_na" NOALLOC
 
 module Handle_ext = struct
   type t = u
@@ -287,7 +287,7 @@ module Stream = struct
   include (Handle: (module type of Handle) with type t := t )
   external to_handle : t -> Handle.t = "%identity"
 
-  external write_queue_size : t -> int = "uwt_write_queue_size_na" "noalloc"
+  external write_queue_size : t -> int = "uwt_write_queue_size_na" NOALLOC
 
   external read_start:
     t  -> cb:(Bytes.t uv_result -> unit) -> Int_result.unit = "uwt_read_start"
@@ -326,7 +326,7 @@ module Stream = struct
     write_raw ~dim ?pos ?len t ~buf
 
   external try_write:
-    t -> 'a -> int -> int -> Int_result.int = "uwt_try_write_na" "noalloc"
+    t -> 'a -> int -> int -> Int_result.int = "uwt_try_write_na" NOALLOC
 
   let try_write ?(pos=0) ?len s ~buf ~dim =
     let len =
@@ -455,8 +455,8 @@ module Stream = struct
     let dim = Bytes.length buf in
     write2 ?pos ?len ~buf ~send ~dim t
 
-  external is_readable : t -> bool = "uwt_is_readable_na" "noalloc"
-  external is_writable : t -> bool = "uwt_is_writable_na" "noalloc"
+  external is_readable : t -> bool = "uwt_is_readable_na" NOALLOC
+  external is_writable : t -> bool = "uwt_is_writable_na" NOALLOC
 
   external listen:
     t -> max:int -> cb:( t -> Int_result.unit -> unit ) -> Int_result.unit =
@@ -467,7 +467,7 @@ module Stream = struct
   let shutdown s = qsu1 ~name:"shutdown" ~f:shutdown s
 
   external accept_raw:
-    server:t -> client:t -> Int_result.unit = "uwt_accept_raw_na" "noalloc"
+    server:t -> client:t -> Int_result.unit = "uwt_accept_raw_na" NOALLOC
 
   let accept_raw_exn ~server ~client =
     accept_raw ~server ~client |> to_exnu "accept_raw"
@@ -499,7 +499,7 @@ module Pipe = struct
       eraise "pipe_init" x
 
   external bind:
-    t -> path:string -> Int_result.unit = "uwt_pipe_bind_na" "noalloc"
+    t -> path:string -> Int_result.unit = "uwt_pipe_bind_na" NOALLOC
   let bind_exn a ~path = bind a ~path |> to_exnu "pipe_bind"
 
   external getsockname: t -> string uv_result = "uwt_pipe_getsockname"
@@ -509,7 +509,7 @@ module Pipe = struct
   let getpeername_exn a = getpeername a |> to_exn "pipe_getpeername"
 
   external pending_instances:
-    t -> int -> Int_result.unit = "uwt_pipe_pending_instances_na" "noalloc"
+    t -> int -> Int_result.unit = "uwt_pipe_pending_instances_na" NOALLOC
   let pending_instances_exn a b =
     pending_instances a b |> to_exnu "pipe_pending_instances"
 
@@ -518,7 +518,7 @@ module Pipe = struct
   let connect p ~path:s = qsu2 ~name:"pipe_connect" ~f:connect p s
 
   external pending_count:
-    t -> Int_result.int = "uwt_pipe_pending_count_na" "noalloc"
+    t -> Int_result.int = "uwt_pipe_pending_count_na" NOALLOC
   let pending_count_exn a = pending_count a |> to_exni "pipe_pending_count"
 
   type pending_type =
@@ -528,7 +528,7 @@ module Pipe = struct
     | Pipe
 
   external pending_type:
-    t -> pending_type = "uwt_pipe_pending_type_na" "noalloc"
+    t -> pending_type = "uwt_pipe_pending_type_na" NOALLOC
 
   let with_pipe ?ipc f =
     let t = init ?ipc () in
@@ -566,12 +566,12 @@ module Tty = struct
     | Io
 
   external set_mode:
-    t -> mode -> Int_result.unit = "uwt_tty_set_mode_na" "noalloc"
+    t -> mode -> Int_result.unit = "uwt_tty_set_mode_na" NOALLOC
   let set_mode_exn t ~mode = set_mode t mode |> to_exnu "tty_set_mode"
   let set_mode t ~mode =  set_mode t mode
 
   external reset_mode:
-    unit -> Int_result.unit = "uwt_tty_reset_mode_na" "noalloc"
+    unit -> Int_result.unit = "uwt_tty_reset_mode_na" NOALLOC
   let reset_mode_exn x = reset_mode x |> to_exnu "tty_reset_mode"
 
   type winsize = {
@@ -610,7 +610,7 @@ module Tcp = struct
   let init_ipv6_exn () = init_ex loop PF_INET6 |> to_exn "tcp_init_ipv6"
 
   external opentcp:
-    t -> Unix.file_descr -> Int_result.unit = "uwt_tcp_open_na" "noalloc"
+    t -> Unix.file_descr -> Int_result.unit = "uwt_tcp_open_na" NOALLOC
 
   let opentcp s =
     let x = init_raw loop in
@@ -626,15 +626,15 @@ module Tcp = struct
   let opentcp_exn s = opentcp s |> to_exn "tcp_open"
 
   external bind:
-    t -> sockaddr -> mode list -> Int_result.unit = "uwt_tcp_bind_na" "noalloc"
+    t -> sockaddr -> mode list -> Int_result.unit = "uwt_tcp_bind_na" NOALLOC
   let bind_exn ?(mode=[]) t ~addr () = bind t addr mode |> to_exnu "tcp_bind"
   let bind ?(mode=[]) t ~addr () = bind t addr mode
 
-  external nodelay: t -> bool -> Int_result.unit = "uwt_tcp_nodelay_na" "noalloc"
+  external nodelay: t -> bool -> Int_result.unit = "uwt_tcp_nodelay_na" NOALLOC
   let nodelay_exn t x = nodelay t x |> to_exnu "tcp_nodelay"
 
   external keepalive:
-    t -> bool -> Int_result.unit = "uwt_tcp_keepalive_na" "noalloc"
+    t -> bool -> Int_result.unit = "uwt_tcp_keepalive_na" NOALLOC
   let keepalive_exn t x = keepalive t x |> to_exnu "tcp_keepalive"
 
   external simultaneous_accepts: t -> bool -> Int_result.unit =
@@ -702,8 +702,8 @@ module Udp = struct
   include (Handle_fileno: (module type of Handle_fileno) with type t := t)
   external to_handle : t -> Handle.t = "%identity"
 
-  external send_queue_size: t -> int = "uwt_udp_send_queue_size_na" "noalloc"
-  external send_queue_count: t -> int = "uwt_udp_send_queue_count_na" "noalloc"
+  external send_queue_size: t -> int = "uwt_udp_send_queue_size_na" NOALLOC
+  external send_queue_count: t -> int = "uwt_udp_send_queue_count_na" NOALLOC
 
   external init_raw: loop -> t uv_result = "uwt_udp_init"
   let init () =
@@ -718,7 +718,7 @@ module Udp = struct
   let init_ipv6 () = init_ex loop PF_INET6
   let init_ipv6_exn () = init_ex loop PF_INET6 |> to_exn "udp_init_ipv6"
 
-  external openudp: t -> Unix.file_descr -> Int_result.unit = "uwt_udp_open_na" "noalloc"
+  external openudp: t -> Unix.file_descr -> Int_result.unit = "uwt_udp_open_na" NOALLOC
   let openudp s =
     let x = init_raw loop in
     match x with
@@ -737,7 +737,7 @@ module Udp = struct
     | Reuse_addr
 
   external bind:
-    t -> sockaddr -> mode list -> Int_result.unit = "uwt_udp_bind_na" "noalloc"
+    t -> sockaddr -> mode list -> Int_result.unit = "uwt_udp_bind_na" NOALLOC
   let bind_exn ?(mode=[]) t ~addr () = bind t addr mode |> to_exnu "udp_bind"
   let bind ?(mode=[]) t ~addr () = bind t addr mode
 
@@ -750,7 +750,7 @@ module Udp = struct
 
   external set_membershipr:
     t -> multicast:string -> interface:string option -> membership -> Int_result.unit =
-    "uwt_udp_set_membership_na" "noalloc"
+    "uwt_udp_set_membership_na" NOALLOC
 
   let set_membership ?interface t ~multicast m =
     set_membershipr t ~multicast ~interface m
@@ -759,35 +759,35 @@ module Udp = struct
     set_membershipr t ~multicast ~interface m |> to_exnu "udp_set_membership"
 
   external set_multicast_loop:
-    t -> bool -> Int_result.unit = "uwt_udp_set_multicast_loop_na" "noalloc"
+    t -> bool -> Int_result.unit = "uwt_udp_set_multicast_loop_na" NOALLOC
   let set_multicast_loop_exn a b =
     set_multicast_loop a b |> to_exnu "udp_set_multicast_loop"
 
   external set_multicast_ttl:
-    t -> int -> Int_result.unit = "uwt_udp_set_multicast_ttl_na" "noalloc"
+    t -> int -> Int_result.unit = "uwt_udp_set_multicast_ttl_na" NOALLOC
   let set_multicast_ttl_exn a b =
     set_multicast_ttl a b |> to_exnu "udp_set_multicast_ttl"
 
   external set_multicast_interface:
     t -> string option -> Int_result.unit =
-    "uwt_udp_set_multicast_interface_na" "noalloc"
+    "uwt_udp_set_multicast_interface_na" NOALLOC
   let set_multicast_interface_exn a b =
     set_multicast_interface a b |> to_exnu "udp_set_multicast_interface"
 
   external set_broadcast:
     t -> bool -> Int_result.unit =
-    "uwt_udp_set_broadcast_na" "noalloc"
+    "uwt_udp_set_broadcast_na" NOALLOC
   let set_broadcast_exn a b =
     set_broadcast a b |> to_exnu "udp_set_broadcast"
 
   external set_ttl:
-    t -> int -> Int_result.unit = "uwt_udp_set_ttl_na" "noalloc"
+    t -> int -> Int_result.unit = "uwt_udp_set_ttl_na" NOALLOC
   let set_ttl_exn a b =
     set_ttl a b |> to_exnu "udp_set_ttl"
 
   external try_send:
     t -> 'a -> int -> int -> sockaddr -> Int_result.int =
-    "uwt_udp_try_send_na" "noalloc"
+    "uwt_udp_try_send_na" NOALLOC
 
   let try_send ?(pos=0) ?len ~buf ~dim t s =
     let len = match len with
@@ -1147,16 +1147,16 @@ module Process = struct
       ?detach ?hide ?env ?cwd ?exit_cb exe args |> to_exn "spawn"
 
   external disable_stdio_inheritance: unit -> unit =
-    "uwt_disable_stdio_inheritance_na" "noalloc"
+    "uwt_disable_stdio_inheritance_na" NOALLOC
 
-  external pid: t -> Int_result.int = "uwt_pid_na" "noalloc"
+  external pid: t -> Int_result.int = "uwt_pid_na" NOALLOC
   let pid_exn t = pid t |> to_exni "uwt_pid" (* yes uwt, it's not a function
                                                 of libuv *)
   external process_kill: t -> int -> Int_result.unit = "uwt_process_kill_na"
   let process_kill_exn t s = process_kill t s |> to_exnu "process_kill"
 
   external kill:
-    pid:int -> signum:int -> Int_result.unit = "uwt_kill_na" "noalloc"
+    pid:int -> signum:int -> Int_result.unit = "uwt_kill_na" NOALLOC
   let kill_exn ~pid ~signum = kill ~pid ~signum |> to_exnu "kill"
 end
 
@@ -1168,10 +1168,10 @@ module Async = struct
   external create: loop -> ( t -> unit ) -> t uv_result = "uwt_async_create"
   let create cb = create loop cb
 
-  external start: t -> Int_result.unit = "uwt_async_start_na" "noalloc"
-  external stop: t -> Int_result.unit = "uwt_async_stop_na" "noalloc"
+  external start: t -> Int_result.unit = "uwt_async_start_na" NOALLOC
+  external stop: t -> Int_result.unit = "uwt_async_stop_na" NOALLOC
 
-  external send: t -> Int_result.unit = "uwt_async_send_na" "noalloc"
+  external send: t -> Int_result.unit = "uwt_async_send_na" NOALLOC
 end
 
 module C_worker = struct
@@ -1701,7 +1701,7 @@ module Main = struct
         run ~nothing_cnt task
       )
 
-  external cleanup: unit -> unit = "uwt_cleanup_na" "noalloc"
+  external cleanup: unit -> unit = "uwt_cleanup_na" NOALLOC
 
   let run (t:'a Lwt.t) : 'a =
     if !fatal_found then

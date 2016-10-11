@@ -418,7 +418,7 @@ module Misc = struct
     | Unknown
 
   external guess_handle:
-    file -> handle_type = "uwt_guess_handle_na" "noalloc"
+    file -> handle_type = "uwt_guess_handle_na" NOALLOC
 
   external resident_set_memory:
     unit -> int64 uv_result = "uwt_resident_set_memory"
@@ -460,7 +460,7 @@ module Misc = struct
     patch: int;
   }
 
-  external version_raw: unit -> int = "uwt_version_na" "noalloc"
+  external version_raw: unit -> int = "uwt_version_na" NOALLOC
   let version () =
     let n = version_raw () in
     {
@@ -482,7 +482,7 @@ module Misc = struct
     string array -> string uv_result = "uwt_get_process_title"
   let get_process_title () = get_process_title Sys.argv
   external set_process_title:
-    string array -> string -> Int_result.unit = "uwt_set_process_title_na" "noalloc"
+    string array -> string -> Int_result.unit = "uwt_set_process_title_na" NOALLOC
   let set_process_title s = set_process_title Sys.argv s
 
 end

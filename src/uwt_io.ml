@@ -701,7 +701,7 @@ struct
 
   external
     unsafe_memchr: buf:Uwt_bytes.t -> pos:int -> len:int -> needle:char -> int =
-    "uwt_unix_memchr" "noalloc"
+    "uwt_unix_memchr" NOALLOC
 
   let read_line ic =
     let ret l a =
@@ -1033,9 +1033,9 @@ struct
        | Reading numbers                                             |
        +-------------------------------------------------------------+ *)
     external read_int:
-      Uwt_bytes.t -> int -> bool -> int = "uwt_unix_read_int" "noalloc"
+      Uwt_bytes.t -> int -> bool -> int = "uwt_unix_read_int" NOALLOC
     external read_int16:
-      Uwt_bytes.t -> int -> bool -> int = "uwt_unix_read_int16" "noalloc"
+      Uwt_bytes.t -> int -> bool -> int = "uwt_unix_read_int16" NOALLOC
 #if OCAML_VERSION >= (4, 03, 0)
 #define UNBOXED(x) (x [@unboxed])
 #define UNBOXED_FUN(x) STRINGIFY(x) STRINGIFY(CONCAT(x,_native))
@@ -1088,22 +1088,22 @@ struct
        +-------------------------------------------------------------+ *)
     external write_int:
       Uwt_bytes.t -> pos:int -> int -> bool -> unit =
-      "uwt_unix_write_int" "noalloc"
+      "uwt_unix_write_int" NOALLOC
     external write_int16:
       Uwt_bytes.t -> pos:int -> int -> bool -> unit =
-      "uwt_unix_write_int16" "noalloc"
+      "uwt_unix_write_int16" NOALLOC
     external write_int32:
       Uwt_bytes.t -> pos:int -> UNBOXED(int32) -> bool -> unit =
-      UNBOXED_FUN(uwt_unix_write_int32) "noalloc"
+      UNBOXED_FUN(uwt_unix_write_int32) NOALLOC
     external write_int64:
       Uwt_bytes.t -> pos:int -> UNBOXED(int64) -> bool -> unit =
-      UNBOXED_FUN(uwt_unix_write_int64) "noalloc"
+      UNBOXED_FUN(uwt_unix_write_int64) NOALLOC
     external write_float32:
       Uwt_bytes.t -> pos:int -> UNBOXED(float) -> bool -> unit =
-      UNBOXED_FUN(uwt_unix_write_float32) "noalloc"
+      UNBOXED_FUN(uwt_unix_write_float32) NOALLOC
     external write_float64:
       Uwt_bytes.t -> pos:int -> UNBOXED(float) -> bool -> unit =
-      UNBOXED_FUN(uwt_unix_write_float64) "noalloc"
+      UNBOXED_FUN(uwt_unix_write_float64) NOALLOC
 
     let write_int oc v =
       write_block_unsafe oc 4

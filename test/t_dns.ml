@@ -61,11 +61,10 @@ let l = [
            dnstest ctx "asdfli4uqoi5tukjgakjlhadfkogle.com"
            >|= fun _ -> false )
          (function
-         | Unix.Unix_error(Unix.ENOENT,_,_) -> Lwt.return_true
-         | Unix.Unix_error(Unix.EUNKNOWNERR(x),_,_) when
-             x = (Uwt.Int_result.eai_noname:>int) ||
-             x = (Uwt.Int_result.eai_nodata:>int) ->
-           Lwt.return_true
+         | Unix.Unix_error(x,_,_) as exn ->
+           (match Uwt.of_unix_error x with
+           | Uwt.ENOENT | Uwt.EAI_NONAME | Uwt.EAI_NODATA -> Lwt.return_true
+           | _ -> Lwt.fail exn)
          | x -> Lwt.fail x )
      in
      m_true t);

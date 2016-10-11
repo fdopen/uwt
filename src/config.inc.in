@@ -8,6 +8,12 @@
 #define HAVE_UV_REALPATH @HAVE_UV_REALPATH@
 #define OS_MACRO @OS_MACRO@
 
+#if OCAML_VERSION >= (4, 03, 0)
+#define NOALLOC [@@noalloc]
+#else
+#define NOALLOC "noalloc"
+#endif
+
 #ifdef DEFINE_MUTEXES
 
 #if HAVE_REENTRANT_HOST_POSIX = 0

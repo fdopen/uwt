@@ -53,16 +53,13 @@ OCAMLPACKS+= bigarray unix
 section
 	.SCANNER: scan-c-%: map_error.h config.h
 	.SCANNER: scan-ocaml-%: error.ml error_val.ml
-	MLFILES=  uwt_bytes
-	CPPOFILES= uwt_base
+	MLFILES= uwt_base uwt_bytes
 	CFILES= uwt_stubs uwt_bytes_stubs uwt_stubs_unix
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+=$(LDFLAGS_LIBUV)
-	section
-		OCAMLFINDFLAGS+= -pp "cppo -V OCAML:$(OCAMLC_VERSION)"
-		Repeat_targets($(CPPOFILES))
+	OCAMLFINDFLAGS+= -pp "cppo -V OCAML:$(OCAMLC_VERSION)"
 	Repeat_targets($(MLFILES))
-	UWT_BASE=$(MixedLibrary uwt-base, $(CPPOFILES) $(MLFILES), $(CFILES))
+	UWT_BASE=$(MixedLibrary uwt-base, $(MLFILES), $(CFILES))
 	minimal:: $(UWT_BASE)
 	export UWT_BASE
 

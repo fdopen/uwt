@@ -24,6 +24,7 @@
 (* I/O parts removed, external functions renamed, otherwise unmodified
    import from lwt, A.H. *)
 
+#include "config.inc"
 open Bigarray
 
 type t = (char, int8_unsigned_elt, c_layout) Array1.t
@@ -31,7 +32,7 @@ type t = (char, int8_unsigned_elt, c_layout) Array1.t
 let create size = Array1.create char c_layout size
 let length bytes = Array1.dim bytes
 
-external unsafe_fill : t -> int -> int -> char -> unit = "uwt_unix_fill_bytes" "noalloc"
+external unsafe_fill : t -> int -> int -> char -> unit = "uwt_unix_fill_bytes" NOALLOC
 
 (*
 custom noalloc wrappers seem to be faster than the more general solution
@@ -44,8 +45,8 @@ external set : t -> int -> char -> unit = "%caml_ba_set_1"
 external unsafe_get : t -> int -> char = "%caml_ba_unsafe_ref_1"
 external unsafe_set : t -> int -> char -> unit = "%caml_ba_unsafe_set_1"
 *)
-external unsafe_get: t -> int -> char = "uwt_unix_unsafe_getbuf" "noalloc"
-external unsafe_set: t -> int -> char -> unit = "uwt_unix_unsafe_setbuf" "noalloc"
+external unsafe_get: t -> int -> char = "uwt_unix_unsafe_getbuf" NOALLOC
+external unsafe_set: t -> int -> char -> unit = "uwt_unix_unsafe_setbuf" NOALLOC
 
 let get b i =
   if i < 0 || i >= Array1.dim b then
@@ -67,9 +68,9 @@ let fill bytes ofs len ch =
    | Blitting                                                        |
    +-----------------------------------------------------------------+ *)
 
-external unsafe_blit_from_bytes : Bytes.t -> int -> t -> int -> int -> unit = "uwt_unix_blit_from_bytes" "noalloc"
-external unsafe_blit_to_bytes : t -> int -> Bytes.t -> int -> int -> unit = "uwt_unix_blit_to_bytes" "noalloc"
-external unsafe_blit : t -> int -> t -> int -> int -> unit = "uwt_unix_blit" "noalloc"
+external unsafe_blit_from_bytes : Bytes.t -> int -> t -> int -> int -> unit = "uwt_unix_blit_from_bytes" NOALLOC
+external unsafe_blit_to_bytes : t -> int -> Bytes.t -> int -> int -> unit = "uwt_unix_blit_to_bytes" NOALLOC
+external unsafe_blit : t -> int -> t -> int -> int -> unit = "uwt_unix_blit" NOALLOC
 
 let blit_from_bytes src_buf src_ofs dst_buf dst_ofs len =
   if (len < 0
