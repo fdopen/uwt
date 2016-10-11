@@ -191,9 +191,17 @@ let l = [
   ("symlink/lstat">::
    fun ctx ->
      no_win ctx;
+     Common.skip_no_symlinks_rights ctx;
      let a = tmpdir () // "a"
      and d = tmpdir () // "d" in
-     m_equal () (fun () -> symlink ~src:a ~dst:d ());
+     let t = match symlink ~src:a ~dst:d () with
+     | (Error (EPERM|ENOSYS)) as x when Sys.win32 ->
+       Common.no_symlinks_rights := true;
+       Common.skip_no_symlinks_rights ctx;
+       x
+     | x -> x
+     in
+     assert_equal (Ok ()) t;
      m_equal true (fun () -> lstat d >>= fun s -> return (
          Common.D.qstat s && s.st_kind = S_LNK));
      m_equal a (fun () -> readlink d);

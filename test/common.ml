@@ -211,3 +211,9 @@ let stream_read_own_test t =
 let uv_version = Uwt.Misc.version ()
 let uv_minor = uv_version.Uwt.Misc.minor
 let uv_major = uv_version.Uwt.Misc.major
+
+let no_symlinks_rights = ref false
+let skip_no_symlinks_rights ctx =
+  OUnit2.skip_if
+    (all ctx = false && !no_symlinks_rights)
+    "no rights to create symlinks"

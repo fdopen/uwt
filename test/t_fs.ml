@@ -93,6 +93,19 @@ let random_bytes_length = 228_409
 let random_bytes = rbytes_create random_bytes_length
 
 let (//) = Filename.concat
+
+let skip_if_symlink_error ctx f =
+  Lwt.catch ( fun () ->
+      Lwt.catch (fun () -> f ())
+        (function
+        | Unix.Unix_error((Unix.EPERM|Unix.ENOSYS),"symlink",_) as x
+          when Sys.win32 ->
+          no_symlinks_rights := true;
+          skip_no_symlinks_rights ctx;
+          Lwt.fail x;
+        | x -> Lwt.fail x) )
+    (fun x -> Lwt.fail x)
+
 let l = [
   ("mkdtemp">::
    fun _ctx ->
@@ -151,10 +164,11 @@ let l = [
      m_equal files (scandir (tmpdir()) >|= fun s -> Array.sort compare s ; s));
   ("symlink/lstat">::
    fun ctx ->
-     no_win ctx;
+     skip_no_symlinks_rights ctx;
      let a = tmpdir () // "a"
      and d = tmpdir () // "d" in
-     m_equal () (symlink ~src:a ~dst:d ());
+     m_equal ()
+       (skip_if_symlink_error ctx (fun () -> symlink ~src:a ~dst:d ()));
      m_equal true (lstat d >|= fun s -> D.qstat s && s.st_kind = S_LNK);
      m_equal a (readlink d);
      m_equal () (unlink d));
@@ -270,6 +284,7 @@ let l = [
      cancel_test f);
   ("realpath">::
    fun ctx ->
+     skip_no_symlinks_rights ctx;
      let t = realpath "." >>= fun p1 ->
        Uwt.Unix.getcwd () >|= fun p2 ->
        fln_cmp p1 p2 = 0
@@ -277,7 +292,7 @@ let l = [
      m_true t;
      no_win_xp ctx;
      let dst = tmpdir () // "link" in
-     let t =
+     let t = skip_if_symlink_error ctx @@ fun () ->
        realpath Sys.executable_name >>= fun src ->
        symlink ~src ~dst () >>= fun () ->
        Lwt.finalize
