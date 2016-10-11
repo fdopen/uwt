@@ -75,8 +75,15 @@ let copy_sendfile ~src ~dst =
         rexn ("open " ^ dst)
       in
       try_finally ( fun fdo ->
-          ignore (US.sendfile ~dst:fdo ~src:fdi () |> rexn "sendfile");
-        ) fdo ( fun fdo -> US.close fdo |> rexn ("close " ^ dst) ) fdo
+          let total_length = US.(((fstat fdi) |> rexn "fstat").st_size) in
+          let rec iter pos =
+            if Int64.sub total_length pos <= Int64.zero then () else
+            let i = US.sendfile ~pos ~dst:fdo ~src:fdi ()
+                    |> rexn "sendfile" in
+            iter @@ Int64.add pos @@ Int64.of_nativeint i
+          in
+          iter Int64.zero
+        ) fdo (fun fdo -> US.close fdo |> rexn ("close " ^ dst)) fdo
     )
     fdi ( fun fdi -> US.close fdi |> rexn ("close " ^ src) ) fdi
 

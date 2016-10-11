@@ -51,8 +51,16 @@ let copy_ba ~src ~dst =
 let copy_sendfile ~src ~dst =
   with_file ~mode:[ O_RDONLY ] src @@ fun fd_read ->
   with_file ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] dst @@ fun fd_write ->
-  Uwt.Fs.sendfile ~dst:fd_write ~src:fd_read () >>= fun _i ->
-  Lwt.return_unit
+  Uwt.Fs.fstat fd_read >>= fun x ->
+  let total_length = x.Uwt.Fs.st_size in
+  let rec iter pos =
+    if Int64.sub total_length pos <= Int64.zero then
+      Lwt.return_unit
+    else
+      Uwt.Fs.sendfile ~pos ~dst:fd_write ~src:fd_read () >>= fun i ->
+      iter @@ Int64.add pos @@ Int64.of_nativeint i
+  in
+  iter Int64.zero
 
 let () =
   let files = ref []
