@@ -43,11 +43,15 @@ section
 	btest: $(LOCKH) $(TEST_PROG)
 		./test.run
 
-clean::
-	clean-helper()
-	rm -f *.tar* *.cache *.log *.data
+if $(equal $(INTERNAL_LIBUV),$(EMPTY))
+	clean::
+		clean-helper()
+else
+	clean::
+		clean-helper-keep($(basename $(INTERNAL_LIBUV)))
 
 distclean:: clean
-	rm -f *~ .*~
+	clean-helper()
+	rm -f *~ $(basename $(INTERNAL_LIBUV))
 
 all:: build-tests

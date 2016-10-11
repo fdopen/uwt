@@ -86,11 +86,14 @@ example(preemptive)
 example(log)
 example_s(copy_sync)
 
-clean::
-	clean-helper()
-	rm -f oUnit*.log setup.data setup.log *.tar*
+if $(equal $(INTERNAL_LIBUV),$(EMPTY))
+	clean::
+		clean-helper()
+else
+	clean::
+		clean-helper-keep($(basename $(INTERNAL_LIBUV)))
 
 distclean:: clean
-	rm -f *~ .*~
+	rm -f *~ .*~ $(basename $(INTERNAL_LIBUV))
 
 all: examples

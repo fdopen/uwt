@@ -4,21 +4,25 @@
 CC= $(OCAMLC_CC)
 CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS)
 
+if $(not $(equal $(INTERNAL_LIBUV),$(EMPTY)))
+	$(basename $(INTERNAL_LIBUV)):
+		ln-or-cp $(INTERNAL_LIBUV) $(basename $(INTERNAL_LIBUV))
+
 if $(equal $(OSTYPE),Win32)
 	configure config.h.in: configure.ac
 		if $(or $(not $(file-exists configure)),$(not $(file-exists config.h.in)))
 			sh.exe autoreconf -fi
 		else
 			touch configure config.h.in
-	config.h config.inc: config.h.in configure config.inc.in
+	config.h config.inc: config.h.in configure config.inc.in $(basename $(INTERNAL_LIBUV))
 		sh.exe configure CC="$(OCAMLC_CC)" CFLAGS="$(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS) $(LDFLAGS_LIBUV)"
 else
 	configure config.h.in: configure.ac
 		if $(or $(not $(file-exists configure)),$(not $(file-exists config.h.in)))
 			autoreconf -fi
 		else
-			touch configure config.h.in
-	config.h config.inc: config.h.in configure config.inc.in
+			touch configure config.h.in 
+	config.h config.inc: config.h.in configure config.inc.in $(basename $(INTERNAL_LIBUV))
 		./configure CC="$(OCAMLC_CC)" CFLAGS="$(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS) $(LDFLAGS_LIBUV)"
 
 clean::
@@ -126,7 +130,7 @@ ConfReplace(META)
 section
 	x=$(UWT_BASE) $(UV_SYNC) uwt-worker.h uwt-error.h
 	y=$(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE)
-	if $(INTERNAL_LIBUV)
+	if $(not $(equal $(INTERNAL_LIBUV),$(EMPTY)))
 		export
 		x+=libuv$(EXT_LIB) $(glob ../libuv-v$(LIBUV_VERSION)/include/*.h)
 	if $(equal $(HAVE_LWT), true)
@@ -134,12 +138,16 @@ section
 	else
 		Install_helper($(PROJNAME),$(x),$(EMPTY))
 
-clean::
-	clean-helper()
-	rm -f oUnit*.log setup.data setup.log *.tar*
+if $(equal $(INTERNAL_LIBUV),$(EMPTY))
+	clean::
+		clean-helper()
+else
+	clean::
+		clean-helper-keep($(basename $(INTERNAL_LIBUV)))
 
 distclean:: clean
-	rm -f *~
+	clean-helper()
+	rm -f *~ $(basename $(INTERNAL_LIBUV))
 
 if $(equal $(HAVE_LWT), true)
 	lib:: lwtlib

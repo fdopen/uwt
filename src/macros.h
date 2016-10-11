@@ -121,7 +121,7 @@
 #define DEBUG_PF_R(n,...)                       \
   DEBUG_PF_RR(n,__VA_ARGS__)
 
-#ifdef NDEBUG
+#if (!defined(UWT_DEBUG) || !UWT_DEBUG) || defined(_MSC_VER)
 #define DEBUG_PF(...)
 #else
 #define DEBUG_PF(...)                           \
@@ -228,7 +228,7 @@
 # elif defined  _S_IFIFO
 #  define S_IFIFO _S_IFIFO
 # else
-#  define S_IFIFO 0
+#  define S_IFIFO (S_IFREG | S_IFCHR)
 # endif
 #endif
 
@@ -238,7 +238,7 @@
 # elif defined _S_IFSOCK
 #  define S_IFSOCK _S_IFSOCK
 # else
-#  define S_IFSOCK 0
+#  define S_IFSOCK (S_IFDIR | S_IFCHR)
 # endif
 #endif
 

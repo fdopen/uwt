@@ -11,14 +11,19 @@ include OMakeCFLAGS
 LIBUV_VERSION=1.9.1
 CompileLibuv()=
 	if $(equal $(OSTYPE),Win32)
-		x=$(shell-code sh libuv-compile.sh "$(LIBUV_VERSION)" "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" false)
+		x=$(shell-code sh libuv-compile.sh "$(LIBUV_VERSION)" "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" false "$(OCAMLC_SYSTEM)")
 		if $(not $(eq $(x), 0))
 			y[]=
 			return($(y))
-		LIBUV_LDFLAGS[]=-luv -ladvapi32 -liphlpapi -lpsapi -lshell32 -luserenv -lws2_32
+		if $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64))
+			LIBUV_LDFLAGS[]=libuv.lib advapi32.lib iphlpapi.lib psapi.lib shell32.lib userenv.lib ws2_32.lib user32.lib
+			export
+		else
+			LIBUV_LDFLAGS[]=-luv -ladvapi32 -liphlpapi -lpsapi -lshell32 -luserenv -lws2_32 -luser32
+			export
 		return($(LIBUV_LDFLAGS))
 	else
-		x=$(shell-code ./libuv-compile.sh "$(LIBUV_VERSION)" "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" true)
+		x=$(shell-code ./libuv-compile.sh "$(LIBUV_VERSION)" "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" true "$(OCAMLC_SYSTEM)")
 		if $(not $(eq $(x), 0))
 			y[]=
 			return($(y))
@@ -35,22 +40,26 @@ static.=
 	if $(equal $(PATH_PKG_CONFIG), false)
 		PATH_PKG_CONFIG=$(Check_prog_in_path pkgconf)
 		export
-	x=$(pkg_config LIBUV,libuv)
-	x=
-		if $(not $(x))
+	pkg_config_libuv=$(pkg_config LIBUV,libuv)
+	pkg_config_libuv=
+		if $(not $(pkg_config_libuv))
 			value false
 		else
 			value $(pkg_config_between_vers LIBUV,libuv,1.0,2.0)
-	force=
-		x=
-			try
-				value $(getvar BUILD_LIBUV)
-			default
-				value $''0''
+	force_internal=
+		x=$(GetVarEnv BUILD_LIBUV)
 		value $(or $(equal $(x),$'1'), $(equal $(x),$'true'))
-	if $(and $(x), $(not $(force)))
+	LIBUV_CFLAGS=$(GetVarEnv LIBUV_CFLAGS)
+	LIBUV_LDFLAGS=$(GetVarEnv LIBUV_LDFLAGS)
+	# BUILD_LIBUV comes first, then LIBUV_CFLAGS / LIBUV_LDFLAGS are picked from the environment, then pkg-config
+	if $(and $(not $(force_internal)), $(or $(not $(equal $(LIBUV_LDFLAGS),$(EMPTY))), $(not $(equal $(LIBUV_CFLAGS),$(EMPTY)))))
+		CFLAGS_LIBUV=$(LIBUV_CFLAGS)
+		LDFLAGS_LIBUV=$(LIBUV_LDFLAGS)
+		INTERNAL_LIBUV=$(EMPTY)
+		export CFLAGS_LIBUV LDFLAGS_LIBUV INTERNAL_LIBUV
+	elseif $(and $(pkg_config_libuv), $(not $(force_internal)))
 		export
-		INTERNAL_LIBUV=false
+		INTERNAL_LIBUV=$(EMPTY)
 	else
 		x=
 			try
@@ -64,32 +73,45 @@ static.=
 		LDFLAGS_LIBUV=$(CompileLibuv )
 		if $(eq 0, $(LDFLAGS_LIBUV.length))
 			$(ConfMsgError $''couldn't compile libuv'')
-		LDFLAGS_LIBUV[]=-L. $(LDFLAGS_LIBUV)
+		if $(not $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64)))
+			LDFLAGS_LIBUV[]=-L. $(LDFLAGS_LIBUV)
+			export
 		CFLAGS_LIBUV=
 			x=$(absname libuv-v$(LIBUV_VERSION)/include)
-			if $(equal $(OSTYPE),Win32)
+			if $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64))
+				value -I$(x)
+			elseif $(equal $(OSTYPE),Win32)
 				value -I$(shell cygpath "$(x)")
 			else
 				value -I$(x)
-		INTERNAL_LIBUV=true
+		if $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64))
+			INTERNAL_LIBUV=$(file libuv-v$(LIBUV_VERSION)/Release/lib/libuv.lib)
+			export
+		elseif $(or $(equal $(OCAMLC_SYSTEM),mingw), $(equal $(OCAMLC_SYSTEM),mingw64))
+			INTERNAL_LIBUV=$(file libuv-v$(LIBUV_VERSION)/libuv.a)
+			export
+		else
+			INTERNAL_LIBUV=$(file libuv-v$(LIBUV_VERSION)/.libs/libuv.a)
+			export
 		export CFLAGS_LIBUV LDFLAGS_LIBUV INTERNAL_LIBUV
 	HAVE_LWT=
 		t=$(shell-code $(OCAMLFIND) query lwt >$(NULL_DEVICE))
 		value $(if $(equal $(t),0), true, false)
-	x=$(Check_prog_in_path cppo)
-	if $(equal $(x), false)
+	if $(equal $(Check_prog_in_path cppo), false)
 		$(ConfMsgError $''cppo missing'')
 	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))
 		export
-		OCAMLFLAGS= -g -bin-annot -strict-sequence -principal -safe-string -w A-3-4 #-32-33-37-39-48-4 -warn-error A-32-33-37-39-48-4
-		CFLAGS= $(DEVCFLAGS)
+		OCAMLFLAGS= -g -bin-annot -strict-sequence -principal -safe-string -w A-3-4
+		CFLAGS= $(CFLAGS) $(DEVCFLAGS)
 	else
 		export
 		# omake sets OCAMLFLAGS to '-warn-error A' by default which usually
 		# breaks compilation every time a new ocaml version is released
 		OCAMLFLAGS= -g -bin-annot -safe-string
-		CFLAGS= -O2 -g
-	export OCAMLFLAGS CFLAGS LDFLAGS_LIBUV CFLAGS_LIBUV INTERNAL_LIBUV
+		if $(not $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64)))
+			CFLAGS= $(CFLAGS) -O2 -g
+			export
+	export OCAMLFLAGS CFLAGS LDFLAGS_LIBUV CFLAGS_LIBUV INTERNAL_LIBUV HAVE_LWT INTERNAL_LIBUV
 
 ConfReplace(_oasis)
 
