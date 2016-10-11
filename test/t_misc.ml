@@ -119,6 +119,8 @@ let l = [
         let x1 = Filename.is_relative x
         and x2 = Filename.is_relative Sys.executable_name in
         skip_if_not_all ctx (x1 <> x2) "exepath not tracked";
+        skip_if_not_all ctx (x = Sys.executable_name ^ ".run")
+          "bytecode doesn't handle symlinks";
         assert_equal Sys.executable_name x );
   ("win_version">:: fun _ ->
       let v = Uwt_base.Sys_info.win_version () in
