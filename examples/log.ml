@@ -2,7 +2,7 @@ open Lwt.Infix
 
 let section =
   let s = Uwt_log.Section.make "uwt" in
-  Uwt_log.Section.set_level s Lwt_log.Info;
+  Uwt_log.Section.set_level s Lwt_log_core.Info;
   s
 
 let init_logging () =
