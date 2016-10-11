@@ -161,19 +161,20 @@ uwt_unix_unsafe_getbuf(value val_buf, value val_ofs)
 #define UBSWAP8(x) bswap64(x)
 #endif
 
-#elif defined(BSWAP_64)
+#elif defined(BSWAP_64) &&  defined(__sun)
 // Solaris 10 defines BSWAP_{16,32,64} in <sys/byteorder.h>
-#ifndef UBSWAP2
-#define UBSWAP2(x) UBSWAP_16(x)
+#if !defined(UBSWAP2) && defined(BSWAP_16)
+#define UBSWAP2(x) BSWAP_16(x)
 #endif
-#ifndef UBSWAP4
-#define UBSWAP4(x) UBSWAP_32(x)
+#if !defined(UBSWAP4) && defined(BSWAP_32)
+#define UBSWAP4(x) BSWAP_32(x)
 #endif
-#ifndef UBSWAP8
-#define UBSWAP8(x) UBSWAP_64(x)
+#if !defined(UBSWAP8)
+#define UBSWAP8(x) BSWAP_64(x)
 #endif
+#endif /* ifdef _MSC_VER elif ... */
+#endif /* !defined(UBSWAP2) || !defined(UBSWAP4) || !defined(UBSWAP8) */
 
-#else
 #ifndef UBSWAP2
 static FORCE_INLINE uint16_t UBSWAP2(uint16_t x){
   return (x << 8) | (x >> 8);
@@ -193,8 +194,6 @@ static FORCE_INLINE uint64_t UBSWAP8(uint64_t x){
 }
 #endif
 
-#endif /* else */
-#endif /* !defined(UBSWAP2) || !defined(UBSWAP4) || !defined(UBSWAP8) */
 
 #ifdef ENDIAN_BIG
 #define SWAP_CODE 1
