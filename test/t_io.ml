@@ -96,6 +96,89 @@ let l = [
      for _i = 0 to 3 do
        m_true (line_test_disk ~max_line_len:270_000 ~max_lines:3);
      done);
+  ("read_write_types">::
+   fun _ ->
+     let rw ?(cmp=Pervasives.compare) read write random type_len =
+       let len = 1024 in
+       let ba = Uwt_bytes.create (len * type_len) in
+       let bi = Uwt_io.of_bytes ~mode:Uwt_io.input ba
+       and bo = Uwt_io.of_bytes ~mode:Uwt_io.output ba in
+       let rec iter i =
+         if i = 0 then Lwt.return_true else
+         let v = random () in
+         write bo v >>= fun () ->
+         read bi >>= fun v' ->
+         assert_equal 0 (cmp v v');
+         iter (pred i)
+       in
+       iter len
+     in
+     let test (module X : Uwt_io.NumberIO) =
+       let random () =
+         let max =
+           if Sys.word_size > 32 then
+             Int32.max_int
+           else
+             Int32.of_int max_int
+         in
+         let x = Random.int32 max |> Int32.to_int in
+         match Random.int 2 with
+         | 0 -> x
+         | _ -> x * (-1)
+       in
+       m_true (rw X.read_int X.write_int random 4);
+
+       let random () =
+         let x = Random.int 0x7fff in
+         match Random.int 2 with
+         | 0 -> x
+         | _ -> x * (-1)
+       in
+       m_true (rw X.read_int16 X.write_int16 random 2);
+
+       let random () =
+         let x = Random.int32 Int32.max_int in
+         match Random.int 2 with
+         | 0 -> x
+         | _ -> Int32.mul x (Int32.of_int (-1))
+       in
+       m_true (rw X.read_int32 X.write_int32 random 4);
+
+       let random () =
+         let x = Random.int64 Int64.max_int in
+         match Random.int 2 with
+         | 0 -> x
+         | _ -> Int64.mul x (Int64.of_int (-1))
+       in
+       m_true (rw X.read_int64 X.write_int64 random 8);
+
+       let random x () =
+         let x = Random.float x in
+         match Random.int 2 with
+         | 0 -> x
+         | _ -> x *. (-1.)
+       in
+       let cmp a b =
+         if a = b then 0 else
+         let abs_a = abs_float a in
+         let abs_b = abs_float b in
+         let diff = abs_float ( a -. b ) in
+         let epsilon = 1.1e-7 in
+         if diff /. (min (abs_a +. abs_b) max_float) < epsilon then 0
+         else compare a b
+       in
+       m_true (rw ~cmp X.read_float64 X.write_float64 (random max_float) 8);
+       m_true (rw ~cmp X.read_float64 X.write_float64 (random 1.e7) 8);
+       m_true (rw ~cmp X.read_float64 X.write_float64 (random 1.e-3) 8);
+
+       let fmax = 3.40282346638528859812e+38 in
+       m_true (rw ~cmp X.read_float32 X.write_float32 (random fmax) 4);
+       m_true (rw ~cmp X.read_float32 X.write_float32 (random 1.e7) 4);
+       m_true (rw ~cmp X.read_float32 X.write_float32 (random 1.e-3) 4);
+     in
+     test (module Uwt_io.LE);
+     test (module Uwt_io.BE);
+  );
 ]
 
 let l = "Io">:::l

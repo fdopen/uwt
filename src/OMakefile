@@ -59,7 +59,7 @@ section
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+=$(LDFLAGS_LIBUV)
 	section
-		OCAMLFINDFLAGS+= -pp cppo
+		OCAMLFINDFLAGS+= -pp "cppo -V OCAML:$(OCAMLC_VERSION)"
 		Repeat_targets($(CPPOFILES))
 	Repeat_targets($(MLFILES))
 	UWT_BASE=$(MixedLibrary uwt-base, $(CPPOFILES) $(MLFILES), $(CFILES))
@@ -70,7 +70,7 @@ section
 	.SCANNER: scan-ocaml-%: config.inc
 	MLFILES= uv_fs_sync
 	OCAML_LIBS+= uwt-base
-	OCAMLFINDFLAGS+= -pp cppo
+	OCAMLFINDFLAGS+= -pp "cppo -V OCAML:$(OCAMLC_VERSION)"
 	Repeat_targets($(MLFILES))
 	UV_SYNC=$(MOCamlLibrary uv-fs-sync, $(MLFILES))
 	minimal:: $(UV_SYNC)
@@ -80,7 +80,7 @@ lwtlib:: minimal
 
 section
 	.SCANNER: scan-ocaml-%: config.inc
-	OCAMLFINDFLAGS+= -pp cppo
+	OCAMLFINDFLAGS+= -pp "cppo -V OCAML:$(OCAMLC_VERSION)"
 	OCAMLPACKS+= lwt
 	MLFILES= uwt
 	OCAML_LIBS+= uwt-base
@@ -97,7 +97,7 @@ section
 	CPPOFILES= uwt_io uwt_process
 	Repeat_targets($(FILES))
 	section
-		OCAMLFINDFLAGS+= -pp cppo
+		OCAMLFINDFLAGS+= -pp "cppo -V OCAML:$(OCAMLC_VERSION)"
 		Repeat_targets($(CPPOFILES))
 	UWT_EXT=$(MOCamlLibrary uwt-ext, $(FILES) $(CPPOFILES))
 	lwtlib:: $(UWT_EXT)

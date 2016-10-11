@@ -1036,14 +1036,27 @@ struct
       Uwt_bytes.t -> int -> bool -> int = "uwt_unix_read_int" "noalloc"
     external read_int16:
       Uwt_bytes.t -> int -> bool -> int = "uwt_unix_read_int16" "noalloc"
+#if OCAML_VERSION >= (4, 03, 0)
+#define UNBOXED(x) (x [@unboxed])
+#define UNBOXED_FUN(x) STRINGIFY(x) STRINGIFY(CONCAT(x,_native))
+#define NOALLOC430 [@@noalloc]
+#else
+#define UNBOXED(x) x
+#define UNBOXED_FUN(x) STRINGIFY(x)
+#define NOALLOC430
+#endif
     external read_int32:
-      Uwt_bytes.t -> int -> bool -> int32 = "uwt_unix_read_int32"
+      Uwt_bytes.t -> int -> bool -> UNBOXED(int32) =
+      UNBOXED_FUN(uwt_unix_read_int32) NOALLOC430
     external read_int64:
-      Uwt_bytes.t -> int -> bool -> int64 = "uwt_unix_read_int64"
+      Uwt_bytes.t -> int -> bool -> UNBOXED(int64) =
+      UNBOXED_FUN(uwt_unix_read_int64) NOALLOC430
     external read_float32:
-      Uwt_bytes.t -> int -> bool -> float = "uwt_unix_read_float32"
+      Uwt_bytes.t -> int -> bool -> UNBOXED(float) =
+      UNBOXED_FUN(uwt_unix_read_float32) NOALLOC430
     external read_float64:
-      Uwt_bytes.t -> int -> bool -> float = "uwt_unix_read_float64"
+      Uwt_bytes.t -> int -> bool -> UNBOXED(float) =
+      UNBOXED_FUN(uwt_unix_read_float64) NOALLOC430
 
     let read_int ic =
       read_block_unsafe ic 4
@@ -1080,17 +1093,17 @@ struct
       Uwt_bytes.t -> pos:int -> int -> bool -> unit =
       "uwt_unix_write_int16" "noalloc"
     external write_int32:
-      Uwt_bytes.t -> pos:int -> int32 -> bool -> unit =
-      "uwt_unix_write_int32" "noalloc"
+      Uwt_bytes.t -> pos:int -> UNBOXED(int32) -> bool -> unit =
+      UNBOXED_FUN(uwt_unix_write_int32) "noalloc"
     external write_int64:
-      Uwt_bytes.t -> pos:int -> int64 -> bool -> unit =
-      "uwt_unix_write_int64" "noalloc"
+      Uwt_bytes.t -> pos:int -> UNBOXED(int64) -> bool -> unit =
+      UNBOXED_FUN(uwt_unix_write_int64) "noalloc"
     external write_float32:
-      Uwt_bytes.t -> pos:int -> float -> bool -> unit =
-      "uwt_unix_write_float32" "noalloc"
+      Uwt_bytes.t -> pos:int -> UNBOXED(float) -> bool -> unit =
+      UNBOXED_FUN(uwt_unix_write_float32) "noalloc"
     external write_float64:
-      Uwt_bytes.t -> pos:int -> float -> bool -> unit =
-      "uwt_unix_write_float64" "noalloc"
+      Uwt_bytes.t -> pos:int -> UNBOXED(float) -> bool -> unit =
+      UNBOXED_FUN(uwt_unix_write_float64) "noalloc"
 
     let write_int oc v =
       write_block_unsafe oc 4

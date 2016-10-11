@@ -30,7 +30,7 @@ depends: [
   "conf-pkg-config" {build}
   "ocamlfind" {build}
   "conf-libuv" # pin only, deptops for releases
-  "cppo" {build}
+  "cppo" {build & >= "1.3"}
   "omake" {build}
   "result"
   "lwt" {test}
