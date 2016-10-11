@@ -1350,6 +1350,17 @@ let with_file ?buffer ?flags ?perm ~mode filename f =
 
 let file_length filename = with_file ~mode:input filename length
 
+let close_socket s =
+  if Uwt.Stream.(is_writable s = false || write_queue_size s <= 0) then (
+    Uwt.Stream.close_noerr s; Lwt.return_unit )
+  else
+    Lwt.finalize ( fun () ->
+        Lwt.catch (fun () -> Uwt.Stream.shutdown s) (function
+          (* This may happen if the server closed the connection before us *)
+          | Unix.Unix_error(Unix.ENOTCONN,_,_) -> Lwt.return_unit
+          | x -> Lwt.fail x )
+    ) ( fun () -> Uwt.Stream.close_noerr s; Lwt.return_unit )
+
 let invalid_path="\x00"
 let open_connection ?in_buffer ?out_buffer sockaddr =
   let path = ref invalid_path in
@@ -1369,19 +1380,7 @@ let open_connection ?in_buffer ?out_buffer sockaddr =
   match o_stream with
   | E.Exn s -> Lwt.fail s
   | E.Ok stream ->
-    let close = lazy begin
-      Lwt.finalize ( fun () ->
-          if Uwt.Stream.is_writable stream &&
-             Uwt.Stream.write_queue_size stream > 0 then
-            Lwt.catch ( fun () ->
-                Uwt.Stream.shutdown stream
-              ) ( function
-              | Unix.Unix_error(Unix.ENOTCONN,_,_) -> Lwt.return_unit
-              | x -> Lwt.fail x )
-          else
-            Lwt.return_unit
-        ) ( fun () -> Uwt.Stream.close_noerr stream; Lwt.return_unit )
-    end in
+    let close = lazy (close_socket stream) in
     Lwt.catch (fun () ->
         let t =
           if !path != invalid_path then
@@ -1405,11 +1404,13 @@ let open_connection ?in_buffer ?out_buffer sockaddr =
         Lwt.return (a,b)
       ) ( fun exn -> Uwt.Stream.close_noerr stream; Lwt.fail exn)
 
+let close_once c = if c.state = Closed then Lwt.return_unit else close c
+
 let with_connection ?in_buffer ?out_buffer sockaddr f =
-  open_connection ?in_buffer ?out_buffer sockaddr >>= fun (ic, oc) ->
-  Lwt.finalize
-    (fun () -> f (ic, oc))
-    (fun () -> close ic <&> close oc)
+  open_connection ?in_buffer ?out_buffer sockaddr >>= fun ((ic, oc) as chs) ->
+  (* If the user already tried to close the socket and got an exception, we
+     don't want to raise that exception again during implicit close. *)
+  Lwt.finalize (fun () -> f chs) (fun () -> close_once ic <&> close_once oc)
 
 type server = {
   shutdown : unit Lazy.t;
@@ -1418,10 +1419,8 @@ type server = {
 
 let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) addr f =
   let f_cb s_client =
-    let close () =
-      Uwt.Stream.close_noerr s_client;
-      Lwt.return_unit
-    in
+    let close = lazy (close_socket s_client) in
+    let close () = Lazy.force close in
     let buffer = Uwt_bytes.create buffer_size in
     let ic = of_stream ~close ~buffer ~mode:input s_client in
     let buffer = Uwt_bytes.create buffer_size in
@@ -1432,22 +1431,8 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) addr f =
       let () = Uwt.Stream.close_noerr server in
       raise (Uwt.Int_result.to_exn ~name:"listen" er)
     else
-      let shutdown () =
-        if Uwt.Stream.write_queue_size server <= 0 then
-          Uwt.Stream.close_noerr server
-        else
-          let t =
-            Lwt.finalize
-              (fun () -> Uwt.Stream.shutdown server )
-              (fun () -> Uwt.Stream.close_noerr server ; Lwt.return_unit)
-          in
-          ignore t
-
-      in
-      {
-        shutdown = Lazy.from_fun shutdown;
-        server = server
-      } in
+      { server ; shutdown = lazy (Uwt.Stream.close_noerr server) }
+  in
   match addr with
   | Unix.ADDR_UNIX path ->
     let server = Uwt.Pipe.init () in
@@ -1481,6 +1466,30 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) addr f =
     in
     let er = Uwt.Tcp.listen server ~max:backlog ~cb in
     f_es s_server er
+
+let establish_server_safe ?buffer_size ?backlog addr f =
+  let f ((ic,oc) as channels) =
+    let s_close s c =
+      if s || c.state = Closed then Lwt.return_unit else
+        Lwt.catch
+          (fun () -> close c)
+          (fun x -> !Lwt.async_exception_hook x; Lwt.return_unit)
+    in
+    Lwt.async (fun () ->
+        let ic_closed = ref false
+        and oc_closed = ref false in
+        Lwt.catch (fun () ->
+            f channels >>= fun () ->
+            ic_closed := true;
+            close_once ic >>= fun () ->
+            oc_closed := true;
+            close_once oc )
+          (fun x ->
+             s_close !ic_closed ic >>= fun () ->
+             s_close !oc_closed oc >>= fun () ->
+             Lwt.fail x ))
+  in
+  establish_server ?buffer_size ?backlog addr f
 
 let shutdown_server server = Lazy.force server.shutdown
 
