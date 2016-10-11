@@ -7,7 +7,6 @@ let server_backlog = 8
 let server6_port = 9006
 let server6_ip = "::1"
 
-module U = Uwt
 open Uwt.Tcp
 open Common
 

@@ -155,7 +155,10 @@ let l = [
           let tdir' = Uwt_base.Misc.cwd () in
           assert_equal (Ok tdir) (tdir')
         ) tdir ( fun o_dir ->
-          Uwt_base.Misc.chdir o_dir ) o_dir );
+          let e = Uwt_base.Misc.chdir o_dir in
+          if Uwt_base.Int_result.is_error e then
+            Uwt_base.Int_result.raise_exn ~name:"chdir" ~param:tdir e;
+        ) o_dir );
 ]
 
 let l = "Misc">:::l

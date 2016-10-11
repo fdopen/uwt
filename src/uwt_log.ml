@@ -114,12 +114,12 @@ let file ?(template="$(date): $(section): $(message)") ?(mode=`Append) ?(perm=0o
   Lwt.return (channel ~template ~close_mode:`Close ~channel:oc ())
 
 let level_code = function
-  | Fatal -> 0
-  | Error -> 3
-  | Warning -> 4
-  | Notice -> 5
-  | Info -> 6
-  | Debug -> 7
+  | Lwt_log_core.Fatal -> 0
+  | Lwt_log_core.Error -> 3
+  | Lwt_log_core.Warning -> 4
+  | Lwt_log_core.Notice -> 5
+  | Lwt_log_core.Info -> 6
+  | Lwt_log_core.Debug -> 7
 
 type syslog_facility =
     [ `Auth | `Authpriv | `Cron | `Daemon | `FTP | `Kernel

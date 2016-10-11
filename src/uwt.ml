@@ -75,12 +75,8 @@ type uv_run_mode =
   | Run_nowait
   (* | Run_default *)
 
-module Exception = struct
-
-  let add_exception (e:exn) = !Lwt.async_exception_hook e
-
-  let () = Callback.register "uwt.add_exception" add_exception
-end
+let add_exception_from_c (e:exn) = !Lwt.async_exception_hook e
+let () = Callback.register "uwt.add_exception" add_exception_from_c
 
 (* not sure, if I can leave it that simple. Lwt.wakeup will
    raise an exception, if the corresponding thread is neither sleeping
