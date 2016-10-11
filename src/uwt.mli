@@ -726,11 +726,12 @@ module Dns : sig
   *)
   val getaddrinfo :
     host:string -> service:string ->
-    getaddrinfo_option list -> addr_info list Lwt.t
+    getaddrinfo_option list -> addr_info list uv_result Lwt.t
 
   type getnameinfo_option = Unix.getnameinfo_option
 
-  val getnameinfo : sockaddr -> getnameinfo_option list -> Unix.name_info Lwt.t
+  val getnameinfo : sockaddr -> getnameinfo_option list ->
+    Unix.name_info uv_result Lwt.t
 end
 
 

@@ -482,21 +482,25 @@ module Lwt_unix = struct
   let getservbyport = help2n "getservbyport" UU.getservbyport
 
   let getaddrinfo host service (options:Unix.getaddrinfo_option list) =
-    Uwt.Dns.getaddrinfo ~host ~service options >>=fun l ->
-    let f a =
-      let open Unix in
-      { ai_family = a.Uwt.Dns.ai_family;
-        ai_socktype = a.Uwt.Dns.ai_socktype;
-        ai_protocol = a.Uwt.Dns.ai_protocol;
-        ai_canonname = a.Uwt.Dns.ai_canonname;
-        ai_addr = a.Uwt.Dns.ai_addr }
-    in
-    Lwt.return (List.map f l)
+    Uwt.Dns.getaddrinfo ~host ~service options >>=function
+    | Error _ -> Lwt.return_nil (* errors are ignored inside getaddrinfo.c *)
+    | Ok l->
+      let f a =
+        let open Unix in
+        { ai_family = a.Uwt.Dns.ai_family;
+          ai_socktype = a.Uwt.Dns.ai_socktype;
+          ai_protocol = a.Uwt.Dns.ai_protocol;
+          ai_canonname = a.Uwt.Dns.ai_canonname;
+          ai_addr = a.Uwt.Dns.ai_addr }
+      in
+      Lwt.return (List.map f l)
 
   let getaddrinfo = help3 getaddrinfo
 
   let getnameinfo addr l =
-    help2n "getnameinfo" Uwt.Dns.getnameinfo addr l
+    Uwt.Dns.getnameinfo addr l >>= function
+    | Error _ -> Lwt.fail Not_found
+    | Ok x -> Lwt.return x
 
   let pipe () =
     let fd1,fd2 = UU.pipe_exn () in

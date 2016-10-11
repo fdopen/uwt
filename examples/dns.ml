@@ -16,10 +16,17 @@ let get_infos (hosts:string list) =
   let s = ref [] in
   let help ip6 host =
     Lwt.catch ( fun () ->
-        getaddrinfo ~ip6 host >>= fun l ->
-        Lwt_list.map_p ( fun ai ->
-            Uwt.Dns.getnameinfo ai.ai_addr [] >>= fun ni ->
-            Lwt.return ({ ai ; ni }) ) l
+        getaddrinfo ~ip6 host >>= function
+        | Error x ->
+          Lwt.fail (Unix.Unix_error(Uwt.to_unix_error x,"getaddrinfo",host))
+        | Ok l ->
+          Lwt_list.map_p ( fun ai ->
+              Uwt.Dns.getnameinfo ai.ai_addr [] >>= function
+              | Ok ni -> Lwt.return ({ ai ; ni })
+              | Error x ->
+                let er = Uwt.to_unix_error x in
+                Lwt.fail (Unix.Unix_error(er,"getnameinfo",host))
+            ) l
         >>= fun l ->
         s := (host,l) :: ! s;
         Lwt.return_unit )

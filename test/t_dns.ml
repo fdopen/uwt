@@ -1,36 +1,27 @@
 open Common
 
-type 'a h =
-  | Exn of exn
-  | Ret of 'a
-
 open Lwt.Infix
-
-let help f =
-  Lwt.catch
-    ( fun () -> f () >>= fun s -> Lwt.return (Ret s) )
-    ( fun exn -> Lwt.return (Exn exn) )
 
 let getnameinfo x l =
   let module UD = Uwt.Dns in
-  help ( fun () -> UD.getnameinfo x l ) >>= function
-  | Exn ( Unix.Unix_error(Unix.ENOENT,_,_) as exn ) ->
-    let ok =
-      try ignore (Unix.getnameinfo x l); false with Not_found -> true
-    in
-    if ok then Lwt.return_none else Lwt.fail exn
-  | Exn x -> Lwt.fail x
-  | Ret x -> Lwt.return (Some x)
+  UD.getnameinfo x l >>= function
+  | Error Uwt.ENOENT ->
+    let ok = try ignore (Unix.getnameinfo x l); false with Not_found -> true in
+    if ok then Lwt.return_none
+    else Lwt.fail (Unix.Unix_error(Unix.ENOENT,"getnameinfo",""))
+  | Error x -> Lwt.fail (Unix.Unix_error(Uwt.to_unix_error x ,"getnameinfo",""))
+  | Ok x -> Lwt.return (Some x)
 
 let getaddrinfo ~host ~service opts =
   let module UD = Uwt.Dns in
   UD.getaddrinfo ~host ~service opts >>= function
-  | [] ->
+  | Ok [] ->
     if Unix.getaddrinfo host service opts = [] then
       Lwt.return []
     else
       Lwt.fail_with "nothing found"
-  | l -> Lwt.return l
+  | Ok l -> Lwt.return l
+  | Error x -> Lwt.fail (Unix.Unix_error(Uwt.to_unix_error x,"getaddrinfo",host))
 
 let dnstest ctx host =
   let module UD = Uwt.Dns in

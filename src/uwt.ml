@@ -1050,7 +1050,16 @@ module Dns = struct
     loop -> Req.t -> addr_info list cb -> Int_result.unit
     = "uwt_getaddrinfo_byte" "uwt_getaddrinfo_native"
 
+  (* getaddrinfo / getnameinfo return custom error codes.
+     Modify Req.ql as soon it happens more frequently  *)
+  let re_conv f =
+    Lwt.catch ( fun () -> f () >|= fun x -> Ok x )
+      (function
+      | Unix.Unix_error(e,_,_) -> Lwt.return (Error (of_unix_error e))
+      | x -> Lwt.fail x)
+
   let getaddrinfo ~host ~service options =
+    re_conv @@ fun () ->
     Req.ql
       ~typ:Req.Getaddr
       ~f:(getaddrinfo host service options)
@@ -1071,6 +1080,7 @@ module Dns = struct
     = "uwt_getnameinfo"
 
   let getnameinfo sock options =
+    re_conv @@ fun () ->
     Req.ql
       ~typ:Req.Getname
       ~f:(getnameinfo sock options)
