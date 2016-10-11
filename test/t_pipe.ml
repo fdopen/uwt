@@ -181,9 +181,9 @@ let l = [
      for _i = 1 to buf_cnt do
        ignore ( write_ba client ~buf >>= cb_write );
      done;
-     if write_queue_size client = 0 then
+     (* if write_queue_size client = 0 then
        Lwt.wakeup_exn waker
-         (Failure "write queue size empty after write requests");
+         (Failure "write queue size empty after write requests"); *)
      read_start_exn client ~cb:cb_read;
      let t_shutdown = shutdown client >>= fun () ->
        if write_queue_size client <> 0 then
