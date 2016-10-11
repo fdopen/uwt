@@ -27,7 +27,7 @@ let l = [
       let (x,y,z) = load_avg () in
       let t = match Sys.win32 with
       | true -> x >= 0. && y >= 0. && z >= 0.
-      | false -> x > 0. && y > 0. && z > 0.
+      | false -> x >= 0. && y > 0. && z > 0.
       in
       assert_equal true t);
   ("ip4_addr">:: fun _ ->
