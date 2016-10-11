@@ -166,17 +166,19 @@ let l = [
   ("getpwnam">::
    fun ctx ->
      no_win ctx;
+     let pwnam = "adfklXakja" in
+     m_raises (Unix.ENOENT,"getpwnam",pwnam)(
+       UU.getpwnam pwnam);
      let user =
        try U.getlogin () with U.Unix_error _ ->
-         try Sys.getenv "USER" with Not_found ->
-           Sys.getenv "USERNAME"
+       try Sys.getenv "USER" with Not_found ->
+       try Sys.getenv "USERNAME" with Not_found ->
+         OUnit2.skip_if (all ctx = false) "no user found";
+         ""
      in
      let s1 = runix U.getpwnam user in
      let s2 = ruwt @@ UUnix.getpwnam user in
-     adv_equal s1 s2;
-     let pwnam = "adfklXakja" in
-     m_raises (Unix.ENOENT,"getpwnam",pwnam)(
-       UU.getpwnam pwnam));
+     adv_equal s1 s2 );
   ("getpwuid">::
    fun ctx ->
      no_win ctx;
