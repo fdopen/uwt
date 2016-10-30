@@ -3800,6 +3800,9 @@ pipe_tcp_connect_cb(uv_connect_t* req, int status)
 CAMLprim value
 uwt_pipe_connect(value o_pipe,value o_path,value o_cb)
 {
+  /* linux: abstract sockets are currently not supported by libuv.
+     Therefore the test uwt_is_safe_string is correct.  Remember to
+     check it again with, if a new major versions of libuv is released */
   if ( !uwt_is_safe_string(o_path) ){
     return VAL_UWT_INT_RESULT_ECHARSET;
   }
