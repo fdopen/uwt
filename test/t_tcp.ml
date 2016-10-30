@@ -416,6 +416,101 @@ let l = [
      in
      let close_thread = close_wait client >|= fun () -> false in
      Lwt.pick [ close_thread ; write_thread ]);
+  ("read_zero">::
+   fun _ctx ->
+     (* reading zero bytes should not fail
+      * or distort the main loop *)
+     with_client_c4 @@ fun client ->
+     let blen = 8192 in
+     let buf1 = rba_create blen in
+     let write_thread = write_ba client ~buf:buf1 in
+     let b1 = Bytes.create 0 in
+     let cnt = ref 0 in
+     let f () =
+       incr cnt;
+       (if !cnt mod 2 = 1 then
+          read client ~buf:b1
+        else
+          read_ba ~len:0 ~buf:buf1 client)
+       >>= fun i ->
+       if i <> 0 then Lwt.fail_with "someting read"
+       else Lwt.return_unit
+     in
+     let rec iter n =
+       if n < 0 then Lwt.return_unit else
+       let v = ref false in
+       let t1 =
+         Lwt.pause () >>= fun () ->
+         v:=true;
+         Lwt.return_unit
+       in
+       let t2 =
+         f () >>= fun () ->
+         match !v with
+         | true -> Lwt.return_unit
+         | false -> Lwt.fail_with "read too fast"
+       in
+       Lwt.join [t1 ; t2] >>= fun () ->
+       iter (pred n)
+     in
+     iter 99 >>= fun () ->
+     let buf2 = Uwt_bytes.create blen in
+     let rec iter ~pos =
+       read_ba ~buf:buf2 ~pos client >>= fun i ->
+       let pos = pos + i in
+       if pos >= blen then
+         Lwt.return pos
+       else
+         iter ~pos
+     in
+     let read_thread = iter ~pos:0 in
+     write_thread >>= fun () ->
+     read_thread >>= fun i ->
+     if i = blen && buf1 = buf2 then
+       Lwt.return_true
+     else
+       Lwt.return_false);
+  ("write_zero">::
+   fun _ctx ->
+     (* writing zero bytes should not fail
+      * or distort the main loop *)
+     with_client_c4 @@ fun client ->
+     let blen = 131_072 in
+     let buf1 = rba_create blen in
+     let b1 = Bytes.create 0 in
+     let cnt = ref 0 in
+     let f () =
+       incr cnt;
+       if !cnt mod 2 = 1 then
+         write_raw_ba ~len:0 ~buf:buf1 client
+       else
+         write_raw ~buf:b1 client
+     in
+     let rec iter n =
+       if n < 0 then
+         Lwt.return_unit
+       else
+         f () >>= fun () ->
+         iter (pred n)
+     in
+     iter 99 >>= fun () ->
+     let write_t = write_ba client ~buf:buf1 in
+     let buf2 = Uwt_bytes.create blen in
+     let rec iter ~pos =
+       read_ba ~buf:buf2 ~pos client >>= fun i ->
+       let pos = pos + i in
+       if pos >= blen then
+         Lwt.return pos
+       else
+         iter ~pos
+     in
+     let read_t = iter ~pos:0 in
+     write_t >>= fun () ->
+     read_t >>= fun i ->
+     if i = blen && buf1 = buf2 then
+       Lwt.return_true
+     else
+       Lwt.return_false);
 ]
 
 let l  = "Tcp">:::l

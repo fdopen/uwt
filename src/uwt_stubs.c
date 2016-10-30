@@ -3104,13 +3104,19 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
       bool finished;
       h->read_waiting = 0;
       if ( nread < 0 ){
-        if ( nread == UV_EOF ){
+        if ( nread == UV_ENOBUFS && buf->len == 0 ){
           o = Val_long(0);
+          finished = false;
         }
         else {
-          o = Val_uwt_int_result(nread);
+          if ( nread == UV_EOF ){
+            o = Val_long(0);
+          }
+          else {
+            o = Val_uwt_int_result(nread);
+          }
+          finished = true;
         }
-        finished = true;
       }
       else {
         assert(buf->len >= (size_t)nread);

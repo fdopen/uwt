@@ -404,8 +404,6 @@ module Stream = struct
     in
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Stream.read")
-    else if len = 0 then
-      Lwt.return 0
     else
       let sleeper,waker = Lwt.task () in
       let (x: Int_result.unit) = read t buf pos len waker in
