@@ -103,6 +103,7 @@ P6(uwt_write2_native);
 BY(uwt_write2_byte);
 P5(uwt_udp_try_send_na);
 P4(uwt_try_write_na);
+P2(uwt_stream_set_blocking_na);
 
 P3(uwt_tty_init);
 P2(uwt_tty_set_mode_na);

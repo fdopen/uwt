@@ -309,6 +309,8 @@ module Stream : sig
   val accept_raw_exn: server:t -> client:t -> unit
 
   val shutdown: t -> unit Lwt.t
+
+  val set_blocking: t -> bool -> Int_result.unit
 end
 
 module Pipe : sig

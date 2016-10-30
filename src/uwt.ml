@@ -470,6 +470,8 @@ module Stream = struct
   let accept_raw_exn ~server ~client =
     accept_raw ~server ~client |> to_exnu "accept_raw"
 
+  external set_blocking: t -> bool -> Int_result.unit =
+    "uwt_stream_set_blocking_na"
 end
 
 module Pipe = struct

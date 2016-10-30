@@ -3480,6 +3480,20 @@ uwt_try_write_na(value o_stream,value o_buf,value o_pos,value o_len)
 
 UV_HANDLE_BOOL(uv_stream_t,is_readable,false)
 UV_HANDLE_BOOL(uv_stream_t,is_writable,false)
+
+CAMLprim value
+uwt_stream_set_blocking_na(value o_stream, value o_blocking)
+{
+  const struct handle * s = Handle_val(o_stream);
+  value ret = VAL_UWT_INT_RESULT_EBADF;
+  if ( s && s->handle && s->close_called == 0 && s->initialized == 1 ){
+    const int block = Int_val(o_blocking);
+    uv_stream_t* stream = (uv_stream_t*)s->handle;
+    const int r = uv_stream_set_blocking(stream,block);
+    ret = VAL_UWT_UNIT_RESULT(r);
+  }
+  return ret;
+}
 /* }}} Stream end */
 
 /* {{{ Tty start */
