@@ -1414,7 +1414,7 @@ module Unix = struct
       Lwt.catch (fun () ->
           Req.ql ~typ:Req.Fs ~f:(realpath param) ~name:"realpath" ~param)
         (function
-        | Unix.Unix_error(ENOSYS,"realpath",x) when x = param ->
+        | Unix.Unix_error(Unix.ENOSYS,"realpath",x) when x = param ->
           use_own_realpath := true;
           realpath_o param
         | x -> Lwt.fail x)

@@ -514,7 +514,7 @@ uwt_get_sockaddr(value o_addr,union all_sockaddr *addr)
       addr->in.sin_family = AF_INET;
       addr->in.sin_addr = GET_INET_ADDR(Field(o_addr, 0));
       addr->in.sin_port = htons(Int_val(Field(o_addr, 1)));
-#ifdef SIN6_LEN
+#ifdef HAVE_SIN_LEN
       addr->in.sin_len = sizeof(struct sockaddr_in);
 #endif
       return true;
@@ -524,7 +524,7 @@ uwt_get_sockaddr(value o_addr,union all_sockaddr *addr)
       addr->in6.sin6_family = AF_INET6;
       addr->in6.sin6_addr = GET_INET6_ADDR(Field(o_addr, 0));
       addr->in6.sin6_port = htons(Int_val(Field(o_addr, 1)));
-#ifdef SIN6_LEN
+#ifdef HAVE_SIN6_LEN
       addr->in6.sin6_len = sizeof(struct sockaddr_in6);
 #endif
       return true;

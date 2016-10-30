@@ -389,4 +389,28 @@ fi
 
 fi # test "$OS_MACRO" != "Windows" -a "$ac_cv_have_decl_uv_fs_realpath" != "yes"
 
+AC_CHECK_MEMBER(struct sockaddr_in.sin_len,
+                AC_DEFINE(HAVE_SIN_LEN, 1, [Define this if your IPv4 has sin_len in sockaddr_in struct.]),,
+                [#ifdef HAVE_SYS_TYPES_H
+                 #include <sys/types.h>
+                 #endif
+                 #ifdef _WIN32
+                 #include <winsock2.h>
+                 #include <windows.h>
+                 #else
+                 #include <netinet/in.h>
+                 #endif])
+
+AC_CHECK_MEMBER(struct sockaddr_in6.sin6_len,
+                AC_DEFINE(HAVE_SIN6_LEN, 1, [Define this if your IPv6 has sin6_len in sockaddr_in6 struct.]),,
+                [#ifdef HAVE_SYS_TYPES_H
+                 #include <sys/types.h>
+                 #endif
+                 #ifdef _WIN32
+                 #include <winsock2.h>
+                 #include <windows.h>
+                 #else
+                 #include <netinet/in.h>
+                 #endif])
+
 AC_OUTPUT
