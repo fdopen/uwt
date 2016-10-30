@@ -3183,8 +3183,12 @@ uwt_read_own(value o_s,value o_buf,value o_offset,value o_len,value o_cb)
   HANDLE_INIT3(s,o_s,o_buf,o_cb);
   const int ba = Tag_val(o_buf) != String_tag;
   value ret;
+  const size_t len = Long_val(o_len);
   assert( s->cb_type == CB_LWT );
-  if ( s->cb_read != CB_INVALID ){
+  if ( len > ULONG_MAX ){
+    ret = VAL_UWT_INT_RESULT_EINVAL;
+  }
+  else if ( s->cb_read != CB_INVALID ){
     ret = VAL_UWT_INT_RESULT_EBUSY;
   }
   else {
@@ -3198,7 +3202,6 @@ uwt_read_own(value o_s,value o_buf,value o_offset,value o_len,value o_cb)
       erg = uv_read_start(stream,alloc_read_own,read_own_cb);
     }
     if ( erg >= 0 ){
-      size_t len = Long_val(o_len);
       size_t offset = Long_val(o_offset);
       gr_root_register(&s->cb_read,o_cb);
       gr_root_register(&s->obuf,o_buf);
@@ -3427,13 +3430,17 @@ CAMLprim value
 uwt_udp_try_send_na(value o_stream,value o_buf,value o_pos,
                     value o_len,value o_sock)
 {
+  const size_t len = Long_val(o_len);
+  if ( len > ULONG_MAX ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
   if ( o_sock == Val_unit ){
     HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream);
   }
   HANDLE_NINIT_NA(s,o_stream);
   uv_buf_t buf;
   int ret;
-  buf.len = Long_val(o_len);
+  buf.len = len;
   if ( Tag_val(o_buf) != String_tag ){
     buf.base = Ba_buf_val(o_buf);
   }
