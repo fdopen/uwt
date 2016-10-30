@@ -414,36 +414,26 @@ mem_stack_pop(struct stack * x)
   }
 }
 
-/* TODO: better representation */
-union all_sockaddr {
-    struct sockaddr addr;
-    struct sockaddr_in in;
-    struct sockaddr_in6 in6;
-    struct sockaddr_storage stor;
-#ifndef _WIN32
-    struct sockaddr_un un;
-#endif
-};
-
 static value
-uwt_alloc_sockaddr(union all_sockaddr *addr)
+uwt_alloc_sockaddr(const struct sockaddr *saddr)
 {
   value res;
-  if ( addr == NULL ){
+  if ( saddr == NULL ){
     return Val_unit;
   }
-  switch (addr->addr.sa_family) {
+  switch (saddr->sa_family) {
 #ifndef _WIN32
   case AF_UNIX:
     {
+      const struct sockaddr_un * addr = (const struct sockaddr_un *)saddr;
       const size_t max_len =
-        sizeof(union all_sockaddr) - sizeof(sa_family_t) - 1;
-      _Static_assert(sizeof(union all_sockaddr) - sizeof(sa_family_t) - 1 >=
-                     sizeof addr->un.sun_path,
+        sizeof(struct sockaddr_storage) - sizeof(sa_family_t) - 1;
+      _Static_assert(sizeof(struct sockaddr_storage) - sizeof(sa_family_t) - 1 >=
+                     sizeof addr->sun_path,
                      "sun path length");
-      const size_t len = strnlen(addr->un.sun_path,max_len);
+      const size_t len = strnlen(addr->sun_path,max_len);
       value str = caml_alloc_string(len);
-      memcpy(String_val(str),addr->un.sun_path,len);
+      memcpy(String_val(str),addr->sun_path,len);
       Begin_roots1(str);
       res = caml_alloc_small(1,0);
       Field(res,0) = str;
@@ -453,26 +443,28 @@ uwt_alloc_sockaddr(union all_sockaddr *addr)
 #endif
   case AF_INET:
     {
+      const struct sockaddr_in * addr = (const struct sockaddr_in *)saddr;
       value a = caml_alloc_string(4);
-      memcpy(String_val(a), &addr->in.sin_addr, 4);
+      memcpy(String_val(a), &addr->sin_addr, 4);
       Begin_root (a);
       res = caml_alloc_small(2, 1);
       Field(res,0) = a;
-      Field(res,1) = Val_int(ntohs(addr->in.sin_port));
+      Field(res,1) = Val_int(ntohs(addr->sin_port));
       End_roots();
       break;
     }
   case AF_INET6:
     {
+      const struct sockaddr_in6 * addr = (const struct sockaddr_in6 *) saddr;
       value a = caml_alloc_string(16);
       /* we can't use alloc_inet_addr, because OCaml and libuv
          sometimes have different opinions about ipv6 support.
          alloc_inet6_addr is not always available */
-      memcpy(String_val(a), &addr->in6.sin6_addr, 16);
+      memcpy(String_val(a), &addr->sin6_addr, 16);
       Begin_root (a);
       res = caml_alloc_small(2, 1);
       Field(res,0) = a;
-      Field(res,1) = Val_int(ntohs(addr->in6.sin6_port));
+      Field(res,1) = Val_int(ntohs(addr->sin6_port));
       End_roots();
       break;
     }
@@ -489,43 +481,46 @@ uwt_alloc_sockaddr(union all_sockaddr *addr)
 #endif
 
 static bool
-uwt_get_sockaddr(value o_addr,union all_sockaddr *addr)
+uwt_get_sockaddr(value o_addr,struct sockaddr *saddr)
 {
   switch(Tag_val(o_addr)) {
 #ifndef _WIN32
   case 0:
     {
+      struct sockaddr_un * addr = (struct sockaddr_un *)saddr;
       value path;
       mlsize_t len;
       path = Field(o_addr, 0);
       len = caml_string_length(path);
-      if (len >= sizeof(addr->un.sun_path)) {
+      if (len >= sizeof(addr->sun_path)) {
         return false;
       }
-      memset(&addr->un, 0, sizeof(struct sockaddr_un));
-      addr->un.sun_family = AF_UNIX;
-      memmove (addr->un.sun_path, String_val(path), len + 1);
+      memset(addr, 0, sizeof(struct sockaddr_un));
+      addr->sun_family = AF_UNIX;
+      memmove (addr->sun_path, String_val(path), len + 1);
       return true;
     }
 #endif
   case 1:                       /* ADDR_INET */
     if ( caml_string_length(Field(o_addr, 0)) == 4 ) {
-      memset(&addr->in, 0, sizeof(struct sockaddr_in));
-      addr->in.sin_family = AF_INET;
-      addr->in.sin_addr = GET_INET_ADDR(Field(o_addr, 0));
-      addr->in.sin_port = htons(Int_val(Field(o_addr, 1)));
+      struct sockaddr_in * addr = (struct sockaddr_in *)saddr;
+      memset(addr, 0, sizeof(struct sockaddr_in));
+      addr->sin_family = AF_INET;
+      addr->sin_addr = GET_INET_ADDR(Field(o_addr, 0));
+      addr->sin_port = htons(Int_val(Field(o_addr, 1)));
 #ifdef HAVE_SIN_LEN
-      addr->in.sin_len = sizeof(struct sockaddr_in);
+      addr->sin_len = sizeof(struct sockaddr_in);
 #endif
       return true;
     }
     else {
-      memset(&addr->in6, 0, sizeof(struct sockaddr_in6));
-      addr->in6.sin6_family = AF_INET6;
-      addr->in6.sin6_addr = GET_INET6_ADDR(Field(o_addr, 0));
-      addr->in6.sin6_port = htons(Int_val(Field(o_addr, 1)));
+      struct sockaddr_in6 * addr = (struct sockaddr_in6 *)saddr;
+      memset(addr, 0, sizeof(struct sockaddr_in6));
+      addr->sin6_family = AF_INET6;
+      addr->sin6_addr = GET_INET6_ADDR(Field(o_addr, 0));
+      addr->sin6_port = htons(Int_val(Field(o_addr, 1)));
 #ifdef HAVE_SIN6_LEN
-      addr->in6.sin6_len = sizeof(struct sockaddr_in6);
+      addr->sin6_len = sizeof(struct sockaddr_in6);
 #endif
       return true;
     }
@@ -3259,12 +3254,12 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
   if ( len > ULONG_MAX ){
     return VAL_UWT_INT_RESULT_EINVAL;
   }
-  union all_sockaddr addr;
+  struct sockaddr_storage addr;
   if ( o_sock == Val_unit ){
     HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream);
   }
   else {
-    if ( !uwt_get_sockaddr(o_sock,&addr) ){
+    if ( !uwt_get_sockaddr(o_sock,(struct sockaddr*)&addr) ){
       return VAL_UWT_INT_RESULT_UNKNOWN;
     }
   }
@@ -3303,7 +3298,8 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
       erg = uv_write(req,handle,&wp->buf,1,write_send_cb);
     }
     else {
-      erg = uv_udp_send(req,handle,&wp->buf,1,&addr.addr,udp_send_cb);
+      erg = uv_udp_send(req, handle, &wp->buf, 1,
+                        (struct sockaddr*)&addr, udp_send_cb);
     }
     if ( erg < 0 ){
       if ( ba == 0 ){
@@ -3458,12 +3454,13 @@ uwt_udp_try_send_na(value o_stream,value o_buf,value o_pos,
     ret = uv_try_write((uv_stream_t*)s->handle,&buf,1);
   }
   else {
-    union all_sockaddr addr;
-    if ( ! uwt_get_sockaddr(o_sock,&addr) ) {
+    struct sockaddr_storage addr;
+    if ( ! uwt_get_sockaddr(o_sock,(struct sockaddr *)&addr) ) {
       return VAL_UWT_INT_RESULT_UNKNOWN;
     }
     else {
-      ret = uv_udp_try_send((uv_udp_t*)s->handle,&buf,1,&addr.addr);
+      ret = uv_udp_try_send((uv_udp_t*)s->handle, &buf, 1,
+                            (struct sockaddr *)&addr );
       if ( ret >= 0 ){
         s->initialized = 1;
       }
@@ -3958,12 +3955,12 @@ CAMLprim value
 uwt_tcp_bind_na(value o_tcp, value o_sock, value o_flags)
 {
   HANDLE_NINIT_NA(t,o_tcp);
-  union all_sockaddr addr;
-  if ( !uwt_get_sockaddr(o_sock,&addr) ){
+  struct sockaddr_storage addr;
+  if ( !uwt_get_sockaddr(o_sock, (struct sockaddr *)&addr) ){
     return VAL_UWT_INT_RESULT_UNKNOWN;
   }
   unsigned int flags = o_flags == Val_unit ? 0 : UV_TCP_IPV6ONLY;
-  int ret = uv_tcp_bind((uv_tcp_t *)t->handle,&addr.addr,flags);
+  int ret = uv_tcp_bind((uv_tcp_t *)t->handle, (struct sockaddr *)&addr, flags);
   if ( ret >= 0 ){
     t->initialized = 1;
   }
@@ -4012,14 +4009,14 @@ uwt_tcp_getsockpeername(value o_tcp, getsock_f func)
   uv_handle_t * t = th->handle;
   int s = sizeof(struct sockaddr_storage);
   int r;
-  union all_sockaddr addr;
-  r = func(t,&addr.addr,&s);
+  struct sockaddr_storage addr;
+  r = func(t,(struct sockaddr*)&addr,&s);
   if ( r < 0 ) {
     ret = caml_alloc_small(1,Error_tag);
     Field(ret,0) = Val_uwt_error(r);
   }
   else {
-    sock = uwt_alloc_sockaddr(&addr);
+    sock = uwt_alloc_sockaddr((struct sockaddr*)&addr);
     if ( sock == Val_unit ){
       ret = caml_alloc_small(1,Error_tag);
       Field(ret,0) = VAL_UWT_ERROR_UNKNOWN;
@@ -4053,15 +4050,16 @@ uwt_udp_getsockname(value o_tcp)
 CAMLprim value
 uwt_tcp_connect(value o_tcp,value o_sock,value o_cb)
 {
-  union all_sockaddr addr;
-  if ( ! uwt_get_sockaddr(o_sock,&addr) ){
+  struct sockaddr_storage addr;
+  if ( ! uwt_get_sockaddr(o_sock,(struct sockaddr*) &addr) ){
     return VAL_UWT_INT_RESULT_UNKNOWN;
   }
   HANDLE_INIT3(s,o_tcp,o_sock,o_cb);
   struct req * wp = req_create(UV_CONNECT,s->loop);
   uv_tcp_t* tcp = (uv_tcp_t*)s->handle;
   uv_connect_t * req = (uv_connect_t*)wp->req;
-  const int ret = uv_tcp_connect(req, tcp, &addr.addr, pipe_tcp_connect_cb);
+  const int ret = uv_tcp_connect(req, tcp, (struct sockaddr*) &addr,
+                                 pipe_tcp_connect_cb);
   if ( ret >= 0 ){
     wp->c_cb = ret_unit_cparam;
     gr_root_register(&wp->cb,o_cb);
@@ -4085,13 +4083,15 @@ static const int udp_bin_flag_table[2] = {
 
 CAMLprim value
 uwt_udp_bind_na(value o_udp, value o_sock, value o_flags){
-  union all_sockaddr addr;
-  if ( !uwt_get_sockaddr(o_sock,&addr) ){
+  struct sockaddr_storage addr;
+  if ( !uwt_get_sockaddr(o_sock, (struct sockaddr *) &addr)){
     return VAL_UWT_INT_RESULT_UNKNOWN;
   }
   HANDLE_NINIT_NA(t,o_udp);
   const unsigned int flags = SAFE_CONVERT_FLAG_LIST(o_flags,udp_bin_flag_table);
-  const int ret = uv_udp_bind((uv_udp_t *)t->handle,&addr.addr,flags);
+  const int ret = uv_udp_bind((uv_udp_t *)t->handle,
+                              (struct sockaddr *)&addr,
+                              flags);
   if ( ret >= 0 ){
     t->initialized = 1;
   }
@@ -4217,7 +4217,7 @@ alloc_recv_result(ssize_t nread,
         msock_addr = Val_unit;
       }
       else {
-        param = uwt_alloc_sockaddr((union all_sockaddr *)addr);
+        param = uwt_alloc_sockaddr(addr);
         if ( param == Val_unit ){
           msock_addr = Val_unit;
         }
@@ -4238,7 +4238,7 @@ alloc_recv_result(ssize_t nread,
     }
   }
   else if ( nread == 0 ){
-    msock_addr = uwt_alloc_sockaddr((union all_sockaddr *)addr);
+    msock_addr = uwt_alloc_sockaddr(addr);
     if ( msock_addr == Val_unit ){
       param = caml_alloc_small(1,Transmission_error);
       Field(param,0) = VAL_UWT_ERROR_UNKNOWN;
@@ -4385,7 +4385,7 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
           param = Val_unit;
           Begin_roots3(triple,sockaddr,param);
           if ( addr != NULL ){
-            param = uwt_alloc_sockaddr((union all_sockaddr *)addr);
+            param = uwt_alloc_sockaddr(addr);
             if ( param != Val_unit ){
               sockaddr = caml_alloc_small(1,Some_tag);
               Field(sockaddr,0) = param;
@@ -5099,7 +5099,7 @@ uwt_uptime(value unit)
         Field(ret,0) = Val_uwt_error(r);                                \
       }                                                                 \
       else {                                                            \
-        value so = uwt_alloc_sockaddr((union all_sockaddr *)&addr);     \
+        value so = uwt_alloc_sockaddr((struct sockaddr *)&addr);        \
         if ( so == Val_unit ){                                          \
           ret = caml_alloc_small(1,Error_tag);                          \
           Field(ret,0) = VAL_UWT_ERROR_UNKNOWN;                         \
@@ -5122,13 +5122,14 @@ uwt_uptime(value unit)
     value ret;                                                          \
     size_t s_size = init_size;                                          \
     char dst[init_size];                                                \
-    union all_sockaddr x;                                               \
-    if ( !uwt_get_sockaddr(o_sock,&x) ){                                \
+    struct sockaddr_storage x;                                          \
+    if ( !uwt_get_sockaddr(o_sock,(struct sockaddr *) &x) ){            \
       ret = caml_alloc_small(1,Error_tag);                              \
       Field(ret,0) = VAL_UWT_ERROR_UNKNOWN;                             \
       return ret;                                                       \
     }                                                                   \
-    r = uv_ ## name ## _name(&x.i ## field ,dst,s_size);                \
+    r = uv_ ## name ## _name((struct sockaddr_i ## field *)&x ,         \
+                             dst, s_size);                              \
     if ( r < 0 ){                                                       \
       ret = caml_alloc_small(1,Error_tag);                              \
       Field(ret,0) = Val_uwt_error(r);                                  \
@@ -5286,7 +5287,7 @@ uwt_interface_addresses(value unit)
       Store_field(ar_in,1,tmp);
       Field(ar_in,2) = Val_long( c->is_internal != 0 );
 
-      tmp = uwt_alloc_sockaddr((union all_sockaddr *)&c->address);
+      tmp = uwt_alloc_sockaddr((struct sockaddr*)&c->address);
       if ( tmp != Val_unit ){
         value x = caml_alloc_small(1,0);
         Field(x,0) = tmp;
@@ -5294,7 +5295,7 @@ uwt_interface_addresses(value unit)
       }
       Store_field(ar_in,3,tmp);
 
-      tmp = uwt_alloc_sockaddr((union all_sockaddr *)&c->netmask);
+      tmp = uwt_alloc_sockaddr((struct sockaddr*)&c->netmask);
       if ( tmp != Val_unit ){
         value x = caml_alloc_small(1,0);
         Field(x,0) = tmp;
@@ -5812,7 +5813,7 @@ convert_addrinfo(struct addrinfo * a)
   CAMLparam0();
   CAMLlocal3(vres,vaddr,vcanonname);
 
-  vaddr = uwt_alloc_sockaddr((union all_sockaddr *)a->ai_addr);
+  vaddr = uwt_alloc_sockaddr(a->ai_addr);
   if ( vaddr == Val_unit ){
     vres = Val_unit;
     goto endp;
@@ -6049,8 +6050,8 @@ CAMLprim value
 uwt_getnameinfo(value o_sockaddr, value o_list, value o_loop,
                 value o_req, value o_cb)
 {
-  union all_sockaddr addr;
-  if ( !uwt_get_sockaddr(o_sockaddr,&addr) ){
+  struct sockaddr_storage addr;
+  if ( !uwt_get_sockaddr(o_sockaddr,(struct sockaddr *)&addr) ){
     return VAL_UWT_INT_RESULT_UNKNOWN;
   }
   struct loop * loop = Loop_val(o_loop);
@@ -6063,7 +6064,7 @@ uwt_getnameinfo(value o_sockaddr, value o_list, value o_loop,
                                  (uv_getnameinfo_t*)req->req,
                                  cb_getnameinfo,
                                  /* copied to internal storage by libuv */
-                                 &addr.addr,
+                                 (struct sockaddr *)&addr,
                                  flags);
   value ret;
   if ( erg < 0 ){
