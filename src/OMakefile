@@ -2,7 +2,6 @@
 .PHONY: clean all distclean doc lib minimal lwtlib
 
 CC= $(OCAMLC_CC)
-CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS)
 
 if $(not $(equal $(INTERNAL_LIBUV),$(EMPTY)))
 	$(basename $(INTERNAL_LIBUV)):
@@ -15,7 +14,7 @@ if $(equal $(OSTYPE),Win32)
 		else
 			touch configure config.h.in
 	config.h config.inc: config.h.in configure config.inc.in $(basename $(INTERNAL_LIBUV))
-		sh.exe configure CC="$(OCAMLC_CC)" CFLAGS="$(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS) $(LDFLAGS_LIBUV)"
+		sh.exe configure CC="$(OCAMLC_CC)" CFLAGS="$(OCAMLC_CC_CFLAGS) $(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS) $(LDFLAGS_LIBUV)"
 else
 	configure config.h.in: configure.ac
 		if $(or $(not $(file-exists configure)),$(not $(file-exists config.h.in)))
@@ -23,7 +22,7 @@ else
 		else
 			touch configure config.h.in 
 	config.h config.inc: config.h.in configure config.inc.in $(basename $(INTERNAL_LIBUV))
-		./configure CC="$(OCAMLC_CC)" CFLAGS="$(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS) $(LDFLAGS_LIBUV)"
+		./configure CC="$(OCAMLC_CC)" CFLAGS="$(OCAMLC_CC_CFLAGS) $(CFLAGS) $(CFLAGS_LIBUV)"  LDFLAGS="$(LDFLAGS) $(LDFLAGS_LIBUV)"
 
 clean::
 	rm -f config.log config.status
