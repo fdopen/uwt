@@ -293,7 +293,7 @@ uwt__stat_to_value(const uv_stat_t * sb)
 }
 
 #ifdef _WIN32
-#ifdef HAVE_UV_TRANSLATE_SYSERROR
+#if defined(HAVE_UV_TRANSLATE_SYSERROR) && !defined(HAVE_DECL_UV_TRANSLATE_SYS_ERROR)
 extern int uv_translate_sys_error(int);
 #endif
 /* mapping is arbitrary under Windows, -errno doesn't work */
@@ -344,6 +344,15 @@ uwt_translate_sys_error(DWORD sys_errno)
   if ( sys_errno <= 0 ){
     return sys_errno;  /* If < 0 then it's already a libuv error. */
   }
+
+#if HAVE_DECL_UV_TRANSLATE_SYS_ERROR
+  {
+    int x = uv_translate_sys_error(sys_errno);
+    if ( x != UV_UNKNOWN ){
+      return x;
+    }
+  }
+#endif
 
   switch ( sys_errno ){
   /* translations from libuv */
