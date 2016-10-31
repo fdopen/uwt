@@ -80,22 +80,22 @@ else
         lib="libuv/Release/lib/libuv.lib"
         ext_lib=".lib"
     else
-        if [ ! -f libuv.a ]; then
-            AR=
-            case "$CC" in
-                *-gcc)
-                    AR=${CC%-*}
-                    AR="${AR}-ar"
-                    if which "$AR" >/dev/null 2>&1 ; then
-                        export AR
-                    fi
+        if [ ! -f .libs/libuv.a ]; then
+            if [ ! -x ./configure ]; then
+                ./autogen.sh
+            fi
+            case "$system" in
+                mingw64*)
+                    host='x86_64-w64-mingw32'
+                    ;;
+                *)
+                    host='i686-w64-mingw32'
                     ;;
             esac
-            export CC CFLAGS
-            sed -i 's|D_WIN32_WINNT=0x0600|D_WIN32_WINNT=0x0600 -DNDEBUG -O2|g' Makefile.mingw
-            make -f Makefile.mingw
+            ./configure --host=$host --enable-static --disable-shared CC="$CC" CFLAGS="$CFLAGS -D_WIN32_WINNT=0x0600 -DNDEBUG" ac_cv_search_pthread_create=no
+            make all CC="$CC" CFLAGS="$CFLAGS -D_WIN32_WINNT=0x0600 -DNDEBUG"
         fi
-        lib="libuv/libuv.a"
+        lib="libuv/.libs/libuv.a"
         ext_lib=".a"
     fi
     cd ..

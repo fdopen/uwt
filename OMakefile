@@ -64,7 +64,7 @@ static.=
 			try
 				value $(getvar BUILD_LIBUV)
 			default
-				value $''0''
+				value $''t''
 		if $(or $(equal $(x),$''0''), $(equal $(x),$''false''))
 			$(ConfMsgError $''libuv missing'')
 		if $(not $(or $(equal $(x),$'1'), $(equal $(x),$'true')))
@@ -85,9 +85,6 @@ static.=
 				value -I$(x)
 		if $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64))
 			INTERNAL_LIBUV=$(file libuv/Release/lib/libuv.lib)
-			export
-		elseif $(or $(equal $(OCAMLC_SYSTEM),mingw), $(equal $(OCAMLC_SYSTEM),mingw64))
-			INTERNAL_LIBUV=$(file libuv/libuv.a)
 			export
 		else
 			INTERNAL_LIBUV=$(file libuv/.libs/libuv.a)
