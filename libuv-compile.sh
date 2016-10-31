@@ -2,25 +2,12 @@
 
 set -eu
 
-version=$1
-CC=$2
-CFLAGS=$3
-unix=$4
-system=$5
+CC=$1
+CFLAGS=$2
+unix=$3
+system=$4
 
-archive="libuv-v${version}.tar.gz"
-archive_url="http://dist.libuv.org/dist/v${version}/${archive}"
-
-if [ ! -f "$archive" ]; then
-    if which wget >/dev/null 2>&1 ; then
-        wget --quiet "$archive_url" -O "$archive"
-    else
-        curl -f -L --silent "$archive_url" -o "$archive"
-    fi
-fi
-
-tar -xzf "$archive"
-cd "libuv-v${version}"
+cd "libuv"
 
 if [ "$unix" = "true" ]; then
     if [ ! -f .libs/libuv.a ]; then
@@ -50,7 +37,7 @@ if [ "$unix" = "true" ]; then
         $make all CC="$CC" CFLAGS="$CFLAGS -DNDEBUG"
     fi
     cd ..
-    lib="../libuv-v${version}/.libs/libuv.a"
+    lib="../libuv/.libs/libuv.a"
     rm -f src/libuv.a examples/libuv.a test/libuv.a
     ln -s "${lib}" src/libuv.a
     ln -s "${lib}" examples/libuv.a
@@ -90,7 +77,7 @@ else
             fi
             MSBuild.exe libuv.vcxproj '/t:Build' '/p:Configuration=Release' '/clp:NoSummary;NoItemAndPropertyList;Verbosity=minimal' '/nologo'
         fi
-        lib="libuv-v${version}/Release/lib/libuv.lib"
+        lib="libuv/Release/lib/libuv.lib"
         ext_lib=".lib"
     else
         if [ ! -f libuv.a ]; then
@@ -108,7 +95,7 @@ else
             sed -i 's|D_WIN32_WINNT=0x0600|D_WIN32_WINNT=0x0600 -DNDEBUG -O2|g' Makefile.mingw
             make -f Makefile.mingw
         fi
-        lib="libuv-v${version}/libuv.a"
+        lib="libuv/libuv.a"
         ext_lib=".a"
     fi
     cd ..

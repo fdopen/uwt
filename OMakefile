@@ -8,10 +8,9 @@ BYTE_ENABLED=	true
 include OMakeIncludes
 include OMakeCFLAGS
 
-LIBUV_VERSION=1.9.1
 CompileLibuv()=
 	if $(equal $(OSTYPE),Win32)
-		x=$(shell-code sh libuv-compile.sh "$(LIBUV_VERSION)" "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" false "$(OCAMLC_SYSTEM)")
+		x=$(shell-code sh libuv-compile.sh "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" false "$(OCAMLC_SYSTEM)")
 		if $(not $(eq $(x), 0))
 			y[]=
 			return($(y))
@@ -23,11 +22,11 @@ CompileLibuv()=
 			export
 		return($(LIBUV_LDFLAGS))
 	else
-		x=$(shell-code ./libuv-compile.sh "$(LIBUV_VERSION)" "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" true "$(OCAMLC_SYSTEM)")
+		x=$(shell-code ./libuv-compile.sh "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" true "$(OCAMLC_SYSTEM)")
 		if $(not $(eq $(x), 0))
 			y[]=
 			return($(y))
-		LIBUV_LDFLAGS=$(shell awk $''/^Lib/ {for(i=3;i<NF;i++)printf "%s",$i OFS; if (NF) printf "%s",$NF; printf ORS}'' libuv-v$(LIBUV_VERSION)/libuv.pc )
+		LIBUV_LDFLAGS=$(shell awk $''/^Lib/ {for(i=3;i<NF;i++)printf "%s",$i OFS; if (NF) printf "%s",$NF; printf ORS}'' libuv/libuv.pc )
 		return($(LIBUV_LDFLAGS))
 
 .PHONY: libuv-compile
@@ -77,7 +76,7 @@ static.=
 			LDFLAGS_LIBUV[]=-L. $(LDFLAGS_LIBUV)
 			export
 		CFLAGS_LIBUV=
-			x=$(absname libuv-v$(LIBUV_VERSION)/include)
+			x=$(absname libuv/include)
 			if $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64))
 				value -I$(x)
 			elseif $(equal $(OSTYPE),Win32)
@@ -85,13 +84,13 @@ static.=
 			else
 				value -I$(x)
 		if $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64))
-			INTERNAL_LIBUV=$(file libuv-v$(LIBUV_VERSION)/Release/lib/libuv.lib)
+			INTERNAL_LIBUV=$(file libuv/Release/lib/libuv.lib)
 			export
 		elseif $(or $(equal $(OCAMLC_SYSTEM),mingw), $(equal $(OCAMLC_SYSTEM),mingw64))
-			INTERNAL_LIBUV=$(file libuv-v$(LIBUV_VERSION)/libuv.a)
+			INTERNAL_LIBUV=$(file libuv/libuv.a)
 			export
 		else
-			INTERNAL_LIBUV=$(file libuv-v$(LIBUV_VERSION)/.libs/libuv.a)
+			INTERNAL_LIBUV=$(file libuv/.libs/libuv.a)
 			export
 		export CFLAGS_LIBUV LDFLAGS_LIBUV INTERNAL_LIBUV
 	HAVE_LWT=
