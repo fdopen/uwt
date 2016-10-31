@@ -53,6 +53,7 @@ section
 	.SCANNER: scan-c-%: map_error.h config.h
 	.SCANNER: scan-ocaml-%: error.ml error_val.ml
 	MLFILES= uwt_base uwt_bytes
+	#CFILES= uwt_stubs_common uwt_stubs_base uwt_stubs_handle uwt_stubs_timer uwt_stubs_stream uwt_stubs_tty uwt_stubs_pipe uwt_stubs_tcp uwt_stubs_udp uwt_stubs_signal uwt_stubs_poll uwt_stubs_fs_event uwt_stubs_fs_poll uwt_stubs_async uwt_stubs_misc uwt_stubs_dns uwt_stubs_process uwt_stubs_fs uwt_stubs_conv uwt_stubs_worker uwt_bytes_stubs uwt_stubs_unix
 	CFILES= uwt_stubs uwt_bytes_stubs uwt_stubs_unix
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+=$(LDFLAGS_LIBUV)

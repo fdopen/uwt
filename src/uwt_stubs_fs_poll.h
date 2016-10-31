@@ -19,24 +19,19 @@
  * 02111-1307, USA.
  */
 
-#define UWT_LOCAL static
-#include "uwt_stubs_common.c"
-#include "uwt_stubs_base.c"
-#include "uwt_stubs_handle.c"
-#include "uwt_stubs_timer.c"
-#include "uwt_stubs_stream.c"
-#include "uwt_stubs_tty.c"
-#include "uwt_stubs_pipe.c"
-#include "uwt_stubs_tcp.c"
-#include "uwt_stubs_udp.c"
-#include "uwt_stubs_signal.c"
-#include "uwt_stubs_poll.c"
-#include "uwt_stubs_fs_event.c"
-#include "uwt_stubs_fs_poll.c"
-#include "uwt_stubs_async.c"
-#include "uwt_stubs_misc.c"
-#include "uwt_stubs_dns.c"
-#include "uwt_stubs_process.c"
-#include "uwt_stubs_fs.c"
-#include "uwt_stubs_conv.c"
-#include "uwt_stubs_worker.c"
+#include "uwt_stubs_handle.h"
+
+#ifndef __UWT_STUBS_FS_POLL_H
+#define __UWT_STUBS_FS_POLL_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UWT_EXTERN4(uwt_fs_poll_start);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __UWT_STUBS_FS_POLL_H */

@@ -19,24 +19,32 @@
  * 02111-1307, USA.
  */
 
-#define UWT_LOCAL static
-#include "uwt_stubs_common.c"
-#include "uwt_stubs_base.c"
-#include "uwt_stubs_handle.c"
-#include "uwt_stubs_timer.c"
-#include "uwt_stubs_stream.c"
-#include "uwt_stubs_tty.c"
-#include "uwt_stubs_pipe.c"
-#include "uwt_stubs_tcp.c"
-#include "uwt_stubs_udp.c"
-#include "uwt_stubs_signal.c"
-#include "uwt_stubs_poll.c"
-#include "uwt_stubs_fs_event.c"
-#include "uwt_stubs_fs_poll.c"
-#include "uwt_stubs_async.c"
-#include "uwt_stubs_misc.c"
-#include "uwt_stubs_dns.c"
-#include "uwt_stubs_process.c"
-#include "uwt_stubs_fs.c"
-#include "uwt_stubs_conv.c"
-#include "uwt_stubs_worker.c"
+#ifndef __UWT_STUBS_TCP_H
+#define __UWT_STUBS_TCP_H
+
+#include "uwt_stubs_handle.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+UWT_EXTERN1(uwt_tcp_init);
+UWT_EXTERN1(uwt_udp_init);
+UWT_EXTERN2(uwt_tcp_init_ex);
+UWT_EXTERN2(uwt_udp_init_ex);
+UWT_EXTERN2(uwt_tcp_open_na);
+UWT_EXTERN2(uwt_udp_open_na);
+UWT_EXTERN3(uwt_tcp_bind_na);
+UWT_EXTERN2(uwt_tcp_nodelay_na);
+UWT_EXTERN3(uwt_tcp_keepalive_na);
+UWT_EXTERN2(uwt_tcp_simultaneous_accepts_na);
+UWT_EXTERN1(uwt_tcp_getsockname);
+UWT_EXTERN1(uwt_tcp_getpeername);
+UWT_EXTERN1(uwt_udp_getsockname);
+UWT_EXTERN3(uwt_tcp_connect);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __UWT_STUBS_TCP_H */
