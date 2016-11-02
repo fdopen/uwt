@@ -259,6 +259,7 @@ UWT_LOCAL value *uwt__global_wakeup;
 UWT_LOCAL void uwt__add_exception(struct loop *l, value e);
 
 /* debugging */
+UWT_EXTERN2(uwt_test_req_leak);
 UWT_EXTERN1(uwt_free_all_memory);
 UWT_EXTERN1(uwt_cleanup_na);
 

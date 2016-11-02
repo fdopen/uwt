@@ -798,7 +798,7 @@ module Debug : sig
   val valgrind_happy : unit -> unit
 end
 
-(* Don't use it. It's currently only intended for Uwt_preemptive. *)
+(* Interface not stable; currently only used by Uwt_preemptive. *)
 module Async : sig
   type t
   include module type of Handle with type t := t
@@ -808,3 +808,7 @@ module Async : sig
   val stop: t -> Int_result.unit
   val send: t -> Int_result.unit
 end
+
+(* for test suite only *)
+type loop
+val loop: loop

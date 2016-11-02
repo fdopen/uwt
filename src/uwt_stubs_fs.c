@@ -313,6 +313,7 @@ FSFUNC_4(fs_read,fs_read_cb,o_file,o_buf,o_offset,o_len,{
   }
   else {
     if ( ba ){
+      wp->buf_contains_ba = 1;
       wp->buf.len = slen;
       wp->buf.base = Ba_buf_val(o_buf) + offset;
     }
@@ -324,7 +325,6 @@ FSFUNC_4(fs_read,fs_read_cb,o_file,o_buf,o_offset,o_len,{
     }
     else {
       wp->offset = offset;
-      wp->buf_contains_ba = ba;
       BLOCK({
           ret = uv_fs_read(loop, req, fd, &wp->buf, 1, -1, cb);
         });
@@ -378,6 +378,7 @@ FSFUNC_4(fs_write,
   }
   else {
     if ( ba ){
+      wp->buf_contains_ba = 1;
       wp->buf.base = Ba_buf_val(o_buf) + Long_val(o_pos);
       wp->buf.len = slen;
     }
@@ -393,7 +394,6 @@ FSFUNC_4(fs_write,
                String_val(o_buf) + Long_val(o_pos),
                slen);
       }
-      wp->buf_contains_ba = ba;
       BLOCK({
           ret = uv_fs_write(loop, req, fd, &wp->buf, 1, -1, cb);
         });

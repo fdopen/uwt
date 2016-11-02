@@ -205,8 +205,18 @@ static struct stack stack_struct_handle =
 static struct stack stacks_req_t[UV_REQ_TYPE_MAX];
 static struct stack stacks_handle_t[UV_HANDLE_TYPE_MAX];
 
+/*
+  Cleanup must be defered to later (main thread),
+  if unreferenced uv_handle_t / uv_req_t are garbage collected.
+*/
+static struct stack stack_struct_handles_to_close =
+  { NULL, 0, 0, sizeof (struct handle),0,0,0};
+
+static struct stack stack_struct_req_to_free =
+  { NULL, 0, 0, sizeof (struct req),0,0,0};
+
 #define MIN_BUCKET_SIZE_LOG2 8u
-#define MAX_BUCKET_SIZE_LOG2 15u
+#define MAX_BUCKET_SIZE_LOG2 16u
 
 #define STACKS_MEM_BUF_SIZE                           \
   (MAX_BUCKET_SIZE_LOG2 - MIN_BUCKET_SIZE_LOG2 + 1u)
@@ -276,6 +286,20 @@ uwt_init_stacks_na(value unit)
     stacks_mem_buf[i].gc_n = 0;
     ++j;
   }
+
+  /* prealloc memory. If malloc fails during a GC call, it could lead to
+     resource leakage */
+  stack_struct_handles_to_close.s = malloc(STACK_START_SIZE * (sizeof(void*)));
+  if ( stack_struct_handles_to_close.s == NULL ){
+    caml_raise_out_of_memory();
+  }
+  stack_struct_handles_to_close.size = STACK_START_SIZE;
+
+  stack_struct_req_to_free.s = malloc(STACK_START_SIZE * (sizeof(void*)));
+  if ( stack_struct_req_to_free.s == NULL ){
+    caml_raise_out_of_memory();
+  }
+  stack_struct_req_to_free.size = STACK_START_SIZE;
 
   return Val_unit;
 }
@@ -510,23 +534,46 @@ static value *uwt_global_exception_fun = NULL;
 #define UWT_WAKEUP_STRING "uwt.wakeup"
 #define UWT_ADD_EXCEPTION_STRING "uwt.add_exception"
 
-static struct stack stack_struct_handles_to_close =
-  { NULL, 0, 0, sizeof (struct handle),0,0,0};
+static void
+gc_close_free_common(struct stack *s)
+{
+  s->pos = 0;
+  if ( s->size > STACK_START_SIZE * 8 ){
+    void * ns = malloc(STACK_START_SIZE * sizeof(void *));
+    if (ns){
+      free(s->s);
+      s->s = ns;
+      s->size = STACK_START_SIZE;
+    }
+  }
+}
 
 static void
 close_garbage_collected_handles(void)
 {
   unsigned int i;
   for ( i = 0 ; i < stack_struct_handles_to_close.pos ; ++i ){
-    uwt__handle_finalize_close(stack_struct_handles_to_close.s[i]);
+    struct handle * s = stack_struct_handles_to_close.s[i];
     stack_struct_handles_to_close.s[i] = NULL;
+    if ( s->handle != NULL ){
+      uwt__handle_finalize_close(s);
+    }
+    else {
+      uwt__handle_free_common(s);
+      uwt__free_struct_handle(s);
+    }
   }
-  stack_struct_handles_to_close.pos = 0;
-  if ( stack_struct_handles_to_close.size > STACK_START_SIZE ){
-    free(stack_struct_handles_to_close.s);
-    stack_struct_handles_to_close.s = NULL;
-    stack_struct_handles_to_close.size = 0;
+  gc_close_free_common(&stack_struct_handles_to_close);
+}
+
+static void
+free_garbage_collected_reqs(void)
+{
+  unsigned int i;
+  for ( i = 0 ; i < stack_struct_req_to_free.pos ; ++i ){
+    uwt__req_free(stack_struct_req_to_free.s[i]);
   }
+  gc_close_free_common(&stack_struct_req_to_free);
 }
 
 UWT_LOCAL void
@@ -559,6 +606,9 @@ uwt_run_loop(value o_loop,value o_mode)
     if (stack_struct_handles_to_close.pos){
       close_garbage_collected_handles();
     }
+    if (stack_struct_req_to_free.pos){
+      free_garbage_collected_reqs();
+    }
     switch ( Long_val(o_mode) ){
     case 0: m = UV_RUN_ONCE; break;
     case 1: m = UV_RUN_NOWAIT; break;
@@ -575,6 +625,9 @@ uwt_run_loop(value o_loop,value o_mode)
     }
     if (stack_struct_handles_to_close.pos){
       close_garbage_collected_handles();
+    }
+    if (stack_struct_req_to_free.pos){
+      free_garbage_collected_reqs();
     }
     wp->in_use = 0;
     ret = VAL_UWT_INT_RESULT(erg);
@@ -772,18 +825,33 @@ static void req_finalize(value v)
   struct req * wp = Req_val(v);
   if ( wp != NULL ){
     Field(v,1) = 0; /* Mantis: #7279 */
-    if ( wp->in_use != 0 || wp->in_cb != 0 ){
-      wp->finalize_called = 1;
-    }
-    else {
-      if ( wp->cb != CB_INVALID ||
-           wp->sbuf != CB_INVALID ){
-        DEBUG_PF("fatal: request handle still in use,"
-                 " even though marked otherwise");
-        wp->cb = CB_INVALID;
-        wp->sbuf = CB_INVALID;
+    wp->finalize_called = 1;
+    if ( wp->in_use == 0 && wp->in_cb == 0 ){
+      if ( wp->cb == CB_INVALID &&
+           wp->sbuf == CB_INVALID &&
+           (wp->buf.base == NULL || wp->buf_contains_ba == 1) &&
+           wp->clean_cb == NULL ) {
+        uwt__free_mem_uv_req_t(wp);
+        uwt__free_struct_req(wp);
       }
-      uwt__req_free(wp);
+      else {
+        /* Calling caml_modify during GC is fragile.
+           And it might be easier to write code for work threads, if the
+           cleanup is done in the main thread and not during garbage
+           collection. */
+        if ( stack_struct_req_to_free.pos <
+             stack_struct_req_to_free.size ){
+          stack_struct_req_to_free.s[stack_struct_req_to_free.pos] = wp;
+          ++stack_struct_req_to_free.pos;
+        }
+        else {
+          if ( !uwt__stack_resize_add(&stack_struct_req_to_free,wp,false) ){
+            DEBUG_PF("out of memory, req can't be cleaned");
+            uwt__free_mem_uv_req_t(wp);
+            uwt__free_struct_req(wp);
+          }
+        }
+      }
     }
   }
 }
@@ -1149,32 +1217,18 @@ handle_finalize(value p)
                   s->cb_close != CB_INVALID ||
                   s->obuf != CB_INVALID )){
       DEBUG_PF("fatal: reference count mechanism is distorted");
-      if ( s->handle == NULL ){
-        s->cb_listen = CB_INVALID;
-        s->cb_listen_server = CB_INVALID;
-        s->cb_read = CB_INVALID;
-        s->cb_close = CB_INVALID;
-        s->obuf = CB_INVALID;
-      }
     }
-    if ( s->handle == NULL ){
-      uwt__handle_free_common(s);
-      uwt__free_struct_handle(s);
+    /* we might be in the wrong thread, defer the close call to later */
+    if ( stack_struct_handles_to_close.pos <
+         stack_struct_handles_to_close.size ){
+      stack_struct_handles_to_close.s[stack_struct_handles_to_close.pos] = s;
+      ++stack_struct_handles_to_close.pos;
     }
     else {
-      /* we might be in the wrong thread, defer the close call to later */
-      if ( stack_struct_handles_to_close.pos <
-           stack_struct_handles_to_close.size ){
-        stack_struct_handles_to_close.s[stack_struct_handles_to_close.pos] = s;
-        ++stack_struct_handles_to_close.pos;
-      }
-      else {
-        bool added = uwt__stack_resize_add(&stack_struct_handles_to_close,s,false);
-        if ( !added ){
-          uwt__handle_free_common(s);
-          DEBUG_PF("out of memory, handle can't be closed");
-          /* uwt__handle_finalize_close(s);*/
-        }
+      bool added = uwt__stack_resize_add(&stack_struct_handles_to_close,s,false);
+      if ( !added ){
+        /* memory leak, perhaps fd leak */
+        DEBUG_PF("out of memory, handle can't be closed");
       }
     }
   }
@@ -1253,6 +1307,42 @@ uwt__handle_create(uv_handle_type handle_type, struct loop *l)
 
 /* Memory debugging and TODO */
 
+/*
+  uv_req_t/struct req are currently not exposed to the end user.
+  uwt.ml code captures most exceptions and deallocates
+  all resources.
+  Only rare exceptions like Out_of_memory will trigger
+  conditions under which uv_req_t must be deallocated
+  by the OCaml garbage collector.
+  uwt_test_req_leak will be used by the test suite to
+  create such a condition manually.
+*/
+
+static void
+free_test_req_leak(uv_req_t * req)
+{
+  struct worker_params * w = req->data;
+  if ( w->p1 != NULL ){
+    caml_stat_free(w->p1);
+    w->p1 = NULL;
+  }
+}
+
+CAMLprim value
+uwt_test_req_leak(value o_req, value o_ref)
+{
+  CAMLparam1(o_req);
+  struct req * wp = Req_val(o_req);
+  if ( wp == NULL || wp->in_use == 1 || wp->req == NULL ){
+    caml_failwith("uwt_test_req_leak");
+  }
+  wp->c.p1 = caml_stat_alloc(sizeof(value));
+  wp->clean_cb = free_test_req_leak;
+  GR_ROOT_ENLARGE();
+  uwt__gr_register(&wp->sbuf,o_ref);
+  CAMLreturn(Val_unit);
+}
+
 static void
 stack_clean (struct stack *s){
   if ( s->s && s->size > 0 ){
@@ -1330,7 +1420,7 @@ uwt_free_all_memory(value unit)
   }
 
   if ( stack_struct_handles_to_close.pos != 0 ){
-    DEBUG_PF("there are still %u handles ot close\n",
+    DEBUG_PF("there are still %u handles that must be closed\n",
              stack_struct_handles_to_close.pos);
   }
   else {
@@ -1338,6 +1428,17 @@ uwt_free_all_memory(value unit)
     free(stack_struct_handles_to_close.s);
     stack_struct_handles_to_close.s = NULL;
     stack_struct_handles_to_close.size = 0;
+  }
+
+  if ( stack_struct_req_to_free.pos != 0 ){
+    DEBUG_PF("there are still %u reqs that must be freed\n",
+             stack_struct_req_to_free.pos);
+  }
+  else {
+    stack_struct_req_to_free.pos = 0;
+    free(stack_struct_req_to_free.s);
+    stack_struct_req_to_free.s = NULL;
+    stack_struct_req_to_free.size = 0;
   }
 
   return Val_unit;

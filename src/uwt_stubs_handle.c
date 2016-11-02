@@ -70,12 +70,12 @@ uwt_close_wait(value o_stream,value o_cb)
      the ocaml grabage collector finalizes
      the handle  */
   Field(o_stream,1) = 0;
-  if ( s->read_waiting ){
-    uwt__cancel_reader(s);
-  }
   uwt__gr_register(&s->cb_close,o_cb);
   uv_close(s->handle,close_cb);
   s->finalize_called = 1;
+  if ( s->read_waiting ){
+    uwt__cancel_reader(s);
+  }
   CAMLreturn(Val_long(0));
 }
 

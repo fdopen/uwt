@@ -536,6 +536,7 @@ uwt_write2_native(value o_stream,
   uv_write_t* req = (uv_write_t*)wp->req;
   const int ba = len > 0 && Tag_val(o_buf) != String_tag;
   if ( ba ){
+    wp->buf_contains_ba = 1;
     wp->buf.base = Ba_buf_val(o_buf) + Long_val(o_pos);
     wp->buf.len = len;
   }
@@ -576,7 +577,6 @@ uwt_write2_native(value o_stream,
       wp->finalize_called = 1;
       ++s1->in_use_cnt;
       ++s2->in_use_cnt;
-      wp->buf_contains_ba = ba;
       if ( ba ){
         uwt__gr_register(&wp->sbuf,o_buf);
       }
