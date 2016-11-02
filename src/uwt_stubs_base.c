@@ -474,8 +474,10 @@ pointer_hash(value a){
 #endif
 }
 
+#if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
 static struct custom_operations ops_uwt_loop = {
   (char*)"uwt.loop",
   loop_finalize,
@@ -487,8 +489,9 @@ static struct custom_operations ops_uwt_loop = {
   custom_compare_ext_default
 #endif
 };
+#if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop
-
+#endif
 
 /* Runtime Lock:
    the OCaml runtime is released by an uv_prepare handle
@@ -856,7 +859,10 @@ static void req_finalize(value v)
   }
 }
 
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
 static struct custom_operations ops_uwt_req = {
   (char*)"uwt.req",
   req_finalize,
@@ -868,7 +874,9 @@ static struct custom_operations ops_uwt_req = {
   custom_compare_ext_default
 #endif
 };
+#if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop
+#endif
 
 static size_t get_req_t_size(uv_req_type typ)
 {
@@ -1234,7 +1242,10 @@ handle_finalize(value p)
   }
 }
 
+#if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
 static struct custom_operations ops_uwt_handle = {
   (char*)"uwt.handle",
   handle_finalize,
@@ -1246,7 +1257,9 @@ static struct custom_operations ops_uwt_handle = {
   custom_compare_ext_default
 #endif
 };
+#if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop
+#endif
 
 UWT_LOCAL value
 uwt__handle_create(uv_handle_type handle_type, struct loop *l)
