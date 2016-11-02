@@ -537,4 +537,6 @@ module Lwt_unix = struct
   let system s =
     let s = Uwt_process.shell s in
     help ( fun () -> Uwt_process.exec s )
+
+  let utimes s access modif = UF.utime s ~access ~modif
 end

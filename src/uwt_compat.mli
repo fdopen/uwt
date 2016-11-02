@@ -124,4 +124,5 @@ module Lwt_unix :
     val pipe_in : unit -> file_descr * Unix.file_descr
     val pipe_out : unit -> Unix.file_descr * file_descr
     val system : string -> Unix.process_status Lwt.t
+    val utimes : string -> float -> float -> unit Lwt.t
   end
