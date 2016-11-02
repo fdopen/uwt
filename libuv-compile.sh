@@ -93,7 +93,20 @@ else
                     ;;
             esac
             ./configure --host=$host --enable-static --disable-shared CC="$CC" CFLAGS="$CFLAGS -D_WIN32_WINNT=0x0600 -DNDEBUG" ac_cv_search_pthread_create=no
-            make all CC="$CC" CFLAGS="$CFLAGS -D_WIN32_WINNT=0x0600 -DNDEBUG"
+            set +u
+            jflags=
+            if [ -n "$NUMBER_OF_PROCESSORS" ] && [ -z "$MAKEFLAGS" ]; then
+                case "$NUMBER_OF_PROCESSORS" in
+                    ''|*[!0-9]*)
+                        jflags=
+                        ;;
+                    *)
+                        jflags="-j$NUMBER_OF_PROCESSORS"
+                        ;;
+                esac
+            fi
+            set -u
+            make all CC="$CC" CFLAGS="$CFLAGS -D_WIN32_WINNT=0x0600 -DNDEBUG" $jflags
         fi
         lib="libuv/.libs/libuv.a"
         ext_lib=".a"
