@@ -962,6 +962,7 @@ uwt__req_callback(uv_req_t * req)
   struct req * wp_req = req->data;
   if (unlikely( !wp_req || wp_req->cb == CB_INVALID || wp_req->c_cb == NULL )){
     DEBUG_PF("no data in callback!");
+    uwt__req_free_most(wp_req);
   }
   else {
     assert( wp_req->in_use == 1 );
@@ -976,13 +977,20 @@ uwt__req_callback(uv_req_t * req)
     else {
       exn = wp_req->c_cb(req);
     }
-    exn = CAML_CALLBACK1(wp_req,cb,exn);
+    value cb = GET_CB_VAL(wp_req->cb);
+    Begin_roots2(cb,exn); /* clean_cb might allocate, although it shouldn't */
+    req_free_common(wp_req);
+    End_roots();
+    exn = caml_callback2_exn(*uwt__global_wakeup,cb,exn);
     if (unlikely( Is_exception_result(exn) )){
       uwt__add_exception(wp_req->loop,exn);
     }
     wp_req->in_cb = 0;
+    wp_req->in_use = 0;
+    if ( wp_req->finalize_called ){
+      uwt__free_struct_req(wp_req);
+    }
   }
-  uwt__req_free_most(wp_req);
 }
 
 CAMLprim value
