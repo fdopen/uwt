@@ -107,13 +107,6 @@ module Lwt_unix = struct
   let ufail ?(param="") ecode s1 =
     Lwt.fail (U.Unix_error(ecode,s1,param))
 
-  let helpn n t =
-    Lwt.catch
-      t
-      (function
-      | Unix.Unix_error(Unix.ENOENT,s,_) when s = n -> Lwt.fail Not_found
-      | x -> trans_exn x)
-
   let help f =
     Lwt.catch f trans_exn
 
@@ -122,20 +115,9 @@ module Lwt_unix = struct
       ( fun () -> f s1 )
       trans_exn
 
-  let help1n n f s1 =
-    helpn n ( fun () -> f s1 )
-
   let help2 f s1 s2 =
     Lwt.catch
       ( fun () -> f s1 s2 )
-      trans_exn
-
-  let help2n n f s1 s2 =
-    helpn n ( fun () -> f s1 s2 )
-
-  let help3 f s1 s2 s3 =
-    Lwt.catch
-      ( fun () -> f s1 s2 s3 )
       trans_exn
 
   let openfile path flags perm =
@@ -161,47 +143,34 @@ module Lwt_unix = struct
     in
     let fd = to_com fd in
     match fd with
-    | Fd fd -> help1 UF.close fd
-    | Stream fd ->
-      Uwt.Stream.close fd |> it
+    | Fd fd -> UF.close fd
+    | Stream fd -> Uwt.Stream.close fd |> it
 
   let read fd buf ofs len =
-    let fd = to_com fd in
-    let f () =
-      match fd with
-      | Fd fd -> UF.read ~pos:ofs ~len:len ~buf fd
-      | Stream fd -> Uwt.Stream.read ~pos:ofs ~len:len ~buf fd
-    in
-    help f
+    match to_com fd with
+    | Fd fd -> UF.read ~pos:ofs ~len:len ~buf fd
+    | Stream fd -> Uwt.Stream.read ~pos:ofs ~len:len ~buf fd
 
   let write fd buf ofs len =
-    let fd = to_com fd in
-    let f () =
-      match fd with
-      | Fd fd -> UF.write ~pos:ofs ~len:len ~buf fd
-      | Stream fd ->
-        Uwt.Stream.write ~pos:ofs ~len:len ~buf fd >>= fun () ->
-        Lwt.return len
-    in
-    help f
+    match to_com fd with
+    | Fd fd -> UF.write ~pos:ofs ~len:len ~buf fd
+    | Stream fd ->
+      Uwt.Stream.write ~pos:ofs ~len:len ~buf fd >>= fun () ->
+      Lwt.return len
 
   let write_string fd buf ofs len =
-    let fd = to_com fd in
-    let f () =
-      match fd with
-      | Fd fd -> UF.write_string ~pos:ofs ~len:len ~buf fd
-      | Stream fd ->
-        Uwt.Stream.write_string ~pos:ofs ~len:len ~buf fd >>= fun () ->
-        Lwt.return len
-    in
-    help f
+    match to_com fd with
+    | Fd fd -> UF.write_string ~pos:ofs ~len:len ~buf fd
+    | Stream fd ->
+      Uwt.Stream.write_string ~pos:ofs ~len:len ~buf fd >>= fun () ->
+      Lwt.return len
 
   let lseek fd n com =
     match fd with
     | Pipe _
     | Tcp _ -> ufail U.ESPIPE "lseek"
     | File fd ->
-      help3 UU.lseek fd (Int64.of_int n) com >>= fun l ->
+      UU.lseek fd (Int64.of_int n) com >>= fun l ->
       Lwt.return (Int64.to_int l)
 
   let truncate path i =
@@ -217,22 +186,19 @@ module Lwt_unix = struct
     | Pipe _
     | Tcp _ -> ufail U.EINVAL "ftruncate"
     | File fd ->
-      let f () = UF.ftruncate fd ~len:(Int64.of_int i) in
-      help f
+      UF.ftruncate fd ~len:(Int64.of_int i)
 
   let fsync fd =
     match fd with
     | Pipe _
     | Tcp _ -> ufail U.EINVAL "fsync"
-    | File fd ->
-      help1 UF.fsync fd
+    | File fd -> UF.fsync fd
 
   let fdatasync fd =
     match fd with
     | Pipe _
     | Tcp _ -> ufail U.EINVAL "fdatasync"
-    | File fd ->
-      help1 UF.fdatasync fd
+    | File fd -> UF.fdatasync fd
 
   let file_kind = function
   | UF.S_UNKNOWN (* see stat.c *)
@@ -271,8 +237,7 @@ module Lwt_unix = struct
     match fd with
     | Pipe _
     | Tcp _ -> ufail U.EINVAL "fsync"
-    | File fd ->
-      help1 UF.fstat fd >>= stat_convert
+    | File fd -> UF.fstat fd >>= stat_convert
 
   let isatty x =
     (match x with
@@ -329,15 +294,14 @@ module Lwt_unix = struct
       match fd with
       | Pipe _
       | Tcp _ -> ufail U.EINVAL "fsync"
-      | File fd ->
-        help1 UF.fstat fd >>= stat_convert
+      | File fd -> UF.fstat fd >>= stat_convert
 
     let lseek fd n com =
       match fd with
       | Pipe _
       | Tcp _ -> ufail U.ESPIPE "lseek"
       | File fd ->
-        help3 UU.lseek fd n com >>= fun l ->
+        UU.lseek fd n com >>= fun l ->
         Lwt.return (Int64.to_int l)
 
     let truncate path i =
@@ -352,9 +316,7 @@ module Lwt_unix = struct
       match fd with
       | Pipe _
       | Tcp _ -> ufail U.EINVAL "ftruncate"
-      | File fd ->
-        let f () = UF.ftruncate fd ~len:i in
-        help f
+      | File fd -> UF.ftruncate fd ~len:i
 
     let file_exists = file_exists
   end
@@ -374,8 +336,7 @@ module Lwt_unix = struct
     match fd with
     | Pipe _
     | Tcp _ -> ufail U.EBADF "fchmod"
-    | File fd ->
-      help ( fun () -> UF.fchmod fd ~perm )
+    | File fd -> UF.fchmod fd ~perm
 
   let chown f uid gid =
     help ( fun () -> UF.chown f ~uid ~gid )
@@ -384,8 +345,7 @@ module Lwt_unix = struct
     match fd with
     | Pipe _
     | Tcp _ -> ufail U.EBADF "fchown"
-    | File fd ->
-      help ( fun () -> UF.fchown fd ~uid ~gid )
+    | File fd -> UF.fchown fd ~uid ~gid
 
   let access_map = function
   | U.R_OK -> UF.Read
@@ -466,13 +426,33 @@ module Lwt_unix = struct
 
   let readlink s = help1 UF.readlink s
 
-  let getlogin = help1 UU.getlogin
+  let chdir = help1 UU.chdir
+
+  let getlogin () =
+    Lwt.catch
+      (fun () -> UU.getlogin ())
+      (function
+      | Unix.Unix_error _ -> Lwt.fail (Unix.Unix_error(Unix.ENOENT,"getlogin",""))
+      | x -> Lwt.fail x)
+
+  let helpn n t =
+    Lwt.catch
+      t
+      (function
+      | Unix.Unix_error(_,s,_) when s = n -> Lwt.fail Not_found
+      | x -> Lwt.fail x)
+
+  let help1n n f s1 =
+    helpn n ( fun () -> f s1 )
+
+  let help2n n f s1 s2 =
+    helpn n ( fun () -> f s1 s2 )
+
   let getpwnam = help1n "getpwnam" UU.getpwnam
   let getgrnam = help1n "getgrnam" UU.getgrnam
   let getpwuid = help1n "getpwuid" UU.getpwuid
   let getgrgid = help1n "getgrgid" UU.getgrgid
-  let chdir = help1 UU.chdir
-  let gethostname = help1 UU.gethostname
+  let gethostname = UU.gethostname
   let gethostbyname = help1n "gethostbyname" UU.gethostbyname
   let gethostbyaddr = help1n "gethostbyaddr" UU.gethostbyaddr
   let getprotobyname = help1n "getprotobyname" UU.getprotobyname
@@ -494,8 +474,6 @@ module Lwt_unix = struct
           ai_addr = a.Uwt.Dns.ai_addr }
       in
       Lwt.return (List.map f l)
-
-  let getaddrinfo = help3 getaddrinfo
 
   let getnameinfo addr l =
     Uwt.Dns.getnameinfo addr l >>= function
