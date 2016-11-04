@@ -205,11 +205,15 @@ static FORCE_INLINE uint64_t UBSWAP8(uint64_t x){
 #define SWAP_CODE 0
 #endif
 
+#if defined(__arm__) || defined(__arm) || defined(__mips__) || defined(__mips) || defined(_M_ARM) || defined(__sparc) || defined(__sparc__)
+#define USE_MEMCPY
+#endif
+
 CAMLprim value
 uwt_unix_read_int(value val_buf, value val_ofs, value bo)
 {
   const unsigned char * s = Ba_buf_val(val_buf) + Long_val(val_ofs);
-#if defined(__arm__) || defined(__arm)
+#ifdef USE_MEMCPY
   uint32_t n;
   memcpy(&n,s,sizeof n);
 #else
@@ -225,7 +229,7 @@ CAMLprim value
 uwt_unix_read_int16(value val_buf, value val_ofs, value bo)
 {
   const unsigned char * s = Ba_buf_val(val_buf) + Long_val(val_ofs);
-#if defined(__arm__) || defined(__arm)
+#ifdef USE_MEMCPY
   uint16_t n;
   memcpy(&n,s,sizeof n);
 #else
@@ -247,7 +251,7 @@ MCAMLprim int32_t
 uwt_unix_read_int32_native(value val_buf, value val_ofs, value bo)
 {
   const unsigned char * s = Ba_buf_val(val_buf) + Long_val(val_ofs);
-#if defined(__arm__) || defined(__arm)
+#ifdef USE_MEMCPY
   uint32_t n;
   memcpy(&n,s,sizeof n);
 #else
@@ -269,7 +273,7 @@ MCAMLprim int64_t
 uwt_unix_read_int64_native(value val_buf, value val_ofs, value bo)
 {
   const unsigned char * s = Ba_buf_val(val_buf) + Long_val(val_ofs);
-#if defined(__arm__) || defined(__arm)
+#ifdef USE_MEMCPY
   uint64_t n;
   memcpy(&n,s,sizeof n);
 #else
@@ -292,7 +296,7 @@ uwt_unix_read_float32_native(value val_buf, value val_ofs, value bo)
 {
   union { float f; uint32_t ui; } u;
   const unsigned char * s = Ba_buf_val(val_buf) + Long_val(val_ofs);
-#if defined(__arm__) || defined(__arm)
+#ifdef USE_MEMCPY
   uint32_t n;
   memcpy(&n,s,sizeof n);
 #else
@@ -316,7 +320,7 @@ uwt_unix_read_float64_native(value val_buf, value val_ofs, value bo)
 {
   union { double d; uint64_t ui; uint32_t h[2]; } u;
   const unsigned char * s = Ba_buf_val(val_buf) + Long_val(val_ofs);
-#if defined(__arm__) || defined(__arm)
+#ifdef USE_MEMCPY
   uint64_t n;
   memcpy(&n,s,sizeof n);
 #else
@@ -346,7 +350,7 @@ uwt_unix_write_int(value val_buf, value val_ofs, value val, value bo)
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP4(n);
   }
-#if defined(__arm__) || defined(__arm)
+#ifdef USE_MEMCPY
   memcpy(s,&n,sizeof n);
 #else
   uint32_t * p = (uint32_t*)s;
@@ -363,7 +367,7 @@ uwt_unix_write_int16(value val_buf, value val_ofs, value val, value bo)
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP2(n);
   }
-#if defined(__arm__) || defined(__arm)
+#ifdef USE_MEMCPY
   memcpy(s,&n,sizeof n);
 #else
   uint16_t * p = (uint16_t*)s;
@@ -379,7 +383,7 @@ uwt_unix_write_int32_native(value val_buf, value val_ofs, uint32_t n, value bo)
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP4(n);
   }
-#if defined(__arm__) || defined(__arm)
+#ifdef USE_MEMCPY
   memcpy(s,&n,sizeof n);
 #else
   uint32_t * p = (uint32_t*)s;
@@ -401,7 +405,7 @@ uwt_unix_write_int64_native(value val_buf, value val_ofs, uint64_t n, value bo)
   if ( Int_val(bo) == SWAP_CODE ){
     n = UBSWAP8(n);
   }
-#if defined(__arm__) || defined(__arm)
+#ifdef USE_MEMCPY
   memcpy(s,&n,sizeof n);
 #else
   uint64_t * p = (uint64_t*)s;

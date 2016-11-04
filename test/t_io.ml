@@ -100,9 +100,13 @@ let l = [
    fun _ ->
      let rw ?(cmp=Pervasives.compare) read write random type_len =
        let len = 1024 in
-       let ba = Uwt_bytes.create (len * type_len) in
+       let ba = Uwt_bytes.create (1 + (len * type_len)) in
        let bi = Uwt_io.of_bytes ~mode:Uwt_io.input ba
        and bo = Uwt_io.of_bytes ~mode:Uwt_io.output ba in
+       (* in order to violate alignment requirement of certain platforms *)
+       Uwt_io.write_char bo 'x' >>= fun () ->
+       Uwt_io.read_char bi >>= fun c ->
+       assert (c = 'x');
        let rec iter i =
          if i = 0 then Lwt.return_true else
          let v = random () in
