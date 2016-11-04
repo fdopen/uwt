@@ -157,7 +157,15 @@ let l = [
   ("getlogin">::
    fun ctx ->
      let s1 = runix U.getlogin () in
-     let s2 = ruwt @@ UUnix.getlogin () in
+     let s2 =
+       match ruwt @@ UUnix.getlogin () with
+       | Exn (Unix.Unix_error(_,b,c)) ->
+         (* Upstream is always ENOENT:
+             https://github.com/ocaml/ocaml/blob/0eaa3b68a404549476fae4bc3bcb3c3b2a4d76da/otherlibs/unix/getlogin.c#L27
+          *)
+         Exn (Unix.Unix_error(Unix.ENOENT,b,c))
+       | x -> x
+     in
      (* UUnix.getlogin uses getlogin_r on some systems. If stdin isn't a
         a tty, it won't work on some systems. *)
      let is_tty = Uwt_base.Misc.guess_handle Uwt.stdin = Uwt_base.Misc.Tty in
