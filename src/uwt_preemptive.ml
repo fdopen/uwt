@@ -281,7 +281,7 @@ let nbthreadsbusy () = !threads_count - Queue.length workers
    | Detaching                                                       |
    +-----------------------------------------------------------------+ *)
 
-let init_result = Lwt.make_error (Failure "Uwt_preemptive.detach")
+let init_result = Error (Failure "Uwt_preemptive.detach")
 
 let detached_cnt = ref 0
 let detach f args =
@@ -290,9 +290,9 @@ let detach f args =
   (* The task for the worker thread: *)
   let task () =
     try
-      result := Lwt.make_value (f args)
+      result := Ok (f args)
     with exn ->
-      result := Lwt.make_error exn
+      result := Error exn
   in
   let x = Uwt.Async.start async_handle in
   if Uwt.Int_result.is_error x then
