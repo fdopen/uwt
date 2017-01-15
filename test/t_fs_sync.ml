@@ -20,6 +20,12 @@ let rec really_write ?(pos=0) ?len buf fd =
   else
     really_write ~pos:(pos+n) ~len:len' buf fd
 
+let rec really_writev fd iol =
+  US.writev fd iol >>= fun n ->
+  match Iovec_write.drop iol n with
+  | [] -> Ok ()
+  | iol -> really_writev fd iol
+
 let with_file ~mode fln f =
   openfile ~mode fln >>= fun fd ->
   let close_called = ref false in
@@ -288,6 +294,15 @@ let l = [
      m_true ( fun () ->
          let p1 = Sys.getcwd () in
          realpath "." >>= fun p2 -> return (Common.fln_cmp p1 p2 = 0 )));
+  ("writev">::
+   fun _ctx ->
+     let fln = tmpdir () // "awritev" in
+     let module C = Common in
+     let iovecs = C.iovecs_create ~max_elems:8 () in
+     m_equal () ( fun () ->
+         with_file ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] fln @@ fun fd ->
+         really_writev fd iovecs );
+     m_equal (C.iovecs_to_bytes iovecs) (fun () -> file_to_bytes fln ));
 ]
 
 let l = "Fs_sync">:::l

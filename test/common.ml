@@ -101,6 +101,48 @@ let rba_create len =
 let rstring_create len =
   rbytes_create len |> Bytes.unsafe_to_string
 
+let iovecs_create ?(min_elems=0) ?(max_elems=64) ?(max_elem_length=256) () =
+  let num = min_elems + (Random.int (max_elems - min_elems + 1)) in
+  let rec iter accu i =
+    if i <= 0 then accu else
+    let nlen = Random.int (succ max_elem_length) in
+    let offset,len = if nlen = 0 then 0,0 else
+      let offset = Random.int (succ nlen) in
+      let max_len = nlen - offset in
+      let len = if max_len = 0 then 0 else Random.int max_len in
+      offset,len
+    in
+    let elem = match Random.int 3 with
+    | 0 -> Uwt.Iovec_write.Bigarray(rba_create nlen,offset,len)
+    | 1 -> Uwt.Iovec_write.String(rstring_create nlen,offset,len)
+    | 2 -> Uwt.Iovec_write.Bytes(rbytes_create nlen,offset,len)
+    | _ -> assert false
+    in
+    iter (elem::accu) (pred i)
+  in
+  iter [] num
+
+let iovecs_length ivs =
+  List.fold_left (fun ac el -> Uwt.Iovec_write.length el + ac) 0 ivs
+
+let iovecs_to_bytes ivs =
+  let length = iovecs_length ivs in
+  let ts = Bytes.create length in
+  let f pos = function
+  | Uwt.Iovec_write.Bigarray(b,o,l) ->
+    Uwt_bytes.blit_to_bytes b o ts pos l;
+    pos + l
+  | Uwt.Iovec_write.Bytes(b,o,l) ->
+    Bytes.blit b o ts pos l;
+    pos + l;
+  | Uwt.Iovec_write.String(s,o,l) ->
+    String.blit s o ts pos l;
+    pos + l
+  in
+  let length' = List.fold_left f 0 ivs in
+  assert (length' = length);
+  ts
+
 let invalid = "/tmp/invalid/invalid/invalid/invalid"
 let tmpdir = ref invalid
 
@@ -217,3 +259,5 @@ let skip_no_symlinks_rights ctx =
   OUnit2.skip_if
     (all ctx = false && !no_symlinks_rights)
     "no rights to create symlinks"
+
+let bytes_rev_concat l = List.rev l |> Bytes.concat Bytes.empty

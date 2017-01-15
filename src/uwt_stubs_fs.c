@@ -94,6 +94,7 @@
   value o_ret;                                            \
   struct loop * wp_loop = Loop_val(o_loop);               \
   struct req * wp_req = Req_val(o_req);                   \
+  cb_cleaner wp_cleaner = (cb_cleaner)uv_fs_req_cleanup ; \
   uv_fs_t * req;                                          \
   if (unlikely( wp_loop == NULL ||                        \
                 wp_req == NULL ||                         \
@@ -115,7 +116,7 @@
       code                                                \
         while(0);                                         \
     if ( libuv_called ){                                  \
-      wp_req->clean_cb = (clean_cb)uv_fs_req_cleanup;     \
+      wp_req->clean_cb = wp_cleaner;                      \
     }                                                     \
     if ( ret >= 0  ){                                     \
       wp_req->c_cb = tz;                                  \
@@ -350,12 +351,8 @@ fs_write_cb(uv_req_t * r)
   const uv_fs_t* req = (uv_fs_t*)r;
   const ssize_t result = req->result;
   value erg;
-  const struct req * wp = req->data;
   if ( result < 0 ){
     erg = Val_uwt_int_result(result);
-  }
-  else if ( (size_t)result > wp->buf.len ){
-    erg = VAL_UWT_INT_RESULT_UWT_EFATAL;
   }
   else {
     erg = Val_long(result);
@@ -409,6 +406,51 @@ FSFUNC_4(fs_write,
         wp->buf_contains_ba = 0;
         wp->buf.base = NULL;
         wp->buf.len = 0;
+      }
+    }
+  }
+})
+
+static void
+fs_write_clean_cb(uv_req_t * req)
+{
+  uwt__clean_iovecs(req);
+  uv_fs_req_cleanup((uv_fs_t *)req);
+}
+
+FSFUNC_3(fs_writev,
+         fs_write_cb,
+         o_file,
+         o_ios,
+         o_iosave,
+         {
+  struct req * wp = wp_req;
+  const size_t ar_size = Wosize_val(o_ios);
+  size_t i;
+  const int fd = FD_VAL(o_file);
+  for (i = 0; i < ar_size; ++i) {
+    if ( (size_t)Long_val(Field(Field(o_ios,i),2)) > ULONG_MAX ){
+      ret = UV_EINVAL;
+    }
+  }
+  if ( ret != UV_EINVAL ){
+    ret = uwt__build_iovecs(o_ios, wp);
+    if ( ret == 0 ){
+      uv_buf_t * buf = (uv_buf_t *)&wp->c;
+      uv_buf_t *bufs = (uv_buf_t *)buf->base;
+      wp->buf_contains_ba = 0;
+      BLOCK({
+          ret = uv_fs_write(loop, req, fd, bufs, ar_size, -1, cb);
+        });
+      if ( ret >= 0 ){
+        if ( o_iosave != Val_unit ){
+          uwt__gr_register(&wp->sbuf,o_iosave);
+        }
+        wp_cleaner = fs_write_clean_cb;
+      }
+      else {
+        uwt__free_uv_buf_t((uv_buf_t *)&wp->c,wp->cb_type);
+        uwt__free_uv_buf_t(&wp->buf, wp->cb_type);
       }
     }
   }

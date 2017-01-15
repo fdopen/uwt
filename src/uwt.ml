@@ -235,6 +235,8 @@ module Handle = struct
   external ref': t -> unit = "uwt_ref_na" NOALLOC
   external unref: t -> unit = "uwt_unref_na" NOALLOC
   external has_ref: t -> bool = "uwt_has_ref_na" NOALLOC
+
+  external handle_type: t -> Misc.handle_type = "uwt_handle_type_na" NOALLOC
 end
 
 external get_buffer_size_common:
@@ -285,8 +287,8 @@ module Stream = struct
   let read_stop_exn a = iread_stop a false |> to_exnu "read_stop"
 
   external write:
-    t -> 'a -> int -> int -> unit_cb -> Int_result.unit =
-    "uwt_write"
+    t -> 'a -> int -> int -> unit -> unit_cb -> Int_result.unit =
+    "uwt_write_send_byte" "uwt_write_send_native"
 
   let write_raw ?(pos=0) ?len s ~buf ~dim =
     let len =
@@ -298,7 +300,7 @@ module Stream = struct
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Stream.write_raw")
     else
-      qsu4 ~name ~f:write s buf pos len
+      qsu5 ~name ~f:write s buf pos len ()
 
   let write_raw_ba ?pos ?len t ~(buf:buf) =
     let dim = Bigarray.Array1.dim buf in
@@ -335,8 +337,6 @@ module Stream = struct
     let name = "write" in
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Stream.write")
-    else if len > 131072 then
-      qsu4 ~name ~f:write s buf pos len
     else
       (* always us try_write first, perhaps we don't need to create
          a sleeping thread at all. It's faster for small write requests *)
@@ -344,7 +344,7 @@ module Stream = struct
       let x = ( x' :> int ) in
       if x < 0 then
         if x' = Int_result.eagain then
-          qsu4 ~name ~f:write s buf pos len
+          qsu5 ~name ~f:write s buf pos len ()
         else
           LInt_result.mfail ~name ~param x'
       else if x = len then
@@ -354,7 +354,7 @@ module Stream = struct
       else
         let pos = pos + x
         and len = len - x in
-        qsu4 ~name ~f:write s buf pos len
+        qsu5 ~name ~f:write s buf pos len ()
 
   let write_ba ?pos ?len t ~(buf:buf) =
     let dim = Bigarray.Array1.dim buf in
@@ -379,6 +379,88 @@ module Stream = struct
   let try_write ?pos ?len t ~buf =
     let dim = Bytes.length buf in
     try_write ~dim ?pos ?len t ~buf
+
+  external writev_raw:
+    t -> Iovec_write.t array -> unit -> Iovec_write.t list -> unit_cb ->
+    Int_result.unit = "uwt_writev"
+
+#if HAVE_WINDOWS <> 0
+  let rec writev_raw_seriell t = function
+  | [] -> Lwt.return_unit
+  | hd::tl ->
+    (match hd with
+    | Iovec_write.Bigarray(buf,pos,len) -> write_ba ~pos ~len t ~buf
+    | Iovec_write.String(buf,pos,len) -> write_string ~pos ~len t ~buf
+    | Iovec_write.Bytes(buf,pos,len) -> write ~pos ~len t ~buf)
+    >>= fun () -> writev_raw_seriell t tl
+#endif
+
+  let writev_raw t iol =
+    let open Iovec_write in
+    match prep_for_cstub iol with
+    | Invalid -> Lwt.fail (Invalid_argument "Uwt.Stream.writev")
+    | Empty -> write_raw ~pos:0 t ~buf:(Bytes.create 1)
+    | All_ba(ar,l) ->
+#if HAVE_WINDOWS <> 0
+      match handle_type t with
+      | Misc.Pipe | Misc.Tty -> writev_raw_seriell t (Array.to_list ar)
+      | Misc.File | Misc.Tcp | Misc.Udp | Misc.Unknown ->
+#endif
+     qsu4 ~name:"writev" ~f:writev_raw t ar () l
+
+  external try_writev:
+    t -> Iovec_write.t array -> unit -> Int_result.int =
+    "uwt_try_writev_na" NOALLOC
+
+#if HAVE_WINDOWS <> 0
+  (* TODO: refactor moduls to avoid Obj.magic *)
+  let rec try_writev_raw_seriell accu t = function
+  | [] -> Obj.magic accu
+  | hd::tl ->
+    let x = match hd with
+    | Iovec_write.Bigarray(buf,pos,len) -> try_write_ba ~pos ~len t ~buf
+    | Iovec_write.String(buf,pos,len) -> try_write_string ~pos ~len t ~buf
+    | Iovec_write.Bytes(buf,pos,len) -> try_write ~pos ~len t ~buf in
+    let len = Iovec_write.length hd in
+    let len' = (x :> int) in
+    if len = len' then
+      try_writev_raw_seriell (accu + len) t tl
+    else if len' > 0 then
+      Obj.magic (len' + accu)
+    else if accu > 0 then
+      Obj.magic accu
+    else
+      x
+#endif
+
+  let try_writev t iovs =
+    let open Iovec_write in
+    match prep_for_cstub iovs with
+    | Invalid -> Int_result.einval
+    | Empty -> try_write ~pos:0 ~len:0 t ~buf:(Bytes.create 1)
+    | All_ba(ar,_) ->
+#if HAVE_WINDOWS <> 0
+      match handle_type t with
+      | Misc.Pipe | Misc.Tty -> try_writev_raw_seriell 0 t (Array.to_list ar)
+      | Misc.File | Misc.Tcp | Misc.Udp | Misc.Unknown ->
+#endif
+        try_writev t ar ()
+
+  let writev t iovs =
+    (* always us try_writev first, perhaps we don't need to create
+       a sleeping thread at all. It's faster for small write requests *)
+    let name = "writev" in
+    let x' = try_writev t iovs in
+    let x = ( x' :> int ) in
+    if x < 0 then
+      if x' = Int_result.eagain then
+        writev_raw t iovs
+      else
+        LInt_result.mfail ~name ~param x'
+    else
+      match Iovec_write.drop iovs x with
+      | [] -> Lwt.return_unit
+      | iovs -> writev_raw t iovs
 
   external read:
     t -> 'a -> int -> int -> int_cb -> Int_result.unit = "uwt_read_own"
@@ -788,7 +870,7 @@ module Udp = struct
 
   external send:
     t -> 'a -> int -> int -> sockaddr -> unit_cb -> Int_result.unit =
-    "uwt_udp_send_byte" "uwt_udp_send_native"
+    "uwt_write_send_byte" "uwt_write_send_native"
 
   let send_raw ?(pos=0) ?len ~buf ~dim s addr =
     let name = "udp_send" in
@@ -837,12 +919,9 @@ module Udp = struct
           LInt_result.mfail ~name ~param x'
       else if x = len then
         Lwt.return_unit
-      else if x > len then
+      else (* doc says it will match the given buffer size, although
+              it returns len not zero like uv_udp_send *)
         efail name UWT_EFATAL
-      else
-        let pos = pos + x
-        and len = len - x in
-        qsu5 ~name ~f:send s buf pos len addr
 #endif
 
   let send_ba ?pos ?len ~(buf:buf) t addr =
@@ -868,6 +947,46 @@ module Udp = struct
   let try_send ?pos ?len ~buf t s =
     let dim = Bytes.length buf in
     try_send ?pos ?len ~buf t s ~dim
+
+  external try_sendv:
+    t -> Iovec_write.t array -> sockaddr -> Int_result.int =
+    "uwt_try_writev_na" NOALLOC
+
+  let try_sendv t iovs sockaddr =
+    let open Iovec_write in
+    match prep_for_cstub iovs with
+    | Invalid -> Int_result.einval
+    | Empty -> try_send ~len:0 ~buf:(Bytes.create 1) t sockaddr
+    | All_ba(ar,_) -> try_sendv t ar sockaddr
+
+  external sendv_raw:
+    t -> Iovec_write.t array -> sockaddr -> Iovec_write.t list ->
+    unit_cb -> Int_result.unit = "uwt_writev"
+
+  let sendv_raw t iol addr =
+    let open Iovec_write in
+    match prep_for_cstub iol with
+    | Invalid -> Lwt.fail (Invalid_argument "Uwt.Stream.writev")
+    | Empty -> send_raw ~len:0 t ~buf:(Bytes.create 1) addr
+    | All_ba(ar,l) -> qsu4 ~name:"sendv" ~f:sendv_raw t ar addr l
+
+#if HAVE_WINDOWS <> 0
+  let sendv = sendv_raw (* windows doesn't support try_send *)
+#else
+  let sendv t iovs addr =
+    let name = "udp_send" in
+    let x' = try_sendv t iovs addr in
+    let x = ( x' :> int ) in
+    if x < 0 then
+      if x' = Int_result.eagain then
+        sendv_raw t iovs addr
+      else
+        LInt_result.mfail ~name ~param x'
+    else
+      match Iovec_write.drop iovs x with
+      | [] -> Lwt.return_unit
+      | _ -> LInt_result.mfail ~name ~param Int_result.uwt_efatal
+#endif
 
   type recv_result =
     | Data of Bytes.t * sockaddr option
@@ -1478,6 +1597,20 @@ module Fs = struct
   let write ?pos ?len t ~buf =
     let dim = Bytes.length buf in
     write ~dim ?pos ?len t ~buf
+
+  external writev:
+    file -> Iovec_write.t array -> Iovec_write.t list ->
+    loop -> Req.t -> int_cb ->
+    Int_result.unit =
+    "uwt_fs_writev_byte" "uwt_fs_writev_native"
+
+  let writev t iol =
+    let open Iovec_write in
+    match prep_for_cstub iol with
+    | Invalid -> Lwt.fail (Invalid_argument "Uwt.Fs.writev")
+    | Empty -> write ~pos:0 ~len:0 t ~buf:(Bytes.create 1)
+    | All_ba(ar,bl) ->
+      Req.qli ~typ ~name:"uv_fs_writev" ~param ~f:(writev t ar bl)
 
   external close:
     file -> loop -> Req.t -> unit_cb -> Int_result.unit =

@@ -40,6 +40,7 @@ UWT_EXTERN1(uwt_fileno);
 UWT_EXTERN2(uwt_get_buffer_size_common_na);
 UWT_EXTERN3(uwt_set_buffer_size_common_na);
 
+UWT_EXTERN1(uwt_handle_type_na);
 /* functions used by several subtypes of uv_handle_t */
 UWT_LOCAL void
 uwt__alloc_cb(uv_handle_t*, size_t suggested_size, uv_buf_t*);

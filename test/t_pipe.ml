@@ -99,6 +99,10 @@ module Client = struct
     write 20 >>= fun () ->
     close_wait t >|= fun () ->
     Buffer.contents buf_write = Buffer.contents buf_read
+
+  let testv raw =
+    Uwt.Pipe.with_connect ~ipc:false ~path:Echo_server.addr @@ fun t ->
+    Uwt.Pipe.to_stream t |> Tstream.testv raw
 end
 
 let server_thread = ref None
@@ -321,6 +325,13 @@ let l = [
          pname = (Error Uwt.ENOSYS)
      in
      Lwt.return ret );
+  ("writev">::
+   fun _ctx ->
+     server_init ();
+     for _i = 0 to 99 do
+       m_true ( Client.testv true );
+       m_true ( Client.testv false );
+     done );
 ]
 
 let l  = "Pipe">:::l

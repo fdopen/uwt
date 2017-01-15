@@ -263,6 +263,9 @@ UWT_EXTERN2(uwt_test_req_leak);
 UWT_EXTERN1(uwt_free_all_memory);
 UWT_EXTERN1(uwt_cleanup_na);
 
+UWT_LOCAL void uwt__clean_iovecs(uv_req_t *);
+UWT_LOCAL int uwt__build_iovecs(value, struct req *);
+
 #ifdef __cplusplus
 }
 #endif

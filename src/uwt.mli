@@ -87,6 +87,7 @@ include module type of Uwt_base
   with type Misc.interface_address = Uwt_base.Misc.interface_address
   with type Misc.handle_type = Uwt_base.Misc.handle_type
   with type Misc.version = Uwt_base.Misc.version
+  with type Iovec_write.t = Uwt_base.Iovec_write.t
 
 module Main : sig
   (** Analogue to [Lwt_main] *)
@@ -212,6 +213,8 @@ module Handle : sig
   val ref': t -> unit
   val unref: t -> unit
   val has_ref: t -> bool
+
+  val handle_type: t -> Misc.handle_type
 end
 
 module Handle_ext : sig
@@ -299,6 +302,16 @@ module Stream : sig
   val write2 : ?pos:int -> ?len:int -> buf:bytes -> send:t -> t -> unit Lwt.t
   val write2_ba : ?pos:int -> ?len:int -> buf:buf -> send:t -> t -> unit Lwt.t
   val write2_string : ?pos:int -> ?len:int -> buf:string -> send:t -> t -> unit Lwt.t
+
+  (** Windows doesn't support writing multiple buffers with a single
+      syscall for some HANDLEs (e.g. it's supported for tcp handles,
+      but not pipes). uwt then writes the buffers one by one.
+
+      If the number of buffers is greater than IOV_MAX, libuv already
+      contains the necessary workarounds *)
+  val try_writev: t -> Iovec_write.t list -> Int_result.int
+  val writev: t -> Iovec_write.t list -> unit Lwt.t
+  val writev_raw: t -> Iovec_write.t list -> unit Lwt.t
 
   val listen:
     t -> max:int -> cb:( t -> Int_result.unit -> unit ) -> Int_result.unit
@@ -508,6 +521,13 @@ module Udp : sig
     ?pos:int -> ?len:int -> buf:buf -> t -> sockaddr -> Int_result.int
   val try_send_string :
     ?pos:int -> ?len:int -> buf:string -> t -> sockaddr -> Int_result.int
+
+  val try_sendv :
+    t -> Iovec_write.t list -> sockaddr -> Int_result.int
+  val sendv_raw:
+    t -> Iovec_write.t list -> sockaddr -> unit Lwt.t
+  val sendv:
+    t -> Iovec_write.t list -> sockaddr -> unit Lwt.t
 
   (** The type definition will likely be changed.
       Don't use fragile pattern matching for it *)

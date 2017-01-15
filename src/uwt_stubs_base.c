@@ -1564,6 +1564,63 @@ uwt_cleanup_na(value o_unit)
   return Val_unit;
 }
 
+UWT_LOCAL void
+uwt__clean_iovecs(uv_req_t * r)
+{
+  struct req * wp = r->data;
+  uwt__free_uv_buf_t((uv_buf_t *)&wp->c,wp->cb_type);
+}
+
+UWT_LOCAL int
+uwt__build_iovecs(value o_ios, struct req * wp)
+{
+  const size_t ar_size = Wosize_val(o_ios);
+  _Static_assert(sizeof(struct worker_params) >=
+                 sizeof(uv_buf_t),"uv_buf_t too big");
+  uwt__malloc_uv_buf_t((uv_buf_t *)&wp->c,
+                       ar_size * (sizeof(uv_buf_t)),
+                       wp->cb_type);
+  uv_buf_t * buf = (uv_buf_t *)&wp->c;
+  if (buf->len == 0 || buf->base == NULL){
+    return UV_ENOMEM;
+  }
+  uv_buf_t *bufs = (uv_buf_t *)buf->base;
+
+  size_t non_ba_length_whole = 0;
+  size_t i;
+
+  for ( i = 0; i < ar_size; ++i ){
+    value cur = Field(o_ios,i);
+    if ( Tag_val(cur) != 0 ){
+      non_ba_length_whole += Long_val(Field(cur,2));
+    }
+  }
+  if ( non_ba_length_whole ){
+    uwt__malloc_uv_buf_t(&wp->buf, non_ba_length_whole, wp->cb_type);
+    if (wp->buf.base == NULL){
+      uwt__free_uv_buf_t((uv_buf_t *)&wp->c,wp->cb_type);
+      return UV_ENOMEM;
+    }
+  }
+  char * p = wp->buf.base;
+  for ( i = 0; i < ar_size; ++i ){
+    value cur = Field(o_ios,i);
+    const size_t len = Long_val(Field(cur,2));
+    if ( Tag_val(cur) == 0 ){
+      bufs[i].base = Ba_buf_val(Field(cur,0)) + Long_val(Field(cur,1));
+      bufs[i].len = len;
+    }
+    else {
+      bufs[i].len = len;
+      bufs[i].base = p;
+      const char *src = String_val(Field(cur,0)) + Long_val(Field(cur,1));
+      memcpy(p, src, len);
+      p+= len;
+    }
+  }
+  return 0;
+}
+
 #undef SET_CB_VAL
 #undef GR_ROOT_INIT_SIZE
 #undef STACK_START_SIZE

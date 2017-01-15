@@ -192,3 +192,22 @@ uwt__pipe_tcp_connect_cb(uv_connect_t* req, int status)
     CLOSE_HANDLE_IF_UNREFERENCED(s);
   }
 }
+
+CAMLprim value
+uwt_handle_type_na(value o_stream)
+{
+  struct handle * s = Handle_val(o_stream);
+  if ( s && s->handle && s->close_called == 0 ){
+    switch (s->handle->type){
+    case UV_FILE: return (Val_long(0));
+    case UV_TTY: return (Val_long(1));
+    case UV_NAMED_PIPE: return (Val_long(2));
+    case UV_TCP: return (Val_long(3));
+    case UV_UDP: return (Val_long(4));
+    default: /* fall */
+    case UV_UNKNOWN_HANDLE:
+      return (Val_long(5));
+    }
+  }
+  return Val_long(5);
+}

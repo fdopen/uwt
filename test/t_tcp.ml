@@ -99,6 +99,11 @@ module Client = struct
     write 1024 >>= fun () ->
     Uwt.Tcp.close_wait t >>= fun () ->
     Lwt.return ((Buffer.contents buf_write) = (Buffer.contents buf_read))
+
+  let testv ?min_elems ?max_elems ?max_elem_length raw addr =
+    Uwt.Tcp.with_connect ~addr @@ fun t ->
+    Uwt.Tcp.to_stream t |>
+    Tstream.testv ?min_elems ?max_elems ?max_elem_length raw
 end
 
 module Server = Echo_server (
@@ -511,6 +516,36 @@ let l = [
        Lwt.return_true
      else
        Lwt.return_false);
+  ("writev">::
+   fun ctx ->
+     server_init ();
+     for _i = 0 to 99 do
+       m_true ( Client.testv true Server.sockaddr );
+       m_true ( Client.testv false Server.sockaddr );
+     done;
+     ip6_only ctx;
+     server6_init ();
+     for _i = 0 to 99 do
+       m_true ( Client.testv true Server6.sockaddr );
+       m_true ( Client.testv false Server6.sockaddr );
+     done);
+  ("writev_iov_max">::
+   fun ctx ->
+     server_init ();
+     m_true ( Client.testv
+                ~min_elems:8192
+                ~max_elems:16384
+                ~max_elem_length:32
+                true
+                Server.sockaddr );
+     ip6_only ctx;
+     server6_init ();
+     m_true ( Client.testv
+                ~min_elems:8192
+                ~max_elems:16384
+                ~max_elem_length:32
+                true
+                Server6.sockaddr ) );
 ]
 
 let l  = "Tcp">:::l

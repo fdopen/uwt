@@ -22,7 +22,7 @@ let start_iter_server_bytes addr =
       let buf = Bytes.create 65536 in
       let rec iter () =
         recv ~buf server >>= fun x ->
-        if x.recv_len <= 0 then
+        if x.recv_len < 0 then
           Lwt.return_false
         else
           match x.sockaddr with
@@ -42,7 +42,7 @@ let start_iter_server_ba addr =
       let buf = Uwt_bytes.create 65536 in
       let rec iter () =
         recv_ba ~buf server >>= fun x ->
-        if x.recv_len <= 0 then
+        if x.recv_len < 0 then
           Lwt.return_false
         else
           match x.sockaddr with
@@ -64,7 +64,7 @@ let start_server_cb addr : bool Lwt.t =
     match x with
     | Uwt.Udp.Data (_,None) -> e "no sockaddr"
     | Uwt.Udp.Partial_data(_,_) -> e "partial data"
-    | Uwt.Udp.Empty_from _ -> e "empty datagram"
+    | Uwt.Udp.Empty_from x -> ignore (Uwt.Udp.send_string server ~buf:"" x)
     | Uwt.Udp.Transmission_error _ -> e "transmission error"
     | Uwt.Udp.Data(b,Some x) -> ignore (Uwt.Udp.send server ~buf:b x)
   in
@@ -77,35 +77,55 @@ let start_server_cb addr : bool Lwt.t =
       sleeper
     ) ( fun () -> Uwt.Udp.close_wait server )
 
-let use_ext = Uwt.Misc.((version ()).minor) >= 7
-let start_client ~raw ~iter ~length addr =
-  let client =
-    if use_ext = false then
-      Uwt.Udp.init ()
-    else if  Unix.PF_INET6 = Unix.domain_of_sockaddr addr then
+let udp_init =
+  let use_ext = Uwt.Misc.((version ()).minor) >= 7 in
+  if use_ext = false then fun _ -> Uwt.Udp.init () else
+  fun addr ->
+    if  Unix.PF_INET6 = Unix.domain_of_sockaddr addr then
       Uwt.Udp.init_ipv6_exn ()
     else
       Uwt.Udp.init_ipv4_exn ()
-  in
+
+let start_client ~raw ~iter ~length addr =
+  let client = udp_init addr in
   let buf = rbytes_create length in
   let buf_recv = Bytes.create length in
-  let send = match raw with
-  | true -> send_raw
-  | false -> send
-  in
+  let send = if raw then send_raw else send in
   let rec f n =
-    if n = 0 then
-      Lwt.return_true
-    else (
-      send client ~buf addr >>= fun () ->
-      recv client ~buf:buf_recv >>= fun x ->
-      if x.recv_len < length || x.is_partial || x.sockaddr = None ||
-         buf <> buf_recv
-      then
-        Lwt.return_false
-      else
-        f (pred n)
-    )
+    if n = 0 then Lwt.return_true else
+    send client ~buf addr >>= fun () ->
+    recv client ~buf:buf_recv >>= fun x ->
+    if x.recv_len < length || x.is_partial || x.sockaddr = None ||
+       buf <> buf_recv
+    then
+      Lwt.return_false
+    else
+      f (pred n)
+  in
+  Lwt.finalize ( fun () -> f iter ) ( fun () -> close_wait client )
+
+let start_clientv ~raw ~iter addr =
+  let max_len = 4_000 in
+  let buf_recv = Bytes.create (max_len + 100) in
+  let sendv = if raw then sendv_raw else sendv in
+  let client = udp_init addr in
+  let rec f n =
+    if n = 0 then Lwt.return_true else
+    let iovecs =
+      let iovecs = iovecs_create ~max_elems:20 () in
+      let length = iovecs_length iovecs in
+      if length < max_len then iovecs else
+        Uwt.Iovec_write.drop iovecs (length - max_len)
+    in
+    let length = iovecs_length iovecs in
+    sendv client iovecs addr >>= fun () ->
+    recv client ~buf:buf_recv >>= fun x ->
+    if x.recv_len < length || x.is_partial || x.sockaddr = None ||
+       Bytes.sub buf_recv 0 x.recv_len <> iovecs_to_bytes iovecs
+    then
+      Lwt.return_false
+    else
+      f (pred n)
   in
   Lwt.finalize ( fun () -> f iter ) ( fun () -> close_wait client )
 
@@ -130,6 +150,10 @@ let l = [
            m_true (
              let server = server addr in
              let client = start_client ~raw ~iter:1_000 ~length:10 addr in
+             Lwt.pick [ server ; client ]);
+           m_true (
+             let server = server addr in
+             let client = start_clientv ~raw ~iter:1_000 addr in
              Lwt.pick [ server ; client ]);
            m_true (
              let server = server addr in

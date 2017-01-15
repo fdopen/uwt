@@ -38,14 +38,15 @@ UWT_EXTERN2(uwt_accept_raw_na);
 UWT_EXTERN2(uwt_read_start);
 UWT_EXTERN2(uwt_read_stop);
 UWT_EXTERN5(uwt_read_own);
-UWT_EXTERN6(uwt_udp_send_native);
-UWT_EXTERN_BYTE(uwt_udp_send_byte);
-UWT_EXTERN5(uwt_write);
+UWT_EXTERN6(uwt_write_send_native);
+UWT_EXTERN_BYTE(uwt_write_send_byte);
 UWT_EXTERN6(uwt_write2_native);
 UWT_EXTERN_BYTE(uwt_write2_byte);
 UWT_EXTERN5(uwt_udp_try_send_na);
 UWT_EXTERN4(uwt_try_write_na);
 UWT_EXTERN2(uwt_stream_set_blocking_na);
+UWT_EXTERN5(uwt_writev);
+UWT_EXTERN3(uwt_try_writev_na);
 
 #ifdef __cplusplus
 }

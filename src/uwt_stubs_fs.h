@@ -66,6 +66,8 @@ UWT_EXTERN_BYTE(uwt_fs_symlink_byte);
 UWT_EXTERN4(uwt_fs_stat);
 UWT_EXTERN4(uwt_fs_lstat);
 UWT_EXTERN4(uwt_fs_fstat);
+UWT_EXTERN6(uwt_fs_writev_native);
+UWT_EXTERN_BYTE(uwt_fs_writev_byte);
 
 #if HAVE_DECL_UV_FS_REALPATH
 UWT_EXTERN4(uwt_fs_realpath);

@@ -245,6 +245,22 @@ let write ?pos ?len t ~buf =
   let dim = Bytes.length buf in
   write ~dim ?pos ?len t ~buf
 
+external writev:
+  file -> Iovec_write.t array -> Iovec_write.t list ->
+  loop -> Req.t -> unit ->
+  Int_result.int =
+  "uwt_fs_writev_byte" "uwt_fs_writev_native"
+
+let writev t iol =
+  let open Iovec_write in
+  match prep_for_cstub iol with
+  | Invalid -> invalid_arg "Uwt_sync.Fs.writev"
+  | Empty -> write ~len:0 t ~buf:(Bytes.create 1)
+  | All_ba(ar,bl) ->
+    let req = Req.create loop typ in
+    writev t ar bl loop req () |>
+    read_write_common ~req
+
 external sendfile:
   file -> file -> int64 -> nativeint -> loop -> Req.t -> unit ->
   Int_result.int = "uwt_fs_sendfile_byte" "uwt_fs_sendfile_native"

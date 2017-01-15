@@ -273,6 +273,34 @@ val stdin : file
 val stdout : file
 val stderr : file
 
+module Iovec_write : sig
+  (**
+     pass multiple buffers at once to a libuv write function
+     first integer: offset in string / bytes / bigarray
+     second integer: number of bytes to write
+  *)
+  type t =
+    | Bigarray of buf * int * int
+    | String of string * int * int
+    | Bytes of bytes * int * int
+
+  (** [drop tl n] adjusts the I/O vector list [tl] so that it no longer
+      includes its first [n] bytes. *)
+  val drop : t list -> int -> t list
+
+  (**/**)
+  (* Internal functions. Don't use *)
+  type ts =
+    | Invalid (* at least one element has an invalid spec *)
+    | Empty (* nothing to write / empty list or length is zero *)
+    | All_ba of t array *  t list
+    (* first element: all objects to write except the empty ones
+       second element: all bigarray elements that need GC protection *)
+  val prep_for_cstub : t list -> ts
+  val length : t -> int
+  (**/**)
+end
+
 module Fs_types : sig
   type uv_open_flag =
     | O_RDONLY
@@ -366,6 +394,10 @@ module type Fs_functions = sig
   val write : ?pos:int -> ?len:int -> file -> buf:bytes -> int t
   val write_string : ?pos:int -> ?len:int -> file -> buf:string -> int t
   val write_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int t
+
+  (** If the number of buffers is greater than IOV_MAX, newer libuv
+      versions already contains code to circumvent this problem *)
+  val writev : file -> Iovec_write.t list -> int t
 
   val close : file -> unit t
 

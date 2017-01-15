@@ -114,6 +114,22 @@ let skip_if_symlink_error ctx f =
         | x -> Lwt.fail x) )
     (fun x -> Lwt.fail x)
 
+let rec really_writev fd iol =
+  Uwt.Fs.writev fd iol >>= fun n ->
+  match Uwt.Iovec_write.drop iol n with
+  | [] -> Lwt.return_unit
+  | iol -> really_writev fd iol
+
+let writev_test ?min_elems ~max_elems () =
+  let fln = tmpdir () // "awritev" in
+  let iovecs = iovecs_create ?min_elems ~max_elems () in
+  let t =
+    with_file ~mode:[ O_WRONLY ; O_CREAT ; O_TRUNC ] fln @@ fun fd ->
+    really_writev fd iovecs
+  in
+  m_equal () t;
+  m_equal (iovecs_to_bytes iovecs) (file_to_bytes fln)
+
 let l = [
   ("mkdtemp">::
    fun _ctx ->
@@ -308,6 +324,15 @@ let l = [
          ( fun () -> unlink dst )
      in
      m_true t );
+  ("writev">::
+   fun _ctx ->
+     writev_test ~max_elems:15 ());
+  ("writev_iov_max">::
+   fun ctx ->
+     OUnit2.skip_if
+       (all ctx = false && (not Sys.win32 && uv_major = 1 && uv_minor < 7))
+       "early libuv versions don't support iov_max workaround" ;
+     writev_test ~min_elems:16_384 ~max_elems:32_768 ());
 ]
 
 let l = "Fs">:::l

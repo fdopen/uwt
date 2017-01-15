@@ -405,8 +405,8 @@ XX(udp_send_cb,uv_udp_send_t)
 #undef XX
 
 CAMLprim value
-uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
-                    value o_sock,value o_cb)
+uwt_write_send_native(value o_stream,value o_buf,value o_pos,value o_len,
+                      value o_sock,value o_cb)
 {
   const size_t len = Long_val(o_len);
   if ( len > ULONG_MAX ){
@@ -484,11 +484,136 @@ uwt_udp_send_native(value o_stream,value o_buf,value o_pos,value o_len,
   }
   CAMLreturn(ret);
 }
-BYTE_WRAP6(uwt_udp_send)
+BYTE_WRAP6(uwt_write_send)
 
 CAMLprim value
-uwt_write(value a,value b,value c,value d,value e){
-  return (uwt_udp_send_native(a,b,c,d,Val_unit,e));
+uwt_writev(value o_stream, value o_ios, value o_sock, value o_iosave, value o_cb)
+{
+  const size_t ar_size = Wosize_val(o_ios);
+#ifdef _WIN32
+  size_t i;
+  for (i = 0; i < ar_size; ++i){
+    if ( (size_t)Long_val(Field(Field(o_ios,i),2)) > ULONG_MAX ){
+      return VAL_UWT_INT_RESULT_EINVAL;
+    }
+  }
+#endif
+  struct sockaddr_storage addr;
+  if ( o_sock == Val_unit ){
+    HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream);
+  }
+  else {
+    if ( !uwt__get_sockaddr(o_sock,(struct sockaddr*)&addr) ){
+      return VAL_UWT_INT_RESULT_UNKNOWN;
+    }
+  }
+  HANDLE_INIT4(s, o_stream, o_ios, o_iosave, o_cb);
+  struct req * wp;
+  wp = uwt__req_create( o_sock == Val_unit ? UV_WRITE : UV_UDP_SEND,
+                        s->loop );
+  int erg = uwt__build_iovecs(o_ios, wp);
+  if ( erg == 0 ){
+    uv_buf_t * buf = (uv_buf_t *)&wp->c;
+    uv_buf_t *bufs = (uv_buf_t *)buf->base;
+    if ( o_sock == Val_unit ){
+      erg = uv_write((uv_write_t*)wp->req,
+                     (uv_stream_t*)s->handle,
+                     bufs,
+                     ar_size,
+                     write_send_cb);
+    }
+    else {
+      erg = uv_udp_send((uv_udp_send_t*)wp->req,
+                        (uv_udp_t*)s->handle,
+                        bufs,
+                        ar_size,
+                        (struct sockaddr*)&addr,
+                        udp_send_cb);
+    }
+    if ( erg < 0 ){
+      uwt__free_uv_buf_t((uv_buf_t *)&wp->c,wp->cb_type);
+      uwt__free_uv_buf_t(&wp->buf, wp->cb_type);
+    }
+    else {
+      wp->c_cb = uwt__ret_unit_cparam;
+      wp->cb_type = s->cb_type;
+      wp->in_use = 1;
+      wp->buf_contains_ba = 0;
+      s->initialized = 1;
+      uwt__gr_register(&wp->cb,o_cb);
+      wp->finalize_called = 1;
+      ++s->in_use_cnt;
+      if ( o_iosave != Val_unit ){
+        uwt__gr_register(&wp->sbuf,o_iosave);
+      }
+      wp->clean_cb = uwt__clean_iovecs;
+    }
+  }
+  if ( erg < 0 ){
+    uwt__free_mem_uv_req_t(wp);
+    uwt__free_struct_req(wp);
+  }
+  CAMLreturn(VAL_UWT_UNIT_RESULT(erg));
+}
+
+CAMLprim value
+uwt_try_writev_na(value o_stream, value o_ios, value o_sock)
+{
+  const size_t ar_size = Wosize_val(o_ios);
+  size_t i;
+#ifdef _WIN32
+  for (i = 0; i < ar_size; ++i) {
+    if ( (size_t)Long_val(Field(Field(o_ios,i),2)) > ULONG_MAX ){
+      return VAL_UWT_INT_RESULT_EINVAL;
+    }
+  }
+#endif
+  struct sockaddr_storage addr;
+  if ( o_sock == Val_unit ){
+    HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream);
+  }
+  else {
+    if ( ! uwt__get_sockaddr(o_sock,(struct sockaddr *)&addr) ) {
+      return VAL_UWT_INT_RESULT_UNKNOWN;
+    }
+  }
+  HANDLE_NINIT_NA(s,o_stream);
+#define N_BUFS 48
+  uv_buf_t s_bufs[N_BUFS];
+  int ret = 0 ;
+  uv_buf_t * bufs = s_bufs;
+  if ( ar_size > N_BUFS ){
+    bufs = malloc(sizeof(*bufs) * ar_size);
+    if ( bufs == NULL ){
+      return VAL_UWT_INT_RESULT_ENOMEM;
+    }
+  }
+  for ( i = 0; i< ar_size ; i++ ){
+    value cur = Field(o_ios,i);
+    const size_t offset = Long_val(Field(cur,1));
+    bufs[i].len = Long_val(Field(cur,2));
+    if ( Tag_val(cur) == 0 ){
+      bufs[i].base = Ba_buf_val(Field(cur,0)) + offset;
+    }
+    else {
+      bufs[i].base = String_val(Field(cur,0)) + offset;
+    }
+  }
+  if ( o_sock == Val_unit ){
+    ret = uv_try_write((uv_stream_t*)s->handle, bufs, ar_size);
+  }
+  else {
+    ret = uv_udp_try_send((uv_udp_t*)s->handle, bufs, ar_size,
+                          (struct sockaddr *)&addr );
+    if ( ret >= 0 ){
+      s->initialized = 1;
+    }
+  }
+  if ( bufs != s_bufs ){
+    free(bufs);
+  }
+  return (VAL_UWT_INT_RESULT(ret));
+#undef N_BUFS
 }
 
 static void

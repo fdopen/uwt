@@ -221,6 +221,69 @@ let stdin : file = Unix.stdin
 let stdout : file = Unix.stdout
 let stderr : file = Unix.stderr
 
+module Iovec_write = struct
+  type t =
+    | Bigarray of buf * int * int
+    | String of string * int * int
+    | Bytes of bytes * int * int
+
+  let length = function
+  | Bigarray(_,_,l)
+  | String(_,_,l)
+  | Bytes(_,_,l) -> l
+
+  let normalize ios =
+    List.filter (fun a -> length a <> 0 ) ios
+
+  let drop tl count =
+    let rec loop count = function
+    | [] -> []
+    | hd::tl ->
+      let l = length hd in
+      if l < count then
+        loop (count - l) tl
+      else if l = count then
+        normalize tl
+      else
+        let nhd = match hd with
+        | Bigarray(b,o,l) -> Bigarray(b, o+count, l-count)
+        | String(b,o,l) -> String(b, o+count, l-count)
+        | Bytes(b,o,l) -> Bytes(b, o+count, l-count)
+        in
+        nhd::(normalize tl)
+    in
+    if count < 0 then
+      invalid_arg "Iovec_write.drop"
+    else if count = 0 then
+      normalize tl
+    else
+      loop count tl
+
+  type ts =
+    | Invalid
+    | Empty
+    | All_ba of t array *  t list
+
+  let is_invalid t =
+    let dim,pos,len =
+      match t with
+      | Bigarray(b,o,l) -> Bigarray.Array1.dim b, o, l
+      | String(b,o,l) -> String.length b, o, l
+      | Bytes(b,o,l) -> Bytes.length b, o, l
+    in
+    pos < 0 || len < 0 || pos > dim - len
+
+  let bas_only ios =
+    let f = function | Bigarray _ -> true | Bytes _  | String _ -> false in
+    List.filter f ios
+
+  let prep_for_cstub li =
+    if List.exists is_invalid li then Invalid else
+    match normalize li with
+    | [] -> Empty
+    | l -> All_ba(Array.of_list l,bas_only l)
+end
+
 module Fs_types = struct
   type uv_open_flag =
     | O_RDONLY
@@ -300,6 +363,7 @@ module type Fs_functions = sig
   val write : ?pos:int -> ?len:int -> file -> buf:bytes -> int t
   val write_string : ?pos:int -> ?len:int -> file -> buf:string -> int t
   val write_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int t
+  val writev : file -> Iovec_write.t list -> int t
   val close : file -> unit t
   val unlink : string -> unit t
   val mkdir : ?perm:int -> string -> unit t
