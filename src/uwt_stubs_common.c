@@ -358,6 +358,11 @@ uwt_translate_sys_error(DWORD sys_errno)
   /* translations from libuv */
   case ERROR_NOACCESS:                    return UV_EACCES;
   case WSAEACCES:                         return UV_EACCES;
+#ifdef ERROR_ELEVATION_REQUIRED
+  case ERROR_ELEVATION_REQUIRED:          return UV_EACCES;
+#else
+  case 740:                               return UV_EACCES;
+#endif
   case ERROR_ADDRESS_ALREADY_ASSOCIATED:  return UV_EADDRINUSE;
   case WSAEADDRINUSE:                     return UV_EADDRINUSE;
   case WSAEADDRNOTAVAIL:                  return UV_EADDRNOTAVAIL;
