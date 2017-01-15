@@ -166,9 +166,16 @@ uwt__alloc_own_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
     buf->len = h->c_read_size;
   }
   else {
+#ifdef UWT_NO_COPY_READ
+    GET_RUNTIME();
+    value tp = GET_CB_VAL(h->obuf);
+    buf->base = String_val(tp) + h->obuf_offset;
+    buf->len = h->c_read_size;
+#else
     size_t len;
     len = UMIN(suggested_size,h->c_read_size);
     uwt__malloc_uv_buf_t(buf,len,h->cb_type);
+#endif
   }
 }
 

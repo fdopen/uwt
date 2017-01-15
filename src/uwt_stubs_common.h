@@ -128,6 +128,10 @@
 #endif
 #endif
 
+#if !defined(_WIN32) && (UV_VERSION_MAJOR == 1)
+#define UWT_NO_COPY_READ 1
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

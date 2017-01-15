@@ -306,9 +306,13 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
 {
   HANDLE_CB_INIT_WITH_CLEAN(handle);
   value exn = Val_unit;
-  bool buf_not_cleaned = true;
   struct handle * uh = handle->data;
+#ifndef UWT_NO_COPY_READ
+  bool buf_not_cleaned = true;
   const int read_ba = uh->use_read_ba;
+#else
+  (void) buf;
+#endif
   if ( uh->close_called == 0 ){
     if (unlikely( uh->cb_read == CB_INVALID ||
                   uh->obuf == CB_INVALID )){
@@ -343,6 +347,7 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
           else {
             is_partial = Val_long(0);
           }
+#ifndef UWT_NO_COPY_READ
           if ( nread != 0 && read_ba == 0 ){
             value o = GET_CB_VAL(uh->obuf);
             assert( Tag_val(o) == String_tag );
@@ -353,6 +358,7 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
             buf_not_cleaned = false;
             uwt__free_uv_buf_t_const(buf,uh->cb_type);
           }
+#endif
           triple = caml_alloc_small(3,0);
           Field(triple,0) = Val_long(nread);
           Field(triple,1) = is_partial;
@@ -376,9 +382,11 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
       }
     }
   }
+#ifndef UWT_NO_COPY_READ
   if ( read_ba == 0 && buf_not_cleaned && buf->base ){
     uwt__free_uv_buf_t_const(buf,uh->cb_type);
   }
+#endif
   HANDLE_CB_RET(exn);
 }
 

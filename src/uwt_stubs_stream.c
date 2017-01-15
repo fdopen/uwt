@@ -265,8 +265,10 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
   HANDLE_CB_INIT_WITH_CLEAN(stream);
   struct handle * h = stream->data;
   value ret = Val_unit;
+#ifndef UWT_NO_COPY_READ
   const bool read_ba = h->use_read_ba == 1;
   bool buf_not_cleaned = true;
+#endif
   if ( h->close_called == 0 && nread != 0 ){
     if (unlikely( h->cb_read == CB_INVALID ||
                   h->obuf == CB_INVALID )){
@@ -297,6 +299,7 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
         assert((size_t)nread <= h->c_read_size);
         finished = false;
         o = Val_long(nread);
+#ifndef UWT_NO_COPY_READ
         if ( read_ba == false ){
           if (unlikely( !buf->base || (size_t)nread > buf->len )){
             o = VAL_UWT_INT_RESULT_UWT_EFATAL;
@@ -306,11 +309,14 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
             memcpy(String_val(tp) + h->obuf_offset, buf->base, (size_t)nread);
           }
         }
+#endif
       }
+#ifndef UWT_NO_COPY_READ
       if ( read_ba == false ){
         buf_not_cleaned = false;
         uwt__free_uv_buf_t_const(buf,h->cb_type);
       }
+#endif
       cb = GET_CB_VAL(h->cb_read);
       uwt__gr_unregister(&h->cb_read);
       uwt__gr_unregister(&h->obuf);
@@ -329,9 +335,11 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
       h->can_reuse_cb_read = 0;
     }
   }
+#ifndef UWT_NO_COPY_READ
   if ( buf_not_cleaned && read_ba == false && buf->base ){
     uwt__free_uv_buf_t_const(buf,h->cb_type);
   }
+#endif
   HANDLE_CB_RET(ret);
 }
 
