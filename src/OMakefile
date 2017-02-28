@@ -129,7 +129,16 @@ section
 	y=$(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE)
 	if $(not $(equal $(INTERNAL_LIBUV),$(EMPTY)))
 		export
-		x+=libuv$(EXT_LIB) $(glob ../libuv/include/*.h)
+		match $(OCAMLC_SYSTEM)
+		case $"win*"
+			export
+			x+=libuv$(EXT_LIB) $(glob ../libuv/include/*.h)
+		case $"mingw*"
+			export
+			x+=libuv$(EXT_LIB) $(glob ../libuv/include/*.h)
+		default
+			export
+			x+=libuv$(EXT_LIB) $(filter-out %tree.h %stdint-msvc2008.h, $(glob ../libuv/include/*.h))
 	if $(equal $(HAVE_LWT), true)
 		Install_helper($(PROJNAME),$(x) $(y),$(EMPTY))
 	else
