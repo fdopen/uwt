@@ -299,7 +299,7 @@ gethost_error_code(int hno)
   case NO_DATA:
 #endif
 #if defined(NO_DATA) || defined(NO_ADDRESS)
-    return INT_TO_POINTER(UV_EINVAL);
+    return INT_TO_POINTER(UV_ENOENT);
 #endif
 #ifdef NO_RECOVERY
   case NO_RECOVERY:
