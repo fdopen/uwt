@@ -92,7 +92,15 @@ else
                     host='i686-w64-mingw32'
                     ;;
             esac
-            ./configure --host=$host --enable-static --disable-shared CC="$CC" CFLAGS="$CFLAGS -D_WIN32_WINNT=0x0600 -DNDEBUG" ac_cv_search_pthread_create=no
+            if [ -x /bin/dash ]; then
+                # help libtool to avoid forks
+                export _G_HAVE_ARITH_OP="yes"
+                export _G_HAVE_XSI_OPS="yes"
+                export _G_HAVE_PLUSEQ_OP="no"
+                /bin/dash ./configure --host=$host --enable-static --disable-shared SHELL=/bin/dash CC="$CC" CFLAGS="$CFLAGS -D_WIN32_WINNT=0x0600 -DNDEBUG" ac_cv_search_pthread_create=no
+            else
+                ./configure --host=$host --enable-static --disable-shared CC="$CC" CFLAGS="$CFLAGS -D_WIN32_WINNT=0x0600 -DNDEBUG" ac_cv_search_pthread_create=no
+            fi
             set +u
             jflags=
             if [ -n "$NUMBER_OF_PROCESSORS" ] && [ -z "$MAKEFLAGS" ]; then
