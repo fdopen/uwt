@@ -1,4 +1,4 @@
 [submodule "libuv"]
 	path = libuv
-	url = git@github.com:libuv/libuv.git
+        url = https://github.com/libuv/libuv.git
 	branch = v1.x
