@@ -151,6 +151,9 @@ let l = [
       let tdir = match os_tmpdir () with
       | Ok x -> x
       | Error _ -> Filename.get_temp_dir_name () in
+      let tdir = match Uv_fs_sync.realpath tdir with
+      | Ok y -> y
+      | Error _ -> tdir in
       nm_try_finally ( fun tdir ->
           let t = Uwt_base.Misc.chdir tdir in
           assert_equal 0 (t :> int);
