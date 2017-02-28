@@ -168,7 +168,7 @@ uwt__alloc_own_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
   else {
 #ifdef UWT_NO_COPY_READ
     GET_RUNTIME();
-    value tp = GET_CB_VAL(h->obuf);
+    value tp = Field(GET_CB_VAL(h->cb_read),0);
     buf->base = String_val(tp) + h->obuf_offset;
     buf->len = h->c_read_size;
 #else

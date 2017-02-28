@@ -463,7 +463,7 @@ module Stream = struct
       | iovs -> writev_raw t iovs
 
   external read:
-    t -> 'a -> int -> int -> int_cb -> Int_result.unit = "uwt_read_own"
+    t -> int -> int -> ('a * int_cb) -> Int_result.unit = "uwt_read_own"
 
   let read ?(pos=0) ?len t ~buf ~dim =
     let len =
@@ -475,7 +475,7 @@ module Stream = struct
       Lwt.fail (Invalid_argument "Uwt.Stream.read")
     else
       let sleeper,waker = Lwt.task () in
-      let (x: Int_result.unit) = read t buf pos len waker in
+      let (x: Int_result.unit) = read t pos len (buf,waker) in
       if Int_result.is_error x then
         LInt_result.fail ~name:"uwt_read" ~param x
       else
@@ -526,8 +526,10 @@ module Stream = struct
   external is_writable : t -> bool = "uwt_is_writable_na" NOALLOC
 
   external listen:
-    t -> max:int -> cb:( t -> Int_result.unit -> unit ) -> Int_result.unit =
+    t -> max:int -> (t * ( t -> Int_result.unit -> unit )) -> Int_result.unit =
     "uwt_listen"
+  let listen t ~max ~cb = listen t ~max (t,cb)
+
   let listen_exn a ~max ~cb = listen a ~max ~cb |> to_exnu "listen"
 
   external shutdown: t -> unit_cb -> Int_result.unit = "uwt_shutdown"
@@ -1009,7 +1011,7 @@ module Udp = struct
   }
 
   external recv:
-    t -> 'a -> int -> int -> recv cb
+    t -> int -> int -> ('a * recv cb)
     -> Int_result.unit = "uwt_udp_recv_own"
 
   let recv ?(pos=0) ?len ~buf ~dim t =
@@ -1024,7 +1026,7 @@ module Udp = struct
       Lwt.return ({ recv_len = 0; is_partial = false ; sockaddr = None })
     else
       let sleeper,waker = Lwt.task () in
-      let x = recv t buf pos len waker in
+      let x = recv t pos len (buf,waker) in
       if Int_result.is_error x then
         LInt_result.fail ~name ~param x
       else

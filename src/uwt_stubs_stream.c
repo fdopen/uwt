@@ -86,27 +86,24 @@ listen_cb(uv_stream_t *server,int status)
   HANDLE_CB_INIT(server);
   value exn = Val_unit;
   struct handle * h = server->data;
-  if (unlikely( h->cb_listen == CB_INVALID ||
-                h->cb_listen_server == CB_INVALID )){
+  if (unlikely( h->cb_listen == CB_INVALID )){
     DEBUG_PF("cb lost");
   }
   else {
     value param = VAL_UWT_UNIT_RESULT(status);
-    value s = GET_CB_VAL(h->cb_listen_server);
-    exn = GET_CB_VAL(h->cb_listen);
-    exn = caml_callback2_exn(exn,s,param);
+    value s = GET_CB_VAL(h->cb_listen);
+    exn = caml_callback2_exn(Field(s,1),Field(s,0),param);
   }
   HANDLE_CB_RET(exn);
 }
 
 CAMLprim value
-uwt_listen(value o_stream,value o_backlog,value o_cb)
+uwt_listen(value o_stream,value o_backlog,value o_stream_cb)
 {
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream);
-  HANDLE_INIT2(s,o_stream,o_cb);
+  HANDLE_INIT2(s,o_stream,o_stream_cb);
   int ret;
-  if ( s->cb_listen_server != CB_INVALID ||
-       s->cb_listen != CB_INVALID ){
+  if ( s->cb_listen != CB_INVALID ){
     ret = UV_EBUSY;
   }
   else {
@@ -114,8 +111,7 @@ uwt_listen(value o_stream,value o_backlog,value o_cb)
     ret = uv_listen(stream,Long_val(o_backlog),listen_cb);
     if ( ret >= 0 ){
       ++s->in_use_cnt;
-      uwt__gr_register(&s->cb_listen,o_cb);
-      uwt__gr_register(&s->cb_listen_server,o_stream);
+      uwt__gr_register(&s->cb_listen,o_stream_cb);
     }
   }
   CAMLreturn(VAL_UWT_UNIT_RESULT(ret));
@@ -270,8 +266,7 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
   bool buf_not_cleaned = true;
 #endif
   if ( h->close_called == 0 && nread != 0 ){
-    if (unlikely( h->cb_read == CB_INVALID ||
-                  h->obuf == CB_INVALID )){
+    if (unlikely( h->cb_read == CB_INVALID )){
       DEBUG_PF("callbacks lost");
     }
     else {
@@ -305,7 +300,7 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
             o = VAL_UWT_INT_RESULT_UWT_EFATAL;
           }
           else {
-            value tp = GET_CB_VAL(h->obuf);
+            value tp = Field(GET_CB_VAL(h->cb_read),0);
             memcpy(String_val(tp) + h->obuf_offset, buf->base, (size_t)nread);
           }
         }
@@ -317,9 +312,8 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
         uwt__free_uv_buf_t_const(buf,h->cb_type);
       }
 #endif
-      cb = GET_CB_VAL(h->cb_read);
+      cb = Field(GET_CB_VAL(h->cb_read),1);
       uwt__gr_unregister(&h->cb_read);
-      uwt__gr_unregister(&h->obuf);
       h->can_reuse_cb_read = finished == false;
       if ( h->in_use_cnt ){
         h->in_use_cnt--;
@@ -344,11 +338,11 @@ read_own_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
 }
 
 CAMLprim value
-uwt_read_own(value o_s,value o_buf,value o_offset,value o_len,value o_cb)
+uwt_read_own(value o_s,value o_offset,value o_len,value o_buf_cb)
 {
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_s);
-  HANDLE_INIT3(s,o_s,o_buf,o_cb);
-  const int ba = Tag_val(o_buf) != String_tag;
+  HANDLE_INIT2(s,o_s,o_buf_cb);
+  const int ba = Tag_val(Field(o_buf_cb,0)) != String_tag;
   value ret;
   const size_t len = Long_val(o_len);
   assert( s->cb_type == CB_LWT );
@@ -370,8 +364,7 @@ uwt_read_own(value o_s,value o_buf,value o_offset,value o_len,value o_cb)
     }
     if ( erg >= 0 ){
       size_t offset = Long_val(o_offset);
-      uwt__gr_register(&s->cb_read,o_cb);
-      uwt__gr_register(&s->obuf,o_buf);
+      uwt__gr_register(&s->cb_read,o_buf_cb);
       ++s->in_use_cnt;
       s->c_read_size = len;
       s->read_waiting = 1;
@@ -380,7 +373,7 @@ uwt_read_own(value o_s,value o_buf,value o_offset,value o_len,value o_cb)
         s->obuf_offset = offset;
       }
       else {
-        s->ba_read = Ba_buf_val(o_buf) + offset;
+        s->ba_read = Ba_buf_val(Field(o_buf_cb,0)) + offset;
       }
     }
     ret = VAL_UWT_UNIT_RESULT(erg);

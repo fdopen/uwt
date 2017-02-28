@@ -37,7 +37,7 @@ UWT_EXTERN1(uwt_accept);
 UWT_EXTERN2(uwt_accept_raw_na);
 UWT_EXTERN2(uwt_read_start);
 UWT_EXTERN2(uwt_read_stop);
-UWT_EXTERN5(uwt_read_own);
+UWT_EXTERN4(uwt_read_own);
 UWT_EXTERN6(uwt_write_send_native);
 UWT_EXTERN_BYTE(uwt_write_send_byte);
 UWT_EXTERN6(uwt_write2_native);

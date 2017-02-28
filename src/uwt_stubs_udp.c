@@ -314,8 +314,7 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
   (void) buf;
 #endif
   if ( uh->close_called == 0 ){
-    if (unlikely( uh->cb_read == CB_INVALID ||
-                  uh->obuf == CB_INVALID )){
+    if (unlikely( uh->cb_read == CB_INVALID )){
       DEBUG_PF("callback lost");
     }
     else {
@@ -349,7 +348,7 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
           }
 #ifndef UWT_NO_COPY_READ
           if ( nread != 0 && read_ba == 0 ){
-            value o = GET_CB_VAL(uh->obuf);
+            value o = Field(GET_CB_VAL(uh->cb_read),0);
             assert( Tag_val(o) == String_tag );
             size_t len = UMIN(uh->c_read_size,(size_t)nread);
             memcpy(String_val(o) + uh->obuf_offset,
@@ -367,10 +366,9 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
           Field(param,0) = triple;
           End_roots();
         }
-        exn = GET_CB_VAL(uh->cb_read);
+        exn = Field(GET_CB_VAL(uh->cb_read),1);
         uh->can_reuse_cb_read = 1;
         uwt__gr_unregister(&uh->cb_read);
-        uwt__gr_unregister(&uh->obuf);
         if ( uh->in_use_cnt ){
           uh->in_use_cnt--;
         }
@@ -391,11 +389,11 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
 }
 
 CAMLprim value
-uwt_udp_recv_own(value o_udp,value o_buf,value o_offset,value o_len,value o_cb)
+uwt_udp_recv_own(value o_udp,value o_offset,value o_len,value o_buf_cb)
 {
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_udp);
-  HANDLE_INIT3(u,o_udp,o_buf,o_cb);
-  const int ba = Tag_val(o_buf) != String_tag;
+  HANDLE_INIT2(u,o_udp,o_buf_cb);
+  const int ba = Tag_val(Field(o_buf_cb,0)) != String_tag;
   size_t len = Long_val(o_len);
   value ret;
   if ( u->cb_read != CB_INVALID ){
@@ -416,8 +414,7 @@ uwt_udp_recv_own(value o_udp,value o_buf,value o_offset,value o_len,value o_cb)
     }
     if ( erg >= 0 ){
       size_t offset = Long_val(o_offset);
-      uwt__gr_register(&u->cb_read,o_cb);
-      uwt__gr_register(&u->obuf,o_buf);
+      uwt__gr_register(&u->cb_read,o_buf_cb);
       ++u->in_use_cnt;
       u->c_read_size = len;
       u->use_read_ba = ba;
@@ -426,7 +423,7 @@ uwt_udp_recv_own(value o_udp,value o_buf,value o_offset,value o_len,value o_cb)
         u->obuf_offset = offset;
       }
       else {
-        u->ba_read = Ba_buf_val(o_buf) + offset;
+        u->ba_read = Ba_buf_val(Field(o_buf_cb,0)) + offset;
       }
     }
     ret = VAL_UWT_UNIT_RESULT(erg);

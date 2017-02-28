@@ -201,10 +201,8 @@ struct ATTR_PACKED handle {
     size_t c_read_size; /* passed to the alloc function */
     void * ba_read; /* pointer to bigarray for reading */
     cb_t cb_listen;
-    cb_t cb_listen_server;
     cb_t cb_read;
     cb_t cb_close;
-    cb_t obuf;
 #ifdef _WIN32
     int orig_fd; /* when converting to and back from Unix.file_descr, I have to
                     save the original crt fd in order to avoid descriptor

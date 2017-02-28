@@ -1081,17 +1081,11 @@ uwt__handle_free_common(struct handle *s)
   if ( s->cb_listen != CB_INVALID ){
     uwt__gr_unregister(&s->cb_listen);
   }
-  if ( s->cb_listen_server != CB_INVALID ){
-    uwt__gr_unregister(&s->cb_listen_server);
-  }
   if ( s->cb_read != CB_INVALID ){
     uwt__gr_unregister(&s->cb_read);
   }
   if ( s->cb_close != CB_INVALID ){
     uwt__gr_unregister(&s->cb_close);
-  }
-  if ( s->obuf != CB_INVALID ){
-    uwt__gr_unregister(&s->obuf);
   }
   s->in_use_cnt = 0;
 }
@@ -1139,10 +1133,8 @@ handle_finalize_close_cb(uv_handle_t *h)
   if ( s ){
     uwt__free_mem_uv_handle_t(s);
     if ( s->cb_listen != CB_INVALID ||
-         s->cb_listen_server != CB_INVALID ||
          s->cb_read != CB_INVALID ||
-         s->cb_close != CB_INVALID ||
-         s->obuf != CB_INVALID ){
+         s->cb_close != CB_INVALID ){
       GET_RUNTIME();
       uwt__handle_free_common(s);
     }
@@ -1154,8 +1146,7 @@ UWT_LOCAL void
 uwt__cancel_reader(struct handle *h)
 {
   if ( h->read_waiting == 1 &&
-       h->cb_read != CB_INVALID &&
-       h->obuf != CB_INVALID ){
+       h->cb_read != CB_INVALID ){
     value exn;
     value param;
     h->read_waiting = 0;
@@ -1166,9 +1157,8 @@ uwt__cancel_reader(struct handle *h)
     else {
       param = VAL_UWT_INT_RESULT_ECANCELED;
     }
-    value cb = GET_CB_VAL(h->cb_read);
+    value cb = Field(GET_CB_VAL(h->cb_read),1);
     uwt__gr_unregister(&h->cb_read);
-    uwt__gr_unregister(&h->obuf);
     ++h->in_callback_cnt;
     ++h->in_use_cnt;
     assert( h->close_called == 1 );
@@ -1228,10 +1218,8 @@ handle_finalize(value p)
   }
   if ( s->in_use_cnt == 0 && s->in_callback_cnt == 0 ){
     if (unlikely( s->cb_listen != CB_INVALID ||
-                  s->cb_listen_server != CB_INVALID ||
                   s->cb_read != CB_INVALID ||
-                  s->cb_close != CB_INVALID ||
-                  s->obuf != CB_INVALID )){
+                  s->cb_close != CB_INVALID )){
       DEBUG_PF("fatal: reference count mechanism is distorted");
     }
     /* we might be in the wrong thread, defer the close call to later */
@@ -1295,10 +1283,8 @@ uwt__handle_create(uv_handle_type handle_type, struct loop *l)
   }
   wp->loop = l;
   wp->cb_listen = CB_INVALID;
-  wp->cb_listen_server = CB_INVALID;
   wp->cb_read = CB_INVALID;
   wp->cb_close = CB_INVALID;
-  wp->obuf = CB_INVALID;
   wp->ba_read = NULL;
   wp->handle->data = wp;
   wp->handle->type = handle_type;
