@@ -101,6 +101,9 @@ module Lwt_unix = struct
   | U.O_DSYNC -> Uwt.Fs_types.O_DSYNC :: accu
   | U.O_SYNC -> Uwt.Fs_types.O_SYNC :: accu
   | U.O_RSYNC -> Uwt.Fs_types.O_RSYNC :: accu
+#if OCAML_VERSION >= (4, 05, 0)
+  | U.O_KEEPEXEC
+#endif
   | U.O_SHARE_DELETE
   | U.O_CLOEXEC -> accu
 
@@ -124,6 +127,23 @@ module Lwt_unix = struct
     let f () =
       let mode = List.fold_left trans_of [] flags in
       UF.openfile ~mode ~perm path >>= fun fd ->
+#if OCAML_VERSION >= (4, 05, 0)
+      (* contrary to the standard runtime, cloexec is the default behaviour *)
+      (if List.mem U.O_CLOEXEC flags || List.mem U.O_KEEPEXEC flags = false then
+         Lwt.return_unit
+       else
+       match Uwt.Conv.file_descr_of_file fd with
+       | None ->
+         let _t : unit Lwt.t = UF.close fd in
+         ufail ~param:path Unix.EBADF "openfile"
+       | Some ufd ->
+         match Unix.clear_close_on_exec ufd with
+         | exception x ->
+           let _t : unit Lwt.t = UF.close fd in
+           Lwt.fail x
+         | () -> Lwt.return_unit
+      ) >>= fun () ->
+#endif
       Lwt.return (File fd)
     in
     help f

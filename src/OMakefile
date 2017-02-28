@@ -114,6 +114,7 @@ section
 	OCAMLPACKS+= lwt lwt.log
 	OCAML_LIBS+= uwt-base uwt uwt-ext
 	FILES= uwt_compat
+	OCAMLFINDFLAGS+= -pp "cppo -V OCAML:$(OCAMLC_VERSION)"
 	Repeat_targets($(FILES))
 	UWT_COMPAT=$(MOCamlLibrary uwt-compat,$(FILES))
 	lwtlib:: $(UWT_COMPAT)
