@@ -4,9 +4,19 @@ install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.t
 script: bash -ex .travis-opam.sh
 env:
   global:
-  - PACKAGE=uwt
+  - PINS="nocrypto.0.5.3:https://github.com/mirleft/ocaml-nocrypto.git#v0.5.3 uwt-random:https://github.com/fdopen/uwt-random.git uwt-ssl:https://github.com/fdopen/uwt-ssl.git uwt-tls:https://github.com/fdopen/uwt-tls.git uwt-conduit:https://github.com/fdopen/uwt-conduit.git uwt-cohttp:https://github.com/fdopen/uwt-cohttp.git"
+  - EXTRA_DEPS="tls nocrypto ssl cohttp alcotest"
+  - POST_INSTALL_HOOK="./.travis-own.sh"
+  - PACKAGE=uwt.0.0.5
   matrix:
   - OCAML_VERSION=4.03
+  - OCAML_VERSION=4.04
 os:
   - linux
   - osx
+matrix:
+  exclude:
+    - os: osx
+      env: OCAML_VERSION=4.03
+    - os: linux
+      env: OCAML_VERSION=4.04

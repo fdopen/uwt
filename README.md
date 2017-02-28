@@ -1,5 +1,7 @@
 Uwt provides OCaml bindings for libuv - on top of lwt.
 
+[![Travis build Status](https://travis-ci.org/fdopen/uwt.svg?branch=master)](https://travis-ci.org/fdopen/uwt)
+
 * Requests are translated to lwt-threads.
 
 * Callbacks that are called continually are most of the time not
