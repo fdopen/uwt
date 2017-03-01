@@ -1,3 +1,5 @@
+# Uwt
+
 Uwt provides OCaml bindings for libuv - on top of lwt.
 
 [![Travis build Status](https://travis-ci.org/fdopen/uwt.svg?branch=master)](https://travis-ci.org/fdopen/uwt)
@@ -8,8 +10,8 @@ Uwt provides OCaml bindings for libuv - on top of lwt.
   translated to the usual lwt semantic.
 
 * naming conventions mirror the conventions of libuv, so you can easily
-  consult the official libuv manual. Only the differences are explained
-  inside `uwt.mli`
+  consult the official [libuv manual](http://docs.libuv.org/en/v1.x/).
+  Only the differences are explained inside `uwt.mli`
 
 * Uwt is **not** compatible with `lwt.unix`. It's not a further
   `Lwt_engine` in addition to `select` and `libev`. However, the
@@ -23,29 +25,45 @@ Uwt provides OCaml bindings for libuv - on top of lwt.
 * Uwt is not thread safe. All uwt functions should be called from your
   main thread.
 
-Uwt is in an early alpha stage. The interface is likely to
-change. Feel free to open an issue an make suggestions about it :)
-
 ## Installation
+
+### Quick install guide
+
+```bash
+$ opam install uwt
+# or for the latest development version
+$ opam pin add uwt --dev-repo
+```
+
+### Manual install
 
 Dependencies:
 
-* OCaml 4.02.1 (earlier versions are not supported)
+* OCaml 4.02.1 or later (earlier versions are not supported)
+* lwt 2.6.0 or later
 * libuv 1.0 or later (0.x versions are not supported)
-* lwt 2.4.7 or later
 
 Build dependencies:
 
-* autoconf
 * pkg-config / pkgconf
 * findlib
 * omake
 * cppo
-* ppx_deriving
-* ppx_import
-* ounit
+* ppx_deriving (test only)
+* ppx_import (test only)
+* ounit (test only)
+* autoconf (repo pinning only)
 
-```
+```bash
 $ omake all
 $ omake install
+```
+
+libuv will be compiled locally, if is not already installed on your system.
+You can also explicity enforce one option:
+
+```bash
+$ omake all BUILD_LIBUV=true
+# or
+$ omake all BUILD_LIBUV=false
 ```
