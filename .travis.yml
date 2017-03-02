@@ -7,7 +7,7 @@ env:
   - PINS="nocrypto.0.5.3:https://github.com/mirleft/ocaml-nocrypto.git#v0.5.3 uwt-random:https://github.com/fdopen/uwt-random.git uwt-ssl:https://github.com/fdopen/uwt-ssl.git uwt-tls:https://github.com/fdopen/uwt-tls.git uwt-conduit:https://github.com/fdopen/uwt-conduit.git uwt-cohttp:https://github.com/fdopen/uwt-cohttp.git"
   - EXTRA_DEPS="tls nocrypto ssl cohttp alcotest"
   - POST_INSTALL_HOOK="./.travis-own.sh"
-  - PACKAGE=uwt.0.0.5
+  - PACKAGE=uwt.0.1.1
   matrix:
   - OCAML_VERSION=4.03
   - OCAML_VERSION=4.04

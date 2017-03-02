@@ -1,10 +1,9 @@
-0.0.5 2017-03-03
+0.1.0 2017-03-02
 ---------------------------
 - new functions: Uwt.Stream.writev and Uwt.Fs.writev
 
 - the opam package will now always use the internal copy of
-  libuv. (you can link uwt against the libuv version shipped by your
-  distro with `BUILD_LIBUV=true opam install uwt`)
+  libuv.
 
 - prepare OCaml 4.05 support
 
