@@ -6,10 +6,7 @@ homepage: "https://github.com/fdopen/uwt"
 dev-repo: "https://github.com/fdopen/uwt.git"
 bug-reports: "https://github.com/fdopen/uwt/issues"
 tags: ["clib:libuv"]
-build: [
-  ["omake" "-j%{jobs}%" "lib" "BUILD_LIBUV=true"] {!conf-libuv:installed}
-  ["omake" "-j%{jobs}%" "lib" "BUILD_LIBUV=false"] {conf-libuv:installed}
-]
+build: ["omake" "-j%{jobs}%" "lib" "BUILD_LIBUV=true"]
 install: [
   ["omake" "install"]
 ]
@@ -35,7 +32,4 @@ depends: [
   "ounit" {test & >= "2.0"}
   "ppx_deriving" {test & >= "2.0"}
   "ppx_import" {test & >= "1.0"}
-]
-depopts: [
-  "conf-libuv"
 ]
