@@ -1,3 +1,20 @@
+0.0.5 2017-03-03
+---------------------------
+- new functions: Uwt.Stream.writev and Uwt.Fs.writev
+
+- the opam package will now always use the internal copy of
+  libuv. (you can link uwt against the libuv version shipped by your
+  distro with `BUILD_LIBUV=true opam install uwt`)
+
+- prepare OCaml 4.05 support
+
+- internal libuv version updated to 1.11.0
+
+- avoid memcpy calls inside Uwt.Stream.read and Uwt.Udp.recv
+  (*nix only)
+
+- Set up Travis for OS X testing
+
 0.0.4 2016-11-04
 ---------------------------
 - API CHANGE: `Uwt_error` removed. Functions that possibly fail with
