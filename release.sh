@@ -47,7 +47,7 @@ cd "$mtmpf"
 touch src/configure libuv/configure
 rm -f .git* libuv/.git*
 
-for f in "${curdir}/../libuv32.vcxproj" "${curdir}/../libuv64.vcxproj" ; do
+for f in "${curdir}/appveyor/libuv32.vcxproj" "${curdir}/appveyor/libuv64.vcxproj" ; do
     if [ -f "$f" ]; then
         install -m 0644 "$f" libuv
     fi

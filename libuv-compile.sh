@@ -45,6 +45,10 @@ if [ "$unix" = "true" ]; then
 else
     if [ "$system" = "win32" ] || [ "$system" = "win64" ] ; then
         if [ ! -f Release/lib/libuv.lib ]; then
+            if [ ! -f libuv32.vcxproj ] && [ -f ../appveyor/libuv32.vcxproj ]; then
+                cp ../appveyor/libuv32.vcxproj .
+                cp ../appveyor/libuv64.vcxproj .
+            fi
             if [ ! -f libuv32.vcxproj ]; then
                 # checkout doesn't work at the moment. They've enabled
                 # options inside common.gypi that lead to an ouptut
@@ -71,11 +75,13 @@ else
             else
                 if [ "$system" = "win32" ]; then
                     cp libuv32.vcxproj libuv.vcxproj
+                    pform=x86
                 else
+                    pform=x64
                     cp libuv64.vcxproj libuv.vcxproj
                 fi
             fi
-            MSBuild.exe libuv.vcxproj '/t:Build' '/p:Configuration=Release' '/clp:NoSummary;NoItemAndPropertyList;Verbosity=minimal' '/nologo'
+            MSBuild.exe libuv.vcxproj '/t:Build' "/p:Configuration=Release;Platform=$pform" '/clp:NoSummary;NoItemAndPropertyList;Verbosity=minimal' '/nologo' >&2
         fi
         lib="libuv/Release/lib/libuv.lib"
         ext_lib=".lib"

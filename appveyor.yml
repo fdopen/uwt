@@ -1,0 +1,19 @@
+platform:
+  - x86
+
+environment:
+  global:
+    FORK_USER: ocaml
+    FORK_BRANCH: master
+    CYG_ROOT: C:\cygwin64
+    PACKAGE: uwt.0.1.1
+  matrix:
+    - OPAM_SWITCH: 4.04.0+msvc64c
+    - OPAM_SWITCH: 4.03.0+mingw32c
+
+install:
+  - ps: iex ((new-object net.webclient).DownloadString("https://raw.githubusercontent.com/$env:FORK_USER/ocaml-ci-scripts/$env:FORK_BRANCH/appveyor-install.ps1"))
+  - git submodule update --init --recursive
+
+build_script:
+  - call %CYG_ROOT%\bin\bash.exe -l %APPVEYOR_BUILD_FOLDER%\appveyor-opam.sh
