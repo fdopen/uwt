@@ -38,6 +38,22 @@ let l = [
       let ip6 = "2231:1fa8:45a3:3121:1333:8a2e:237a:733a" in
       let ip6' = ip6_addr_exn ip6 2199 |> ip6_name_exn in
       assert_equal ip6 ip6');
+  ("ip46_addr_unix">:: fun _ ->
+      (* Unix.inet_addr is abstract, use polymorphic comparison to
+         ensure that they are still represented as strings *)
+      let ip1 = Unix.inet_addr_of_string "127.0.0.1" in
+      let port = 80 in
+      let ip2 = match Uwt_base.Misc.ip4_addr_exn "127.0.0.1" port with
+      | Unix.ADDR_INET(x,p) when p = port -> x
+      | Unix.ADDR_INET _  | Unix.ADDR_UNIX _ -> assert false in
+      assert_equal ip1 ip2;
+      assert_equal Unix.inet_addr_loopback ip2;
+      let s = "2001:db8:85a3:8d3:1319:8a2e:370:7348" in
+      let ip1 = Unix.inet_addr_of_string s in
+      let ip2 = match Uwt_base.Misc.ip6_addr_exn s port with
+      | Unix.ADDR_INET(x,p) when p = port -> x
+      | Unix.ADDR_INET _  | Unix.ADDR_UNIX _ -> assert false in
+      assert_equal ip1 ip2);
   ("get_total_memory">:: fun _ ->
       let p = get_total_memory () > 134217728L in
       assert_equal true p );

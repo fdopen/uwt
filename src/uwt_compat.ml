@@ -17,9 +17,35 @@ module Lwt_unix = struct
   type process_status = Unix.process_status
   type wait_flag = Unix.wait_flag
   type file_perm = Unix.file_perm
-  type open_flag = Unix.open_flag
+  type open_flag = Unix.open_flag =
+    | O_RDONLY
+    | O_WRONLY
+    | O_RDWR
+    | O_NONBLOCK
+    | O_APPEND
+    | O_CREAT
+    | O_TRUNC
+    | O_EXCL
+    | O_NOCTTY
+    | O_DSYNC
+    | O_SYNC
+    | O_RSYNC
+    | O_SHARE_DELETE
+    | O_CLOEXEC
+#if OCAML_VERSION >= (4, 05, 0)
+    | O_KEEPEXEC
+#endif
+
   type seek_command = Unix.seek_command
-  type file_kind = Unix.file_kind
+  type file_kind = Unix.file_kind =
+    | S_REG
+    | S_DIR
+    | S_CHR
+    | S_BLK
+    | S_LNK
+    | S_FIFO
+    | S_SOCK
+
   type stats = Unix.stats
   type access_permission = Unix.access_permission
   type inet_addr = Unix.inet_addr
@@ -123,7 +149,7 @@ module Lwt_unix = struct
       ( fun () -> f s1 s2 )
       trans_exn
 
-  let openfile path flags perm =
+  let openfile path (flags:open_flag list) (perm:file_perm) =
     let f () =
       let mode = List.fold_left trans_of [] flags in
       UF.openfile ~mode ~perm path >>= fun fd ->
@@ -484,16 +510,7 @@ module Lwt_unix = struct
   let getaddrinfo host service (options:Unix.getaddrinfo_option list) =
     Uwt.Dns.getaddrinfo ~host ~service options >>=function
     | Error _ -> Lwt.return_nil (* errors are ignored inside getaddrinfo.c *)
-    | Ok l->
-      let f a =
-        let open Unix in
-        { ai_family = a.Uwt.Dns.ai_family;
-          ai_socktype = a.Uwt.Dns.ai_socktype;
-          ai_protocol = a.Uwt.Dns.ai_protocol;
-          ai_canonname = a.Uwt.Dns.ai_canonname;
-          ai_addr = a.Uwt.Dns.ai_addr }
-      in
-      Lwt.return (List.map f l)
+    | Ok l -> Lwt.return l
 
   let getnameinfo addr l =
     Uwt.Dns.getnameinfo addr l >>= function

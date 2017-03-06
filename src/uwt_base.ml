@@ -33,6 +33,79 @@ type 'a result = ('a , error) o_result
 external strerror: error -> string = "uwt_strerror"
 
 module Int_result = struct
+  module U = struct
+    type error = Unix.error =
+      | E2BIG
+      | EACCES
+      | EAGAIN
+      | EBADF
+      | EBUSY
+      | ECHILD
+      | EDEADLK
+      | EDOM
+      | EEXIST
+      | EFAULT
+      | EFBIG
+      | EINTR
+      | EINVAL
+      | EIO
+      | EISDIR
+      | EMFILE
+      | EMLINK
+      | ENAMETOOLONG
+      | ENFILE
+      | ENODEV
+      | ENOENT
+      | ENOEXEC
+      | ENOLCK
+      | ENOMEM
+      | ENOSPC
+      | ENOSYS
+      | ENOTDIR
+      | ENOTEMPTY
+      | ENOTTY
+      | ENXIO
+      | EPERM
+      | EPIPE
+      | ERANGE
+      | EROFS
+      | ESPIPE
+      | ESRCH
+      | EXDEV
+      | EWOULDBLOCK
+      | EINPROGRESS
+      | EALREADY
+      | ENOTSOCK
+      | EDESTADDRREQ
+      | EMSGSIZE
+      | EPROTOTYPE
+      | ENOPROTOOPT
+      | EPROTONOSUPPORT
+      | ESOCKTNOSUPPORT
+      | EOPNOTSUPP
+      | EPFNOSUPPORT
+      | EAFNOSUPPORT
+      | EADDRINUSE
+      | EADDRNOTAVAIL
+      | ENETDOWN
+      | ENETUNREACH
+      | ENETRESET
+      | ECONNABORTED
+      | ECONNRESET
+      | ENOBUFS
+      | EISCONN
+      | ENOTCONN
+      | ESHUTDOWN
+      | ETOOMANYREFS
+      | ETIMEDOUT
+      | ECONNREFUSED
+      | EHOSTDOWN
+      | EHOSTUNREACH
+      | ELOOP
+      | EOVERFLOW
+      | EUNKNOWNERR of int
+  end
+
   type 'a t = int
 
   type real_int = int
@@ -53,65 +126,65 @@ module Int_result = struct
 #include "error_val.ml"
 
   let to_unix_error = function
-  | E2BIG -> Unix.E2BIG
-  | EACCES -> Unix.EACCES
-  | EADDRINUSE -> Unix.EADDRINUSE
-  | EADDRNOTAVAIL -> Unix.EADDRNOTAVAIL
-  | EAFNOSUPPORT -> Unix.EAFNOSUPPORT
-  | EAGAIN -> Unix.EAGAIN
-  | EALREADY -> Unix.EALREADY
-  | EBADF -> Unix.EBADF
-  | EBUSY -> Unix.EBUSY
-  | ECONNABORTED -> Unix.ECONNABORTED
-  | ECONNREFUSED -> Unix.ECONNREFUSED
-  | ECONNRESET -> Unix.ECONNRESET
-  | EDESTADDRREQ -> Unix.EDESTADDRREQ
-  | EEXIST -> Unix.EEXIST
-  | EFAULT -> Unix.EFAULT
-  | EFBIG -> Unix.EFBIG
-  | EHOSTUNREACH -> Unix.EHOSTUNREACH
-  | EINTR -> Unix.EINTR
-  | EINVAL -> Unix.EINVAL
-  | EIO -> Unix.EIO
-  | EISCONN -> Unix.EISCONN
-  | EISDIR -> Unix.EISDIR
-  | ELOOP -> Unix.ELOOP
-  | EMFILE -> Unix.EMFILE
-  | EMLINK -> Unix.EMLINK
-  | EMSGSIZE -> Unix.EMSGSIZE
-  | ENAMETOOLONG -> Unix.ENAMETOOLONG
-  | ENETDOWN -> Unix.ENETDOWN
-  | ENETUNREACH -> Unix.ENETUNREACH
-  | ENFILE -> Unix.ENFILE
-  | ENOBUFS -> Unix.ENOBUFS
-  | ENODEV -> Unix.ENODEV
-  | ENOENT -> Unix.ENOENT
-  | ENOMEM -> Unix.ENOMEM
-  | ENOPROTOOPT -> Unix.ENOPROTOOPT
-  | ENOSPC -> Unix.ENOSPC
-  | ENOSYS -> Unix.ENOSYS
-  | ENOTCONN -> Unix.ENOTCONN
-  | ENOTDIR -> Unix.ENOTDIR
-  | ENOTEMPTY -> Unix.ENOTEMPTY
-  | ENOTSOCK -> Unix.ENOTSOCK
-  | ENXIO -> Unix.ENXIO
-  | EPERM -> Unix.EPERM
-  | EPIPE -> Unix.EPIPE
-  | EPROTONOSUPPORT -> Unix.EPROTONOSUPPORT
-  | EPROTOTYPE -> Unix.EPROTOTYPE
-  | ERANGE -> Unix.ERANGE
-  | EROFS -> Unix.EROFS
-  | ESHUTDOWN -> Unix.ESHUTDOWN
-  | ESPIPE -> Unix.ESPIPE
-  | ESRCH -> Unix.ESRCH
-  | ETIMEDOUT -> Unix.ETIMEDOUT
-  | EXDEV -> Unix.EXDEV
-  | ENOTSUP -> Unix.EOPNOTSUPP
+  | E2BIG -> U.E2BIG
+  | EACCES -> U.EACCES
+  | EADDRINUSE -> U.EADDRINUSE
+  | EADDRNOTAVAIL -> U.EADDRNOTAVAIL
+  | EAFNOSUPPORT -> U.EAFNOSUPPORT
+  | EAGAIN -> U.EAGAIN
+  | EALREADY -> U.EALREADY
+  | EBADF -> U.EBADF
+  | EBUSY -> U.EBUSY
+  | ECONNABORTED -> U.ECONNABORTED
+  | ECONNREFUSED -> U.ECONNREFUSED
+  | ECONNRESET -> U.ECONNRESET
+  | EDESTADDRREQ -> U.EDESTADDRREQ
+  | EEXIST -> U.EEXIST
+  | EFAULT -> U.EFAULT
+  | EFBIG -> U.EFBIG
+  | EHOSTUNREACH -> U.EHOSTUNREACH
+  | EINTR -> U.EINTR
+  | EINVAL -> U.EINVAL
+  | EIO -> U.EIO
+  | EISCONN -> U.EISCONN
+  | EISDIR -> U.EISDIR
+  | ELOOP -> U.ELOOP
+  | EMFILE -> U.EMFILE
+  | EMLINK -> U.EMLINK
+  | EMSGSIZE -> U.EMSGSIZE
+  | ENAMETOOLONG -> U.ENAMETOOLONG
+  | ENETDOWN -> U.ENETDOWN
+  | ENETUNREACH -> U.ENETUNREACH
+  | ENFILE -> U.ENFILE
+  | ENOBUFS -> U.ENOBUFS
+  | ENODEV -> U.ENODEV
+  | ENOENT -> U.ENOENT
+  | ENOMEM -> U.ENOMEM
+  | ENOPROTOOPT -> U.ENOPROTOOPT
+  | ENOSPC -> U.ENOSPC
+  | ENOSYS -> U.ENOSYS
+  | ENOTCONN -> U.ENOTCONN
+  | ENOTDIR -> U.ENOTDIR
+  | ENOTEMPTY -> U.ENOTEMPTY
+  | ENOTSOCK -> U.ENOTSOCK
+  | ENXIO -> U.ENXIO
+  | EPERM -> U.EPERM
+  | EPIPE -> U.EPIPE
+  | EPROTONOSUPPORT -> U.EPROTONOSUPPORT
+  | EPROTOTYPE -> U.EPROTOTYPE
+  | ERANGE -> U.ERANGE
+  | EROFS -> U.EROFS
+  | ESHUTDOWN -> U.ESHUTDOWN
+  | ESPIPE -> U.ESPIPE
+  | ESRCH -> U.ESRCH
+  | ETIMEDOUT -> U.ETIMEDOUT
+  | EXDEV -> U.EXDEV
+  | ENOTSUP -> U.EOPNOTSUPP
   | (UWT_EFATAL|EAI_ADDRFAMILY|EAI_AGAIN|EAI_BADFLAGS|EAI_BADHINTS|
      EAI_CANCELED|EAI_FAIL|EAI_FAMILY|EAI_MEMORY|EAI_NODATA|EAI_NONAME|
      EAI_OVERFLOW|EAI_PROTOCOL|EAI_SERVICE|EAI_SOCKTYPE|ECANCELED|
      ECHARSET|ENONET|EPROTO|ETXTBSY|UNKNOWN|EOF)
-    as x -> Unix.EUNKNOWNERR (error_to_int x)
+    as x -> U.EUNKNOWNERR (error_to_int x)
 
   let of_unix_error = function
   | Unix.E2BIG -> E2BIG
@@ -215,7 +288,9 @@ type file = Unix.file_descr
 type buf =
   (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
-type sockaddr = Unix.sockaddr
+type sockaddr = Unix.sockaddr =
+  | ADDR_UNIX of string
+  | ADDR_INET of Unix.inet_addr * int
 
 let stdin : file = Unix.stdin
 let stdout : file = Unix.stdout

@@ -97,13 +97,13 @@ static.=
 		$(ConfMsgError $''cppo missing'')
 	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))
 		export
-		OCAMLFLAGS= -g -bin-annot -strict-sequence -principal -safe-string -w A-3-4
+		OCAMLFLAGS= -g -bin-annot -strict-sequence -principal -safe-string -w A-3-4 -warn-error +1..49-3-4
 		CFLAGS= $(CFLAGS) $(DEVCFLAGS)
 	else
 		export
 		# omake sets OCAMLFLAGS to '-warn-error A' by default which usually
 		# breaks compilation every time a new ocaml version is released
-		OCAMLFLAGS= -g -bin-annot -safe-string
+		OCAMLFLAGS= -g -bin-annot -safe-string -warn-error +1..49-3-4
 		if $(not $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64)))
 			CFLAGS= $(CFLAGS) -O2 -g
 			export

@@ -734,7 +734,7 @@ module Dns : sig
   type socket_type = Unix.socket_type
   type getaddrinfo_option = Unix.getaddrinfo_option
 
-  type addr_info = {
+  type addr_info = Unix.addr_info  = {
     ai_family : socket_domain;
     ai_socktype : socket_type;
     ai_protocol : int;
@@ -748,7 +748,7 @@ module Dns : sig
   *)
   val getaddrinfo :
     host:string -> service:string ->
-    getaddrinfo_option list -> addr_info list uv_result Lwt.t
+    getaddrinfo_option list -> Unix.addr_info list uv_result Lwt.t
 
   type getnameinfo_option = Unix.getnameinfo_option
 

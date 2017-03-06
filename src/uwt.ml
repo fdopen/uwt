@@ -1145,7 +1145,7 @@ module Dns = struct
     | AI_CANONNAME
     | AI_PASSIVE
 
-  type addr_info = {
+  type addr_info = Unix.addr_info = {
     ai_family : socket_domain;
     ai_socktype : socket_type;
     ai_protocol : int;
