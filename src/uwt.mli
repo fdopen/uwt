@@ -2,34 +2,22 @@
  * http://github.com/fdopen/uwt
  * Module Uwt
  * Copyright (C) 2015 Andreas Hauptmann
- * All rights reserved.
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
  *
- * * Redistributions of source code must retain the above copyright
- *   notice, this list of conditions and the following disclaimer.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, with linking exceptions;
+ * either version 2.1 of the License, or (at your option) any later
+ * version. See COPYING file for details.
  *
- * * Redistributions in binary form must reproduce the above copyright
- *   notice, this list of conditions and the following disclaimer in
- *   the documentation and/or other materials provided with the
- *   distribution.
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * * Neither the name of the author nor the names of its contributors
- *   may be used to endorse or promote products derived from this
- *   software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+ * 02111-1307, USA.
  *)
 
 (** Uwt main module *)
@@ -54,7 +42,7 @@
    main thread.
 
  - Uwt is in beta stage. The interface is likely to change in the first official
-   release. Feel free to open an issue an make suggestions about it :)
+   release. Feel free to open an issue and make suggestions about it :)
 
    Please notice, that there are subtle differences compared to
    [lwt.unix]. Because all requests are accomplished by libuv
@@ -90,7 +78,7 @@ include module type of Uwt_base
   with type Iovec_write.t = Uwt_base.Iovec_write.t
 
 module Main : sig
-  (** Analogue to [Lwt_main] *)
+  (** Analogue of [Lwt_main] *)
 
   (** Main_error is thrown, when uv_run returns an error - or if lwt
       doesn't report any result and libuv reports, that there are no
@@ -123,7 +111,6 @@ module Main : sig
           | result -> let y = ... (* no error *)
       ]}
   *)
-
   exception Fatal of exn * Printexc.raw_backtrace
 
   val enter_iter_hooks : (unit -> unit) Lwt_sequence.t
@@ -273,6 +260,15 @@ module Stream : sig
    *  There are currently plans to add [uv_read] and [uv_try_read] to libuv
    *  itself. If these changes got merged, {!Stream.read} will wrap them -
    *  even if there will be small semantic differences.
+   *
+   *  Note that is currently not possible to start several read threads in
+   *  parallel, you must serialize the requests manually. In the following
+   *  example [t2] will fail with EBUSY:
+
+      {[
+        let t1 = Uwt.Stream.read t ~buf:buf1 in
+        let t2 = Uwt.Stream.read t ~buf:buf2 in
+      ]}
    *)
   val read : ?pos:int -> ?len:int -> t -> buf:bytes -> int Lwt.t
   val read_ba : ?pos:int -> ?len:int -> t -> buf:buf -> int Lwt.t
@@ -294,7 +290,7 @@ module Stream : sig
       call write_raw internally. {!write_raw} is exposed here mainly
       in order to write unit tests for it. But you can also use it, if
       you your [buf] is very large or you know for another reason, that
-      try_write will fail.  *)
+      try_write will fail. *)
   val write_raw : ?pos:int -> ?len:int -> t -> buf:bytes -> unit Lwt.t
   val write_raw_string : ?pos:int -> ?len:int -> t -> buf:string -> unit Lwt.t
   val write_raw_ba : ?pos:int -> ?len:int -> t -> buf:buf -> unit Lwt.t
@@ -418,8 +414,11 @@ module Tcp : sig
   val nodelay : t -> bool -> Int_result.unit
   val nodelay_exn : t -> bool -> unit
 
-  val keepalive : t -> bool -> Int_result.unit
-  val keepalive_exn : t -> bool -> unit
+  val enable_keepalive : t -> int -> Int_result.unit
+  val enable_keepalive_exn : t -> int -> unit
+
+  val disable_keepalive : t -> Int_result.unit
+  val disable_keepalive_exn : t -> unit
 
   val simultaneous_accepts : t -> bool -> Int_result.unit
   val simultaneous_accepts_exn : t -> bool -> unit
@@ -550,7 +549,9 @@ module Udp : sig
   }
 
   (** Wrappers around {!recv_start} and {!recv_stop} for you convenience,
-      no callback soup. *)
+      no callback soup. ~len should be greater than zero.
+
+      See also the comments to {!Stream.read}.*)
   val recv : ?pos:int -> ?len:int -> buf:bytes -> t -> recv Lwt.t
   val recv_ba : ?pos:int -> ?len:int -> buf:buf -> t -> recv Lwt.t
 
@@ -671,11 +672,25 @@ module Process : sig
   include module type of Handle with type t := t
   val to_handle : t -> Handle.t
 
+  (** [Create_pipe_read],[Create_pipe_write], etc. determine the
+     direction of flow from the child process' perspective.
+     Previously there was only [Create_pipe], which is identic to
+     [Create_pipe_read] for [stdin] and [Create_pipe_write] for
+     [stdout] and [stderr].
+
+     This however doesn't allow you the specify a duplex data stream
+     for inter-process communication (and the interface for it is not exposed
+     otherwise for windows). Therefore [Create_pipe_duplex], etc. were
+     added later. [Create_pipe] is now redundant, but left in place in order
+     to not break existing code. *)
   type stdio =
     | Inherit_file of file
     | Create_pipe of Pipe.t
     | Inherit_pipe of Pipe.t
     | Inherit_stream of Stream.t
+    | Create_pipe_read of Pipe.t
+    | Create_pipe_write of Pipe.t
+    | Create_pipe_duplex of Pipe.t
 
   type exit_cb = t -> exit_status:int -> term_signal:int -> unit
 
@@ -760,7 +775,7 @@ end
 module Unix : sig
   val gethostname : unit -> string Lwt.t
 
-  (** These function don't fail with Not_found.
+  (** The following functions don't fail with Not_found.
       but with [Unix_error(Unix.ENOENT,"function_name",x)] *)
   val gethostbyname: string -> Unix.host_entry Lwt.t
   val gethostbyaddr: Unix.inet_addr -> Unix.host_entry Lwt.t

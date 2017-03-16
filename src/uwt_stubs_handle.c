@@ -97,6 +97,36 @@ uwt_close_nowait(value o_stream)
   return ret;
 }
 
+/*
+ the sole purpose of uwt_close__1 and uwt_close__2 is to produce
+ garbage descriptors for the test suite
+*/
+CAMLprim value
+uwt_close__1(value o_stream)
+{
+  struct handle * s = Handle_val(o_stream);
+  value ret = VAL_UWT_INT_RESULT_EBADF;
+  if ( s && s->handle && s->close_called == 0 ){
+    uv_close(s->handle, uwt__handle_finalize_close_cb);
+    ret = Val_unit;
+  }
+  return ret;
+}
+
+CAMLprim value
+uwt_close__2(value o_stream)
+{
+  struct handle * s = Handle_val(o_stream);
+  value ret = VAL_UWT_INT_RESULT_EBADF;
+  if ( s && s->handle ){
+    Field(o_stream,1) = 0;
+    s->finalize_called = 1;
+    s->close_called = 1;
+    ret = Val_unit;
+  }
+  return ret;
+}
+
 UV_HANDLE_BOOL(uv_handle_t,is_active,true)
 UV_HANDLE_BOOL(uv_handle_t,has_ref,true)
 UV_HANDLE_VOID(ref)
@@ -116,7 +146,7 @@ uwt_get_buffer_size_common_na(value o_stream, value o)
   else {
     ret = uv_recv_buffer_size(s->handle,&x);
   }
-  return (VAL_UWT_INT_RESULT(ret));
+  return (VAL_UWT_INT_RESULT(ret == 0 ? x : ret));
 }
 
 CAMLprim value
@@ -125,7 +155,7 @@ uwt_set_buffer_size_common_na(value o_stream, value o_len, value o)
   HANDLE_NINIT_NA(s,o_stream);
   HANDLE_NO_UNINIT_NA(s);
   int ret;
-  int x = Long_val(o_len);
+  INT_VAL_RET_IR_EINVAL(x,o_len);
   if ( Long_val(o) == 0 ){
     ret = uv_send_buffer_size(s->handle,&x);
   }

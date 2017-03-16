@@ -183,8 +183,12 @@ uwt_tcp_keepalive_na(value o_tcp,value o_enable, value o_delay)
 {
   HANDLE_NINIT_NA(th,o_tcp);
   /* uninit allowed */
+  intnat d = Long_val(o_delay);
+  if ( d < 0 || d > UINT_MAX ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
   uv_tcp_t * t = (uv_tcp_t *)th->handle;
-  int ret = uv_tcp_keepalive(t,Long_val(o_enable),Long_val(o_delay));
+  int ret = uv_tcp_keepalive(t,Long_val(o_enable),d);
   return (VAL_UWT_UNIT_RESULT(ret));
 }
 

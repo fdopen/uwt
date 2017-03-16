@@ -17,7 +17,7 @@ let l = [
          if i mod 2 = 0 then
            Uwt.Tcp.nodelay_exn t true
          else
-           Uwt.Tcp.keepalive_exn t true;
+           Uwt.Tcp.enable_keepalive_exn t 3;
        ));
      ignore (Array.init n ( fun _i -> Uwt.Pipe.init () ));
      assert_equal true true);

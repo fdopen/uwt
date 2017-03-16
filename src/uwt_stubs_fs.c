@@ -196,15 +196,19 @@ static const int open_flag_table[16] = {
 #else
 #ifndef O_NONBLOCK
 #define O_NONBLOCK O_NDELAY
+#define DEF_O_NONBLOCK
 #endif
 #ifndef O_DSYNC
 #define O_DSYNC 0
+#define DEF_O_DSYNC
 #endif
 #ifndef O_SYNC
 #define O_SYNC 0
+#define DEF_O_SYNC
 #endif
 #ifndef O_RSYNC
 #define O_RSYNC 0
+#define DEF_O_RSYNC
 #endif
   O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_CREAT , O_EXCL , O_TRUNC, O_APPEND,
   O_NOCTTY, O_DSYNC, O_SYNC, O_RSYNC,
@@ -261,17 +265,23 @@ fs_open_cb(uv_req_t * r)
 }
 
 FSFUNC_3(fs_open,fs_open_cb,o_name,o_flag_list,o_perm,{
-  const int flags = SAFE_CONVERT_FLAG_LIST(o_flag_list,open_flag_table);
-  COPY_STR1(o_name,{
-      BLOCK({
-          ret = uv_fs_open(loop,
-                           req,
-                           STRING_VAL(o_name),
-                           flags,
-                           Long_val(o_perm),
-                           cb);
-        });
-    });
+  const intnat perm = Long_val(o_perm);
+  if ( perm < INT_MIN || perm > INT_MAX ){
+    ret = UV_EINVAL;
+  }
+  else {
+    const int flags = SAFE_CONVERT_FLAG_LIST(o_flag_list,open_flag_table);
+    COPY_STR1(o_name,{
+        BLOCK({
+            ret = uv_fs_open(loop,
+                             req,
+                             STRING_VAL(o_name),
+                             flags,
+                             perm,
+                             cb);
+          });
+      });
+  }
   })
 
 static value
@@ -472,10 +482,16 @@ FSFUNC_1(fs_unlink,runit,o_path,{
 })
 
 FSFUNC_2(fs_mkdir,runit,o_path,o_mode,{
-  COPY_STR1(o_path,{
-      BLOCK({
-          ret = uv_fs_mkdir(loop,req,STRING_VAL(o_path),Long_val(o_mode),cb);});
-    });
+  const intnat mode = Long_val(o_mode);
+  if ( mode < INT_MIN || mode > INT_MAX ){
+    ret = UV_EINVAL;
+  }
+  else {
+    COPY_STR1(o_path,{
+        BLOCK({
+            ret = uv_fs_mkdir(loop,req,STRING_VAL(o_path),mode,cb);});
+      });
+  }
 })
 
 FSFUNC_1(fs_rmdir,runit,o_path,{
@@ -687,46 +703,76 @@ FSFUNC_2(fs_access,runit,o_path,o_list,{
 })
 
 FSFUNC_2(fs_chmod,runit,o_path,o_mode,{
-    COPY_STR1(o_path,{
-        BLOCK({ret = uv_fs_chmod(loop,
-                                 req,
-                                 STRING_VAL(o_path),
-                                 Long_val(o_mode),
-                                 cb
-                                 );});
-      });
+    const intnat mode = Long_val(o_mode);
+    if ( mode < INT_MIN || mode > INT_MAX ){
+      ret = UV_EINVAL;
+    }
+    else {
+      COPY_STR1(o_path,{
+          BLOCK({ret = uv_fs_chmod(loop,
+                                   req,
+                                   STRING_VAL(o_path),
+                                   mode,
+                                   cb
+                );});
+        });
+    }
 })
 
 FSFUNC_2(fs_fchmod,runit,o_fd,o_mode,{
     const int fd = FD_VAL(o_fd);
-    BLOCK({ret = uv_fs_fchmod(loop,
-                              req,
-                              fd,
-                              Long_val(o_mode),
-                              cb);});
+    const intnat mode = Long_val(o_mode);
+    if ( mode < INT_MIN || mode > INT_MAX ){
+      ret = UV_EINVAL;
+    }
+    else {
+      BLOCK({ret = uv_fs_fchmod(loop,
+                                req,
+                                fd,
+                                mode,
+                                cb);});
+    }
 })
 
 FSFUNC_3(fs_chown,runit,o_path,o_uid,o_gid,{
-    COPY_STR1(o_path,{
-        BLOCK({ret = uv_fs_chown(loop,
-                                 req,
-                                 STRING_VAL(o_path),
-                                 Long_val(o_uid),
-                                 Long_val(o_gid),
-                                 cb);});
-      });
+    const intnat r_uid = Long_val(o_uid);
+    const intnat r_gid = Long_val(o_gid);
+    const uv_uid_t uid = r_uid;
+    const uv_gid_t gid = r_gid;
+    if ( r_uid != uid || gid != r_gid ){
+      ret = UV_EINVAL;
+    }
+    else {
+      COPY_STR1(o_path,{
+          BLOCK({ret = uv_fs_chown(loop,
+                                   req,
+                                   STRING_VAL(o_path),
+                                   uid,
+                                   gid,
+                                   cb);});
+        });
+    }
 })
 
 FSFUNC_3(fs_fchown,runit,o_fd,o_uid,o_gid,{
     const int fd = FD_VAL(o_fd);
-    BLOCK({
-        ret = uv_fs_fchown(loop,
-                           req,
-                           fd,
-                           Long_val(o_uid),
-                           Long_val(o_gid),
-                           cb);
-      });
+    const intnat r_uid = Long_val(o_uid);
+    const intnat r_gid = Long_val(o_gid);
+    const uv_uid_t uid = r_uid;
+    const uv_gid_t gid = r_gid;
+    if ( r_uid != uid || gid != r_gid ){
+      ret = UV_EINVAL;
+    }
+    else {
+      BLOCK({
+          ret = uv_fs_fchown(loop,
+                             req,
+                             fd,
+                             uid,
+                             gid,
+                             cb);
+        });
+    }
 })
 
 FSFUNC_3(fs_utime,runit,o_p,o_atime,o_mtime,{
@@ -857,6 +903,22 @@ uwt_fs_free(value o_req)
   }
   return Val_unit;
 }
+#ifdef DEF_O_NONBLOCK
+#undef DEF_O_NONBLOCK
+#undef O_NONBLOCK
+#endif
+#ifdef DEF_O_DSYNC
+#undef DEF_O_DSYNC
+#undef O_DSYNC
+#endif
+#ifdef DEF_O_SYNC
+#undef DEF_O_SYNC
+#undef O_SYNC
+#endif
+#ifdef DEF_O_RSYNC
+#undef DEF_O_RSYNC
+#undef O_RSYNC
+#endif
 #undef runit
 #undef CHECK_STRING
 #undef BLOCK

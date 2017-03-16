@@ -372,6 +372,27 @@ strdup (const char *s)
 #define ALLOCA_PATH_LEN ((size_t)(UMAX_M(32767 + 17,MAX_PATH + 17)))
 #endif
 
+#define INT_VAL_RET_IR_EINVAL(l,b)                \
+  int l;                                          \
+  do {                                            \
+    const intnat l_real = Long_val(b);            \
+    if ( l_real < INT_MIN || l_real > INT_MAX ){  \
+      return VAL_UWT_INT_RESULT_EINVAL;           \
+    }                                             \
+    l = l_real;                                   \
+  } while (0)
+
+#define INT_VAL_RET_WRAP_EINVAL(l,b)              \
+  int l;                                          \
+  do {                                            \
+    const intnat l_real = Long_val(b);            \
+    if ( l_real < INT_MIN || l_real > INT_MAX ){  \
+      value ret = caml_alloc_small(1, Error_tag); \
+      Field(ret,0) = VAL_UWT_ERROR_EINVAL;        \
+      return ret;                                 \
+    }                                             \
+    l = l_real;                                   \
+  } while (0)
 
 #ifdef __cplusplus
 }

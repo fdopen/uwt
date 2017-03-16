@@ -44,6 +44,7 @@ uwt_signal_start(value o_loop,
                  value o_sig,
                  value o_cb)
 {
+  INT_VAL_RET_WRAP_EINVAL(sig, o_sig);
   INIT_LOOP_RESULT(l,o_loop);
   CAMLparam2(o_loop,o_cb);
   CAMLlocal2(ret,v);
@@ -62,7 +63,7 @@ uwt_signal_start(value o_loop,
     uwt__free_struct_handle(h);
   }
   else {
-    int signum = uwt__convert_signal_number(Long_val(o_sig));
+    int signum = uwt__convert_signal_number(sig);
     erg = uv_signal_start(t,signal_cb,signum);
     if ( erg < 0 ){
       h->finalize_called = 1;

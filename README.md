@@ -1,8 +1,11 @@
 # Uwt
 
-Uwt provides OCaml bindings for libuv - on top of lwt.
+Uwt provides OCaml bindings
+for [libuv](https://github.com/libuv/libuv) - on top
+of [lwt](https://github.com/ocsigen/lwt).
 
 [![Travis build Status](https://travis-ci.org/fdopen/uwt.svg?branch=master)](https://travis-ci.org/fdopen/uwt)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/fdopen/uwt?svg=true)](https://ci.appveyor.com/project/fdopen/uwt)
 
 * Requests are translated to lwt-threads.
 

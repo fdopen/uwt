@@ -32,8 +32,7 @@ common_after_work_cb(uv_work_t *req, int status)
     uwt__req_free_most(r);
   }
   else {
-    CAMLparam0();
-    CAMLlocal1(param);
+    value param;
     r = req->data;
     r->in_cb = 1;
     if ( status != 0 ){
@@ -43,18 +42,26 @@ common_after_work_cb(uv_work_t *req, int status)
     else {
       param = r->c_cb((uv_req_t *)req);
       if ( r->buf_contains_ba == 1 ){
+        Begin_roots1(param);
         value t = caml_alloc_small(1,Ok_tag);
         Field(t,0) = param;
         param = t;
+        End_roots();
       }
     }
-    value exn = CAML_CALLBACK1(r,cb,param);
+    value cb = GET_CB_VAL(r->cb);
+    uwt__gr_unregister(&r->cb);
+    if ( r->clean_cb != NULL ){
+      r->clean_cb(r->req);
+      r->clean_cb = NULL;
+    }
+    uwt__free_mem_uv_req_t(r);
+    value exn = caml_callback2_exn(*uwt__global_wakeup, cb, param);
     if ( Is_exception_result(exn) ){
       uwt__add_exception(r->loop,exn);
     }
     r->in_cb = 0;
     uwt__req_free_most(r);
-    CAMLreturn0;
   }
 }
 

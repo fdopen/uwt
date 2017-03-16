@@ -96,6 +96,7 @@ uwt_uptime(value unit)
   CAMLprim value                                                        \
   uwt_ ## name ##  _addr(value o_str,value o_port)                      \
   {                                                                     \
+    INT_VAL_RET_WRAP_EINVAL(port, o_port);                              \
     value ret;                                                          \
     struct sockaddr_i ## field addr;                                    \
     if ( !uwt_is_safe_string(o_str) ){                                  \
@@ -104,7 +105,7 @@ uwt_uptime(value unit)
     }                                                                   \
     else {                                                              \
       int r = uv_ ## name ## _addr(String_val(o_str),                   \
-                                   Long_val(o_port),&addr);             \
+                                   port,&addr);                         \
       if ( r < 0 ){                                                     \
         ret = caml_alloc_small(1,Error_tag);                            \
         Field(ret,0) = Val_uwt_error(r);                                \

@@ -416,12 +416,20 @@ module Lwt_unix = struct
     d_files: string array }
 
   let opendir path =
-    help1 UF.scandir path >>= fun a ->
-    Lwt.return {
-      d_closed = false;
-      d_pos = 0;
-      d_len = Array.length a;
-      d_files = Array.map snd a }
+    Lwt.catch (fun () ->
+        UF.scandir path >>= fun a ->
+        Lwt.return {
+          d_closed = false;
+          d_pos = 0;
+          d_len = Array.length a;
+          d_files = Array.map snd a })
+      (function
+      | Unix.Unix_error(a,b,c) as exn ->
+        if b = "scandir" then
+          trans_exn (Unix.Unix_error(a,"opendir",c))
+        else
+          trans_exn exn
+      | x -> Lwt.fail x)
 
   let readdir h =
     if h.d_closed = true then

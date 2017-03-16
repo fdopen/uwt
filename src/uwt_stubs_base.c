@@ -978,9 +978,7 @@ uwt__req_callback(uv_req_t * req)
       exn = wp_req->c_cb(req);
     }
     value cb = GET_CB_VAL(wp_req->cb);
-    Begin_roots2(cb,exn); /* clean_cb might allocate, although it shouldn't */
     req_free_common(wp_req);
-    End_roots();
     exn = caml_callback2_exn(*uwt__global_wakeup,cb,exn);
     if (unlikely( Is_exception_result(exn) )){
       uwt__add_exception(wp_req->loop,exn);
@@ -1020,7 +1018,7 @@ uwt_req_create(value o_loop, value o_type)
 }
 
 CAMLprim value
-uwt_req_cancel_noerr(value res)
+uwt_req_cancel_na(value res)
 {
   struct req * wp = Req_val(res);
   if ( wp != NULL &&
@@ -1031,9 +1029,11 @@ uwt_req_cancel_noerr(value res)
     wp->finalize_called = 1;
     /* At the moment only cancelable requests are exposed
        to ocaml. */
-    uv_cancel(wp->req);
+    if ( uv_cancel(wp->req) == 0 ){
+      return Val_long(1);
+    }
   }
-  return Val_unit;
+  return Val_long(0);
 }
 
 CAMLprim value
@@ -1126,8 +1126,8 @@ uwt__free_mem_uv_handle_t(struct handle * h)
   }
 }
 
-static void
-handle_finalize_close_cb(uv_handle_t *h)
+UWT_LOCAL void
+uwt__handle_finalize_close_cb(uv_handle_t *h)
 {
   struct handle * s = h->data;
   if ( s ){
@@ -1193,7 +1193,7 @@ uwt__handle_finalize_close(struct handle * s)
     if ( s->read_waiting ){
       uwt__cancel_reader(s);
     }
-    uv_close(h,handle_finalize_close_cb);
+    uv_close(h,uwt__handle_finalize_close_cb);
   }
 }
 
@@ -1301,6 +1301,7 @@ uwt__handle_create(uv_handle_type handle_type, struct loop *l)
   wp->close_called = 0;
   wp->close_executed = 0;
   wp->can_reuse_cb_read = 0;
+  wp->cb_read_removed_by_cb = 0;
   wp->use_read_ba = 0;
   wp->read_waiting = 0;
   Field(res,1) = (intnat)wp;

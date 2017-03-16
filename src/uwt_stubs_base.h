@@ -151,7 +151,7 @@ uwt__free_uv_buf_t(uv_buf_t *, enum cb_type);
 typedef value (*req_c_cb)(uv_req_t*);
 typedef void (*clean_cb)(uv_req_t*);
 
-struct ATTR_PACKED req {
+struct req {
     struct worker_params c;
     uv_req_t * req;
     struct loop * loop;
@@ -190,11 +190,11 @@ UWT_LOCAL value uwt__ret_uv_fs_result_unit(uv_req_t * r);
 UWT_LOCAL value uwt__ret_unit_cparam(uv_req_t * r);
 
 UWT_EXTERN2(uwt_req_create);
-UWT_EXTERN1(uwt_req_cancel_noerr);
+UWT_EXTERN1(uwt_req_cancel_na);
 UWT_EXTERN1(uwt_req_finalize_na);
 
 /* basic uv_handle_t stub code */
-struct ATTR_PACKED handle {
+struct handle {
     uv_handle_t * handle;
     struct loop * loop;
     size_t obuf_offset; /* for read_own */
@@ -247,6 +247,7 @@ UWT_LOCAL void uwt__handle_free_common(struct handle *);
 UWT_LOCAL void uwt__cancel_reader(struct handle *);
 UWT_LOCAL void uwt__free_mem_uv_handle_t(struct handle *);
 UWT_LOCAL void uwt__free_struct_handle(struct handle *);
+UWT_LOCAL void uwt__handle_finalize_close_cb(uv_handle_t *);
 UWT_LOCAL void uwt__handle_finalize_close(struct handle *);
 
 /* other */

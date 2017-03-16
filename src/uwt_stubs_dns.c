@@ -162,10 +162,13 @@ uwt_getaddrinfo_native(value o_node,
   if ( !uwt_is_safe_string(o_node) || !uwt_is_safe_string(o_serv) ){
     return VAL_UWT_INT_RESULT_ECHARSET;
   }
+  char * node = String_val(o_node);
+  char * serv = String_val(o_serv);
+  if ( *node == '\0' && *serv == '\0' ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
   CAMLparam5(o_node,o_serv,o_opts,o_req,o_cb);
   int erg;
-  char * node;
-  char * serv;
   struct addrinfo hints;
   req->cb_type = loop->loop_type;
   memset(&hints, 0, sizeof(hints));
@@ -206,18 +209,13 @@ uwt_getaddrinfo_native(value o_node,
     }
   }
   GR_ROOT_ENLARGE();
-
-  if ( caml_string_length(o_node) == 0 ){
+  node = String_val(o_node);
+  serv = String_val(o_serv);
+  if ( *node == '\0' ){
     node = NULL;
   }
-  else {
-    node = String_val(o_node);
-  }
-  if ( caml_string_length(o_serv) == 0 ){
+  if ( *serv == '\0' ){
     serv = NULL;
-  }
-  else {
-    serv = String_val(o_serv);
   }
 
   erg = uv_getaddrinfo(&loop->loop,
@@ -226,7 +224,7 @@ uwt_getaddrinfo_native(value o_node,
                        node,
                        serv,
                        &hints);
- einval:
+einval:
   if ( erg < 0 ){
     Field(o_req,1) = 0;
     uwt__req_free(req);

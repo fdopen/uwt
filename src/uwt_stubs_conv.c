@@ -28,6 +28,10 @@ uwt_set_crtfd_na(value o_fd)
   (void)o_fd;
   return (Val_long(1));
 #else
+  struct filedescr * t = (struct filedescr *) Data_custom_val(o_fd);
+  if ( t->kind == KIND_SOCKET ){
+    return (Val_long(0));
+  }
   return (Val_long(uwt__set_crt_fd(o_fd) == true));
 #endif
 }

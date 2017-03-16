@@ -85,9 +85,14 @@ uwt_async_stop_na(value o_async)
 }
 
 CAMLprim value
-uwt_async_send_na(value o_async)
+uwt_async_send(value o_async)
 {
   HANDLE_NINIT_NA(a,o_async);
+  caml_enter_blocking_section();
+  /* async send doesn't return error codes.
+     Possibly only -1, if the handle is not already
+     closed. That's already captured above. */
   uv_async_send((uv_async_t*)a->handle);
+  caml_leave_blocking_section();
   return Val_unit;
 }

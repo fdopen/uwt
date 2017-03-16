@@ -59,6 +59,7 @@ typedef value (*cb_camlval)(uv_req_t *);
 /*
    You can set it to NULL, if you don't need to free any ressources.
    Otherwise, the cleaner function will always be called.
+   This function should not access the OCaml heap/runtime.
 */
 typedef void (*cb_cleaner)(uv_req_t *);
 

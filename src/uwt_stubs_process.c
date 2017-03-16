@@ -142,17 +142,38 @@ uwt_spawn(value p1, value p2, value p3, value p4)
           goto error_end;
         }
         stdio[i].data.stream = (uv_stream_t*)h->handle;
-        if ( tag == 1 ){
+        switch(tag){
+        case 1:  /* Create_pipe */
           if ( i == 0 ){
             stdio[i].flags = UV_CREATE_PIPE | UV_READABLE_PIPE;
           }
           else {
             stdio[i].flags = UV_CREATE_PIPE | UV_WRITABLE_PIPE;
           }
-        }
-        else {
-          assert( tag == 2 || tag == 3 );
+          break;
+        case 2: /* fall */ /* Inherit_pipe */
+        case 3: /* Inherit_stream */
+          if ( h->initialized == 0 ){
+            erg = UV_EINVAL;
+            goto error_end;
+          }
           stdio[i].flags = UV_INHERIT_STREAM;
+          break;
+        case 4: /* Create_pipe_read */
+          stdio[i].flags = UV_CREATE_PIPE | UV_READABLE_PIPE;
+          break;
+        case 5: /* Create_pipe_write */
+          stdio[i].flags = UV_CREATE_PIPE | UV_WRITABLE_PIPE;
+          break;
+        case 6: /* Create_pipe_duplex */
+          stdio[i].flags = UV_CREATE_PIPE | UV_READABLE_PIPE | UV_WRITABLE_PIPE;
+          break;
+        default:
+          assert(false);
+        }
+        if ( h->initialized == 1 && (stdio[i].flags & UV_CREATE_PIPE) != 0 ){
+          erg = UV_EINVAL;
+          goto error_end;
         }
       }
     }
@@ -202,8 +223,18 @@ uwt_spawn(value p1, value p2, value p3, value p4)
   t.flags = Long_val(Field(p1,3));
   t.stdio_count = 3;
   t.stdio = stdio;
-  t.uid = Long_val(Field(Field(p1,2),0));
-  t.gid = Long_val(Field(Field(p1,2),1));
+  intnat p_overflow = Long_val(Field(Field(p1,2),0));
+  t.uid = p_overflow;
+  if ( t.uid != p_overflow ){
+    erg = UV_EINVAL;
+    goto error_end;
+  }
+  p_overflow = Long_val(Field(Field(p1,2),1));
+  t.gid = p_overflow;
+  if ( t.gid != p_overflow ){
+    erg = UV_EINVAL;
+    goto error_end;
+  }
 
   spawn_called = true;
   handle->close_executed = 0;
@@ -262,8 +293,9 @@ CAMLprim value
 uwt_process_kill_na(value o_h,value o_sig)
 {
   HANDLE_NINIT_NA(h,o_h);
+  INT_VAL_RET_IR_EINVAL(sig, o_sig);
   uv_process_t * p = (uv_process_t *)h->handle;
-  int signum = uwt__convert_signal_number(Long_val(o_sig));
+  int signum = uwt__convert_signal_number(sig);
   int ret = uv_process_kill(p,signum);
   return (VAL_UWT_UNIT_RESULT(ret));
 }
@@ -271,7 +303,9 @@ uwt_process_kill_na(value o_h,value o_sig)
 CAMLprim value
 uwt_kill_na(value o_pid,value o_sig)
 {
-  int signum = uwt__convert_signal_number(Long_val(o_sig));
-  int ret = uv_kill(Long_val(o_pid),signum);
+  INT_VAL_RET_IR_EINVAL(pid, o_pid);
+  INT_VAL_RET_IR_EINVAL(sig, o_sig);
+  int signum = uwt__convert_signal_number(sig);
+  int ret = uv_kill(pid, signum);
   return (VAL_UWT_UNIT_RESULT(ret));
 }

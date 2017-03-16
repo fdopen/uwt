@@ -96,7 +96,7 @@ module Req = struct
     | Work
 
   external create: loop -> type' -> t = "uwt_req_create"
-  external cancel_noerr: t -> unit = "uwt_req_cancel_noerr"
+  external cancel: t -> bool = "uwt_req_cancel_na" NOALLOC
   external finalize: t -> unit = "uwt_req_finalize_na" NOALLOC
 
   let canceled = Lwt.fail Lwt.Canceled
@@ -122,9 +122,7 @@ module Req = struct
           | Error x -> efail ~param name x
       in
       Lwt.catch (fun () -> sleeper) (function
-        | Lwt.Canceled ->
-          cancel_noerr req;
-          t
+        | Lwt.Canceled -> if cancel req then canceled else t
         | x -> Lwt.fail x)
 
   let qli ~typ ~f ~name ~param =
@@ -154,9 +152,7 @@ module Req = struct
         )
       in
       Lwt.catch (fun () -> sleeper) (function
-        | Lwt.Canceled ->
-          cancel_noerr req;
-          t
+        | Lwt.Canceled -> if cancel req then canceled else t
         | x -> Lwt.fail x)
 
   let qlu ~typ ~f ~name ~param =
@@ -262,7 +258,7 @@ module Handle_ext = struct
 
   let set_recv_buffer_size s l = set_buffer_size_common s l true
   let set_recv_buffer_size_exn s l =
-    set_send_buffer_size s l |> to_exnu "uv_recv_buffer_size"
+    set_recv_buffer_size s l |> to_exnu "uv_recv_buffer_size"
 end
 
 module Handle_fileno = struct
@@ -705,8 +701,15 @@ module Tcp = struct
   let nodelay_exn t x = nodelay t x |> to_exnu "tcp_nodelay"
 
   external keepalive:
-    t -> bool -> Int_result.unit = "uwt_tcp_keepalive_na" NOALLOC
-  let keepalive_exn t x = keepalive t x |> to_exnu "tcp_keepalive"
+    t -> bool -> int -> Int_result.unit = "uwt_tcp_keepalive_na" NOALLOC
+
+  let enable_keepalive t l = keepalive t true l
+  let enable_keepalive_exn t l =
+    enable_keepalive t l |> to_exnu "tcp_enable_keepalive"
+
+  let disable_keepalive t = keepalive t false 0
+  let disable_keepalive_exn t =
+    disable_keepalive t |> to_exnu "tcp_disable_keepalive"
 
   external simultaneous_accepts: t -> bool -> Int_result.unit =
     "uwt_tcp_simultaneous_accepts_na"
@@ -1188,12 +1191,15 @@ module Dns = struct
     = "uwt_getnameinfo"
 
   let getnameinfo sock options =
-    re_conv @@ fun () ->
-    Req.ql
-      ~typ:Req.Getname
-      ~f:(getnameinfo sock options)
-      ~name:"getnameinfo"
-      ~param
+    match sock with
+    | Unix.ADDR_UNIX _ -> Lwt.return (Error EINVAL)
+    | Unix.ADDR_INET _ ->
+      re_conv @@ fun () ->
+      Req.ql
+        ~typ:Req.Getname
+        ~f:(getnameinfo sock options)
+        ~name:"getnameinfo"
+        ~param
 
 end
 
@@ -1207,6 +1213,9 @@ module Process = struct
     | Create_pipe of Pipe.t
     | Inherit_pipe of Pipe.t
     | Inherit_stream of Stream.t
+    | Create_pipe_read of Pipe.t
+    | Create_pipe_write of Pipe.t
+    | Create_pipe_duplex of Pipe.t
 
   type stdio_args = stdio option * stdio option * stdio option
   type uid_gid = int * int
@@ -1279,7 +1288,7 @@ module Async = struct
   external start: t -> Int_result.unit = "uwt_async_start_na" NOALLOC
   external stop: t -> Int_result.unit = "uwt_async_stop_na" NOALLOC
 
-  external send: t -> Int_result.unit = "uwt_async_send_na" NOALLOC
+  external send: t -> Int_result.unit = "uwt_async_send"
 end
 
 module C_worker = struct
@@ -1312,9 +1321,7 @@ module C_worker = struct
             | Error x -> efail ~param name x
         in
         Lwt.catch (fun () -> sleeper) (function
-          | Lwt.Canceled ->
-            Req.cancel_noerr req;
-            t
+          | Lwt.Canceled -> if Req.cancel req then Req.canceled else t
           | x -> Lwt.fail x)
 
   let call a b = call_internal a b
@@ -1544,7 +1551,7 @@ module Fs = struct
     "uwt_fs_open_byte" "uwt_fs_open_native"
 
   let openfile ?(perm=0o644) ~mode fln =
-    Req.ql ~typ ~name:"uv_fs_open" ~param:fln ~f:(openfile fln mode perm)
+    Req.ql ~typ ~name:"open" ~param:fln ~f:(openfile fln mode perm)
 
   external read:
     file -> 'a -> int -> int ->
@@ -1561,7 +1568,7 @@ module Fs = struct
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Fs.read")
     else
-      Req.qli ~typ ~name:"uv_fs_read" ~param ~f:(read t buf pos len)
+      Req.qli ~typ ~name:"read" ~param ~f:(read t buf pos len)
 
   let read_ba ?pos ?len t ~(buf:buf) =
     let dim = Bigarray.Array1.dim buf in
@@ -1586,7 +1593,7 @@ module Fs = struct
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Fs.write")
     else
-      Req.qli ~typ ~name:"uv_fs_write" ~param ~f:(write t buf pos len)
+      Req.qli ~typ ~name:"write" ~param ~f:(write t buf pos len)
 
   let write_ba ?pos ?len t ~(buf:buf) =
     let dim = Bigarray.Array1.dim buf in
@@ -1612,7 +1619,7 @@ module Fs = struct
     | Invalid -> Lwt.fail (Invalid_argument "Uwt.Fs.writev")
     | Empty -> write ~pos:0 ~len:0 t ~buf:(Bytes.create 1)
     | All_ba(ar,bl) ->
-      Req.qli ~typ ~name:"uv_fs_writev" ~param ~f:(writev t ar bl)
+      Req.qli ~typ ~name:"writev" ~param ~f:(writev t ar bl)
 
   external close:
     file -> loop -> Req.t -> unit_cb -> Int_result.unit =
@@ -1669,7 +1676,7 @@ module Fs = struct
 
   external lstat:
     string -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_lstat"
-  let lstat param = Req.ql ~typ ~f:(lstat param) ~name:"stat" ~param
+  let lstat param = Req.ql ~typ ~f:(lstat param) ~name:"lstat" ~param
 
   external fstat:
     file -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_fstat"

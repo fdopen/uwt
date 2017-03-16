@@ -102,13 +102,17 @@ uwt_listen(value o_stream,value o_backlog,value o_stream_cb)
 {
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream);
   HANDLE_INIT2(s,o_stream,o_stream_cb);
+  intnat backlog = Long_val(o_backlog);
   int ret;
   if ( s->cb_listen != CB_INVALID ){
     ret = UV_EBUSY;
   }
+  else if ( backlog < INT_MIN || backlog > INT_MAX ){
+    ret = UV_EINVAL;
+  }
   else {
     uv_stream_t* stream = (uv_stream_t*)s->handle;
-    ret = uv_listen(stream,Long_val(o_backlog),listen_cb);
+    ret = uv_listen(stream, backlog, listen_cb);
     if ( ret >= 0 ){
       ++s->in_use_cnt;
       uwt__gr_register(&s->cb_listen,o_stream_cb);
@@ -125,6 +129,11 @@ uwt_accept_raw_na(value o_serv,
   struct handle * client = Handle_val(o_client);
   if ( HANDLE_IS_INVALID_UNINIT(serv) || HANDLE_IS_INVALID(client) ){
     return VAL_UWT_INT_RESULT_EBADF;
+  }
+  if ( client->initialized == 1 ||
+       (serv->handle->type != client->handle->type &&
+        serv->handle->type != UV_NAMED_PIPE ) ){
+    return VAL_UWT_INT_RESULT_EINVAL;
   }
   int ret = uv_accept((uv_stream_t*)serv->handle,
                       (uv_stream_t*)client->handle);
@@ -620,10 +629,11 @@ uwt_try_writev_na(value o_stream, value o_ios, value o_sock)
 static void
 cb_uwt_write2(uv_write_t* req, int status)
 {
-  struct handle * s1 = req->handle->data;
-  struct handle * s2 = req->send_handle->data;
   struct req * r = req->data;
-  if ( !s1 || !s2 || !r ){
+  struct handle * s1;
+  struct handle * s2;
+
+  if ( !r || (s1 = r->c.p1) == NULL || (s2 = r->c.p2) == NULL ){
     DEBUG_PF("leaking data");
   }
   else {
@@ -658,6 +668,18 @@ uwt_write2_native(value o_stream,
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_stream_send);
   HANDLE2_INIT(s1,o_stream,s2,o_stream_send,o_cb,o_buf);
   value ret = Val_unit;
+#ifdef _WIN32
+  if ( s1->handle->type != UV_NAMED_PIPE || s2->handle->type != UV_TCP ){
+    ret = VAL_UWT_INT_RESULT_EINVAL;
+    goto endp;
+  }
+#else
+  if ( s1->handle->type != UV_NAMED_PIPE ||
+       (s2->handle->type != UV_TCP && s2->handle->type != UV_NAMED_PIPE) ){
+    ret = VAL_UWT_INT_RESULT_EINVAL;
+    goto endp;
+  }
+#endif
   struct req * wp = uwt__req_create(UV_WRITE,s1->loop);
   uv_write_t* req = (uv_write_t*)wp->req;
   const int ba = len > 0 && Tag_val(o_buf) != String_tag;
@@ -701,6 +723,8 @@ uwt_write2_native(value o_stream,
       wp->in_use = 1;
       uwt__gr_register(&wp->cb,o_cb);
       wp->finalize_called = 1;
+      wp->c.p1 = s1;
+      wp->c.p2 = s2;
       ++s1->in_use_cnt;
       ++s2->in_use_cnt;
       if ( ba ){
@@ -709,6 +733,7 @@ uwt_write2_native(value o_stream,
     }
     ret = VAL_UWT_UNIT_RESULT(erg);
   }
+endp:
   CAMLreturn(ret);
 }
 BYTE_WRAP6(uwt_write2)

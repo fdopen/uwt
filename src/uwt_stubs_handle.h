@@ -30,6 +30,8 @@ extern "C" {
 
 UWT_EXTERN2(uwt_close_wait);
 UWT_EXTERN1(uwt_close_nowait);
+UWT_EXTERN1(uwt_close__1);
+UWT_EXTERN1(uwt_close__2);
 UWT_EXTERN1(uwt_is_active_na);
 UWT_EXTERN1(uwt_ref_na);
 UWT_EXTERN1(uwt_unref_na);

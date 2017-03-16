@@ -91,6 +91,11 @@ uwt_pipe_bind_na(value o_pipe, value o_name)
   if ( !uwt_is_safe_string(o_name) ){
     return VAL_UWT_INT_RESULT_ECHARSET;
   }
+  /* really don't support abstract sockets. Empty string not caputured
+     by uwt_is_safe_string. */
+  if ( (String_val(o_name))[0] == '\0' ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
   /* string duplicated by libuv */
   int ret = uv_pipe_bind((uv_pipe_t*)p->handle,String_val(o_name));
   if ( ret >= 0 ){
@@ -166,7 +171,8 @@ uwt_pipe_pending_instances_na(value o_pipe, value o_count)
   HANDLE_NINIT_NA(op,o_pipe);
   HANDLE_NO_UNINIT_NA(op);
   uv_pipe_t* p = (uv_pipe_t*)op->handle;
-  uv_pipe_pending_instances(p,Long_val(o_count));
+  INT_VAL_RET_IR_EINVAL(count, o_count);
+  uv_pipe_pending_instances(p, count);
   return (Val_long(0));
 }
 
@@ -205,6 +211,10 @@ uwt_pipe_connect(value o_pipe,value o_path,value o_cb)
      check it again with, if a new major versions of libuv is released */
   if ( !uwt_is_safe_string(o_path) ){
     return VAL_UWT_INT_RESULT_ECHARSET;
+  }
+  if ( String_val(o_path)[0] == '\0' ){
+    /* because libuv's broken handling of empty strings on linux */
+    return VAL_UWT_INT_RESULT_ENOENT;
   }
   HANDLE_INIT3(s,o_pipe,o_cb,o_path);
   struct req * wp = uwt__req_create(UV_CONNECT,s->loop);

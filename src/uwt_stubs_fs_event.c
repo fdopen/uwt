@@ -90,6 +90,10 @@ uwt_fs_event_start(value o_loop,
     ret = caml_alloc_small(1,Error_tag);
     Field(ret,0) = VAL_UWT_ERROR_ECHARSET;
   }
+  else if ( String_val(o_path)[0] == '\0' ){
+    ret = caml_alloc_small(1,Error_tag);
+    Field(ret,0) = VAL_UWT_ERROR_EINVAL;
+  }
   else {
     GR_ROOT_ENLARGE();
     v = uwt__handle_create(UV_FS_EVENT,l);

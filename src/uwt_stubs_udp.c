@@ -84,10 +84,7 @@ uwt_udp_set_multicast_ttl_na(value o_udp, value o_ttl)
 {
   HANDLE_NINIT_NA(u,o_udp);
   HANDLE_NO_UNINIT_NA(u);
-  int ttl = Long_val(o_ttl);
-  if ( ttl < 1 || ttl > 255 ){
-    return VAL_UWT_INT_RESULT_EINVAL;
-  }
+  INT_VAL_RET_IR_EINVAL(ttl,o_ttl);
   int ret = uv_udp_set_multicast_ttl((uv_udp_t*)u->handle,ttl);
   return (VAL_UWT_UNIT_RESULT(ret));
 }
@@ -123,12 +120,8 @@ uwt_udp_set_ttl_na(value o_udp, value o_ttl)
 {
   HANDLE_NINIT_NA(u,o_udp);
   HANDLE_NO_UNINIT_NA(u);
-  int ttl = Long_val(o_ttl);
-  int ret;
-  if ( ttl < 1 || ttl > 255 ){
-    return VAL_UWT_INT_RESULT_EINVAL;
-  }
-  ret = uv_udp_set_ttl((uv_udp_t*)u->handle,ttl);
+  INT_VAL_RET_IR_EINVAL(ttl,o_ttl);
+  int ret = uv_udp_set_ttl((uv_udp_t*)u->handle,ttl);
   return (VAL_UWT_UNIT_RESULT(ret));
 }
 
