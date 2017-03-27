@@ -80,10 +80,10 @@ uwt__alloc_sockaddr(const struct sockaddr *saddr)
   case AF_UNIX:
     {
       const struct sockaddr_un * addr = (const struct sockaddr_un *)saddr;
-      const size_t max_len =
-        sizeof(struct sockaddr_storage) - sizeof(sa_family_t) - 1;
-      _Static_assert(sizeof(struct sockaddr_storage) - sizeof(sa_family_t) - 1 >=
-                     sizeof addr->sun_path,
+      const size_t max_len = sizeof(struct sockaddr_un) -
+        offsetof(struct sockaddr_un, sun_path);
+      _Static_assert(sizeof(struct sockaddr_un) -
+                     offsetof(struct sockaddr_un, sun_path) >= sizeof addr->sun_path,
                      "sun path length");
       const size_t len = strnlen(addr->sun_path,max_len);
       value str = caml_alloc_string(len);
