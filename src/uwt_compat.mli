@@ -214,6 +214,10 @@ module Lwt_unix : sig
       | TCIOFLUSH
       (**/**)
 
+    val handle_unix_error : ('a -> 'b Lwt.t) -> 'a -> 'b Lwt.t
+    (** Same as [Unix.handle_unix_error] but catches lwt-level
+        exceptions *)
+
     val sleep : float -> unit Lwt.t
     (** [sleep d] is a thread that remains suspended for [d] seconds
         and then terminates. *)
