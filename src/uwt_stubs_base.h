@@ -233,11 +233,10 @@ struct handle {
 
 #ifdef Handle_val
 #undef Handle_val
-#if 0 /* not used yet */
 #define OCAML_Handle_val(v)                               \
   (((struct filedescr *) Data_custom_val(v))->fd.handle)
 #endif
-#endif
+
 
 #define Handle_val(x)                           \
   ((struct handle*)(Field((x),1)))

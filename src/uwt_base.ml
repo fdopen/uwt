@@ -544,7 +544,7 @@ module Misc = struct
     | Unknown
 
   external guess_handle:
-    file -> handle_type = "uwt_guess_handle_na" NOALLOC
+    Unix.file_descr -> handle_type = "uwt_guess_handle_na" NOALLOC
 
   external resident_set_memory:
     unit -> int64 uv_result = "uwt_resident_set_memory"

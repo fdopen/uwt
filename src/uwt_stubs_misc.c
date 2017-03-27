@@ -24,7 +24,57 @@
 CAMLprim value
 uwt_guess_handle_na(value o_fd)
 {
-  switch ( uv_guess_handle(FD_VAL(o_fd)) ){
+  int t = UV_UNKNOWN_HANDLE;
+  int i = FD_VAL(o_fd);
+#ifndef _WIN32
+  t = uv_guess_handle(i);
+#else
+  /* uv_guess_handle works with crt file descriptors */
+  if ( Descr_kind_val(o_fd) == KIND_HANDLE ){
+    HANDLE handle = OCAML_Handle_val(o_fd);
+    DWORD mode;
+    switch (GetFileType(handle)) {
+    case FILE_TYPE_CHAR:
+      if (GetConsoleMode(handle, &mode)) {
+        t = UV_TTY;
+      }
+      else {
+        t = UV_FILE;
+      }
+      break;
+    case FILE_TYPE_PIPE:
+      t = UV_NAMED_PIPE;
+      break;
+    case FILE_TYPE_DISK:
+      t = UV_FILE;
+      break;
+    }
+  }
+  else {
+    if ( Descr_kind_val(o_fd) == KIND_SOCKET ){
+      SOCKET handle = Socket_val(o_fd);
+      WSAPROTOCOL_INFO pi;
+      int size = sizeof(pi);
+      if ( getsockopt(handle, SOL_SOCKET, SO_PROTOCOL_INFO,
+                      (char *)&pi, &size) == 0 ){
+        if ( pi.iAddressFamily == AF_INET || pi.iAddressFamily == AF_INET6 ){
+          if ( pi.iSocketType == SOCK_STREAM ){
+            t = UV_TCP;
+          }
+          else {
+            if ( pi.iSocketType == SOCK_DGRAM ){
+              t = UV_UDP;
+            }
+          }
+        }
+      }
+    }
+  }
+  if ( t == UV_UNKNOWN_HANDLE && i != -1 ){
+    t = uv_guess_handle(i);
+  }
+#endif
+  switch ( t ){
   case UV_FILE: return (Val_long(0));
   case UV_TTY: return (Val_long(1));
   case UV_NAMED_PIPE: return (Val_long(2));

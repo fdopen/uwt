@@ -168,7 +168,7 @@ let l = [
      in
      (* UUnix.getlogin uses getlogin_r on some systems. If stdin isn't a
         a tty, it won't work on some systems. *)
-     let is_tty = Uwt_base.Misc.guess_handle Uwt.stdin = Uwt_base.Misc.Tty in
+     let is_tty = Uwt_base.Misc.guess_handle Unix.stdin = Uwt_base.Misc.Tty in
      skip_if_not_all ctx (not is_tty && s1 <> s2 ) "stdin no tty";
      adv_equal s1 s2);
   ("getpwnam">::

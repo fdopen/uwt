@@ -617,7 +617,7 @@ module Misc : sig
     | Udp
     | Unknown
 
-  val guess_handle: file -> handle_type
+  val guess_handle: Unix.file_descr -> handle_type
   (** Used to detect what type of stream should be used with a given
       file descriptor. Usually this will be used during initialization
       to guess the type of the stdio streams.

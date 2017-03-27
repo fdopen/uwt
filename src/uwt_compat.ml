@@ -424,13 +424,12 @@ module Lwt_unix = struct
 
   let isatty x =
     (match x with
-    | File fd -> Lwt.return (Some fd)
+    | File fd -> Uwt.Conv.file_descr_of_file fd |> Lwt.return
     | Tcp _ -> Lwt.return_none
     | Pipe fd ->
       match Uwt.Pipe.fileno fd with
       | Error _ -> Lwt.return_none
-      | Ok fd ->
-        Uwt.Conv.file_of_file_descr fd |> Lwt.return)
+      | Ok fd -> Lwt.return (Some fd))
     >>= function
     | None -> Lwt.return_false
     | Some fd ->

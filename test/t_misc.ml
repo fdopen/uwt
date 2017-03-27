@@ -180,6 +180,29 @@ let l = [
           if Uwt_base.Int_result.is_error e then
             Uwt_base.Int_result.raise_exn ~name:"chdir" ~param:tdir e;
         ) o_dir );
+  ("guess_handle">::fun ctx ->
+      if Unix.isatty Unix.stdin then
+        assert_equal Tty (guess_handle Unix.stdin);
+      let f typ o1 o2 =
+        let c = Unix.socket o1 o2 0 in
+        assert_equal typ (guess_handle c);
+        Unix.close c
+      in
+      f Tcp Unix.PF_INET Unix.SOCK_STREAM;
+      f Udp Unix.PF_INET Unix.SOCK_DGRAM;
+      if Sys.win32 = false then (
+        try
+          f Unknown Unix.PF_UNIX Unix.SOCK_RAW
+        with (* unsupoorted on many OSes ;) *)
+        | Unix.Unix_error(_,"socket",_) -> ());
+      let a,b = Unix.pipe () in
+      assert_equal Pipe (guess_handle a);
+      assert_equal Pipe (guess_handle b);
+      Unix.close a;
+      Unix.close b;
+      ip6_only ctx;
+      f Tcp Unix.PF_INET6 Unix.SOCK_STREAM;
+      f Udp Unix.PF_INET6 Unix.SOCK_DGRAM )
 ]
 
 let l = "Misc">:::l
