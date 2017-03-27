@@ -14,59 +14,196 @@ module Lwt_unix = struct
 
   open Lwt.Infix
 
-  type process_status = Unix.process_status
-  type wait_flag = Unix.wait_flag
-  type file_perm = Unix.file_perm
-  type open_flag = Unix.open_flag =
-    | O_RDONLY
-    | O_WRONLY
-    | O_RDWR
-    | O_NONBLOCK
-    | O_APPEND
-    | O_CREAT
-    | O_TRUNC
-    | O_EXCL
-    | O_NOCTTY
-    | O_DSYNC
-    | O_SYNC
-    | O_RSYNC
-    | O_SHARE_DELETE
-    | O_CLOEXEC
+    type process_status = Unix.process_status =
+      | WEXITED of int
+      | WSIGNALED of int
+      | WSTOPPED of int
+    type wait_flag = Unix.wait_flag =
+      | WNOHANG
+      | WUNTRACED
+    type file_perm = Unix.file_perm
+    type open_flag = Unix.open_flag =
+      | O_RDONLY
+      | O_WRONLY
+      | O_RDWR
+      | O_NONBLOCK
+      | O_APPEND
+      | O_CREAT
+      | O_TRUNC
+      | O_EXCL
+      | O_NOCTTY
+      | O_DSYNC
+      | O_SYNC
+      | O_RSYNC
+      | O_SHARE_DELETE
+      | O_CLOEXEC
 #if OCAML_VERSION >= (4, 05, 0)
-    | O_KEEPEXEC
+      | O_KEEPEXEC
 #endif
+    type seek_command = Unix.seek_command =
+      | SEEK_SET
+      | SEEK_CUR
+      | SEEK_END
+    type file_kind = Unix.file_kind
+    type stats = Unix.stats =
+      {
+        st_dev : int;
+        st_ino : int;
+        st_kind : file_kind;
+        st_perm : file_perm;
+        st_nlink : int;
+        st_uid : int;
+        st_gid : int;
+        st_rdev : int;
+        st_size : int;
+        st_atime : float;
+        st_mtime : float;
+        st_ctime : float;
+      }
+    type access_permission = Unix.access_permission =
+      | R_OK
+      | W_OK
+      | X_OK
+      | F_OK
+    type inet_addr = Unix.inet_addr
+    type socket_domain = Unix.socket_domain =
+      | PF_UNIX
+      | PF_INET
+      | PF_INET6
+    type socket_type = Unix.socket_type =
+      | SOCK_STREAM
+      | SOCK_DGRAM
+      | SOCK_RAW
+      | SOCK_SEQPACKET
+    type sockaddr = Unix.sockaddr =
+      | ADDR_UNIX of string
+      | ADDR_INET of inet_addr * int
 
-  type seek_command = Unix.seek_command
-  type file_kind = Unix.file_kind =
-    | S_REG
-    | S_DIR
-    | S_CHR
-    | S_BLK
-    | S_LNK
-    | S_FIFO
-    | S_SOCK
-
-  type stats = Unix.stats
-  type access_permission = Unix.access_permission
-  type inet_addr = Unix.inet_addr
-  type socket_domain = Unix.socket_domain
-  type socket_type = Unix.socket_type
-  type sockaddr = Unix.sockaddr
-  type shutdown_command = Unix.shutdown_command
-  type msg_flag = Unix.msg_flag
-  type socket_bool_option = Unix.socket_bool_option
-  type socket_int_option = Unix.socket_int_option
-  type socket_optint_option = Unix.socket_optint_option
-  type socket_float_option = Unix.socket_float_option
-  type host_entry = Unix.host_entry
-  type protocol_entry = Unix.protocol_entry
-  type service_entry = Unix.service_entry
-  type addr_info = Unix.addr_info
-  type getaddrinfo_option = Unix.getaddrinfo_option
-  type name_info = Unix.name_info
-  type terminal_io = Unix.terminal_io
-  type setattr_when = Unix.setattr_when
-  type flush_queue = Unix.flush_queue
+    type shutdown_command = Unix.shutdown_command =
+      | SHUTDOWN_RECEIVE
+      | SHUTDOWN_SEND
+      | SHUTDOWN_ALL
+    type msg_flag = Unix.msg_flag =
+      | MSG_OOB
+      | MSG_DONTROUTE
+      | MSG_PEEK
+    type socket_bool_option = Unix.socket_bool_option =
+      | SO_DEBUG
+      | SO_BROADCAST
+      | SO_REUSEADDR
+      | SO_KEEPALIVE
+      | SO_DONTROUTE
+      | SO_OOBINLINE
+      | SO_ACCEPTCONN
+      | TCP_NODELAY
+      | IPV6_ONLY
+    type socket_int_option = Unix.socket_int_option =
+      | SO_SNDBUF
+      | SO_RCVBUF
+      | SO_ERROR
+      | SO_TYPE
+      | SO_RCVLOWAT
+      | SO_SNDLOWAT
+    type socket_optint_option = Unix.socket_optint_option =
+      | SO_LINGER
+    type socket_float_option = Unix.socket_float_option =
+      | SO_RCVTIMEO
+      | SO_SNDTIMEO
+    type host_entry = Unix.host_entry =
+      {
+        h_name : string;
+        h_aliases : string array;
+        h_addrtype : socket_domain;
+        h_addr_list : inet_addr array
+      }
+    type protocol_entry = Unix.protocol_entry =
+      {
+        p_name : string;
+        p_aliases : string array;
+        p_proto : int
+      }
+    type service_entry = Unix.service_entry =
+      {
+        s_name : string;
+        s_aliases : string array;
+        s_port : int;
+        s_proto : string
+      }
+    type addr_info = Unix.addr_info =
+      {
+        ai_family : socket_domain;
+        ai_socktype : socket_type;
+        ai_protocol : int;
+        ai_addr : sockaddr;
+        ai_canonname : string;
+      }
+    type getaddrinfo_option = Unix.getaddrinfo_option =
+      | AI_FAMILY of socket_domain
+      | AI_SOCKTYPE of socket_type
+      | AI_PROTOCOL of int
+      | AI_NUMERICHOST
+      | AI_CANONNAME
+      | AI_PASSIVE
+    type name_info = Unix.name_info =
+    {
+      ni_hostname : string;
+      ni_service : string;
+    }
+    type getnameinfo_option = Unix.getnameinfo_option =
+      | NI_NOFQDN
+      | NI_NUMERICHOST
+      | NI_NAMEREQD
+      | NI_NUMERICSERV
+      | NI_DGRAM
+    type terminal_io = Unix.terminal_io =
+      {
+        mutable c_ignbrk : bool;
+        mutable c_brkint : bool;
+        mutable c_ignpar : bool;
+        mutable c_parmrk : bool;
+        mutable c_inpck : bool;
+        mutable c_istrip : bool;
+        mutable c_inlcr : bool;
+        mutable c_igncr : bool;
+        mutable c_icrnl : bool;
+        mutable c_ixon : bool;
+        mutable c_ixoff : bool;
+        mutable c_opost : bool;
+        mutable c_obaud : int;
+        mutable c_ibaud : int;
+        mutable c_csize : int;
+        mutable c_cstopb : int;
+        mutable c_cread : bool;
+        mutable c_parenb : bool;
+        mutable c_parodd : bool;
+        mutable c_hupcl : bool;
+        mutable c_clocal : bool;
+        mutable c_isig : bool;
+        mutable c_icanon : bool;
+        mutable c_noflsh : bool;
+        mutable c_echo : bool;
+        mutable c_echoe : bool;
+        mutable c_echok : bool;
+        mutable c_echonl : bool;
+        mutable c_vintr : char;
+        mutable c_vquit : char;
+        mutable c_verase : char;
+        mutable c_vkill : char;
+        mutable c_veof : char;
+        mutable c_veol : char;
+        mutable c_vmin : int;
+        mutable c_vtime : int;
+        mutable c_vstart : char;
+        mutable c_vstop : char;
+      }
+    type setattr_when = Unix.setattr_when =
+      | TCSANOW
+      | TCSADRAIN
+      | TCSAFLUSH
+    type flush_queue = Unix.flush_queue =
+      | TCIFLUSH
+      | TCOFLUSH
+      | TCIOFLUSH
 
   let sleep = UU.sleep
 
@@ -161,7 +298,7 @@ module Lwt_unix = struct
        match Uwt.Conv.file_descr_of_file fd with
        | None ->
          let _t : unit Lwt.t = UF.close fd in
-         ufail ~param:path Unix.EBADF "openfile"
+         ufail ~param:path Unix.EBADF "open"
        | Some ufd ->
          match Unix.clear_close_on_exec ufd with
          | exception x ->
@@ -307,16 +444,30 @@ module Lwt_unix = struct
       (fun () -> Uwt.Fs.stat name)
       (fun _ -> Lwt.return_true)
       (function
-      | Unix.Unix_error(Unix.ENOENT, _, _) -> Lwt.return_false
+      | Unix.Unix_error _ -> Lwt.return_false
       | x -> trans_exn x)
 
   module LargeFile = struct
 
-    type stats = U.LargeFile.stats
+    type stats = Unix.LargeFile.stats =
+      {
+        st_dev : int;
+        st_ino : int;
+        st_kind : file_kind;
+        st_perm : file_perm;
+        st_nlink : int;
+        st_uid : int;
+        st_gid : int;
+        st_rdev : int;
+        st_size : int64;
+        st_atime : float;
+        st_mtime : float;
+        st_ctime : float;
+      }
+
     let stat_convert x =
-      let open U.LargeFile in
       Lwt.return {
-        st_dev = x.UF.st_dev;
+        Unix.LargeFile.st_dev = x.UF.st_dev;
         st_ino = x.UF.st_ino;
         st_kind = file_kind x.UF.st_kind;
         st_perm = x.UF.st_perm;
@@ -339,7 +490,7 @@ module Lwt_unix = struct
     let fstat fd =
       match fd with
       | Pipe _
-      | Tcp _ -> ufail U.EINVAL "fsync"
+      | Tcp _ -> ufail U.EINVAL "fstat"
       | File fd -> UF.fstat fd >>= stat_convert
 
     let lseek fd n com =

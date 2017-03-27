@@ -63,7 +63,7 @@ CreateDoc(name,folder,files)=
 	cmifiles = $(addsuffix .cmi, $(removesuffix $(mlifiles)))
 	if $(USE_OCAMLFIND)	
 		$(name).idoc: $(mlifiles) $(cmifiles) /.PHONY/OCamlGeneratedFilesTarget
-			$(OCAMLFIND) ocamldoc -dump $(name).idoc -stars \
+			$(OCAMLFIND) ocamldoc $(OCAMLFINDFLAGS) -dump $(name).idoc -stars \
 				$(PREFIXED_OCAMLINCLUDES) -package "$(OCAMLPACKS)" \
 				$(mlifiles)
 	else
@@ -72,7 +72,7 @@ CreateDoc(name,folder,files)=
 				$(PREFIXED_OCAMLINCLUDES) $(mlifiles)
 	doc:: $(cmifiles) $(name).idoc
 		mkdir(-m 0755 -p $(folder))
-		$(OCAMLFIND) ocamldoc -d html -stars -t $(capitalize $(name)) -html $(mapprefix -load, $(name).idoc)
+		$(OCAMLFIND) ocamldoc $(OCAMLDOCFLAGS) -d html -stars -html $(mapprefix -load, $(name).idoc)
 	clean::
 		rm(-r -f $(folder))
 		rm(-f $(name).idoc)		

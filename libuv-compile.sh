@@ -45,9 +45,9 @@ if [ "$unix" = "true" ]; then
 else
     if [ "$system" = "win32" ] || [ "$system" = "win64" ] ; then
         if [ ! -f Release/lib/libuv.lib ]; then
-            if [ ! -f libuv32.vcxproj ] && [ -f ../appveyor/libuv32.vcxproj ]; then
-                cp ../appveyor/libuv32.vcxproj .
-                cp ../appveyor/libuv64.vcxproj .
+            if [ ! -f libuv32.vcxproj ] && [ -f ../dist/libuv32.vcxproj ]; then
+                cp ../dist/libuv32.vcxproj .
+                cp ../dist/libuv64.vcxproj .
             fi
             if [ ! -f libuv32.vcxproj ]; then
                 # checkout doesn't work at the moment. They've enabled

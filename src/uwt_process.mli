@@ -31,29 +31,16 @@ type command = string * string array
 
         {[
           ("ls", [|"ls"; "-l"|])
-        ]}.
+        ]}
 
         Notes:
 
         - if the name is the empty string, then the first argument
-        will be used. You should specify a name only if you do not
-        want the executable to be searched in the PATH. On Windows the
-        only way to enable automatic seach in PATH is to pass an empty
-        name.
+          will be used (for backward compatibility with [Lwt_process]).
 
-        - it is possible to ``inline'' an argument, i.e. split it into
-        multiple arguments. To do that prefix it with ["\000"]. For
-        example:
-
-        {[
-          ("", [|"echo"; "\000foo bar"|])
-        ]}
-
-        is the same as:
-
-        {[
-          ("", [|"echo"; "foo"; "bar"|])
-        ]}.
+        - It is not possible to ``inline'' an argument,
+          i.e. split it into multiple arguments with "\000".
+          (like under [Lwt_process])
     *)
 
 val shell : string -> command

@@ -1,9 +1,13 @@
-(** synchronous system calls *)
+(** Synchronous filesystem operations *)
 
 (**
-   These synchronous might be useful, if you also target windows users:
-   - filenames must be utf8 encoded (see comment to ECHARSET)
-   - sometimes additional options are available, e.g. [Fs.openfile]
+   This module is independent of lwt. It might be useful, if you target windows:
+
+   - additional options and functions are available, that are missing
+   inside the standard Unix module.
+
+   - filenames and similar parameters and return values are always utf-8
+   encoded.
 *)
 
 include Uwt_base.Fs_functions

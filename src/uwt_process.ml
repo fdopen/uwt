@@ -27,9 +27,9 @@ open Lwt.Infix
 type command = string * string array
 
 #if HAVE_WINDOWS <> 0
-let shell cmd = ("", [|"cmd.exe"; "/c"; "\000" ^ cmd|])
+let shell cmd = ("cmd.exe", [|"cmd.exe"; "/c"; cmd|])
 #else
-let shell cmd = ("", [|"/bin/sh"; "-c"; cmd|])
+let shell cmd = ("/bin/sh", [|"/bin/sh"; "-c"; cmd|])
 #endif
 
 type redirection =
@@ -110,6 +110,11 @@ let spawn
   | None -> None
   | Some x -> Some(Array.to_list x)
   in
+  let prog =
+    if prog = "" && Array.length args > 0 then
+      args.(0)
+    else
+      prog in
   let t =
     Uwt.Process.spawn_exn
       ?uid

@@ -122,7 +122,12 @@ section
 
 section
 	OCAMLPACKS+= lwt
+	OCAMLDOCFLAGS=-intro ../dist/doc.txt -t $"Uwt - OCaml bindings for libuv"
+	OCAMLFINDFLAGS+= -pp "cppo -V OCAML:$(OCAMLC_VERSION)"
 	x=$(CreateDoc uwt,html,$(UWT_BASE) $(UV_SYNC) $(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE))
+	doc::
+		mkdir(-m 0755 -p html)
+		cp ../dist/style.css html/style.css
 
 ConfReplace(META)
 section
