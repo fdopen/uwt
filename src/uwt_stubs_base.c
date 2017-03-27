@@ -20,6 +20,9 @@
  */
 
 #include "uwt_stubs_base.h"
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
 
 /*
   basic uwt functionality:
@@ -342,7 +345,15 @@ mem_stack_pop(struct stack * x)
    511 -> 8
    512 -> 9
  */
-#ifdef HAVE_BUILTIN_CTZ
+
+#if !defined(HAVE_BUILTIN_CLZ) && defined(_MSC_VER)
+static __inline uint32_t __builtin_clz(uint32_t value) {
+  uint32_t leading_zero = 0;
+  _BitScanReverse(&leading_zero, value);
+  return (31 - leading_zero);
+}
+#endif
+#if defined(HAVE_BUILTIN_CLZ) || defined(_MSC_VER)
 #define log2_help(x)                                                    \
   ((unsigned int)((8u * sizeof (unsigned int)) - __builtin_clz((x)) - 1u))
 #else

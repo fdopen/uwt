@@ -136,18 +136,18 @@ have_function=yes, have_function=no)
    fi
 fi
 
-AC_MSG_CHECKING([if the compiler supports __builtin_ctz])
+AC_MSG_CHECKING([if the compiler supports __builtin_clz])
 AC_LINK_IFELSE([AC_LANG_PROGRAM(,
-return ( __builtin_ctz(0x10000u) == 16) ? 1 : 0
+return ( __builtin_clz(0x10000u) == 15) ? 1 : 0
 )], [
-have_builtin_ctz=yes
+have_builtin_clz=yes
 AC_MSG_RESULT([yes])
 ], [
-have_builtin_ctz=no
+have_builtin_clz=no
 AC_MSG_RESULT([no])
 ])
-if test x$have_builtin_ctz = xyes ; then
-AC_DEFINE([HAVE_BUILTIN_CTZ], [1], [Define to 1 if the compiler support __builtin_ctz.])
+if test x$have_builtin_clz = xyes ; then
+AC_DEFINE([HAVE_BUILTIN_CLZ], [1], [Define to 1 if the compiler support __builtin_clz.])
 fi
 
 # Check for __builtin_expect()
