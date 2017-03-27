@@ -221,7 +221,7 @@ module Handle = struct
   type t = u
 
   external close_wait: t -> unit_cb -> Int_result.unit = "uwt_close_wait"
-  let close_wait t = qsu1 ~f:close_wait ~name:"uv_close" t
+  let close_wait t = qsu1 ~f:close_wait ~name:"close" t
 
   external close: t -> Int_result.unit = "uwt_close_nowait"
   let close_noerr t =  ignore ( close t )
@@ -276,11 +276,11 @@ module Stream = struct
 
   external read_start:
     t  -> cb:(Bytes.t uv_result -> unit) -> Int_result.unit = "uwt_read_start"
-  let read_start_exn a ~cb = read_start a ~cb |> to_exnu "uv_read_start"
+  let read_start_exn a ~cb = read_start a ~cb |> to_exnu "read"
 
   external iread_stop: t -> bool -> Int_result.unit = "uwt_read_stop"
   let read_stop a = iread_stop a false
-  let read_stop_exn a = iread_stop a false |> to_exnu "read_stop"
+  let read_stop_exn a = iread_stop a false |> to_exnu "uv_read_stop"
 
   external write:
     t -> 'a -> int -> int -> unit -> unit_cb -> Int_result.unit =
@@ -473,12 +473,12 @@ module Stream = struct
       let sleeper,waker = Lwt.task () in
       let (x: Int_result.unit) = read t pos len (buf,waker) in
       if Int_result.is_error x then
-        LInt_result.fail ~name:"uwt_read" ~param x
+        LInt_result.fail ~name:"read" ~param x
       else
         let () = Lwt.on_cancel sleeper (fun () -> ignore(iread_stop t true)) in
         sleeper >>= fun ( x: Int_result.int ) ->
         if Int_result.is_error x then
-          LInt_result.fail ~name:"uwt_read" ~param x
+          LInt_result.fail ~name:"read" ~param x
         else
           let x : int = (x :> int) in
           Lwt.return ( x :> int )
@@ -508,7 +508,7 @@ module Stream = struct
     server:t -> client:t -> Int_result.unit = "uwt_accept_raw_na" NOALLOC
 
   let accept_raw_exn ~server ~client =
-    accept_raw ~server ~client |> to_exnu "accept_raw"
+    accept_raw ~server ~client |> to_exnu "accept"
 
   external set_blocking: t -> bool -> Int_result.unit =
     "uwt_stream_set_blocking_na"
@@ -522,7 +522,7 @@ module Tty = struct
   external to_stream : t -> Stream.t = "%identity"
 
   external init: loop -> file -> bool -> t uv_result = "uwt_tty_init"
-  let init_exn f ~read = init loop f read |> to_exn "tty_init"
+  let init_exn f ~read = init loop f read |> to_exn "uv_tty_init"
   let init f ~read = init loop f read
 
   type mode =
@@ -532,19 +532,19 @@ module Tty = struct
 
   external set_mode:
     t -> mode -> Int_result.unit = "uwt_tty_set_mode_na" NOALLOC
-  let set_mode_exn t ~mode = set_mode t mode |> to_exnu "tty_set_mode"
+  let set_mode_exn t ~mode = set_mode t mode |> to_exnu "uv_tty_set_mode"
   let set_mode t ~mode =  set_mode t mode
 
   external reset_mode:
     unit -> Int_result.unit = "uwt_tty_reset_mode_na" NOALLOC
-  let reset_mode_exn x = reset_mode x |> to_exnu "tty_reset_mode"
+  let reset_mode_exn x = reset_mode x |> to_exnu "uv_tty_reset_mode"
 
   type winsize = {
     width: int;
     height: int;
   }
   external get_winsize:  t -> winsize uv_result = "uwt_tty_get_winsize"
-  let get_winsize_exn t = get_winsize t |> to_exn "tty_get_winsize"
+  let get_winsize_exn t = get_winsize t |> to_exn "uv_tty_get_winsize"
 end
 
 type ipv_x =
@@ -566,13 +566,13 @@ module Tcp = struct
     match init_raw loop with
     | Ok x -> x
     | Error ENOMEM -> raise Out_of_memory
-    | Error x -> eraise "tcp_init" x
+    | Error x -> eraise "uv_tcp_init" x
 
   external init_ex: loop -> ipv_x -> t uv_result = "uwt_tcp_init_ex"
   let init_ipv4 () = init_ex loop PF_INET
-  let init_ipv4_exn () = init_ex loop PF_INET |> to_exn "tcp_init_ipv4"
+  let init_ipv4_exn () = init_ex loop PF_INET |> to_exn "uv_tcp_init_ex"
   let init_ipv6 () = init_ex loop PF_INET6
-  let init_ipv6_exn () = init_ex loop PF_INET6 |> to_exn "tcp_init_ipv6"
+  let init_ipv6_exn () = init_ex loop PF_INET6 |> to_exn "uv_tcp_init_ex"
 
   external opentcp:
     t -> Unix.file_descr -> Int_result.unit = "uwt_tcp_open_na" NOALLOC
@@ -588,41 +588,41 @@ module Tcp = struct
       else
         Error(Int_result.to_error r)
 
-  let opentcp_exn s = opentcp s |> to_exn "tcp_open"
+  let opentcp_exn s = opentcp s |> to_exn "uv_tcp_open"
 
   external bind:
     t -> sockaddr -> mode list -> Int_result.unit = "uwt_tcp_bind_na" NOALLOC
-  let bind_exn ?(mode=[]) t ~addr () = bind t addr mode |> to_exnu "tcp_bind"
+  let bind_exn ?(mode=[]) t ~addr () = bind t addr mode |> to_exnu "bind"
   let bind ?(mode=[]) t ~addr () = bind t addr mode
 
   external nodelay: t -> bool -> Int_result.unit = "uwt_tcp_nodelay_na" NOALLOC
-  let nodelay_exn t x = nodelay t x |> to_exnu "tcp_nodelay"
+  let nodelay_exn t x = nodelay t x |> to_exnu "uv_tcp_nodelay"
 
   external keepalive:
     t -> bool -> int -> Int_result.unit = "uwt_tcp_keepalive_na" NOALLOC
 
   let enable_keepalive t l = keepalive t true l
   let enable_keepalive_exn t l =
-    enable_keepalive t l |> to_exnu "tcp_enable_keepalive"
+    enable_keepalive t l |> to_exnu "uv_tcp_keepalive"
 
   let disable_keepalive t = keepalive t false 0
   let disable_keepalive_exn t =
-    disable_keepalive t |> to_exnu "tcp_disable_keepalive"
+    disable_keepalive t |> to_exnu "uv_tcp_keepalive"
 
   external simultaneous_accepts: t -> bool -> Int_result.unit =
     "uwt_tcp_simultaneous_accepts_na"
   let simultaneous_accepts_exn t x =
-    simultaneous_accepts t x |> to_exnu "tcp_simultaneous_accepts"
+    simultaneous_accepts t x |> to_exnu "uv_tcp_simultaneous_accepts"
 
   external getsockname: t -> sockaddr uv_result = "uwt_tcp_getsockname"
-  let getsockname_exn t = getsockname t |> to_exn "tcp_getsockname"
+  let getsockname_exn t = getsockname t |> to_exn "getsockname"
 
   external getpeername: t -> sockaddr uv_result = "uwt_tcp_getpeername"
-  let getpeername_exn t = getpeername t |> to_exn "tcp_getpeername"
+  let getpeername_exn t = getpeername t |> to_exn "getpeername"
 
   external connect:
     t -> sockaddr -> unit_cb -> Int_result.unit = "uwt_tcp_connect"
-  let connect p ~addr = qsu2 ~name:"tcp_connect" ~f:connect p addr
+  let connect p ~addr = qsu2 ~name:"connect" ~f:connect p addr
 
   let accept server =
     let x = init_raw loop in
@@ -682,13 +682,13 @@ module Udp = struct
     match init_raw loop with
     | Ok x -> x
     | Error ENOMEM -> raise Out_of_memory
-    | Error x -> eraise "init_tcp" x
+    | Error x -> eraise "uv_udp_init" x
 
   external init_ex: loop -> ipv_x -> t uv_result = "uwt_udp_init_ex"
   let init_ipv4 () = init_ex loop PF_INET
-  let init_ipv4_exn () = init_ex loop PF_INET |> to_exn "udp_init_ipv4"
+  let init_ipv4_exn () = init_ex loop PF_INET |> to_exn "uv_udp_init_ex"
   let init_ipv6 () = init_ex loop PF_INET6
-  let init_ipv6_exn () = init_ex loop PF_INET6 |> to_exn "udp_init_ipv6"
+  let init_ipv6_exn () = init_ex loop PF_INET6 |> to_exn "uv_udp_init_ex"
 
   external openudp: t -> Unix.file_descr -> Int_result.unit = "uwt_udp_open_na" NOALLOC
   let openudp s =
@@ -702,7 +702,7 @@ module Udp = struct
       else
         Error(Int_result.to_error r)
 
-  let openudp_exn s = openudp s |> to_exn "udp_open"
+  let openudp_exn s = openudp s |> to_exn "uv_udp_open"
 
   type mode =
     | Ipv6_only
@@ -710,11 +710,11 @@ module Udp = struct
 
   external bind:
     t -> sockaddr -> mode list -> Int_result.unit = "uwt_udp_bind_na" NOALLOC
-  let bind_exn ?(mode=[]) t ~addr () = bind t addr mode |> to_exnu "udp_bind"
+  let bind_exn ?(mode=[]) t ~addr () = bind t addr mode |> to_exnu "bind"
   let bind ?(mode=[]) t ~addr () = bind t addr mode
 
   external getsockname: t -> sockaddr uv_result = "uwt_udp_getsockname"
-  let getsockname_exn t = getsockname t |> to_exn "udp_getsockname"
+  let getsockname_exn t = getsockname t |> to_exn "getsockname"
 
   type membership =
     | Leave_group
@@ -728,34 +728,34 @@ module Udp = struct
     set_membershipr t ~multicast ~interface m
 
   let set_membership_exn ?interface t ~multicast m =
-    set_membershipr t ~multicast ~interface m |> to_exnu "udp_set_membership"
+    set_membershipr t ~multicast ~interface m |> to_exnu "uv_udp_set_membership"
 
   external set_multicast_loop:
     t -> bool -> Int_result.unit = "uwt_udp_set_multicast_loop_na" NOALLOC
   let set_multicast_loop_exn a b =
-    set_multicast_loop a b |> to_exnu "udp_set_multicast_loop"
+    set_multicast_loop a b |> to_exnu "uv_udp_set_multicast_loop"
 
   external set_multicast_ttl:
     t -> int -> Int_result.unit = "uwt_udp_set_multicast_ttl_na" NOALLOC
   let set_multicast_ttl_exn a b =
-    set_multicast_ttl a b |> to_exnu "udp_set_multicast_ttl"
+    set_multicast_ttl a b |> to_exnu "uv_udp_set_multicast_ttl"
 
   external set_multicast_interface:
     t -> string option -> Int_result.unit =
     "uwt_udp_set_multicast_interface_na" NOALLOC
   let set_multicast_interface_exn a b =
-    set_multicast_interface a b |> to_exnu "udp_set_multicast_interface"
+    set_multicast_interface a b |> to_exnu "uv_udp_set_multicast_interface"
 
   external set_broadcast:
     t -> bool -> Int_result.unit =
     "uwt_udp_set_broadcast_na" NOALLOC
   let set_broadcast_exn a b =
-    set_broadcast a b |> to_exnu "udp_set_broadcast"
+    set_broadcast a b |> to_exnu "uv_udp_set_broadcast"
 
   external set_ttl:
     t -> int -> Int_result.unit = "uwt_udp_set_ttl_na" NOALLOC
   let set_ttl_exn a b =
-    set_ttl a b |> to_exnu "udp_set_ttl"
+    set_ttl a b |> to_exnu "uv_udp_set_ttl"
 
   external try_send:
     t -> 'a -> int -> int -> sockaddr -> Int_result.int =
@@ -776,7 +776,7 @@ module Udp = struct
     "uwt_write_send_byte" "uwt_write_send_native"
 
   let send_raw ?(pos=0) ?len ~buf ~dim s addr =
-    let name = "udp_send" in
+    let name = "send" in
     let len =
       match len with
       | None -> dim - pos
@@ -800,7 +800,7 @@ module Udp = struct
     send_raw ~dim ?pos ?len ~buf t addr
 
   let send ?(pos=0) ?len ~buf ~dim s addr =
-    let name = "udp_send" in
+    let name = "send" in
     let len =
       match len with
       | None -> dim - pos
@@ -877,7 +877,7 @@ module Udp = struct
   let sendv = sendv_raw (* windows doesn't support try_send *)
 #else
   let sendv t iovs addr =
-    let name = "udp_send" in
+    let name = "sendv" in
     let x' = try_sendv t iovs addr in
     let x = ( x' :> int ) in
     if x < 0 then
@@ -899,11 +899,11 @@ module Udp = struct
 
   external recv_start:
     t -> cb:(recv_result -> unit) -> Int_result.unit = "uwt_udp_recv_start"
-  let recv_start_exn a ~cb = recv_start a ~cb |> to_exnu "udp_recv_start"
+  let recv_start_exn a ~cb = recv_start a ~cb |> to_exnu "recv"
 
   external irecv_stop: t -> bool -> Int_result.unit = "uwt_udp_recv_stop"
   let recv_stop a = irecv_stop a false
-  let recv_stop_exn a = irecv_stop a false |> to_exnu "udp_recv_stop"
+  let recv_stop_exn a = irecv_stop a false |> to_exnu "uv_udp_recv_stop"
 
   type recv = {
     recv_len: int;
@@ -916,7 +916,7 @@ module Udp = struct
     -> Int_result.unit = "uwt_udp_recv_own"
 
   let recv ?(pos=0) ?len ~buf ~dim t =
-    let name = "uwt_udp_recv" in
+    let name = "recv" in
     let len = match len with
     | None -> dim - pos
     | Some x -> x
@@ -955,7 +955,7 @@ module Pipe = struct
   include (Handle_fileno: (module type of Handle_fileno) with type t := t)
 
   external e_openpipe : loop -> Unix.file_descr -> bool -> t uv_result = "uwt_pipe_open"
-  let openpipe_exn ?(ipc=false) f = e_openpipe loop f ipc |> to_exn "pipe_open"
+  let openpipe_exn ?(ipc=false) f = e_openpipe loop f ipc |> to_exn "uv_pipe_open"
   let openpipe ?(ipc=false) f = e_openpipe loop f ipc
 
   external e_init : loop -> bool -> t uv_result = "uwt_pipe_init"
@@ -968,30 +968,30 @@ module Pipe = struct
          start - and will never be closed (UWT_EFATAL not possible).
          And uv_pipe_init always returns zero. But the libuv internals
          might change in future versions,... *)
-      eraise "pipe_init" x
+      eraise "uv_pipe_init" x
 
   external bind:
     t -> path:string -> Int_result.unit = "uwt_pipe_bind_na" NOALLOC
-  let bind_exn a ~path = bind a ~path |> to_exnu "pipe_bind"
+  let bind_exn a ~path = bind a ~path |> to_exnu "bind"
 
   external getsockname: t -> string uv_result = "uwt_pipe_getsockname"
-  let getsockname_exn a = getsockname a |> to_exn "pipe_getsockname"
+  let getsockname_exn a = getsockname a |> to_exn "getsockname"
 
   external getpeername: t -> string uv_result = "uwt_pipe_getpeername"
-  let getpeername_exn a = getpeername a |> to_exn "pipe_getpeername"
+  let getpeername_exn a = getpeername a |> to_exn "getpeername"
 
   external pending_instances:
     t -> int -> Int_result.unit = "uwt_pipe_pending_instances_na" NOALLOC
   let pending_instances_exn a b =
-    pending_instances a b |> to_exnu "pipe_pending_instances"
+    pending_instances a b |> to_exnu "uv_pipe_pending_instances"
 
   external connect:
     t -> string -> unit_cb -> Int_result.unit = "uwt_pipe_connect"
-  let connect p ~path:s = qsu2 ~name:"pipe_connect" ~f:connect p s
+  let connect p ~path:s = qsu2 ~name:"connect" ~f:connect p s
 
   external pending_count:
     t -> Int_result.int = "uwt_pipe_pending_count_na" NOALLOC
-  let pending_count_exn a = pending_count a |> to_exni "pipe_pending_count"
+  let pending_count_exn a = pending_count a |> to_exni "uv_pipe_pending_count"
 
   let accept server =
     let x = e_init loop false in
@@ -1067,7 +1067,7 @@ module Pipe = struct
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Stream.write2")
     else
-      qsu5 ~name:"write2" ~f:write2i s send buf pos len
+      qsu5 ~name:"uv_write2" ~f:write2i s send buf pos len
 
   let write2_ba ?pos ?len ~(buf:buf) ~send t =
     let dim = Bigarray.Array1.dim buf in
@@ -1119,7 +1119,7 @@ module Pipe = struct
 
   let with_open ?ipc fd f =
     match openpipe ?ipc fd with
-    | Error x -> efail "openpipe" x
+    | Error x -> efail "uv_pipe_open" x
     | Ok t ->
       Lwt.finalize (fun () -> f t)
         (fun () -> close_noerr t ; Lwt.return_unit)
@@ -1140,13 +1140,13 @@ module Timer = struct
       start loop cb timeout repeat
 
   let start_exn ~repeat ~timeout ~cb =
-    start ~cb ~timeout ~repeat |> to_exn "timer_start"
+    start ~cb ~timeout ~repeat |> to_exn "uv_timer_start"
 
   let sleep s =
     let sleeper,waker = Lwt.task () in
     let cb (_:t) = Lwt.wakeup waker () in
     match start ~repeat:0 ~timeout:s ~cb with
-    | Error x -> efail "timer_start" x
+    | Error x -> efail "uv_timer_start" x
     | Ok t ->
       Lwt.on_cancel sleeper ( fun () -> close_noerr t );
       sleeper
@@ -1163,7 +1163,7 @@ module Signal = struct
   let sigbreak = -50
   let sigwinch = -51
 
-  let start_exn i ~cb = start loop i cb |> to_exn "signal_start"
+  let start_exn i ~cb = start loop i cb |> to_exn "uv_signal_start"
   let start i ~cb = start loop i cb
 end
 
@@ -1182,7 +1182,7 @@ module Poll = struct
     loop -> Unix.file_descr -> event list -> ( t -> event list uv_result -> unit ) -> t uv_result
     = "uwt_poll_start"
 
-  let start_exn f e ~cb = start loop f e cb |> to_exn "poll_start"
+  let start_exn f e ~cb = start loop f e cb |> to_exn "uv_poll_start"
   let start f e ~cb = start loop f e cb
 end
 
@@ -1206,7 +1206,7 @@ module Fs_event = struct
     loop -> string -> flags list -> cb -> t uv_result =
     "uwt_fs_event_start"
 
-  let start_exn s fl ~cb = start loop s fl cb |> to_exn "fs_event_start"
+  let start_exn s fl ~cb = start loop s fl cb |> to_exn "uv_fs_event_start"
   let start s fl ~cb = start loop s fl cb
 end
 
@@ -1338,16 +1338,15 @@ module Process = struct
   let spawn_exn ?stdin ?stdout ?stderr ?uid ?gid ?verbatim_arguments
       ?detach ?hide ?env ?cwd ?exit_cb exe args =
     spawn ?stdin ?stdout ?stderr ?uid ?gid ?verbatim_arguments
-      ?detach ?hide ?env ?cwd ?exit_cb exe args |> to_exn "spawn"
+      ?detach ?hide ?env ?cwd ?exit_cb exe args |> to_exn "uv_spawn"
 
   external disable_stdio_inheritance: unit -> unit =
     "uwt_disable_stdio_inheritance_na" NOALLOC
 
   external pid: t -> Int_result.int = "uwt_pid_na" NOALLOC
-  let pid_exn t = pid t |> to_exni "uwt_pid" (* yes uwt, it's not a function
-                                                of libuv *)
+  let pid_exn t = pid t |> to_exni "uv_pid"
   external process_kill: t -> int -> Int_result.unit = "uwt_process_kill_na"
-  let process_kill_exn t s = process_kill t s |> to_exnu "process_kill"
+  let process_kill_exn t s = process_kill t s |> to_exnu "kill"
 
   external kill:
     pid:int -> signum:int -> Int_result.unit = "uwt_kill_na" NOALLOC
@@ -1844,7 +1843,7 @@ module Fs_poll = struct
     loop -> string -> int -> (t -> report uv_result -> unit) -> t uv_result =
     "uwt_fs_poll_start"
 
-  let start_exn s fl ~cb = start loop s fl cb |> to_exn "fs_poll_start"
+  let start_exn s fl ~cb = start loop s fl cb |> to_exn "uv_fs_poll_start"
   let start s fl ~cb = start loop s fl cb
 end
 
