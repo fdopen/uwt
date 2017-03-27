@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt.Fs_event.html">
+<link rel="next" href="Uwt.Process.html">
+<link rel="Up" href="Uwt.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Fs_poll</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt.Fs_event.html" title="Uwt.Fs_event">Previous</a>
+&nbsp;<a class="up" href="Uwt.html" title="Uwt">Up</a>
+&nbsp;<a class="post" href="Uwt.Process.html" title="Uwt.Process">Next</a>
+</div>
+<h1>Module <a href="type_Uwt.Fs_poll.html">Uwt.Fs_poll</a></h1>
+
+<pre><span class="keyword">module</span> Fs_poll: <code class="code">sig</code> <a href="Uwt.Fs_poll.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+FS Poll handles allow the user to monitor a given path for
+     changes. Unlike <a href="Uwt.Fs_event.html#TYPEt"><code class="code">Uwt.Fs_event.t</code></a>, fs poll handles use stat to detect
+     when a file has changed so they can work on file systems where fs
+     event handles can't.<br>
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+
+
+<pre><span class="keyword">include</span> <a href="Uwt.Handle.html">Uwt.Handle</a></pre>
+
+<pre><span id="VALto_handle"><span class="keyword">val</span> to_handle</span> : <code class="type"><a href="Uwt.Fs_poll.html#TYPEt">t</a> -> <a href="Uwt.Handle.html#TYPEt">Uwt.Handle.t</a></code></pre>
+<pre><code><span id="TYPEreport"><span class="keyword">type</span> <code class="type"></code>report</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTreport.prev">prev</span>&nbsp;: <code class="type">Uwt.Fs.stats</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTreport.curr">curr</span>&nbsp;: <code class="type">Uwt.Fs.stats</code>;</code></td>
+
+</tr></table>
+}
+
+
+
+<pre><span id="VALstart"><span class="keyword">val</span> start</span> : <code class="type">string -><br>       int -><br>       cb:(<a href="Uwt.Fs_poll.html#TYPEt">t</a> -> <a href="Uwt.Fs_poll.html#TYPEreport">report</a> uv_result -> unit) -><br>       <a href="Uwt.Fs_poll.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
+Check the file at path for changes every interval milliseconds.
+<p>
+
+      Note: For maximum portability, use multi-second
+      intervals. Sub-second intervals will not detect all changes on many
+      file systems.<br>
+</div>
+
+<pre><span id="VALstart_exn"><span class="keyword">val</span> start_exn</span> : <code class="type">string -><br>       int -><br>       cb:(<a href="Uwt.Fs_poll.html#TYPEt">t</a> -> <a href="Uwt.Fs_poll.html#TYPEreport">report</a> uv_result -> unit) -> <a href="Uwt.Fs_poll.html#TYPEt">t</a></code></pre></body></html>

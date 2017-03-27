@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt_io.html">
+<link rel="next" href="Uwt_preemptive.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt_log</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt_io.html" title="Uwt_io">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Uwt_preemptive.html" title="Uwt_preemptive">Next</a>
+</div>
+<h1>Module <a href="type_Uwt_log.html">Uwt_log</a></h1>
+
+<pre><span class="keyword">module</span> Uwt_log: <code class="code">sig</code> <a href="Uwt_log.html">..</a> <code class="code">end</code></pre><div class="info module top">
+Logging facility<br>
+</div>
+<hr width="100%">
+<br>
+This module provides functions to deal with logging.
+    It extends <code class="code">Lwt_log_core</code> with Unix features.
+    It adds:
+<p>
+<ul>
+<li>logging to the syslog daemon</li>
+<li>logging to a channel (stderr, stdout, ...)</li>
+<li>logging to a file</li>
+</ul>
+<br>
+
+<pre><span class="keyword">include</span> Lwt_log_core</pre>
+
+<pre><span id="VALrender"><span class="keyword">val</span> render</span> : <code class="type">buffer:Buffer.t -><br>       template:template -> section:section -> level:level -> message:string -> unit</code></pre><div class="info ">
+Same as <code class="code">Lwt_log_core.render</code>, except that the template may also contain the
+      following variables:
+<p>
+<ul>
+<li><code class="code">date</code>, which will be replaced with the current local date and time,</li>
+<li><code class="code">milliseconds</code>, which will be replaced by the fractional part of the current Unix
+        time, to millisecond accuracy.</li>
+</ul>
+
+      For example:<ul>
+<li><code class="code">"$(date) $(name)[$(pid)]: $(message)"</code></li>
+<li><code class="code">"$(date).$(milliseconds) $(name)[$(pid)]: $(message)"</code></li>
+<li><code class="code">"$(date): $(loc-file): $(loc-line): $(loc-column): $(message)"</code></li>
+</ul>
+<br>
+</div>
+
+<pre><span id="TYPEsyslog_facility"><span class="keyword">type</span> <code class="type"></code>syslog_facility</span> = <code class="type">[ `Auth<br>       | `Authpriv<br>       | `Console<br>       | `Cron<br>       | `Daemon<br>       | `FTP<br>       | `Kernel<br>       | `LPR<br>       | `Local0<br>       | `Local1<br>       | `Local2<br>       | `Local3<br>       | `Local4<br>       | `Local5<br>       | `Local6<br>       | `Local7<br>       | `Mail<br>       | `NTP<br>       | `News<br>       | `Security<br>       | `Syslog<br>       | `UUCP<br>       | `User ]</code> </pre>
+<div class="info ">
+Syslog facility. Look at the SYSLOG(3) man page for a description
+    of syslog facilities<br>
+</div>
+
+
+<pre><span id="VALsyslog"><span class="keyword">val</span> syslog</span> : <code class="type">?template:template -><br>       ?paths:string list -> facility:<a href="Uwt_log.html#TYPEsyslog_facility">syslog_facility</a> -> unit -> logger</code></pre><div class="info ">
+<code class="code">syslog ?template ?paths ~facility ()</code> creates an logger
+      which send message to the system logger.<br>
+</div>
+<div class="param_info"><code class="code">template</code> : defaults to <code class="code">"$(date) $(name)[$(pid)]: $(section): $(message)"</code>
+<p>
+
+      code not tested with uwt :)
+      Channel initialization contains blocking system calls.</div>
+<div class="param_info"><code class="code">paths</code> : is a list of path to try for the syslogd socket. It
+             default to <code class="code">["/dev/log"; "/var/run/log"]</code>.</div>
+
+<pre><span id="VALfile"><span class="keyword">val</span> file</span> : <code class="type">?template:template -><br>       ?mode:[ `Append | `Truncate ] -><br>       ?perm:Unix.file_perm -> file_name:string -> unit -> logger Lwt.t</code></pre><div class="info ">
+<code class="code">desf_file ?template ?mode ?perm ~file_name ()</code> creates an
+      logger which will write messages to <code class="code">file_name</code>.
+<p>
+<ul>
+<li>if <code class="code">mode = `Truncate</code> then the file is truncated and previous
+      contents will be lost.</li>
+</ul>
+<ul>
+<li>if <code class="code">mode = `Append</code>, new messages will be appended at the end
+      of the file</li>
+</ul>
+<br>
+</div>
+<div class="param_info"><code class="code">template</code> : defaults to <code class="code">"$(date): $(section): $(message)"</code></div>
+<div class="param_info"><code class="code">mode</code> : defaults to <code class="code">`Append</code></div>
+
+<pre><span id="VALchannel"><span class="keyword">val</span> channel</span> : <code class="type">?template:template -><br>       close_mode:[ `Close | `Keep ] -><br>       channel:<a href="Uwt_io.html#TYPEoutput_channel">Uwt_io.output_channel</a> -> unit -> logger</code></pre><div class="info ">
+<code class="code">channel ?template ~close_mode ~channel ()</code> creates a logger
+      from a channel.
+<p>
+
+      If <code class="code">close_mode = `Close</code> then <code class="code">channel</code> is closed when the
+      logger is closed, otherwise it is left open.<br>
+</div>
+<div class="param_info"><code class="code">template</code> : defaults to <code class="code">"$(name): $(section): $(message)"</code></div>
+</body></html>

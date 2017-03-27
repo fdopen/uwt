@@ -1,0 +1,118 @@
+<html><head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt_base.Int_result</title>
+</head>
+<body>
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;t&nbsp;=&nbsp;<span class="keyword">private</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;real_int&nbsp;=&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;real_unit&nbsp;=&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;int&nbsp;=&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.real_int&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;unit&nbsp;=&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.real_unit&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;is_ok&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;is_error&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_int&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.real_int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_error&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.error<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;plain&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.real_int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_exn&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?name:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?param:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;exn<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;raise_exn&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?name:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?param:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>b<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eagain&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;e2big&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eacces&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eaddrinuse&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eaddrnotavail&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eafnosupport&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_addrfamily&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_again&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_badflags&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_badhints&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_canceled&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_fail&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_family&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_memory&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_nodata&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_noname&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_overflow&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_protocol&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_service&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eai_socktype&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ealready&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ebadf&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ebusy&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ecanceled&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;echarset&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;econnaborted&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;econnrefused&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;econnreset&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;edestaddrreq&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eexist&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;efault&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;efbig&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ehostunreach&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eintr&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;einval&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eio&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eisconn&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eisdir&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eloop&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;emfile&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;emsgsize&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enametoolong&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enetdown&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enetunreach&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enfile&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enobufs&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enodev&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enoent&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enomem&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enonet&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enoprotoopt&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enospc&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enosys&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enotconn&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enotdir&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enotempty&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enotsock&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enotsup&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eperm&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;epipe&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eproto&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eprotonosupport&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eprototype&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;erange&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;erofs&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eshutdown&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;espipe&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;esrch&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;etimedout&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;etxtbsy&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;exdev&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;unknown&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eof&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;enxio&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;emlink&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;uwt_efatal&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
+<span class="keyword">end</span></code></body></html>

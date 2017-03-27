@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt.Dns.html">
+<link rel="next" href="Uwt.C_worker.html">
+<link rel="Up" href="Uwt.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Unix</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt.Dns.html" title="Uwt.Dns">Previous</a>
+&nbsp;<a class="up" href="Uwt.html" title="Uwt">Up</a>
+&nbsp;<a class="post" href="Uwt.C_worker.html" title="Uwt.C_worker">Next</a>
+</div>
+<h1>Module <a href="type_Uwt.Unix.html">Uwt.Unix</a></h1>
+
+<pre><span class="keyword">module</span> Unix: <code class="code">sig</code> <a href="Uwt.Unix.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+Popular functions from the standard Unix module, but all calls
+     are executed in work threads.
+<p>
+
+     They are usually part of uwt, not libuv. They were added to
+     simplify testing uwt with existing code that originally used
+     <code class="code">lwt.unix</code>.
+<p>
+
+     But be careful: Functions like <a href="Uwt.Unix.html#VALgethostbyname"><code class="code">Uwt.Unix.gethostbyname</code></a> don't fail with
+     <code class="code">Not_found</code>, but with <code class="code">Unix_error(Unix.ENOENT,"function_name",x)</code>
+     or other appropriate error codes. <a href="Uwt_compat.Lwt_unix.html"><code class="code">Uwt_compat.Lwt_unix</code></a> provides
+     functions under the same name that also fails with <code class="code">Not_found</code>.<br>
+
+<pre><span id="VALgethostname"><span class="keyword">val</span> gethostname</span> : <code class="type">unit -> string Lwt.t</code></pre><div class="info ">
+Return the name of the local host.<br>
+</div>
+
+<pre><span id="VALgethostbyname"><span class="keyword">val</span> gethostbyname</span> : <code class="type">string -> Unix.host_entry Lwt.t</code></pre><div class="info ">
+Find an entry in <code class="code">hosts</code> with the given name.<br>
+</div>
+
+<pre><span id="VALgethostbyaddr"><span class="keyword">val</span> gethostbyaddr</span> : <code class="type">Unix.inet_addr -> Unix.host_entry Lwt.t</code></pre><div class="info ">
+Find an entry in <code class="code">hosts</code> with the given address.<br>
+</div>
+
+<pre><span id="VALgetservbyname"><span class="keyword">val</span> getservbyname</span> : <code class="type">name:string -> protocol:string -> Unix.service_entry Lwt.t</code></pre><div class="info ">
+Find an entry in <code class="code">services</code> with the given name.<br>
+</div>
+
+<pre><span id="VALgetservbyport"><span class="keyword">val</span> getservbyport</span> : <code class="type">int -> string -> Unix.service_entry Lwt.t</code></pre><div class="info ">
+Find an entry in <code class="code">services</code> with the given service number.<br>
+</div>
+
+<pre><span id="VALgetprotobyname"><span class="keyword">val</span> getprotobyname</span> : <code class="type">string -> Unix.protocol_entry Lwt.t</code></pre><div class="info ">
+Find an entry in <code class="code">protocols</code> with the given name.<br>
+</div>
+
+<pre><span id="VALgetprotobynumber"><span class="keyword">val</span> getprotobynumber</span> : <code class="type">int -> Unix.protocol_entry Lwt.t</code></pre><div class="info ">
+Find an entry in <code class="code">protocols</code> with the given protocol number.<br>
+</div>
+
+<pre><span id="VALgetlogin"><span class="keyword">val</span> getlogin</span> : <code class="type">unit -> string Lwt.t</code></pre><div class="info ">
+Return the login name of the user executing the process.<br>
+</div>
+
+<pre><span id="VALgetpwnam"><span class="keyword">val</span> getpwnam</span> : <code class="type">string -> Unix.passwd_entry Lwt.t</code></pre><div class="info ">
+Find an entry in <code class="code">passwd</code> with the given name.<br>
+</div>
+
+<pre><span id="VALgetpwuid"><span class="keyword">val</span> getpwuid</span> : <code class="type">int -> Unix.passwd_entry Lwt.t</code></pre><div class="info ">
+Find an entry in <code class="code">passwd</code> with the given user id.<br>
+</div>
+
+<pre><span id="VALgetgrnam"><span class="keyword">val</span> getgrnam</span> : <code class="type">string -> Unix.group_entry Lwt.t</code></pre><div class="info ">
+Find an entry in <code class="code">group</code> with the given name.<br>
+</div>
+
+<pre><span id="VALgetgrgid"><span class="keyword">val</span> getgrgid</span> : <code class="type">int -> Unix.group_entry Lwt.t</code></pre><div class="info ">
+Find an entry in <code class="code">group</code> with the given group id.<br>
+</div>
+
+<pre><span id="VALlseek"><span class="keyword">val</span> lseek</span> : <code class="type">file -> int64 -> Unix.seek_command -> int64 Lwt.t</code></pre><div class="info ">
+Set the current position for a file descriptor, and return the
+      resulting offset (from the beginning of the file).<br>
+</div>
+
+<pre><span id="VALgetcwd"><span class="keyword">val</span> getcwd</span> : <code class="type">unit -> string Lwt.t</code></pre><div class="info ">
+Return the name of the current working directory.<br>
+</div>
+
+<pre><span id="VALchdir"><span class="keyword">val</span> chdir</span> : <code class="type">string -> unit Lwt.t</code></pre><div class="info ">
+Change the process working directory.<br>
+</div>
+
+<pre><span id="VALchroot"><span class="keyword">val</span> chroot</span> : <code class="type">string -> unit Lwt.t</code></pre><div class="info ">
+Change the process root directory.<br>
+</div>
+
+<pre><span id="VALlockf"><span class="keyword">val</span> lockf</span> : <code class="type">file -> Unix.lock_command -> int64 -> unit Lwt.t</code></pre><div class="info ">
+See the long comment at the standard <code class="code">Unix</code> module<br>
+</div>
+
+<pre><span id="VALsleep"><span class="keyword">val</span> sleep</span> : <code class="type">float -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">sleep d</code> is a thread that remains suspended for <code class="code">d</code> seconds
+      and then terminates.<br>
+</div>
+
+<pre><span id="VALpipe"><span class="keyword">val</span> pipe</span> : <code class="type">?cloexec:bool -> unit -> (<a href="Uwt.Pipe.html#TYPEt">Uwt.Pipe.t</a> * <a href="Uwt.Pipe.html#TYPEt">Uwt.Pipe.t</a>) uv_result</code></pre><div class="info ">
+<code class="code">pipe ()</code> creates pipes similar to <code class="code">Unix.pipe</code>, but as <br>
+</div>
+<div class="param_info"><code class="code">cloexec</code> : is true by default</div>
+
+<pre><span id="VALpipe_exn"><span class="keyword">val</span> pipe_exn</span> : <code class="type">?cloexec:bool -> unit -> <a href="Uwt.Pipe.html#TYPEt">Uwt.Pipe.t</a> * <a href="Uwt.Pipe.html#TYPEt">Uwt.Pipe.t</a></code></pre>
+<pre><span id="VALrealpath"><span class="keyword">val</span> realpath</span> : <code class="type">string -> string Lwt.t</code></pre><div class="info ">
+wrapper around realpath under Unix and GetFinalPathNameByHandleW
+      or GetFullPathName under windows.
+      Deprecated. Use Uwt.Fs.realpath instead, it will also work for
+      older libuv versions.<br>
+</div>
+</body></html>

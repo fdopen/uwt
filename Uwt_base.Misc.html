@@ -1,0 +1,550 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt_base.Conv.html">
+<link rel="next" href="Uwt_base.Sys_info.html">
+<link rel="Up" href="Uwt_base.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt_base.Misc</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt_base.Conv.html" title="Uwt_base.Conv">Previous</a>
+&nbsp;<a class="up" href="Uwt_base.html" title="Uwt_base">Up</a>
+&nbsp;<a class="post" href="Uwt_base.Sys_info.html" title="Uwt_base.Sys_info">Next</a>
+</div>
+<h1>Module <a href="type_Uwt_base.Misc.html">Uwt_base.Misc</a></h1>
+
+<pre><span class="keyword">module</span> Misc: <code class="code">sig</code> <a href="Uwt_base.Misc.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+This section contains miscellaneous functions that don't really
+     belong in any other section.<br>
+
+<pre><code><span id="TYPEtimeval"><span class="keyword">type</span> <code class="type"></code>timeval</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTtimeval.sec">sec</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTtimeval.usec">usec</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr></table>
+}
+
+
+
+<pre><code><span id="TYPErusage"><span class="keyword">type</span> <code class="type"></code>rusage</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.utime">utime</span>&nbsp;: <code class="type"><a href="Uwt_base.Misc.html#TYPEtimeval">timeval</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+user CPU time used<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.stime">stime</span>&nbsp;: <code class="type"><a href="Uwt_base.Misc.html#TYPEtimeval">timeval</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+system CPU time used<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.maxrss">maxrss</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+maximum resident set size<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.ixrss">ixrss</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+integral shared memory size (X)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.idrss">idrss</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+integral unshared data size (X)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.isrss">isrss</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+integral unshared stack size (X)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.minflt">minflt</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+page reclaims (soft page faults) (X)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.majflt">majflt</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+page faults (hard page faults)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.nswap">nswap</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+swaps (X)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.inblock">inblock</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+block input operations<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.outblock">outblock</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+block output operations<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.msgsnd">msgsnd</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+IPC messages sent (X)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.msgrcv">msgrcv</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+IPC messages received (X)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.nsignals">nsignals</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+signals received (X)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.nvcsw">nvcsw</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+voluntary context switches (X)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTrusage.nivcsw">nivcsw</span>&nbsp;: <code class="type">int64</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+involuntary context switches (X)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+<div class="info ">
+Data type for resource usage results. Members marked with (X)
+      are unsupported on Windows.<br>
+</div>
+
+
+<pre><code><span id="TYPEcpu_times"><span class="keyword">type</span> <code class="type"></code>cpu_times</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTcpu_times.user">user</span>&nbsp;: <code class="type">int64</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTcpu_times.nice">nice</span>&nbsp;: <code class="type">int64</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTcpu_times.sys">sys</span>&nbsp;: <code class="type">int64</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTcpu_times.idle">idle</span>&nbsp;: <code class="type">int64</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTcpu_times.irq">irq</span>&nbsp;: <code class="type">int64</code>;</code></td>
+
+</tr></table>
+}
+
+
+
+<pre><code><span id="TYPEcpu_info"><span class="keyword">type</span> <code class="type"></code>cpu_info</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTcpu_info.model">model</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTcpu_info.speed">speed</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTcpu_info.cpu_times">cpu_times</span>&nbsp;: <code class="type"><a href="Uwt_base.Misc.html#TYPEcpu_times">cpu_times</a></code>;</code></td>
+
+</tr></table>
+}
+
+<div class="info ">
+Data type for CPU information<br>
+</div>
+
+
+<pre><code><span id="TYPEinterface_address"><span class="keyword">type</span> <code class="type"></code>interface_address</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTinterface_address.name">name</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTinterface_address.phys_addr">phys_addr</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTinterface_address.is_internal">is_internal</span>&nbsp;: <code class="type">bool</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTinterface_address.address">address</span>&nbsp;: <code class="type"><a href="Uwt_base.html#TYPEsockaddr">Uwt_base.sockaddr</a> option</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTinterface_address.netmask">netmask</span>&nbsp;: <code class="type"><a href="Uwt_base.html#TYPEsockaddr">Uwt_base.sockaddr</a> option</code>;</code></td>
+
+</tr></table>
+}
+
+<div class="info ">
+Data type for interface addresses.<br>
+</div>
+
+
+<pre><code><span id="TYPEhandle_type"><span class="keyword">type</span> <code class="type"></code>handle_type</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELThandle_type.File"><span class="constructor">File</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELThandle_type.Tty"><span class="constructor">Tty</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELThandle_type.Pipe"><span class="constructor">Pipe</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELThandle_type.Tcp"><span class="constructor">Tcp</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELThandle_type.Udp"><span class="constructor">Udp</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELThandle_type.Unknown"><span class="constructor">Unknown</span></span></code></td>
+
+</tr></table>
+
+
+
+<pre><span id="VALguess_handle"><span class="keyword">val</span> guess_handle</span> : <code class="type">Unix.file_descr -> <a href="Uwt_base.Misc.html#TYPEhandle_type">handle_type</a></code></pre><div class="info ">
+Used to detect what type of stream should be used with a given
+      file descriptor. Usually this will be used during initialization
+      to guess the type of the stdio streams.
+<p>
+
+      For isatty(3) equivalent functionality use this function and
+      test for UV_TTY.<br>
+</div>
+
+<pre><span id="VALresident_set_memory"><span class="keyword">val</span> resident_set_memory</span> : <code class="type">unit -> int64 <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Gets the resident set size (RSS) for the current process.<br>
+</div>
+
+<pre><span id="VALresident_set_memory_exn"><span class="keyword">val</span> resident_set_memory_exn</span> : <code class="type">unit -> int64</code></pre>
+<pre><span id="VALuptime"><span class="keyword">val</span> uptime</span> : <code class="type">unit -> float <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Gets the current system uptime.<br>
+</div>
+
+<pre><span id="VALuptime_exn"><span class="keyword">val</span> uptime_exn</span> : <code class="type">unit -> float</code></pre>
+<pre><span id="VALgetrusage"><span class="keyword">val</span> getrusage</span> : <code class="type">unit -> <a href="Uwt_base.Misc.html#TYPErusage">rusage</a> <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Gets the resource usage measures for the current process. On
+      Windows not all fields are set<br>
+</div>
+
+<pre><span id="VALgetrusage_exn"><span class="keyword">val</span> getrusage_exn</span> : <code class="type">unit -> <a href="Uwt_base.Misc.html#TYPErusage">rusage</a></code></pre>
+<pre><span id="VALcpu_info"><span class="keyword">val</span> cpu_info</span> : <code class="type">unit -> <a href="Uwt_base.Misc.html#TYPEcpu_info">cpu_info</a> array <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Gets information about the CPUs on the system.<br>
+</div>
+
+<pre><span id="VALcpu_info_exn"><span class="keyword">val</span> cpu_info_exn</span> : <code class="type">unit -> <a href="Uwt_base.Misc.html#TYPEcpu_info">cpu_info</a> array</code></pre>
+<pre><span id="VALinterface_addresses"><span class="keyword">val</span> interface_addresses</span> : <code class="type">unit -> <a href="Uwt_base.Misc.html#TYPEinterface_address">interface_address</a> array <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Gets address information about the network interfaces on the system.<br>
+</div>
+
+<pre><span id="VALinterface_addresses_exn"><span class="keyword">val</span> interface_addresses_exn</span> : <code class="type">unit -> <a href="Uwt_base.Misc.html#TYPEinterface_address">interface_address</a> array</code></pre>
+<pre><span id="VALload_avg"><span class="keyword">val</span> load_avg</span> : <code class="type">unit -> float * float * float</code></pre><div class="info ">
+Gets the load average. Returns <code class="code">0,0,0</code> on Windows<br>
+</div>
+
+<pre><span id="VALip4_addr"><span class="keyword">val</span> ip4_addr</span> : <code class="type">string -> int -> <a href="Uwt_base.html#TYPEsockaddr">Uwt_base.sockaddr</a> <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Convert a string containing an IPv4 addresses to a binary structure.<br>
+</div>
+
+<pre><span id="VALip4_addr_exn"><span class="keyword">val</span> ip4_addr_exn</span> : <code class="type">string -> int -> <a href="Uwt_base.html#TYPEsockaddr">Uwt_base.sockaddr</a></code></pre>
+<pre><span id="VALip4_name"><span class="keyword">val</span> ip4_name</span> : <code class="type"><a href="Uwt_base.html#TYPEsockaddr">Uwt_base.sockaddr</a> -> string <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Convert a binary structure containing an IPv4 address to a string.<br>
+</div>
+
+<pre><span id="VALip4_name_exn"><span class="keyword">val</span> ip4_name_exn</span> : <code class="type"><a href="Uwt_base.html#TYPEsockaddr">Uwt_base.sockaddr</a> -> string</code></pre>
+<pre><span id="VALip6_addr"><span class="keyword">val</span> ip6_addr</span> : <code class="type">string -> int -> <a href="Uwt_base.html#TYPEsockaddr">Uwt_base.sockaddr</a> <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Convert a string containing an IPv6 addresses to a binary structure.<br>
+</div>
+
+<pre><span id="VALip6_addr_exn"><span class="keyword">val</span> ip6_addr_exn</span> : <code class="type">string -> int -> <a href="Uwt_base.html#TYPEsockaddr">Uwt_base.sockaddr</a></code></pre>
+<pre><span id="VALip6_name"><span class="keyword">val</span> ip6_name</span> : <code class="type"><a href="Uwt_base.html#TYPEsockaddr">Uwt_base.sockaddr</a> -> string <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Convert a binary structure containing an IPv6 address to a string.<br>
+</div>
+
+<pre><span id="VALip6_name_exn"><span class="keyword">val</span> ip6_name_exn</span> : <code class="type"><a href="Uwt_base.html#TYPEsockaddr">Uwt_base.sockaddr</a> -> string</code></pre>
+<pre><span id="VALget_total_memory"><span class="keyword">val</span> get_total_memory</span> : <code class="type">unit -> int64</code></pre><div class="info ">
+Gets memory information (in bytes).<br>
+</div>
+
+<pre><span id="VALhrtime"><span class="keyword">val</span> hrtime</span> : <code class="type">unit -> int64</code></pre><div class="info ">
+Returns the current high-resolution real time. This is expressed
+     in nanoseconds. It is relative to an arbitrary time in the
+     past. It is not related to the time of day and therefore not subject
+     to clock drift. The primary use is for measuring performance
+     between intervals.
+<p>
+
+     Note: Not every platform can support nanosecond resolution;
+     however, this value will always be in nanoseconds.<br>
+</div>
+
+<pre><code><span id="TYPEversion"><span class="keyword">type</span> <code class="type"></code>version</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTversion.major">major</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTversion.minor">minor</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTversion.patch">patch</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr></table>
+}
+
+
+
+<pre><span id="VALversion"><span class="keyword">val</span> version</span> : <code class="type">unit -> <a href="Uwt_base.Misc.html#TYPEversion">version</a></code></pre><div class="info ">
+libuv version used<br>
+</div>
+
+<pre><span id="VALversion_raw"><span class="keyword">val</span> version_raw</span> : <code class="type">unit -> int</code></pre>
+<pre><span id="VALversion_string"><span class="keyword">val</span> version_string</span> : <code class="type">unit -> string</code></pre><br>
+Many of the functions below are not thread safe
+      and might block.
+      Functions like <code class="code">cwd</code> are useful nevertheless,
+      if you target windows. Unlike <code class="code">Sys.getcwd()</code> they
+      return UTF8-encoded names<br>
+
+<pre><span id="VALos_homedir"><span class="keyword">val</span> os_homedir</span> : <code class="type">unit -> string <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Gets the current user's home directory. On Windows, <code class="code">homedir</code>
+      first checks the <code class="code">USERPROFILE environment</code> variable using
+      <code class="code">GetEnvironmentVariableW()</code>. If <code class="code">USERPROFILE</code> is not set,
+      <code class="code">GetUserProfileDirectoryW()</code> is called.
+<p>
+
+      On all other operating systems, <a href="Uwt_base.Misc.html#VALos_homedir"><code class="code">Uwt_base.Misc.os_homedir</code></a> first checks the
+      <code class="code">HOME</code> environment variable using <code class="code">getenv(3)</code>. If <code class="code">HOME</code> is not set,
+      <code class="code">getpwuid_r(3)</code> is called.<br>
+</div>
+
+<pre><span id="VALos_tmpdir"><span class="keyword">val</span> os_tmpdir</span> : <code class="type">unit -> string <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Gets the temp directory. On Windows, uv_os_tmpdir() uses
+      GetTempPathW(). On all other operating systems, uv_os_tmpdir()
+      uses the first environment variable found in the ordered list
+      TMPDIR, TMP, TEMP, and TEMPDIR. If none of these are found, the
+      path "/tmp" is used, or, on Android, "/data/local/tmp" is
+      used.<br>
+</div>
+
+<pre><span id="VALget_passwd"><span class="keyword">val</span> get_passwd</span> : <code class="type">unit -> Unix.passwd_entry <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+<code class="code">pw_passwd</code> and <code class="code">pw_gecos</code> will currently
+      always contain an empty string.
+      This function does work on Windows (unlike <code class="code">Unix.getpwnam</code>
+      or <code class="code">Unix.getwuid</code> )<br>
+</div>
+
+<pre><span id="VALexepath"><span class="keyword">val</span> exepath</span> : <code class="type">unit -> string <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+like Sys.executable_name , but utf-8 encoded under windows
+      and perhaps more reliable under niche operating systems<br>
+</div>
+
+<pre><span id="VALcwd"><span class="keyword">val</span> cwd</span> : <code class="type">unit -> string <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Gets the current working directory<br>
+</div>
+
+<pre><span id="VALchdir"><span class="keyword">val</span> chdir</span> : <code class="type">string -> <a href="Uwt_base.Int_result.html#TYPEunit">Uwt_base.Int_result.unit</a></code></pre><div class="info ">
+Changes the current working directory.<br>
+</div>
+
+<pre><span id="VALset_process_title"><span class="keyword">val</span> set_process_title</span> : <code class="type">string -> <a href="Uwt_base.Int_result.html#TYPEunit">Uwt_base.Int_result.unit</a></code></pre><div class="info ">
+The following two functions don't work reliable,
+      especially with byte code. And set_process_title won't
+      necessary report an error, if it fails ...<br>
+</div>
+
+<pre><span id="VALget_process_title"><span class="keyword">val</span> get_process_title</span> : <code class="type">unit -> string <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre></body></html>

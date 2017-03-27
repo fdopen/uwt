@@ -1,0 +1,134 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="next" href="Uwt.Fs.html">
+<link rel="Up" href="Uwt.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Main</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Uwt.html" title="Uwt">Up</a>
+&nbsp;<a class="post" href="Uwt.Fs.html" title="Uwt.Fs">Next</a>
+</div>
+<h1>Module <a href="type_Uwt.Main.html">Uwt.Main</a></h1>
+
+<pre><span class="keyword">module</span> Main: <code class="code">sig</code> <a href="Uwt.Main.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+Analogue of <code class="code">Lwt_main</code><br>
+
+<pre><span id="EXCEPTIONMain_error"><span class="keyword">exception</span> Main_error</span> <span class="keyword">of</span> <code class="type">error * string</code></pre>
+<div class="info ">
+Main_error is thrown, when uv_run returns an error - or if lwt
+      doesn't report any result and libuv reports, that there are no
+      pending tasks.<br>
+</div>
+
+<pre><span id="EXCEPTIONFatal"><span class="keyword">exception</span> Fatal</span> <span class="keyword">of</span> <code class="type">exn * Printexc.raw_backtrace</code></pre>
+<div class="info ">
+You shouldn't raise exceptions, if you are using uwt. Always use
+      <code class="code">Lwt.fail</code>. If you throw exceptions nevertheless, uwt can
+      sometimes not propagate the exceptions to the OCaml runtime
+      immediately. This applies for example to exceptions that occur
+      inside iterative callbacks (like <code class="code">Stream.read_start</code>,
+      <code class="code">Timer.start</code>, <code class="code">Poll.start</code>, etc. ). They are passed to
+      <code class="code">Lwt.async_exception_hook</code> instead. If your <code class="code">Lwt.async_exception_hook</code>
+      then also throws an exception, it is silently ignored.
+<p>
+
+      However, uwt cannot catch all exceptions at the right
+      moment. Don't call any uwt function (especially <a href="Uwt.Main.html#VALrun"><code class="code">Uwt.Main.run</code></a>) again,
+      if you catch such an exception below <a href="Uwt.Main.html#VALrun"><code class="code">Uwt.Main.run</code></a>. A workaround is
+      currently not implemented, because only rare exceptions like
+      <code class="code">Out_of_memory</code> and <code class="code">Stackoverflow</code> are 'fatal' under rare
+      conditions - and they usually mean you are in unrecoverable
+      trouble anyway.
+<p>
+
+      <pre class="codepre"><code class="code">        let rec main t1  =
+          match Uwt.Main.run t1 with
+          | exception Uwt.Main.Fatal(e,p) -&gt; (* fatal, restart your process *)
+            log_fatal e p ; cleanup () ; exit 2
+          | exception x -&gt; log_normal x ; main t3 (* safe *)
+          | result -&gt; let y = ... (* no error *)
+      </code></pre><br>
+</div>
+
+<pre><span id="VALenter_iter_hooks"><span class="keyword">val</span> enter_iter_hooks</span> : <code class="type">(unit -> unit) Lwt_sequence.t</code></pre><div class="info ">
+Functions that are called before the main iteration.<br>
+</div>
+
+<pre><span id="VALleave_iter_hooks"><span class="keyword">val</span> leave_iter_hooks</span> : <code class="type">(unit -> unit) Lwt_sequence.t</code></pre><div class="info ">
+Functions that are called after the main iteration.<br>
+</div>
+
+<pre><span id="VALyield"><span class="keyword">val</span> yield</span> : <code class="type">unit -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">yield ()</code> is a threads which suspends itself and then resumes
+      as soon as possible and terminates.<br>
+</div>
+
+<pre><span id="VALrun"><span class="keyword">val</span> run</span> : <code class="type">'a Lwt.t -> 'a</code></pre><div class="info ">
+Unlike <code class="code">Lwt_main.run</code>, it's not allowed to nest calls to Uwt.Main.run.
+      The following code is invalid, an exception <code class="code">Main_error</code> will be thrown:
+      <pre class="codepre"><code class="code">        let help () =
+          let () = Uwt.Main.run foo in
+          Lwt.return_unit
+        in
+        Uwt.Main.run (help ())
+      </code></pre>
+<p>
+
+      And <a href="Uwt.Main.html#VALrun"><code class="code">Uwt.Main.run</code></a> will complain about missing work (<code class="code">Main_error</code> again):
+      <pre class="codepre"><code class="code">        let s,t = Lwt.task () in
+        Uwt.Main.run s
+      </code></pre>
+<p>
+
+      With <code class="code">lwt.unix</code> the code above could lead to a busy loop (wasting your cpu
+      time - but it depends on the selected  Lwt_engine).
+      If you really want your process to run forever, without waiting for any
+      I/O, you can create a <code class="code">Uwt.Timer.t</code> that gets called repeatedly, but does
+      nothing.<br>
+</div>
+
+<pre><span id="VALexit_hooks"><span class="keyword">val</span> exit_hooks</span> : <code class="type">(unit -> unit Lwt.t) Lwt_sequence.t</code></pre><div class="info ">
+Sets of functions executed just before the program exit.
+<p>
+
+      Notes:<ul>
+<li>each hook is called exactly one time</li>
+<li>exceptions raised by hooks are ignored</li>
+</ul>
+<br>
+</div>
+
+<pre><span id="VALat_exit"><span class="keyword">val</span> at_exit</span> : <code class="type">(unit -> unit Lwt.t) -> unit</code></pre><div class="info ">
+<code class="code">at_exit hook</code> adds hook at the left of <code class="code">exit_hooks</code><br>
+</div>
+
+<pre><span id="VALcleanup"><span class="keyword">val</span> cleanup</span> : <code class="type">unit -> unit</code></pre><div class="info ">
+Call <a href="Uwt.Main.html#VALcleanup"><code class="code">Uwt.Main.cleanup</code></a>, if you've called <a href="Uwt.Main.html#VALrun"><code class="code">Uwt.Main.run</code></a> and and don't intend to
+      call <a href="Uwt.Main.html#VALrun"><code class="code">Uwt.Main.run</code></a> again any time soon. It will free some internally used
+      memory, but not all.<br>
+</div>
+</body></html>

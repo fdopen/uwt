@@ -1,0 +1,76 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="next" href="Uwt_io.BE.html">
+<link rel="Up" href="Uwt_io.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><link title="Reading" rel="Section" href="#3_Reading">
+<link title="Writing" rel="Section" href="#3_Writing">
+<title>Uwt - OCaml bindings for libuv : Uwt_io.LE</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Uwt_io.html" title="Uwt_io">Up</a>
+&nbsp;<a class="post" href="Uwt_io.BE.html" title="Uwt_io.BE">Next</a>
+</div>
+<h1>Module <a href="type_Uwt_io.LE.html">Uwt_io.LE</a></h1>
+
+<pre><span class="keyword">module</span> LE: <code class="type"><a href="Uwt_io.NumberIO.html">NumberIO</a></code><code class="type"> </code></pre><div class="info module top">
+Reading/writing of numbers in little-endian<br>
+</div>
+<hr width="100%">
+<br>
+<h3 id="3_Reading">Reading</h3><br>
+
+<pre><span id="VALread_int"><span class="keyword">val</span> read_int</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">Uwt_io.input_channel</a> -> int Lwt.t</code></pre><div class="info ">
+Reads a 32-bits integer as an ocaml int<br>
+</div>
+
+<pre><span id="VALread_int16"><span class="keyword">val</span> read_int16</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">Uwt_io.input_channel</a> -> int Lwt.t</code></pre>
+<pre><span id="VALread_int32"><span class="keyword">val</span> read_int32</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">Uwt_io.input_channel</a> -> int32 Lwt.t</code></pre>
+<pre><span id="VALread_int64"><span class="keyword">val</span> read_int64</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">Uwt_io.input_channel</a> -> int64 Lwt.t</code></pre>
+<pre><span id="VALread_float32"><span class="keyword">val</span> read_float32</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">Uwt_io.input_channel</a> -> float Lwt.t</code></pre><div class="info ">
+Reads an IEEE single precision floating point value<br>
+</div>
+
+<pre><span id="VALread_float64"><span class="keyword">val</span> read_float64</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">Uwt_io.input_channel</a> -> float Lwt.t</code></pre><div class="info ">
+Reads an IEEE double precision floating point value<br>
+</div>
+<br>
+<h3 id="3_Writing">Writing</h3><br>
+
+<pre><span id="VALwrite_int"><span class="keyword">val</span> write_int</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">Uwt_io.output_channel</a> -> int -> unit Lwt.t</code></pre><div class="info ">
+Writes an ocaml int as a 32-bits integer<br>
+</div>
+
+<pre><span id="VALwrite_int16"><span class="keyword">val</span> write_int16</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">Uwt_io.output_channel</a> -> int -> unit Lwt.t</code></pre>
+<pre><span id="VALwrite_int32"><span class="keyword">val</span> write_int32</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">Uwt_io.output_channel</a> -> int32 -> unit Lwt.t</code></pre>
+<pre><span id="VALwrite_int64"><span class="keyword">val</span> write_int64</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">Uwt_io.output_channel</a> -> int64 -> unit Lwt.t</code></pre>
+<pre><span id="VALwrite_float32"><span class="keyword">val</span> write_float32</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">Uwt_io.output_channel</a> -> float -> unit Lwt.t</code></pre><div class="info ">
+Writes an IEEE single precision floating point value<br>
+</div>
+
+<pre><span id="VALwrite_float64"><span class="keyword">val</span> write_float64</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">Uwt_io.output_channel</a> -> float -> unit Lwt.t</code></pre><div class="info ">
+Writes an IEEE double precision floating point value<br>
+</div>
+</body></html>

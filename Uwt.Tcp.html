@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt.Stream.html">
+<link rel="next" href="Uwt.Udp.html">
+<link rel="Up" href="Uwt.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Tcp</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt.Stream.html" title="Uwt.Stream">Previous</a>
+&nbsp;<a class="up" href="Uwt.html" title="Uwt">Up</a>
+&nbsp;<a class="post" href="Uwt.Udp.html" title="Uwt.Udp">Next</a>
+</div>
+<h1>Module <a href="type_Uwt.Tcp.html">Uwt.Tcp</a></h1>
+
+<pre><span class="keyword">module</span> Tcp: <code class="code">sig</code> <a href="Uwt.Tcp.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+TCP handles are used to represent both TCP streams and servers.<br>
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+
+
+<pre><span class="keyword">include</span> <a href="Uwt.Stream.html">Uwt.Stream</a></pre>
+
+<pre><span class="keyword">include</span> <a href="Uwt.Handle_ext.html">Uwt.Handle_ext</a></pre>
+
+<pre><span class="keyword">include</span> <a href="Uwt.Handle_fileno.html">Uwt.Handle_fileno</a></pre>
+
+<pre><span id="VALto_stream"><span class="keyword">val</span> to_stream</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> <a href="Uwt.Stream.html#TYPEt">Uwt.Stream.t</a></code></pre>
+<pre><span id="VALinit"><span class="keyword">val</span> init</span> : <code class="type">unit -> <a href="Uwt.Tcp.html#TYPEt">t</a></code></pre><div class="info ">
+See comment to <a href="Uwt.Pipe.html#VALinit"><code class="code">Uwt.Pipe.init</code></a><br>
+</div>
+
+<pre><span id="VALinit_ipv4"><span class="keyword">val</span> init_ipv4</span> : <code class="type">unit -> <a href="Uwt.Tcp.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
+wrappers around <code class="code">uv_tcp_init_ex</code>. A socket of the given type will be
+      created immediately instead of lazy (as with <a href="Uwt.Tcp.html#VALinit"><code class="code">Uwt.Tcp.init</code></a>)<br>
+</div>
+
+<pre><span id="VALinit_ipv4_exn"><span class="keyword">val</span> init_ipv4_exn</span> : <code class="type">unit -> <a href="Uwt.Tcp.html#TYPEt">t</a></code></pre>
+<pre><span id="VALinit_ipv6"><span class="keyword">val</span> init_ipv6</span> : <code class="type">unit -> <a href="Uwt.Tcp.html#TYPEt">t</a> uv_result</code></pre>
+<pre><span id="VALinit_ipv6_exn"><span class="keyword">val</span> init_ipv6_exn</span> : <code class="type">unit -> <a href="Uwt.Tcp.html#TYPEt">t</a></code></pre>
+<pre><span id="VALopentcp"><span class="keyword">val</span> opentcp</span> : <code class="type">Unix.file_descr -> <a href="Uwt.Tcp.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
+See comment to <a href="Uwt.Pipe.html#VALopenpipe"><code class="code">Uwt.Pipe.openpipe</code></a><br>
+</div>
+
+<pre><span id="VALopentcp_exn"><span class="keyword">val</span> opentcp_exn</span> : <code class="type">Unix.file_descr -> <a href="Uwt.Tcp.html#TYPEt">t</a></code></pre>
+<pre><code><span id="TYPEmode"><span class="keyword">type</span> <code class="type"></code>mode</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTmode.Ipv6_only"><span class="constructor">Ipv6_only</span></span></code></td>
+
+</tr></table>
+
+
+
+<pre><span id="VALbind"><span class="keyword">val</span> bind</span> : <code class="type">?mode:<a href="Uwt.Tcp.html#TYPEmode">mode</a> list -><br>       <a href="Uwt.Tcp.html#TYPEt">t</a> -> addr:sockaddr -> unit -> Int_result.unit</code></pre><div class="info ">
+Bind the handle to an address and port.
+<p>
+
+      When the port is already taken, you can expect to see an
+      <code class="code">EADDRINUSE</code> error from either <a href="Uwt.Tcp.html#VALbind"><code class="code">Uwt.Tcp.bind</code></a>, <code class="code">listen</code> or
+      <a href="Uwt.Tcp.html#VALconnect"><code class="code">Uwt.Tcp.connect</code></a>. That is, a successful call to this function does not
+      guarantee that the call to <code class="code">listen</code> or <a href="Uwt.Tcp.html#VALconnect"><code class="code">Uwt.Tcp.connect</code></a> will succeed
+      as well.<br>
+</div>
+
+<pre><span id="VALbind_exn"><span class="keyword">val</span> bind_exn</span> : <code class="type">?mode:<a href="Uwt.Tcp.html#TYPEmode">mode</a> list -> <a href="Uwt.Tcp.html#TYPEt">t</a> -> addr:sockaddr -> unit -> unit</code></pre>
+<pre><span id="VALnodelay"><span class="keyword">val</span> nodelay</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> bool -> Int_result.unit</code></pre><div class="info ">
+Enable TCP_NODELAY, which disables Nagle's algorithm.<br>
+</div>
+
+<pre><span id="VALnodelay_exn"><span class="keyword">val</span> nodelay_exn</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> bool -> unit</code></pre>
+<pre><span id="VALenable_keepalive"><span class="keyword">val</span> enable_keepalive</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> int -> Int_result.unit</code></pre><div class="info ">
+<code class="code">enable_keepalive tcp delay</code> enables keep-alive, the delay is the
+      initial delay in seconds<br>
+</div>
+
+<pre><span id="VALenable_keepalive_exn"><span class="keyword">val</span> enable_keepalive_exn</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> int -> unit</code></pre>
+<pre><span id="VALdisable_keepalive"><span class="keyword">val</span> disable_keepalive</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> Int_result.unit</code></pre>
+<pre><span id="VALdisable_keepalive_exn"><span class="keyword">val</span> disable_keepalive_exn</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> unit</code></pre>
+<pre><span id="VALsimultaneous_accepts"><span class="keyword">val</span> simultaneous_accepts</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> bool -> Int_result.unit</code></pre><div class="info ">
+Enable / disable simultaneous asynchronous accept requests that
+      are queued by the operating system when listening for new TCP
+      connections.
+<p>
+
+      This setting is used to tune a TCP server for the desired
+      performance. Having simultaneous accepts can significantly
+      improve the rate of accepting connections (which is why it is
+      enabled by default) but may lead to uneven load distribution in
+      multi-process setups.<br>
+</div>
+
+<pre><span id="VALsimultaneous_accepts_exn"><span class="keyword">val</span> simultaneous_accepts_exn</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> bool -> unit</code></pre>
+<pre><span id="VALgetsockname"><span class="keyword">val</span> getsockname</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> sockaddr uv_result</code></pre><div class="info ">
+Get the current address to which the handle is bound.<br>
+</div>
+
+<pre><span id="VALgetsockname_exn"><span class="keyword">val</span> getsockname_exn</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> sockaddr</code></pre>
+<pre><span id="VALgetpeername"><span class="keyword">val</span> getpeername</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> sockaddr uv_result</code></pre><div class="info ">
+Get the address of the peer connected to the handle.<br>
+</div>
+
+<pre><span id="VALgetpeername_exn"><span class="keyword">val</span> getpeername_exn</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> sockaddr</code></pre>
+<pre><span id="VALconnect"><span class="keyword">val</span> connect</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> addr:sockaddr -> unit Lwt.t</code></pre><div class="info ">
+Establish an IPv4 or IPv6 TCP connection.<br>
+</div>
+
+<pre><span id="VALaccept"><span class="keyword">val</span> accept</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> <a href="Uwt.Tcp.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
+initializes a new client, accepts and returns it.
+<p>
+
+      This call is used in conjunction with <code class="code">listen</code> to accept
+      incoming connections. Call this function after receiving a
+      <code class="code">listen</code> callback to accept the connection.
+<p>
+
+      When the <code class="code">listen</code> callback is called it is guaranteed
+      that this function will complete successfully the first time. If
+      you attempt to use it more than once, it may fail. It is
+      suggested to only call this function once per <code class="code">listen</code> callback
+      call.<br>
+</div>
+
+<pre><span id="VALaccept_exn"><span class="keyword">val</span> accept_exn</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> <a href="Uwt.Tcp.html#TYPEt">t</a></code></pre>
+<pre><span id="VALwith_tcp"><span class="keyword">val</span> with_tcp</span> : <code class="type">(<a href="Uwt.Tcp.html#TYPEt">t</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre><div class="info ">
+See comments to <a href="Uwt.Pipe.html#VALwith_pipe"><code class="code">Uwt.Pipe.with_pipe</code></a><br>
+</div>
+
+<pre><span id="VALwith_connect"><span class="keyword">val</span> with_connect</span> : <code class="type">addr:sockaddr -> (<a href="Uwt.Tcp.html#TYPEt">t</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre>
+<pre><span id="VALwith_open"><span class="keyword">val</span> with_open</span> : <code class="type">Unix.file_descr -> (<a href="Uwt.Tcp.html#TYPEt">t</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre>
+<pre><span id="VALwith_accept"><span class="keyword">val</span> with_accept</span> : <code class="type"><a href="Uwt.Tcp.html#TYPEt">t</a> -> (<a href="Uwt.Tcp.html#TYPEt">t</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre>
+<pre><span id="VALaccept_raw"><span class="keyword">val</span> accept_raw</span> : <code class="type">server:<a href="Uwt.Tcp.html#TYPEt">t</a> -> client:<a href="Uwt.Tcp.html#TYPEt">t</a> -> Int_result.unit</code></pre>
+<pre><span id="VALaccept_raw_exn"><span class="keyword">val</span> accept_raw_exn</span> : <code class="type">server:<a href="Uwt.Tcp.html#TYPEt">t</a> -> client:<a href="Uwt.Tcp.html#TYPEt">t</a> -> unit</code></pre></body></html>

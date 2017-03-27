@@ -1,0 +1,133 @@
+<html><head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Pipe</title>
+</head>
+<body>
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;close&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;close_noerr&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;close_wait&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;is_active&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ref'&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;unref&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;has_ref&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_handle&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Handle</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;is_readable&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;is_writable&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;read_start&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;cb:(<span class="constructor">Bytes</span>.t&nbsp;uv_result&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;read_start_exn&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;cb:(<span class="constructor">Bytes</span>.t&nbsp;uv_result&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;read_stop&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;read_stop_exn&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;read&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;read_ba&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write_queue_size&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;try_write&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;try_write_ba&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;try_write_string&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write_string&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write_ba&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write_raw&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write_raw_string&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write_raw_ba&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;try_writev&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Iovec_write</span>.t&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;writev&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Iovec_write</span>.t&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;writev_emul&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Iovec_write</span>.t&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;writev_raw&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Iovec_write</span>.t&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;listen&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;max:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;cb:(t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;listen_exn&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;max:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;cb:(t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;shutdown&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;set_blocking&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get_send_buffer_size&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get_send_buffer_size_exn&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get_recv_buffer_size&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get_recv_buffer_size_exn&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;set_send_buffer_size&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;set_send_buffer_size_exn&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;set_recv_buffer_size&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;set_recv_buffer_size_exn&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fileno&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.file_descr&nbsp;uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fileno_exn&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.file_descr<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_stream&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Stream</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;init&nbsp;:&nbsp;?ipc:bool&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;openpipe&nbsp;:&nbsp;?ipc:bool&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;openpipe_exn&nbsp;:&nbsp;?ipc:bool&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;bind&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;path:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;bind_exn&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;path:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getsockname&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getsockname_exn&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getpeername&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getpeername_exn&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pending_instances&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pending_instances_exn&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;accept&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;accept_exn&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;accept_raw&nbsp;:&nbsp;server:<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;client:<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;accept_raw_exn&nbsp;:&nbsp;server:<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;client:<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pending_count&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pending_count_exn&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;ipc_result&nbsp;=<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Ipc_error</span>&nbsp;<span class="keyword">of</span>&nbsp;error<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Ipc_none</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Ipc_tcp</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Tcp</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Ipc_udp</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Udp</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Ipc_pipe</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;accept_ipc&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.ipc_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write2&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;send:<span class="constructor">Uwt</span>.<span class="constructor">Tcp</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write2_ba&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;send:<span class="constructor">Uwt</span>.<span class="constructor">Tcp</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write2_string&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;send:<span class="constructor">Uwt</span>.<span class="constructor">Tcp</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write2_pipe&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;send:<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write2_pipe_ba&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;send:<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write2_pipe_string&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;send:<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write2_udp&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;send:<span class="constructor">Uwt</span>.<span class="constructor">Udp</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write2_udp_ba&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;send:<span class="constructor">Uwt</span>.<span class="constructor">Udp</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write2_udp_string&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;send:<span class="constructor">Uwt</span>.<span class="constructor">Udp</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;connect&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;path:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;with_pipe&nbsp;:&nbsp;?ipc:bool&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;with_connect&nbsp;:&nbsp;path:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;with_open&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?ipc:bool&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t<br>
+<span class="keyword">end</span></code></body></html>

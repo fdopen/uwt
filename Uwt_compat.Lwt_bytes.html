@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt_compat.Lwt_log.html">
+<link rel="next" href="Uwt_compat.Lwt_process.html">
+<link rel="Up" href="Uwt_compat.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><link title="Access" rel="Section" href="#2_Access">
+<link title="Conversions" rel="Section" href="#2_Conversions">
+<link title="Copying" rel="Section" href="#2_Copying">
+<link title="Filling" rel="Section" href="#2_Filling">
+<title>Uwt - OCaml bindings for libuv : Uwt_compat.Lwt_bytes</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt_compat.Lwt_log.html" title="Uwt_compat.Lwt_log">Previous</a>
+&nbsp;<a class="up" href="Uwt_compat.html" title="Uwt_compat">Up</a>
+&nbsp;<a class="post" href="Uwt_compat.Lwt_process.html" title="Uwt_compat.Lwt_process">Next</a>
+</div>
+<h1>Module <a href="type_Uwt_compat.Lwt_bytes.html">Uwt_compat.Lwt_bytes</a></h1>
+
+<pre><span class="keyword">module</span> Lwt_bytes: <code class="type"><a href="Uwt_bytes.html">Uwt_bytes</a></code></pre><hr width="100%">
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = <code class="type">(char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t</code> </pre>
+<div class="info ">
+Type of array of bytes.<br>
+</div>
+
+
+<pre><span id="VALcreate"><span class="keyword">val</span> create</span> : <code class="type">int -> <a href="Uwt_bytes.html#TYPEt">t</a></code></pre><div class="info ">
+Creates a new byte array of the given size.<br>
+</div>
+
+<pre><span id="VALlength"><span class="keyword">val</span> length</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int</code></pre><div class="info ">
+Returns the length of the given byte array.<br>
+</div>
+<br>
+<h2 id="2_Access">Access</h2><br>
+
+<pre><span id="VALget"><span class="keyword">val</span> get</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> char</code></pre><div class="info ">
+<code class="code">get buffer offset</code> returns the byte at offset <code class="code">offset</code> in
+      <code class="code">buffer</code>.<br>
+</div>
+
+<pre><span id="VALset"><span class="keyword">val</span> set</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> char -> unit</code></pre><div class="info ">
+<code class="code">get buffer offset value</code> changes the value of the byte at
+      offset <code class="code">offset</code> in <code class="code">buffer</code> to <code class="code">value</code>.<br>
+</div>
+
+<pre><span id="VALunsafe_get"><span class="keyword">val</span> unsafe_get</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> char</code></pre><div class="info ">
+Same as <a href="Uwt_bytes.html#VALget"><code class="code">Uwt_bytes.get</code></a> but without bound checking.<br>
+</div>
+
+<pre><span id="VALunsafe_set"><span class="keyword">val</span> unsafe_set</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> char -> unit</code></pre><div class="info ">
+Same as <a href="Uwt_bytes.html#VALset"><code class="code">Uwt_bytes.set</code></a> but without bound checking.<br>
+</div>
+<br>
+<h2 id="2_Conversions">Conversions</h2><br>
+
+<pre><span id="VALof_bytes"><span class="keyword">val</span> of_bytes</span> : <code class="type">Bytes.t -> <a href="Uwt_bytes.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">of_bytes buf</code> returns a newly allocated byte array with the
+      same contents as <code class="code">buf</code>.<br>
+</div>
+
+<pre><span id="VALof_string"><span class="keyword">val</span> of_string</span> : <code class="type">string -> <a href="Uwt_bytes.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">of_string buf</code> returns a newly allocated byte array with the
+      same contents as <code class="code">buf</code>.<br>
+</div>
+
+<pre><span id="VALto_bytes"><span class="keyword">val</span> to_bytes</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> Bytes.t</code></pre><div class="info ">
+<code class="code">to_bytes buf</code> returns newly allocated bytes with the same
+      contents as <code class="code">buf</code>.<br>
+</div>
+
+<pre><span id="VALto_string"><span class="keyword">val</span> to_string</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> string</code></pre><div class="info ">
+<code class="code">to_string buf</code> returns a newly allocated string with the same
+      contents as <code class="code">buf</code>.<br>
+</div>
+<br>
+<h2 id="2_Copying">Copying</h2><br>
+
+<pre><span id="VALblit"><span class="keyword">val</span> blit</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> <a href="Uwt_bytes.html#TYPEt">t</a> -> int -> int -> unit</code></pre><div class="info ">
+<code class="code">blit buf1 ofs1 buf2 ofs2 len</code> copy <code class="code">len</code> bytes from <code class="code">buf1</code>
+      starting at offset <code class="code">ofs1</code> to <code class="code">buf2</code> starting at offset <code class="code">ofs2</code>.<br>
+</div>
+
+<pre><span id="VALblit_from_bytes"><span class="keyword">val</span> blit_from_bytes</span> : <code class="type">Bytes.t -> int -> <a href="Uwt_bytes.html#TYPEt">t</a> -> int -> int -> unit</code></pre><div class="info ">
+Same as blit but the first buffer is a string instead of a byte
+      array.<br>
+</div>
+
+<pre><span id="VALblit_to_bytes"><span class="keyword">val</span> blit_to_bytes</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> Bytes.t -> int -> int -> unit</code></pre><div class="info ">
+Same as blit but the second buffer is a string instead of a byte
+      array.<br>
+</div>
+
+<pre><span id="VALunsafe_blit"><span class="keyword">val</span> unsafe_blit</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> <a href="Uwt_bytes.html#TYPEt">t</a> -> int -> int -> unit</code></pre><div class="info ">
+Same as <a href="Uwt_bytes.html#VALblit"><code class="code">Uwt_bytes.blit</code></a> but without bound checking.<br>
+</div>
+
+<pre><span id="VALunsafe_blit_from_bytes"><span class="keyword">val</span> unsafe_blit_from_bytes</span> : <code class="type">Bytes.t -> int -> <a href="Uwt_bytes.html#TYPEt">t</a> -> int -> int -> unit</code></pre><div class="info ">
+Same as <code class="code">blit_string_bytes</code> but without bound checking.<br>
+</div>
+
+<pre><span id="VALunsafe_blit_to_bytes"><span class="keyword">val</span> unsafe_blit_to_bytes</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> Bytes.t -> int -> int -> unit</code></pre><div class="info ">
+Same as <code class="code">blit_bytes_string</code> but without bound checking.<br>
+</div>
+
+<pre><span id="VALproxy"><span class="keyword">val</span> proxy</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> int -> <a href="Uwt_bytes.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">proxy buffer offset length</code> creates a ``proxy''. The returned
+      byte array share the data of <code class="code">buffer</code> but with different
+      bounds.<br>
+</div>
+
+<pre><span id="VALextract"><span class="keyword">val</span> extract</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> int -> <a href="Uwt_bytes.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">extract buffer offset length</code> creates a new byte array of
+      length <code class="code">length</code> and copy the <code class="code">length</code> bytes of <code class="code">buffer</code> at
+      <code class="code">offset</code> into it.<br>
+</div>
+
+<pre><span id="VALcopy"><span class="keyword">val</span> copy</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> <a href="Uwt_bytes.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">copy buffer</code> creates a copy of the given byte array.<br>
+</div>
+<br>
+<h2 id="2_Filling">Filling</h2><br>
+
+<pre><span id="VALfill"><span class="keyword">val</span> fill</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> int -> char -> unit</code></pre><div class="info ">
+<code class="code">fill buffer offset length value</code> puts <code class="code">value</code> in all <code class="code">length</code>
+      bytes of <code class="code">buffer</code> starting at offset <code class="code">offset</code>.<br>
+</div>
+
+<pre><span id="VALunsafe_fill"><span class="keyword">val</span> unsafe_fill</span> : <code class="type"><a href="Uwt_bytes.html#TYPEt">t</a> -> int -> int -> char -> unit</code></pre><div class="info ">
+Same as <a href="Uwt_bytes.html#VALfill"><code class="code">Uwt_bytes.fill</code></a> but without bound checking.<br>
+</div>
+</body></html>

@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt.Poll.html">
+<link rel="next" href="Uwt.Fs_poll.html">
+<link rel="Up" href="Uwt.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Fs_event</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt.Poll.html" title="Uwt.Poll">Previous</a>
+&nbsp;<a class="up" href="Uwt.html" title="Uwt">Up</a>
+&nbsp;<a class="post" href="Uwt.Fs_poll.html" title="Uwt.Fs_poll">Next</a>
+</div>
+<h1>Module <a href="type_Uwt.Fs_event.html">Uwt.Fs_event</a></h1>
+
+<pre><span class="keyword">module</span> Fs_event: <code class="code">sig</code> <a href="Uwt.Fs_event.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+FS Event handles allow the user to monitor a given path for
+     changes, for example, if the file was renamed or there was a
+     generic change in it. This handle uses the best backend for the
+     job on each platform.<br>
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+
+
+<pre><span class="keyword">include</span> <a href="Uwt.Handle.html">Uwt.Handle</a></pre>
+
+<pre><span id="VALto_handle"><span class="keyword">val</span> to_handle</span> : <code class="type"><a href="Uwt.Fs_event.html#TYPEt">t</a> -> <a href="Uwt.Handle.html#TYPEt">Uwt.Handle.t</a></code></pre>
+<pre><code><span id="TYPEevent"><span class="keyword">type</span> <code class="type"></code>event</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTevent.Rename"><span class="constructor">Rename</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTevent.Change"><span class="constructor">Change</span></span></code></td>
+
+</tr></table>
+
+
+
+<pre><code><span id="TYPEflags"><span class="keyword">type</span> <code class="type"></code>flags</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTflags.Entry"><span class="constructor">Entry</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+By default, if the fs event watcher is given a
+                  directory name, we will watch for all events in that
+                  directory. This flags overrides this behavior and
+                  makes fs_event report only changes to the directory
+                  entry itself. This flag does not affect individual
+                  files watched. This flag is currently not implemented
+                  yet on any backend.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTflags.Stat"><span class="constructor">Stat</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+By default <code class="code">Fs_event</code> will try to use a kernel
+               interface such as inotify or kqueue to detect
+               events. This may not work on remote filesystems such as
+               NFS mounts. This flag makes fs_event fall back to
+               calling stat() on a regular interval. This flag is
+               currently not implemented yet on any backend.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTflags.Recursive"><span class="constructor">Recursive</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+By default, event watcher, when watching
+                    directory, is not registering (is ignoring) changes
+                    in it's subdirectories. This flag will override
+                    this behaviour on platforms that support it.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
+<pre><span id="TYPEcb"><span class="keyword">type</span> <code class="type"></code>cb</span> = <code class="type"><a href="Uwt.Fs_event.html#TYPEt">t</a> -> (string * <a href="Uwt.Fs_event.html#TYPEevent">event</a> list) uv_result -> unit</code> </pre>
+
+
+<pre><span id="VALstart"><span class="keyword">val</span> start</span> : <code class="type">string -><br>       <a href="Uwt.Fs_event.html#TYPEflags">flags</a> list -> cb:<a href="Uwt.Fs_event.html#TYPEcb">cb</a> -> <a href="Uwt.Fs_event.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
+Start the handle with the given callback, which will watch the
+      specified path for changes<br>
+</div>
+
+<pre><span id="VALstart_exn"><span class="keyword">val</span> start_exn</span> : <code class="type">string -> <a href="Uwt.Fs_event.html#TYPEflags">flags</a> list -> cb:<a href="Uwt.Fs_event.html#TYPEcb">cb</a> -> <a href="Uwt.Fs_event.html#TYPEt">t</a></code></pre></body></html>

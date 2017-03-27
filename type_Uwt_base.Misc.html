@@ -1,0 +1,102 @@
+<html><head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt_base.Misc</title>
+</head>
+<body>
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;timeval&nbsp;=&nbsp;{&nbsp;sec&nbsp;:&nbsp;int;&nbsp;usec&nbsp;:&nbsp;int;&nbsp;}<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;rusage&nbsp;=&nbsp;{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;utime&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.timeval;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;stime&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.timeval;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;maxrss&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ixrss&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;idrss&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;isrss&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;minflt&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;majflt&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;nswap&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;inblock&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;outblock&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;msgsnd&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;msgrcv&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;nsignals&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;nvcsw&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;nivcsw&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;cpu_times&nbsp;=&nbsp;{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;user&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;nice&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;sys&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;idle&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;irq&nbsp;:&nbsp;int64;<br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;cpu_info&nbsp;=&nbsp;{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model&nbsp;:&nbsp;string;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;speed&nbsp;:&nbsp;int;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;cpu_times&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.cpu_times;<br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;interface_address&nbsp;=&nbsp;{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;name&nbsp;:&nbsp;string;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;phys_addr&nbsp;:&nbsp;string;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;is_internal&nbsp;:&nbsp;bool;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;address&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.sockaddr&nbsp;option;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;netmask&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.sockaddr&nbsp;option;<br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;handle_type&nbsp;=&nbsp;<span class="constructor">File</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Tty</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Pipe</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Tcp</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Udp</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Unknown</span><br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;guess_handle&nbsp;:&nbsp;<span class="constructor">Unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.handle_type<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;resident_set_memory&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int64&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;resident_set_memory_exn&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int64<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;uptime&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;float&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;uptime_exn&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;float<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getrusage&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.rusage&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getrusage_exn&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.rusage<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;cpu_info&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.cpu_info&nbsp;array&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;cpu_info_exn&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.cpu_info&nbsp;array<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;interface_addresses&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.interface_address&nbsp;array&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;interface_addresses_exn&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.interface_address&nbsp;array<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;load_avg&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;float&nbsp;*&nbsp;float&nbsp;*&nbsp;float<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ip4_addr&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.sockaddr&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ip4_addr_exn&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.sockaddr<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ip4_name&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.sockaddr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ip4_name_exn&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.sockaddr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ip6_addr&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.sockaddr&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ip6_addr_exn&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.sockaddr<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ip6_name&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.sockaddr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ip6_name_exn&nbsp;:&nbsp;<span class="constructor">Uwt_base</span>.sockaddr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get_total_memory&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int64<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;hrtime&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int64<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;version&nbsp;=&nbsp;{&nbsp;major&nbsp;:&nbsp;int;&nbsp;minor&nbsp;:&nbsp;int;&nbsp;patch&nbsp;:&nbsp;int;&nbsp;}<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;version&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Misc</span>.version<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;version_raw&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;version_string&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;os_homedir&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;os_tmpdir&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get_passwd&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.passwd_entry&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;exepath&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;cwd&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;chdir&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;set_process_title&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get_process_title&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+<span class="keyword">end</span></code></body></html>

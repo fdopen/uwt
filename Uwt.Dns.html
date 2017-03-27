@@ -1,0 +1,60 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt.Process.html">
+<link rel="next" href="Uwt.Unix.html">
+<link rel="Up" href="Uwt.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Dns</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt.Process.html" title="Uwt.Process">Previous</a>
+&nbsp;<a class="up" href="Uwt.html" title="Uwt">Up</a>
+&nbsp;<a class="post" href="Uwt.Unix.html" title="Uwt.Unix">Next</a>
+</div>
+<h1>Module <a href="type_Uwt.Dns.html">Uwt.Dns</a></h1>
+
+<pre><span class="keyword">module</span> Dns: <code class="code">sig</code> <a href="Uwt.Dns.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+libuv provides asynchronous variants of getaddrinfo and
+      getnameinfo.<br>
+
+<pre><span id="VALgetaddrinfo"><span class="keyword">val</span> getaddrinfo</span> : <code class="type">host:string -><br>       service:string -><br>       getaddrinfo_option list -> Unix.addr_info list uv_result Lwt.t</code></pre><div class="info ">
+Asynchronous getaddrinfo(3).
+<p>
+
+     Either node or service may be NULL but not both.
+<p>
+
+     Be careful: <a href="Uwt.Dns.html#VALgetaddrinfo"><code class="code">Uwt.Dns.getaddrinfo</code></a> returns raw error codes,
+     whereas <code class="code">Unix.getaddrinfo</code> returns the empty list<br>
+</div>
+
+<pre><span id="TYPEgetnameinfo_option"><span class="keyword">type</span> <code class="type"></code>getnameinfo_option</span> = <code class="type">Unix.getnameinfo_option</code> </pre>
+
+
+<pre><span id="VALgetnameinfo"><span class="keyword">val</span> getnameinfo</span> : <code class="type">sockaddr -> <a href="Uwt.Dns.html#TYPEgetnameinfo_option">getnameinfo_option</a> list -> Unix.name_info uv_result Lwt.t</code></pre><div class="info ">
+Asynchronous getnameinfo(3).<br>
+</div>
+</body></html>

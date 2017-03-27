@@ -1,0 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="next" href="Uwt_base.Iovec_write.html">
+<link rel="Up" href="Uwt_base.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt_base.Int_result</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Uwt_base.html" title="Uwt_base">Up</a>
+&nbsp;<a class="post" href="Uwt_base.Iovec_write.html" title="Uwt_base.Iovec_write">Next</a>
+</div>
+<h1>Module <a href="type_Uwt_base.Int_result.html">Uwt_base.Int_result</a></h1>
+
+<pre><span class="keyword">module</span> Int_result: <code class="code">sig</code> <a href="Uwt_base.Int_result.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+<code class="code">Int_result.t</code> is used instead of <code class="code">'a result</code>, if a function
+      returns either an error or a non-negative integer (including
+      unit/bool).<br>
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type">'a</code> t</span> = private <code class="type">int</code> </pre>
+
+
+<pre><span id="TYPEreal_int"><span class="keyword">type</span> <code class="type"></code>real_int</span> = <code class="type">int</code> </pre>
+
+
+<pre><span id="TYPEreal_unit"><span class="keyword">type</span> <code class="type"></code>real_unit</span> = <code class="type">unit</code> </pre>
+
+
+<pre><span id="TYPEint"><span class="keyword">type</span> <code class="type"></code>int</span> = <code class="type"><a href="Uwt_base.Int_result.html#TYPEreal_int">real_int</a> <a href="Uwt_base.Int_result.html#TYPEt">t</a></code> </pre>
+
+
+<pre><span id="TYPEunit"><span class="keyword">type</span> <code class="type"></code>unit</span> = <code class="type"><a href="Uwt_base.Int_result.html#TYPEreal_unit">real_unit</a> <a href="Uwt_base.Int_result.html#TYPEt">t</a></code> </pre>
+
+
+<pre><span id="VALis_ok"><span class="keyword">val</span> is_ok</span> : <code class="type">'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> bool</code></pre>
+<pre><span id="VALis_error"><span class="keyword">val</span> is_error</span> : <code class="type">'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> bool</code></pre>
+<pre><span id="VALto_int"><span class="keyword">val</span> to_int</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a> -> <a href="Uwt_base.Int_result.html#TYPEreal_int">real_int</a></code></pre><div class="info ">
+will raise <code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_ok"><code class="code">Uwt_base.Int_result.is_ok</code></a> is false<br>
+</div>
+
+<pre><span id="VALto_error"><span class="keyword">val</span> to_error</span> : <code class="type">'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> <a href="Uwt_base.html#TYPEerror">Uwt_base.error</a></code></pre><div class="info ">
+will raise <code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_error"><code class="code">Uwt_base.Int_result.is_error</code></a> is false<br>
+</div>
+
+<pre><span id="VALplain"><span class="keyword">val</span> plain</span> : <code class="type">'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> <a href="Uwt_base.Int_result.html#TYPEreal_int">real_int</a></code></pre><div class="info ">
+return a plain integer number, positive or negative<br>
+</div>
+
+<pre><span id="VALto_exn"><span class="keyword">val</span> to_exn</span> : <code class="type">?name:string -> ?param:string -> 'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> exn</code></pre><div class="info ">
+will raise <code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_error"><code class="code">Uwt_base.Int_result.is_error</code></a> is false<br>
+</div>
+
+<pre><span id="VALraise_exn"><span class="keyword">val</span> raise_exn</span> : <code class="type">?name:string -> ?param:string -> 'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> 'b</code></pre><div class="info ">
+<code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_error"><code class="code">Uwt_base.Int_result.is_error</code></a> is false<br>
+</div>
+<br>
+You can use the following values to compare a Int_result.t value with an
+      assumed error, e.g.
+<p>
+
+      <pre class="codepre"><code class="code">        let p = Uwt.Stream.try_write t ~buf in
+        if (p :&gt; int) = Uwt.Int_result.eagain then
+          ...
+        else
+          ...
+      </code></pre>
+<p>
+
+      All values are negative integers, but don't make any further
+      assumption about them. Their concrete values can change with any
+      uwt release.<br>
+
+<pre><span id="VALeagain"><span class="keyword">val</span> eagain</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALe2big"><span class="keyword">val</span> e2big</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeacces"><span class="keyword">val</span> eacces</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeaddrinuse"><span class="keyword">val</span> eaddrinuse</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeaddrnotavail"><span class="keyword">val</span> eaddrnotavail</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeafnosupport"><span class="keyword">val</span> eafnosupport</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_addrfamily"><span class="keyword">val</span> eai_addrfamily</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_again"><span class="keyword">val</span> eai_again</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_badflags"><span class="keyword">val</span> eai_badflags</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_badhints"><span class="keyword">val</span> eai_badhints</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_canceled"><span class="keyword">val</span> eai_canceled</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_fail"><span class="keyword">val</span> eai_fail</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_family"><span class="keyword">val</span> eai_family</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_memory"><span class="keyword">val</span> eai_memory</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_nodata"><span class="keyword">val</span> eai_nodata</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_noname"><span class="keyword">val</span> eai_noname</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_overflow"><span class="keyword">val</span> eai_overflow</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_protocol"><span class="keyword">val</span> eai_protocol</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_service"><span class="keyword">val</span> eai_service</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeai_socktype"><span class="keyword">val</span> eai_socktype</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALealready"><span class="keyword">val</span> ealready</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALebadf"><span class="keyword">val</span> ebadf</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALebusy"><span class="keyword">val</span> ebusy</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALecanceled"><span class="keyword">val</span> ecanceled</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALecharset"><span class="keyword">val</span> echarset</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeconnaborted"><span class="keyword">val</span> econnaborted</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeconnrefused"><span class="keyword">val</span> econnrefused</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeconnreset"><span class="keyword">val</span> econnreset</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALedestaddrreq"><span class="keyword">val</span> edestaddrreq</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeexist"><span class="keyword">val</span> eexist</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALefault"><span class="keyword">val</span> efault</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALefbig"><span class="keyword">val</span> efbig</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALehostunreach"><span class="keyword">val</span> ehostunreach</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeintr"><span class="keyword">val</span> eintr</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeinval"><span class="keyword">val</span> einval</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeio"><span class="keyword">val</span> eio</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeisconn"><span class="keyword">val</span> eisconn</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeisdir"><span class="keyword">val</span> eisdir</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeloop"><span class="keyword">val</span> eloop</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALemfile"><span class="keyword">val</span> emfile</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALemsgsize"><span class="keyword">val</span> emsgsize</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenametoolong"><span class="keyword">val</span> enametoolong</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenetdown"><span class="keyword">val</span> enetdown</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenetunreach"><span class="keyword">val</span> enetunreach</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenfile"><span class="keyword">val</span> enfile</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenobufs"><span class="keyword">val</span> enobufs</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenodev"><span class="keyword">val</span> enodev</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenoent"><span class="keyword">val</span> enoent</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenomem"><span class="keyword">val</span> enomem</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenonet"><span class="keyword">val</span> enonet</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenoprotoopt"><span class="keyword">val</span> enoprotoopt</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenospc"><span class="keyword">val</span> enospc</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenosys"><span class="keyword">val</span> enosys</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenotconn"><span class="keyword">val</span> enotconn</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenotdir"><span class="keyword">val</span> enotdir</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenotempty"><span class="keyword">val</span> enotempty</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenotsock"><span class="keyword">val</span> enotsock</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenotsup"><span class="keyword">val</span> enotsup</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeperm"><span class="keyword">val</span> eperm</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALepipe"><span class="keyword">val</span> epipe</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeproto"><span class="keyword">val</span> eproto</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeprotonosupport"><span class="keyword">val</span> eprotonosupport</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeprototype"><span class="keyword">val</span> eprototype</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALerange"><span class="keyword">val</span> erange</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALerofs"><span class="keyword">val</span> erofs</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeshutdown"><span class="keyword">val</span> eshutdown</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALespipe"><span class="keyword">val</span> espipe</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALesrch"><span class="keyword">val</span> esrch</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALetimedout"><span class="keyword">val</span> etimedout</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALetxtbsy"><span class="keyword">val</span> etxtbsy</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALexdev"><span class="keyword">val</span> exdev</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALunknown"><span class="keyword">val</span> unknown</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALeof"><span class="keyword">val</span> eof</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALenxio"><span class="keyword">val</span> enxio</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALemlink"><span class="keyword">val</span> emlink</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
+<pre><span id="VALuwt_efatal"><span class="keyword">val</span> uwt_efatal</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre></body></html>

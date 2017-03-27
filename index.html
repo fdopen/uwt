@@ -1,0 +1,227 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv</title>
+</head>
+<body>
+<h1>Uwt - OCaml bindings for libuv</h1>
+<h1 id="1_Overview">Overview</h1>
+<p>
+
+Uwt provides OCaml bindings for libuv. The main loop of libuv is
+integrated into <a href="https://ocsigen.org/lwt/manual/"> <code class="code">lwt</code></a>, the
+light-weight cooperative threads library.
+<p>
+
+Uwt is <b>not</b> <i>compatible</i> with <code class="code">lwt.unix</code>. It's not a further
+<code class="code">Lwt_engine</code> in addition to <code class="code">select</code> and <code class="code">libev</code>. It only uses the system
+independent parts of lwt that can also be used with JavaScript or ocamljava.
+<p>
+
+<h2 id="2_LwtIndependentCore">Lwt Independent Core</h2>
+<p>
+
+<a href="Uwt_base.html"><code class="code">Uwt_base</code></a> (findlib name: <code class="code">uwt.base</code>) contains type definitions and
+functions that are shared by <a href="Uwt.html"><code class="code">Uwt</code></a> and <a href="Uv_fs_sync.html"><code class="code">Uv_fs_sync</code></a>. <a href="Uwt_base.html"><code class="code">Uwt_base</code></a> is
+included in <a href="Uwt.html"><code class="code">Uwt</code></a>, so you usually don't use it directly.
+<p>
+
+<br>
+<table class="indextable">
+<tr><td class="module"><a href="Uwt_base.html">Uwt_base</a></td><td><div class="info">
+Lwt independent core
+</div>
+</td></tr>
+<tr><td class="module"><a href="Uwt_bytes.html">Uwt_bytes</a></td><td><div class="info">
+Byte arrays
+</div>
+</td></tr>
+</table>
+
+<p>
+
+<a href="Uv_fs_sync.html"><code class="code">Uv_fs_sync</code></a> (findlib name: <code class="code">uwt.sync</code>) can be used for synchronous
+filesystem operations. This might be useful, if you target Windows:
+<p>
+<ul>
+<li>additional options and functions are available, that are missing
+  inside the standard Unix module.</li>
+</ul>
+<ul>
+<li>filenames and similar parameters and return values are always utf-8
+  encoded.</li>
+</ul>
+
+<br>
+<table class="indextable">
+<tr><td class="module"><a href="Uv_fs_sync.html">Uv_fs_sync</a></td><td><div class="info">
+Synchronous filesystem operations
+</div>
+</td></tr>
+</table>
+
+<p>
+
+<h2 id="2_Uwt">Uwt</h2>
+<p>
+
+The main part of this library (findlib name: <code class="code">uwt</code>). The naming
+conventions mirror the conventions of libuv, so you can easily consult
+the official <a href="http://docs.libuv.org/en/v1.x/index.html"> <code class="code">libuv
+manual</code></a>.
+<p>
+
+Selected parts of the manual are now included inside the mli files
+(credits to the <a href="https://github.com/libuv/libuv/blob/v1.x/AUTHORS">
+<code class="code">authors</code></a>), the libuv manual is however more up-to-date.
+<p>
+
+<br>
+<table class="indextable">
+<tr><td class="module"><a href="Uwt.html">Uwt</a></td><td><div class="info">
+Uwt main module
+</div>
+</td></tr>
+</table>
+
+<p>
+
+<h2 id="2_HigherLevelHelpers">Higher Level Helpers</h2>
+<p>
+
+<code class="code">lwt.unix</code> also provides higher level modules. They have been ported
+to <code class="code">uwt</code> and have a very similar interface (findlib name: <code class="code">uwt.ext</code>).
+<p>
+
+<br>
+<table class="indextable">
+<tr><td class="module"><a href="Uwt_log.html">Uwt_log</a></td><td><div class="info">
+Logging facility
+</div>
+</td></tr>
+<tr><td class="module"><a href="Uwt_throttle.html">Uwt_throttle</a></td><td><div class="info">
+Rate limiters
+</div>
+</td></tr>
+<tr><td class="module"><a href="Uwt_timeout.html">Uwt_timeout</a></td><td><div class="info">
+Timeouts
+</div>
+</td></tr>
+<tr><td class="module"><a href="Uwt_chan.html">Uwt_chan</a></td><td><div class="info">
+Module <code class="code">Lwt_chan</code>: cooperative, <code class="code">Pervasives</code>-like, I/O functions
+</div>
+</td></tr>
+<tr><td class="module"><a href="Uwt_io.html">Uwt_io</a></td><td><div class="info">
+Buffered byte channels
+</div>
+</td></tr>
+<tr><td class="module"><a href="Uwt_process.html">Uwt_process</a></td><td><div class="info">
+Process management
+</div>
+</td></tr>
+</table>
+
+<p>
+
+<h2 id="2_PreemptiveThreads">Preemptive Threads</h2>
+<p>
+
+The counterpart of <code class="code">Lwt_preemptive</code> is in a separate findlib subpackage
+<code class="code">uwt.preemptive</code>, because it introduces the dependency on the standard
+threads library.
+<p>
+
+<br>
+<table class="indextable">
+<tr><td class="module"><a href="Uwt_preemptive.html">Uwt_preemptive</a></td><td><div class="info">
+This module allows to mix preemptive threads with <code class="code">Lwt</code>
+    cooperative threads.
+</div>
+</td></tr>
+</table>
+
+<p>
+
+<h2 id="2_CompatibilityHelper">Compatibility Helper</h2>
+<p>
+
+<a href="Uwt_compat.html"><code class="code">Uwt_compat</code></a> (findlib name: <code class="code">uwt.compat</code>) provides aliases with
+module names as found in <code class="code">lwt.unix</code>, e.g. <code class="code">Lwt_io</code> instead of <code class="code">Uwt_io</code>
+or <code class="code">Lwt_main</code> instead of <a href="Uwt.Main.html"><code class="code">Uwt.Main</code></a>).  This is necessary, if you want
+to use the <a href="https://ocsigen.org/lwt/2.7.0/api/Pa_lwt"> <code class="code">camlp4 syntax
+extension</code></a> of lwt. And it makes it easier to test or use existing
+code with <code class="code">uwt</code> instead of <code class="code">lwt.unix</code>.
+<p>
+
+<br>
+<table class="indextable">
+<tr><td class="module"><a href="Uwt_compat.html">Uwt_compat</a></td><td><div class="info">
+Lwt_unix compat module
+</div>
+</td></tr>
+</table>
+
+<p>
+
+<h2 id="2_Index">Index</h2>
+<p>
+
+<ul class="indexlist">
+<li><a href="index_types.html">Index of types</a></li>
+<li><a href="index_exceptions.html">Index of exceptions</a></li>
+<li><a href="index_values.html">Index of values</a></li>
+<li><a href="index_methods.html">Index of class methods</a></li>
+<li><a href="index_classes.html">Index of classes</a></li>
+<li><a href="index_modules.html">Index of modules</a></li>
+<li><a href="index_module_types.html">Index of module types</a></li>
+</ul>
+
+<p>
+
+<h2 id="2_Licenses">Licenses</h2>
+<p>
+
+Uwt is free software; you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License (LGPL) version 2.1.
+<p>
+
+As a special exception to the GNU Lesser General Public License, you
+may link, statically or dynamically, a "work that uses the Library"
+with a publicly distributed version of the Library to produce an
+executable file containing portions of the Library, and distribute
+that executable file under terms of your choice, without any of the
+additional requirements listed in clause 6 of the GNU Lesser General
+Public License.
+<p>
+
+The parts not imported from either lwt or OCaml's standard
+distribution can also be redistributed and modified under the terms of any
+later versions of the GNU Lesser General Public License as published by the
+Free Software Foundation.
+<p>
+
+Libuv is distributed under the MIT License.<br>
+</body>
+</html>

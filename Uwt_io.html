@@ -1,0 +1,697 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt_compat.html">
+<link rel="next" href="Uwt_log.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><link title="Types" rel="Section" href="#2_Types">
+<link title="Well-known instances" rel="Section" href="#2_Wellknowninstances">
+<link title="Channels creation/manipulation" rel="Section" href="#2_Channelscreationmanipulation">
+<link title="Random access" rel="Section" href="#2_Randomaccess">
+<link title="Reading" rel="Section" href="#2_Reading">
+<link title="Writing" rel="Section" href="#2_Writing">
+<link title="Printing" rel="Section" href="#2_Printing">
+<link title="Utilities" rel="Section" href="#2_Utilities">
+<link title="File utilities" rel="Section" href="#2_Fileutilities">
+<link title="Input/output of integers" rel="Section" href="#2_Inputoutputofintegers">
+<link title="Low-level access to the internal buffer" rel="Section" href="#2_Lowlevelaccesstotheinternalbuffer">
+<link title="Misc" rel="Section" href="#2_Misc">
+<title>Uwt - OCaml bindings for libuv : Uwt_io</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt_compat.html" title="Uwt_compat">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Uwt_log.html" title="Uwt_log">Next</a>
+</div>
+<h1>Module <a href="type_Uwt_io.html">Uwt_io</a></h1>
+
+<pre><span class="keyword">module</span> Uwt_io: <code class="code">sig</code> <a href="Uwt_io.html">..</a> <code class="code">end</code></pre><div class="info module top">
+Buffered byte channels<br>
+</div>
+<hr width="100%">
+<br>
+A <b>channel</b> is a high-level object for performing input/output
+    (IO). It allows to read/write from/to the outside world in an
+    efficient way, by minimising the number of system calls.
+<p>
+
+    An <b>output channel</b> is used to send data and an <b>input
+    channel</b> is used to receive data.
+<p>
+
+    If you are familiar with buffered channels you may be familiar too
+    with the <b>flush</b> operation. Note that byte channels of this
+    module are automatically flushed when there is nothing else to do
+    (i.e. before the program becomes idle), so this means that you no
+    longer have to write:
+<p>
+
+    <pre class="codepre"><code class="code">      eprintf "log message\n";
+      flush stderr;
+    </code></pre>
+<p>
+
+    to have your messages displayed.
+<p>
+
+    Note about errors: input functions of this module raise
+    <code class="code">End_of_file</code> when the end-of-file is reached (i.e. when the read
+    function returns <code class="code">0</code>). Other exceptions are ones caused by the
+    backend read/write functions, such as <code class="code">Unix.Unix_error</code>.<br>
+
+<pre><span id="EXCEPTIONChannel_closed"><span class="keyword">exception</span> Channel_closed</span> <span class="keyword">of</span> <code class="type">string</code></pre>
+<div class="info ">
+Exception raised when a channel is closed. The parameter is a
+      description of the channel.<br>
+</div>
+<br>
+<h2 id="2_Types">Types</h2><br>
+
+<pre><span id="TYPEchannel"><span class="keyword">type</span> <code class="type">'mode</code> channel</span> </pre>
+<div class="info ">
+Type of buffered byte channels<br>
+</div>
+
+
+<pre><span id="TYPEinput"><span class="keyword">type</span> <code class="type"></code>input</span> </pre>
+<div class="info ">
+Input mode<br>
+</div>
+
+
+<pre><span id="TYPEoutput"><span class="keyword">type</span> <code class="type"></code>output</span> </pre>
+<div class="info ">
+Output mode<br>
+</div>
+
+
+<pre><code><span id="TYPEmode"><span class="keyword">type</span> <code class="type">'a</code> mode</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTmode.Input"><span class="constructor">Input</span></span> <span class="keyword">:</span> <code class="type"><a href="Uwt_io.html#TYPEinput">input</a> <a href="Uwt_io.html#TYPEmode">mode</a></code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTmode.Output"><span class="constructor">Output</span></span> <span class="keyword">:</span> <code class="type"><a href="Uwt_io.html#TYPEoutput">output</a> <a href="Uwt_io.html#TYPEmode">mode</a></code></code></td>
+
+</tr></table>
+
+<div class="info ">
+Channel mode<br>
+</div>
+
+
+<pre><span id="VALinput"><span class="keyword">val</span> input</span> : <code class="type"><a href="Uwt_io.html#TYPEinput">input</a> <a href="Uwt_io.html#TYPEmode">mode</a></code></pre><div class="info ">
+<code class="code">input</code> input mode representation<br>
+</div>
+
+<pre><span id="VALoutput"><span class="keyword">val</span> output</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput">output</a> <a href="Uwt_io.html#TYPEmode">mode</a></code></pre><div class="info ">
+<code class="code">output</code> output mode representation<br>
+</div>
+
+<pre><span id="TYPEinput_channel"><span class="keyword">type</span> <code class="type"></code>input_channel</span> = <code class="type"><a href="Uwt_io.html#TYPEinput">input</a> <a href="Uwt_io.html#TYPEchannel">channel</a></code> </pre>
+<div class="info ">
+Type of input channels<br>
+</div>
+
+
+<pre><span id="TYPEoutput_channel"><span class="keyword">type</span> <code class="type"></code>output_channel</span> = <code class="type"><a href="Uwt_io.html#TYPEoutput">output</a> <a href="Uwt_io.html#TYPEchannel">channel</a></code> </pre>
+<div class="info ">
+Type of output channels<br>
+</div>
+
+
+<pre><span id="VALmode"><span class="keyword">val</span> mode</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> 'a <a href="Uwt_io.html#TYPEmode">mode</a></code></pre><div class="info ">
+<code class="code">mode ch</code> returns the mode of a channel<br>
+</div>
+<br>
+<h2 id="2_Wellknowninstances">Well-known instances</h2><br>
+
+<pre><span id="VALstdin"><span class="keyword">val</span> stdin</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a></code></pre><div class="info ">
+The standard input, it reads data from <code class="code">Uwt.stdin</code><br>
+</div>
+
+<pre><span id="VALstdout"><span class="keyword">val</span> stdout</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a></code></pre><div class="info ">
+The standard output, it writes data to <code class="code">Uwt.stdout</code><br>
+</div>
+
+<pre><span id="VALstderr"><span class="keyword">val</span> stderr</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a></code></pre><div class="info ">
+The standard output for error messages, it writes data to
+      <code class="code">Uwt.stderr</code><br>
+</div>
+
+<pre><span id="VALzero"><span class="keyword">val</span> zero</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a></code></pre><div class="info ">
+Inputs which returns always <code class="code">'\x00'</code><br>
+</div>
+
+<pre><span id="VALnull"><span class="keyword">val</span> null</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a></code></pre><div class="info ">
+Output which drops everything<br>
+</div>
+<br>
+<h2 id="2_Channelscreationmanipulation">Channels creation/manipulation</h2><br>
+
+<pre><span id="VALpipe"><span class="keyword">val</span> pipe</span> : <code class="type">?cloexec:bool -><br>       ?in_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?out_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       unit -> <a href="Uwt_io.html#TYPEinput_channel">input_channel</a> * <a href="Uwt_io.html#TYPEoutput_channel">output_channel</a></code></pre><div class="info ">
+<code class="code">pipe ?cloexec ?in_buffer ?out_buffer ()</code> creates a pipe using
+      <a href="Uwt.Unix.html#VALpipe"><code class="code">Uwt.Unix.pipe</code></a> and makes two channels from the two returned file
+      descriptors<br>
+</div>
+
+<pre><span id="VALmake"><span class="keyword">val</span> make</span> : <code class="type">?buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?close:(unit -> unit Lwt.t) -><br>       ?seek:(int64 -> Unix.seek_command -> int64 Lwt.t) -><br>       mode:'mode <a href="Uwt_io.html#TYPEmode">mode</a> -><br>       (<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -> int -> int -> int Lwt.t) -> 'mode <a href="Uwt_io.html#TYPEchannel">channel</a></code></pre><div class="info ">
+<code class="code">make ?buffer ?close ~mode perform_io</code> is the
+      main function for creating new channels.<br>
+</div>
+<div class="param_info"><code class="code">buffer</code> : user-supplied buffer. When this argument is
+      present, its value will be used as the buffer for created
+      channel. Size of buffer must conform to limitations described
+      in <a href="Uwt_io.html#VALset_default_buffer_size"><code class="code">Uwt_io.set_default_buffer_size</code></a>.
+      When this argument is not present, a new internal buffer of default
+      size will be allocated for this channel.
+      Warning: do not use the same buffer for simultaneous work with
+      more than one channel.
+      There are other functions in this module that take <code class="code">buffer</code>
+      argument, their semantics agrees with the described above.</div>
+<div class="param_info"><code class="code">close</code> : close function of the channel. It defaults to
+      <code class="code">Lwt.return</code></div>
+<div class="param_info"><code class="code">seek</code> : same meaning as <code class="code">Unix.lseek</code></div>
+<div class="param_info"><code class="code">mode</code> : either <a href="Uwt_io.html#VALinput"><code class="code">Uwt_io.input</code></a> or <a href="Uwt_io.html#VALoutput"><code class="code">Uwt_io.output</code></a></div>
+
+<pre><span id="VALof_bytes"><span class="keyword">val</span> of_bytes</span> : <code class="type">mode:'mode <a href="Uwt_io.html#TYPEmode">mode</a> -> <a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -> 'mode <a href="Uwt_io.html#TYPEchannel">channel</a></code></pre><div class="info ">
+Create a channel from a byte array. Reading/writing is done
+      directly on the provided array.<br>
+</div>
+
+<pre><span id="VALof_file"><span class="keyword">val</span> of_file</span> : <code class="type">?buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?close:(unit -> unit Lwt.t) -><br>       mode:'m <a href="Uwt_io.html#TYPEmode">mode</a> -> Uwt.file -> 'm <a href="Uwt_io.html#TYPEchannel">channel</a></code></pre><div class="info ">
+<code class="code">of_file ?buffer ?close ~mode fd</code> creates a channel from a
+      file descriptor.<br>
+</div>
+<div class="param_info"><code class="code">close</code> : defaults to closing the file descriptor.</div>
+
+<pre><span id="VALof_stream"><span class="keyword">val</span> of_stream</span> : <code class="type">?buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?close:(unit -> unit Lwt.t) -><br>       mode:'m <a href="Uwt_io.html#TYPEmode">mode</a> -> <a href="Uwt.Stream.html#TYPEt">Uwt.Stream.t</a> -> 'm <a href="Uwt_io.html#TYPEchannel">channel</a></code></pre>
+<pre><span id="VALof_pipe"><span class="keyword">val</span> of_pipe</span> : <code class="type">?buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?close:(unit -> unit Lwt.t) -><br>       mode:'m <a href="Uwt_io.html#TYPEmode">mode</a> -> <a href="Uwt.Pipe.html#TYPEt">Uwt.Pipe.t</a> -> 'm <a href="Uwt_io.html#TYPEchannel">channel</a></code></pre>
+<pre><span id="VALof_tcp"><span class="keyword">val</span> of_tcp</span> : <code class="type">?buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?close:(unit -> unit Lwt.t) -><br>       mode:'m <a href="Uwt_io.html#TYPEmode">mode</a> -> <a href="Uwt.Tcp.html#TYPEt">Uwt.Tcp.t</a> -> 'm <a href="Uwt_io.html#TYPEchannel">channel</a></code></pre>
+<pre><span id="VALclose"><span class="keyword">val</span> close</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">close ch</code> closes the given channel. If <code class="code">ch</code> is an output
+      channel, it performs all pending actions, flushes it and closes
+      it. If <code class="code">ch</code> is an input channel, it just closes it immediately.
+<p>
+
+      <code class="code">close</code> returns the result of the close function of the
+      channel. Multiple calls to <code class="code">close</code> will return exactly the same
+      value.
+<p>
+
+      Note: you cannot use <code class="code">close</code> on channels obtained with
+      <a href="Uwt_io.html#VALatomic"><code class="code">Uwt_io.atomic</code></a>.<br>
+</div>
+
+<pre><span id="VALabort"><span class="keyword">val</span> abort</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">abort ch</code> abort current operations and close the channel
+      immediately.<br>
+</div>
+
+<pre><span id="VALatomic"><span class="keyword">val</span> atomic</span> : <code class="type">('a <a href="Uwt_io.html#TYPEchannel">channel</a> -> 'b Lwt.t) -> 'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> 'b Lwt.t</code></pre><div class="info ">
+<code class="code">atomic f</code> transforms a sequence of io operations into one
+      single atomic io operation.
+<p>
+
+      Note:<ul>
+<li>the channel passed to <code class="code">f</code> is invalid after <code class="code">f</code> terminates</li>
+<li><code class="code">atomic</code> can be called inside another <code class="code">atomic</code></li>
+</ul>
+<br>
+</div>
+
+<pre><span id="VALfile_length"><span class="keyword">val</span> file_length</span> : <code class="type">string -> int64 Lwt.t</code></pre><div class="info ">
+Returns the length of a file<br>
+</div>
+
+<pre><span id="VALbuffered"><span class="keyword">val</span> buffered</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> int</code></pre><div class="info ">
+<code class="code">buffered oc</code> returns the number of bytes in the buffer<br>
+</div>
+
+<pre><span id="VALflush"><span class="keyword">val</span> flush</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">flush oc</code> performs all pending writes on <code class="code">oc</code><br>
+</div>
+
+<pre><span id="VALflush_all"><span class="keyword">val</span> flush_all</span> : <code class="type">unit -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">flush_all ()</code> flushes all open output channels<br>
+</div>
+
+<pre><span id="VALbuffer_size"><span class="keyword">val</span> buffer_size</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> int</code></pre><div class="info ">
+Returns the size of the internal buffer.<br>
+</div>
+
+<pre><span id="VALresize_buffer"><span class="keyword">val</span> resize_buffer</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> int -> unit Lwt.t</code></pre><div class="info ">
+Resize the internal buffer to the given size<br>
+</div>
+
+<pre><span id="VALis_busy"><span class="keyword">val</span> is_busy</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> bool</code></pre><div class="info ">
+<code class="code">is_busy channel</code> returns whether the given channel is currently
+      busy. A channel is busy when there is at least one job using it
+      that has not yet terminated.<br>
+</div>
+<br>
+<h2 id="2_Randomaccess">Random access</h2><br>
+
+<pre><span id="VALposition"><span class="keyword">val</span> position</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> int64</code></pre><div class="info ">
+<code class="code">position ch</code> Returns the current position in the channel.<br>
+</div>
+
+<pre><span id="VALset_position"><span class="keyword">val</span> set_position</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> int64 -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">set_position ch pos</code> Sets the position in the output channel. This
+      does not work if the channel does not support random access.<br>
+</div>
+
+<pre><span id="VALlength"><span class="keyword">val</span> length</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> int64 Lwt.t</code></pre><div class="info ">
+Returns the length of the channel in bytes<br>
+</div>
+<br>
+<h2 id="2_Reading">Reading</h2><br>
+<br>
+Note: except for functions dealing with streams (<a href="Uwt_io.html#VALread_chars"><code class="code">Uwt_io.read_chars</code></a> and
+    <a href="Uwt_io.html#VALread_lines"><code class="code">Uwt_io.read_lines</code></a>) all functions are <b>atomic</b>.<br>
+
+<pre><span id="VALread_char"><span class="keyword">val</span> read_char</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a> -> char Lwt.t</code></pre><div class="info ">
+<code class="code">read_char ic</code> reads the next character of <code class="code">ic</code>.<br>
+<b>Raises</b> <code>End_of_file</code> if the end of the file is reached<br>
+</div>
+
+<pre><span id="VALread_char_opt"><span class="keyword">val</span> read_char_opt</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a> -> char option Lwt.t</code></pre><div class="info ">
+Same as <code class="code">read_byte</code> but does not raise <code class="code">End_of_file</code> on end of
+      input<br>
+</div>
+
+<pre><span id="VALread_chars"><span class="keyword">val</span> read_chars</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a> -> char Lwt_stream.t</code></pre><div class="info ">
+<code class="code">read_chars ic</code> returns a stream holding all characters of
+      <code class="code">ic</code><br>
+</div>
+
+<pre><span id="VALread_line"><span class="keyword">val</span> read_line</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a> -> string Lwt.t</code></pre><div class="info ">
+<code class="code">read_line ic</code> reads one complete line from <code class="code">ic</code> and returns it
+      without the end of line. End of line is either <code class="code">"\n"</code> or
+      <code class="code">"\r\n"</code>.
+<p>
+
+      If the end of line is reached before reading any character,
+      <code class="code">End_of_file</code> is raised. If it is reached before reading an end
+      of line but characters have already been read, they are
+      returned.<br>
+</div>
+
+<pre><span id="VALread_line_opt"><span class="keyword">val</span> read_line_opt</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a> -> string option Lwt.t</code></pre><div class="info ">
+Same as <a href="Uwt_io.html#VALread_line"><code class="code">Uwt_io.read_line</code></a> but do not raise <code class="code">End_of_file</code> on end of
+      input.<br>
+</div>
+
+<pre><span id="VALread_lines"><span class="keyword">val</span> read_lines</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a> -> string Lwt_stream.t</code></pre><div class="info ">
+<code class="code">read_lines ic</code> returns a stream holding all lines of <code class="code">ic</code><br>
+</div>
+
+<pre><span id="VALread"><span class="keyword">val</span> read</span> : <code class="type">?count:int -> <a href="Uwt_io.html#TYPEinput_channel">input_channel</a> -> string Lwt.t</code></pre><div class="info ">
+<code class="code">read ?count ic</code> reads at most <code class="code">count</code> characters from <code class="code">ic</code>. It
+      returns <code class="code">""</code> if the end of input is reached. If <code class="code">count</code> is not
+      specified, it reads all bytes until the end of input.<br>
+</div>
+
+<pre><span id="VALread_into"><span class="keyword">val</span> read_into</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a> -> Bytes.t -> int -> int -> int Lwt.t</code></pre><div class="info ">
+<code class="code">read_into ic buffer offset length</code> reads up to <code class="code">length</code> bytes,
+      stores them in <code class="code">buffer</code> at offset <code class="code">offset</code>, and returns the
+      number of bytes read.
+<p>
+
+      Note: <code class="code">read_into</code> does not raise <code class="code">End_of_file</code>, it returns a
+      length of <code class="code">0</code> instead.<br>
+</div>
+
+<pre><span id="VALread_into_exactly"><span class="keyword">val</span> read_into_exactly</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a> -> Bytes.t -> int -> int -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">read_into_exactly ic buffer offset length</code> reads exactly
+      <code class="code">length</code> bytes and stores them in <code class="code">buffer</code> at offset <code class="code">offset</code>.<br>
+<b>Raises</b> <code>End_of_file</code> on end of input<br>
+</div>
+
+<pre><span id="VALread_value"><span class="keyword">val</span> read_value</span> : <code class="type"><a href="Uwt_io.html#TYPEinput_channel">input_channel</a> -> 'a Lwt.t</code></pre><div class="info ">
+<code class="code">read_value ic</code> reads a marshaled value from <code class="code">ic</code><br>
+</div>
+<br>
+<h2 id="2_Writing">Writing</h2><br>
+<br>
+Note: as for reading functions, all functions except
+    <a href="Uwt_io.html#VALwrite_chars"><code class="code">Uwt_io.write_chars</code></a> and <a href="Uwt_io.html#VALwrite_lines"><code class="code">Uwt_io.write_lines</code></a> are <b>atomic</b>.
+<p>
+
+    For example if you use <a href="Uwt_io.html#VALwrite_line"><code class="code">Uwt_io.write_line</code></a> in two different threads, the
+    two operations will be serialized, and lines cannot be mixed.<br>
+
+<pre><span id="VALwrite_char"><span class="keyword">val</span> write_char</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> char -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">write_char oc char</code> writes <code class="code">char</code> on <code class="code">oc</code><br>
+</div>
+
+<pre><span id="VALwrite_chars"><span class="keyword">val</span> write_chars</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> char Lwt_stream.t -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">write_chars oc chars</code> writes all characters of <code class="code">chars</code> on
+      <code class="code">oc</code><br>
+</div>
+
+<pre><span id="VALwrite"><span class="keyword">val</span> write</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> string -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">write oc str</code> writes all characters of <code class="code">str</code> on <code class="code">oc</code><br>
+</div>
+
+<pre><span id="VALwrite_line"><span class="keyword">val</span> write_line</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> string -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">write_line oc str</code> writes <code class="code">str</code> on <code class="code">oc</code> followed by a
+      new-line.<br>
+</div>
+
+<pre><span id="VALwrite_lines"><span class="keyword">val</span> write_lines</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> string Lwt_stream.t -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">write_lines oc lines</code> writes all lines of <code class="code">lines</code> to <code class="code">oc</code><br>
+</div>
+
+<pre><span id="VALwrite_from"><span class="keyword">val</span> write_from</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> Bytes.t -> int -> int -> int Lwt.t</code></pre><div class="info ">
+<code class="code">write_from oc buffer offset length</code> writes up to <code class="code">length</code> bytes
+      to <code class="code">oc</code>, from <code class="code">buffer</code> at offset <code class="code">offset</code> and returns the number
+      of bytes actually written<br>
+</div>
+
+<pre><span id="VALwrite_from_string"><span class="keyword">val</span> write_from_string</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> string -> int -> int -> int Lwt.t</code></pre><div class="info ">
+See <a href="Uwt_io.html#VALwrite"><code class="code">Uwt_io.write</code></a>.<br>
+</div>
+
+<pre><span id="VALwrite_from_exactly"><span class="keyword">val</span> write_from_exactly</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> Bytes.t -> int -> int -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">write_from_exactly oc buffer offset length</code> writes all <code class="code">length</code>
+      bytes from <code class="code">buffer</code> at offset <code class="code">offset</code> to <code class="code">oc</code><br>
+</div>
+
+<pre><span id="VALwrite_from_string_exactly"><span class="keyword">val</span> write_from_string_exactly</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> string -> int -> int -> unit Lwt.t</code></pre><div class="info ">
+See <a href="Uwt_io.html#VALwrite_from_exactly"><code class="code">Uwt_io.write_from_exactly</code></a>.<br>
+</div>
+
+<pre><span id="VALwrite_value"><span class="keyword">val</span> write_value</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> ?flags:Marshal.extern_flags list -> 'a -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">write_value oc ?flags x</code> marshals the value <code class="code">x</code> to <code class="code">oc</code><br>
+</div>
+<br>
+<h2 id="2_Printing">Printing</h2><br>
+<br>
+These functions are basically helpers. Also you may prefer
+    using the name <a href="Uwt_io.html#VALprintl"><code class="code">Uwt_io.printl</code></a> rather than <a href="Uwt_io.html#VALwrite_line"><code class="code">Uwt_io.write_line</code></a> because it is
+    shorter.
+<p>
+
+    The general name of a printing function is <code class="code">&lt;prefix&gt;print&lt;suffixes&gt;</code>,
+<p>
+
+    where <code class="code">&lt;prefix&gt;</code> is one of:<ul>
+<li><code class="code">'f'</code>, which means that the function takes as argument a channel</li>
+<li>nothing, which means that the function prints on <a href="Uwt_io.html#VALstdout"><code class="code">Uwt_io.stdout</code></a></li>
+<li><code class="code">'e'</code>, which means that the function prints on <a href="Uwt_io.html#VALstderr"><code class="code">Uwt_io.stderr</code></a></li>
+</ul>
+
+    and <code class="code">&lt;suffixes&gt;</code> is a combination of:<ul>
+<li><code class="code">'l'</code> which means that a new-line character is printed after the message</li>
+<li><code class="code">'f'</code> which means that the function takes as argument a <b>format</b> instead
+    of a string</li>
+</ul>
+<br>
+
+<pre><span id="VALfprint"><span class="keyword">val</span> fprint</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> string -> unit Lwt.t</code></pre>
+<pre><span id="VALfprintl"><span class="keyword">val</span> fprintl</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> string -> unit Lwt.t</code></pre>
+<pre><span id="VALfprintf"><span class="keyword">val</span> fprintf</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -><br>       ('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a</code></pre>
+<pre><span id="VALfprintlf"><span class="keyword">val</span> fprintlf</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -><br>       ('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a</code></pre>
+<pre><span id="VALprint"><span class="keyword">val</span> print</span> : <code class="type">string -> unit Lwt.t</code></pre>
+<pre><span id="VALprintl"><span class="keyword">val</span> printl</span> : <code class="type">string -> unit Lwt.t</code></pre>
+<pre><span id="VALprintf"><span class="keyword">val</span> printf</span> : <code class="type">('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a</code></pre>
+<pre><span id="VALprintlf"><span class="keyword">val</span> printlf</span> : <code class="type">('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a</code></pre>
+<pre><span id="VALeprint"><span class="keyword">val</span> eprint</span> : <code class="type">string -> unit Lwt.t</code></pre>
+<pre><span id="VALeprintl"><span class="keyword">val</span> eprintl</span> : <code class="type">string -> unit Lwt.t</code></pre>
+<pre><span id="VALeprintf"><span class="keyword">val</span> eprintf</span> : <code class="type">('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a</code></pre>
+<pre><span id="VALeprintlf"><span class="keyword">val</span> eprintlf</span> : <code class="type">('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a</code></pre><br>
+<h2 id="2_Utilities">Utilities</h2><br>
+
+<pre><span id="VALhexdump_stream"><span class="keyword">val</span> hexdump_stream</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> char Lwt_stream.t -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">hexdump_stream oc byte_stream</code> produces the same output as the
+      command <code class="code">hexdump -C</code>.<br>
+</div>
+
+<pre><span id="VALhexdump"><span class="keyword">val</span> hexdump</span> : <code class="type"><a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> string -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">hexdump oc str = hexdump_stream oc (Lwt_stream.of_string str)</code><br>
+</div>
+<br>
+<h2 id="2_Fileutilities">File utilities</h2><br>
+
+<pre><span id="TYPEfile_name"><span class="keyword">type</span> <code class="type"></code>file_name</span> = <code class="type">string</code> </pre>
+<div class="info ">
+Type of file names<br>
+</div>
+
+
+<pre><span id="VALopen_file"><span class="keyword">val</span> open_file</span> : <code class="type">?buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?flags:Uwt.Fs.uv_open_flag list -><br>       ?perm:Unix.file_perm -><br>       mode:'a <a href="Uwt_io.html#TYPEmode">mode</a> -> <a href="Uwt_io.html#TYPEfile_name">file_name</a> -> 'a <a href="Uwt_io.html#TYPEchannel">channel</a> Lwt.t</code></pre><div class="info ">
+<code class="code">open_file ?buffer ?flags ?perm ~mode filename</code> opens the
+      file with name <code class="code">filename</code> and returns a channel for
+      reading/writing it.<br>
+<b>Raises</b> <code>Unix.Unix_error</code> on error.<br>
+</div>
+
+<pre><span id="VALwith_file"><span class="keyword">val</span> with_file</span> : <code class="type">?buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?flags:Uwt.Fs.uv_open_flag list -><br>       ?perm:Unix.file_perm -><br>       mode:'a <a href="Uwt_io.html#TYPEmode">mode</a> -><br>       <a href="Uwt_io.html#TYPEfile_name">file_name</a> -> ('a <a href="Uwt_io.html#TYPEchannel">channel</a> -> 'b Lwt.t) -> 'b Lwt.t</code></pre><div class="info ">
+<code class="code">with_file ?buffer ?flags ?perm ~mode filename f</code> opens a
+      file and passes the channel to <code class="code">f</code>. It is ensured that the
+      channel is closed when <code class="code">f ch</code> terminates (even if it fails).<br>
+</div>
+
+<pre><span id="VALopen_connection"><span class="keyword">val</span> open_connection</span> : <code class="type">?in_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?out_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       Uwt.sockaddr -> (<a href="Uwt_io.html#TYPEinput_channel">input_channel</a> * <a href="Uwt_io.html#TYPEoutput_channel">output_channel</a>) Lwt.t</code></pre><div class="info ">
+<code class="code">open_connection ?in_buffer ?out_buffer addr</code> opens a connection to the
+    given address and returns two channels for using it.
+<p>
+
+    The connection is completly closed when you close both
+    channels.<br>
+<b>Raises</b> <code>Unix.Unix_error</code> on error.<br>
+</div>
+
+<pre><span id="VALwith_connection"><span class="keyword">val</span> with_connection</span> : <code class="type">?in_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?out_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       Uwt.sockaddr -><br>       (<a href="Uwt_io.html#TYPEinput_channel">input_channel</a> * <a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre><div class="info ">
+<code class="code">with_connection ?fd ?in_buffer ?out_buffer addr f</code> opens a connection to
+      the given address and passes the channels to <code class="code">f</code><br>
+</div>
+
+<pre><span id="TYPEserver"><span class="keyword">type</span> <code class="type"></code>server</span> </pre>
+<div class="info ">
+Type of a server<br>
+</div>
+
+
+<pre><span id="VALestablish_server_safe"><span class="keyword">val</span> establish_server_safe</span> : <code class="type">?buffer_size:int -><br>       ?backlog:int -><br>       Unix.sockaddr -><br>       (<a href="Uwt_io.html#TYPEinput_channel">input_channel</a> * <a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> unit Lwt.t) -> <a href="Uwt_io.html#TYPEserver">server</a></code></pre><div class="info ">
+<code class="code">establish_server_safe ?buffer_size ?backlog sockaddr f</code> creates a
+      server which listens for incoming connections. New connections are passed
+      to <code class="code">f</code>. When threads returned by <code class="code">f</code> complete, the connections are closed
+      automatically.
+<p>
+
+      The server does not wait for each thread. It begins accepting new
+      connections immediately.
+<p>
+
+      If a thread raises an exception, it is passed to
+      <code class="code">!Lwt.async_exception_hook</code>. Likewise, if the automatic <code class="code">close</code> of a
+      connection raises an exception, it is passed to
+      <code class="code">!Lwt.async_exception_hook</code>. To handle exceptions raised by <code class="code">close</code>, call
+      it manually inside <code class="code">f</code>.<br>
+</div>
+
+<pre><span id="VALestablish_server"><span class="keyword">val</span> establish_server</span> : <code class="type">?buffer_size:int -><br>       ?backlog:int -><br>       Unix.sockaddr -><br>       (<a href="Uwt_io.html#TYPEinput_channel">input_channel</a> * <a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> unit) -> <a href="Uwt_io.html#TYPEserver">server</a></code></pre><div class="info ">
+<code class="code">establish_server ?buffer_size ?backlog sockaddr f</code> creates a server
+      which listens for incoming connections. New connections are passed to <code class="code">f</code>.
+<p>
+
+      <code class="code">establish_server</code> does not start separate threads for running <code class="code">f</code>, nor
+      close the connections passed to <code class="code">f</code>. Thus, the skeleton of a practical
+      server based on <code class="code">establish_server</code> might look like this:
+<p>
+
+      <pre class="codepre"><code class="code">        Uwt_io.establish_server address (fun (ic, oc) -&gt;
+          Lwt.async (fun () -&gt;
+
+            (* ... *)
+
+            Lwt.catch (fun () -&gt; Uwt_io.close oc) (fun _ -&gt; Lwt.return_unit) &gt;&gt;=
+            Lwt.catch (fun () -&gt; Uwt_io.close ic) (fun _ -&gt; Lwt.return_unit)))
+      </code></pre>
+<p>
+
+      <code class="code">backlog</code> is the argument passed to <code class="code">Uwt.Stream.listen</code>.<br>
+</div>
+
+<pre><span id="VALshutdown_server"><span class="keyword">val</span> shutdown_server</span> : <code class="type"><a href="Uwt_io.html#TYPEserver">server</a> -> unit</code></pre><div class="info ">
+Shutdown the given server<br>
+</div>
+
+<pre><span id="VALlines_of_file"><span class="keyword">val</span> lines_of_file</span> : <code class="type"><a href="Uwt_io.html#TYPEfile_name">file_name</a> -> string Lwt_stream.t</code></pre><div class="info ">
+<code class="code">lines_of_file name</code> returns a stream of all lines of the file
+      with name <code class="code">name</code>. The file is automatically closed when all
+      lines have been read.<br>
+</div>
+
+<pre><span id="VALlines_to_file"><span class="keyword">val</span> lines_to_file</span> : <code class="type"><a href="Uwt_io.html#TYPEfile_name">file_name</a> -> string Lwt_stream.t -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">lines_to_file name lines</code> writes all lines of <code class="code">lines</code> to
+      file with name <code class="code">name</code>.<br>
+</div>
+
+<pre><span id="VALchars_of_file"><span class="keyword">val</span> chars_of_file</span> : <code class="type"><a href="Uwt_io.html#TYPEfile_name">file_name</a> -> char Lwt_stream.t</code></pre><div class="info ">
+<code class="code">chars_of_file name</code> returns a stream of all characters of the
+      file with name <code class="code">name</code>. As for <a href="Uwt_io.html#VALlines_of_file"><code class="code">Uwt_io.lines_of_file</code></a> the file is
+      closed when all characters have been read.<br>
+</div>
+
+<pre><span id="VALchars_to_file"><span class="keyword">val</span> chars_to_file</span> : <code class="type"><a href="Uwt_io.html#TYPEfile_name">file_name</a> -> char Lwt_stream.t -> unit Lwt.t</code></pre><div class="info ">
+<code class="code">chars_to_file name chars</code> writes all characters of <code class="code">chars</code> to
+      <code class="code">name</code><br>
+</div>
+<br>
+<h2 id="2_Inputoutputofintegers">Input/output of integers</h2><br>
+
+<pre><span class="keyword">module type</span> <a href="Uwt_io.NumberIO.html">NumberIO</a> = <code class="code">sig</code> <a href="Uwt_io.NumberIO.html">..</a> <code class="code">end</code></pre><div class="info">
+Common interface for reading/writing integers in binary
+</div>
+
+<pre><span class="keyword">module</span> <a href="Uwt_io.LE.html">LE</a>: <code class="type"><a href="Uwt_io.NumberIO.html">NumberIO</a></code><code class="type"> </code></pre><div class="info">
+Reading/writing of numbers in little-endian
+</div>
+
+<pre><span class="keyword">module</span> <a href="Uwt_io.BE.html">BE</a>: <code class="type"><a href="Uwt_io.NumberIO.html">NumberIO</a></code><code class="type"> </code></pre><div class="info">
+Reading/writing of numbers in big-endian
+</div>
+
+<pre><span class="keyword">include</span> <a href="Uwt_io.NumberIO.html">Uwt_io.NumberIO</a></pre>
+<br>
+Reading/writing of numbers in the system endianness.<br>
+
+<pre><code><span id="TYPEbyte_order"><span class="keyword">type</span> <code class="type"></code>byte_order</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTbyte_order.Little_endian"><span class="constructor">Little_endian</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTbyte_order.Big_endian"><span class="constructor">Big_endian</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Type of byte order<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
+<pre><span id="VALsystem_byte_order"><span class="keyword">val</span> system_byte_order</span> : <code class="type"><a href="Uwt_io.html#TYPEbyte_order">byte_order</a></code></pre><br>
+<h2 id="2_Lowlevelaccesstotheinternalbuffer">Low-level access to the internal buffer</h2><br>
+
+<pre><span id="VALblock"><span class="keyword">val</span> block</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> int -> (<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -> int -> 'b Lwt.t) -> 'b Lwt.t</code></pre><div class="info ">
+<code class="code">block ch size f</code> pass to <code class="code">f</code> the internal buffer and an
+      offset. The buffer contains <code class="code">size</code> chars at <code class="code">offset</code>. <code class="code">f</code> may
+      read or write these chars.  <code class="code">size</code> must satisfy <code class="code">0 &lt;= size &lt;=
+      16</code><br>
+</div>
+
+<pre><code><span id="TYPEdirect_access"><span class="keyword">type</span> <code class="type"></code>direct_access</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTdirect_access.da_buffer">da_buffer</span>&nbsp;: <code class="type"><a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The internal buffer<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTdirect_access.da_ptr">da_ptr</span>&nbsp;: <code class="type">int</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The pointer to:<ul>
+<li>the beginning of free space for output channels</li>
+<li>the beginning of data for input channels</li>
+</ul>
+<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTdirect_access.da_max">da_max</span>&nbsp;: <code class="type">int</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The maximum offset<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTdirect_access.da_perform">da_perform</span>&nbsp;: <code class="type">unit -> int Lwt.t</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+- for input channels:
+        refills the buffer and returns how many bytes have been read<ul>
+<li>for output channels:
+        flush partially the buffer and returns how many bytes have been written</li>
+</ul>
+<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+<div class="info ">
+Information for directly accessing the internal buffer of a
+    channel<br>
+</div>
+
+
+<pre><span id="VALdirect_access"><span class="keyword">val</span> direct_access</span> : <code class="type">'a <a href="Uwt_io.html#TYPEchannel">channel</a> -> (<a href="Uwt_io.html#TYPEdirect_access">direct_access</a> -> 'b Lwt.t) -> 'b Lwt.t</code></pre><div class="info ">
+<code class="code">direct_access ch f</code> passes to <code class="code">f</code> a <a href="Uwt_io.html#VALdirect_access"><code class="code">Uwt_io.direct_access</code></a>
+      structure. <code class="code">f</code> must use it and update <code class="code">da_ptr</code> to reflect how
+      many bytes have been read/written.<br>
+</div>
+<br>
+<h2 id="2_Misc">Misc</h2><br>
+
+<pre><span id="VALdefault_buffer_size"><span class="keyword">val</span> default_buffer_size</span> : <code class="type">unit -> int</code></pre><div class="info ">
+Return the default size for buffers. Channels that are created
+      without a specific buffer use new buffer of this size.<br>
+</div>
+
+<pre><span id="VALset_default_buffer_size"><span class="keyword">val</span> set_default_buffer_size</span> : <code class="type">int -> unit</code></pre><div class="info ">
+Change the default buffer size.<br>
+<b>Raises</b> <code>Invalid_argument</code> if the given size is smaller than <code class="code">16</code>
+      or greater than <code class="code">Sys.max_string_length</code><br>
+</div>
+</body></html>

@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt.Handle_fileno.html">
+<link rel="next" href="Uwt.Tcp.html">
+<link rel="Up" href="Uwt.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Stream</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt.Handle_fileno.html" title="Uwt.Handle_fileno">Previous</a>
+&nbsp;<a class="up" href="Uwt.html" title="Uwt">Up</a>
+&nbsp;<a class="post" href="Uwt.Tcp.html" title="Uwt.Tcp">Next</a>
+</div>
+<h1>Module <a href="type_Uwt.Stream.html">Uwt.Stream</a></h1>
+
+<pre><span class="keyword">module</span> Stream: <code class="code">sig</code> <a href="Uwt.Stream.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+Stream handles provide an abstraction of a duplex communication
+      channel. <code class="code">Stream.t</code> is an abstract type, libuv provides 3 stream
+      implementations in the forn of <code class="code">Tcp.t</code>, <code class="code">Pipe.t</code> and <code class="code">Tty.t</code>.<br>
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+
+
+<pre><span class="keyword">include</span> <a href="Uwt.Handle.html">Uwt.Handle</a></pre>
+
+<pre><span id="VALto_handle"><span class="keyword">val</span> to_handle</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> <a href="Uwt.Handle.html#TYPEt">Uwt.Handle.t</a></code></pre>
+<pre><span id="VALis_readable"><span class="keyword">val</span> is_readable</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> bool</code></pre>
+<pre><span id="VALis_writable"><span class="keyword">val</span> is_writable</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> bool</code></pre>
+<pre><span id="VALread_start"><span class="keyword">val</span> read_start</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> cb:(Bytes.t uv_result -> unit) -> Int_result.unit</code></pre><div class="info ">
+Read data from an incoming stream. The <code class="code">~cb</code> will
+      be made several times until there is no more data to read or
+      <a href="Uwt.Stream.html#VALread_stop"><code class="code">Uwt.Stream.read_stop</code></a> is called.<br>
+</div>
+
+<pre><span id="VALread_start_exn"><span class="keyword">val</span> read_start_exn</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> cb:(Bytes.t uv_result -> unit) -> unit</code></pre>
+<pre><span id="VALread_stop"><span class="keyword">val</span> read_stop</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> Int_result.unit</code></pre><div class="info ">
+Stop reading data from the stream.<br>
+</div>
+
+<pre><span id="VALread_stop_exn"><span class="keyword">val</span> read_stop_exn</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> unit</code></pre>
+<pre><span id="VALread"><span class="keyword">val</span> read</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:bytes -> int Lwt.t</code></pre><div class="info ">
+There is currently no <code class="code">uv_read</code> function in libuv, just <code class="code">uv_read_start</code>
+      and <code class="code">uv_read_stop</code>. This is a wrapper for your convenience. It calls
+      read_stop internally, if you don't continue with reading
+      immediately. Zero result indicates EOF.
+<p>
+
+      In future libuv versions, there might be <code class="code">uv_read</code> and
+      <code class="code">uv_try_read</code> functions (it was discussed several times).
+      If these changes got merged, <a href="Uwt.Stream.html#VALread"><code class="code">Uwt.Stream.read</code></a> will wrap them - even
+      if there will be small semantic differences.
+<p>
+
+      It is currently not possible to start several read threads
+      in parallel, you must serialize the requests manually. In the
+      following example <code class="code">t2</code> will fail with EBUSY:
+<p>
+
+      <pre class="codepre"><code class="code">        let t1 = Uwt.Stream.read t ~buf:buf1 in
+        let t2 = Uwt.Stream.read t ~buf:buf2 in
+        (* ... *)
+      </code></pre>
+<p>
+
+      Calling the function with <code class="code">~len:0</code> has a dubious, system dependent
+      semantic.<br>
+</div>
+
+<pre><span id="VALread_ba"><span class="keyword">val</span> read_ba</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:buf -> int Lwt.t</code></pre>
+<pre><span id="VALwrite_queue_size"><span class="keyword">val</span> write_queue_size</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> int</code></pre><div class="info ">
+Returns the amount of queued bytes waiting to be sent<br>
+</div>
+
+<pre><span id="VALtry_write"><span class="keyword">val</span> try_write</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:bytes -> Int_result.int</code></pre><div class="info ">
+Write data to stream, but won't queue a write request if it
+      can't be completed immediately.<br>
+</div>
+
+<pre><span id="VALtry_write_ba"><span class="keyword">val</span> try_write_ba</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:buf -> Int_result.int</code></pre>
+<pre><span id="VALtry_write_string"><span class="keyword">val</span> try_write_string</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:string -> Int_result.int</code></pre>
+<pre><span id="VALwrite"><span class="keyword">val</span> write</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:bytes -> unit Lwt.t</code></pre><div class="info ">
+Write data to stream<br>
+</div>
+
+<pre><span id="VALwrite_string"><span class="keyword">val</span> write_string</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:string -> unit Lwt.t</code></pre>
+<pre><span id="VALwrite_ba"><span class="keyword">val</span> write_ba</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:buf -> unit Lwt.t</code></pre>
+<pre><span id="VALwrite_raw"><span class="keyword">val</span> write_raw</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:bytes -> unit Lwt.t</code></pre><div class="info ">
+<a href="Uwt.Stream.html#VALwrite"><code class="code">Uwt.Stream.write</code></a> is eager - like the counterparts inside <code class="code">Lwt_unix</code>.  It
+      first calls <a href="Uwt.Stream.html#VALtry_write"><code class="code">Uwt.Stream.try_write</code></a> internally to check if it can return
+      immediately (without the overhead of creating a sleeping thread
+      and waking it up later). If it can't write everything instantly,
+      it will call <a href="Uwt.Stream.html#VALwrite_raw"><code class="code">Uwt.Stream.write_raw</code></a> internally. <a href="Uwt.Stream.html#VALwrite_raw"><code class="code">Uwt.Stream.write_raw</code></a> is exposed
+      here mainly in order to write unit tests for it. But you can also
+      use it, if you your <code class="code">~buf</code> is very large or you know for another
+      reason, that try_write will fail.<br>
+</div>
+
+<pre><span id="VALwrite_raw_string"><span class="keyword">val</span> write_raw_string</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:string -> unit Lwt.t</code></pre>
+<pre><span id="VALwrite_raw_ba"><span class="keyword">val</span> write_raw_ba</span> : <code class="type">?pos:int -> ?len:int -> <a href="Uwt.Stream.html#TYPEt">t</a> -> buf:buf -> unit Lwt.t</code></pre>
+<pre><span id="VALtry_writev"><span class="keyword">val</span> try_writev</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> Iovec_write.t list -> Int_result.int</code></pre><div class="info ">
+Windows doesn't support writing multiple buffers with a single
+      syscall for some HANDLEs (e.g. it's supported for tcp handles,
+      but not pipes). uwt then writes the buffers one by one
+<p>
+
+      If the number of buffers is greater than IOV_MAX, libuv already
+      contains the necessary workarounds<br>
+</div>
+
+<pre><span id="VALwritev"><span class="keyword">val</span> writev</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> Iovec_write.t list -> unit Lwt.t</code></pre><div class="info ">
+See comment to ! This function will fail with
+      <code class="code">Unix.EOPNOTSUPP</code> on Windows for e.g. pipe handles<br>
+</div>
+
+<pre><span id="VALwritev_emul"><span class="keyword">val</span> writev_emul</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> Iovec_write.t list -> unit Lwt.t</code></pre><div class="info ">
+Similar to <a href="Uwt.Stream.html#VALwritev"><code class="code">Uwt.Stream.writev</code></a>, but if passing several buffers at
+      once is not supported by the OS, the buffers will be written
+      one by one. Please note that as a consequence you should not start several
+      <a href="Uwt.Stream.html#VALwritev_emul"><code class="code">Uwt.Stream.writev_emul</code></a> threads in parallel. The writing order would be surprising
+      in this case. If you don't use windows, this function is identic to
+      <a href="Uwt.Stream.html#VALwritev"><code class="code">Uwt.Stream.writev</code></a><br>
+</div>
+
+<pre><span id="VALwritev_raw"><span class="keyword">val</span> writev_raw</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> Iovec_write.t list -> unit Lwt.t</code></pre>
+<pre><span id="VALlisten"><span class="keyword">val</span> listen</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -><br>       max:int -> cb:(<a href="Uwt.Stream.html#TYPEt">t</a> -> Int_result.unit -> unit) -> Int_result.unit</code></pre><div class="info ">
+Start listening for incoming connections. <code class="code">~max</code> indicates the
+      number of connections the kernel might queue, same as
+      <code class="code">listen(2)</code>. When a new incoming connection is received <code class="code">~cb</code> is
+      called.<br>
+</div>
+
+<pre><span id="VALlisten_exn"><span class="keyword">val</span> listen_exn</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -><br>       max:int -> cb:(<a href="Uwt.Stream.html#TYPEt">t</a> -> Int_result.unit -> unit) -> unit</code></pre>
+<pre><span id="VALshutdown"><span class="keyword">val</span> shutdown</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> unit Lwt.t</code></pre><div class="info ">
+Shutdown the outgoing (write) side of a duplex stream. It waits
+      for pending write requests to complete.<br>
+</div>
+
+<pre><span id="VALset_blocking"><span class="keyword">val</span> set_blocking</span> : <code class="type"><a href="Uwt.Stream.html#TYPEt">t</a> -> bool -> Int_result.unit</code></pre><div class="info ">
+Just don't use this function. It will only cause trouble.<br>
+</div>
+</body></html>

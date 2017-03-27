@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt_base.Misc.html">
+<link rel="Up" href="Uwt_base.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt_base.Sys_info</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt_base.Misc.html" title="Uwt_base.Misc">Previous</a>
+&nbsp;<a class="up" href="Uwt_base.html" title="Uwt_base">Up</a>
+&nbsp;</div>
+<h1>Module <a href="type_Uwt_base.Sys_info.html">Uwt_base.Sys_info</a></h1>
+
+<pre><span class="keyword">module</span> Sys_info: <code class="code">sig</code> <a href="Uwt_base.Sys_info.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+Information about your operating system.
+<p>
+
+     The module was introduced in order to skip certain unit tests
+     on some platforms. But it might be useful for other purpose, too.<br>
+
+<pre><code><span id="TYPEos"><span class="keyword">type</span> <code class="type"></code>os</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Windows"><span class="constructor">Windows</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Android"><span class="constructor">Android</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Linux"><span class="constructor">Linux</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Mac"><span class="constructor">Mac</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Freebsd"><span class="constructor">Freebsd</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Openbsd"><span class="constructor">Openbsd</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Cygwin"><span class="constructor">Cygwin</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Netbsd"><span class="constructor">Netbsd</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Sun"><span class="constructor">Sun</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Hp"><span class="constructor">Hp</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Dragonfly"><span class="constructor">Dragonfly</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Aix"><span class="constructor">Aix</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Minix"><span class="constructor">Minix</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.KFreebsd"><span class="constructor">KFreebsd</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Bsd"><span class="constructor">Bsd</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTos.Unknown"><span class="constructor">Unknown</span></span></code></td>
+
+</tr></table>
+
+
+
+<pre><span id="VALos"><span class="keyword">val</span> os</span> : <code class="type"><a href="Uwt_base.Sys_info.html#TYPEos">os</a></code></pre><div class="info ">
+<a href="Uwt_base.Sys_info.html#VALos"><code class="code">Uwt_base.Sys_info.os</code></a> is determined at compile time (by the c compiler) and
+      might differ from the later OS<br>
+</div>
+
+<pre><code><span id="TYPEwin_version"><span class="keyword">type</span> <code class="type"></code>win_version</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTwin_version.major_version">major_version</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTwin_version.minor_version">minor_version</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTwin_version.build_number">build_number</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTwin_version.platform_id">platform_id</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTwin_version.csd_version">csd_version</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr></table>
+}
+
+
+
+<pre><span id="VALwin_version"><span class="keyword">val</span> win_version</span> : <code class="type">unit -> <a href="Uwt_base.Sys_info.html#TYPEwin_version">win_version</a> <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
+Wrapper around GetVersionEx. It will always return <code class="code">Error
+      ENOSYS</code> on non windows systems.
+      Your application must be manifested, otherwise you will get
+      wrong informations on windows 8.1 and newer<br>
+</div>
+</body></html>

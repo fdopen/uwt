@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uv_fs_sync.html">
+<link rel="next" href="Uwt_base.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uv_fs_sync.html" title="Uv_fs_sync">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Uwt_base.html" title="Uwt_base">Next</a>
+</div>
+<h1>Module <a href="type_Uwt.html">Uwt</a></h1>
+
+<pre><span class="keyword">module</span> Uwt: <code class="code">sig</code> <a href="Uwt.html">..</a> <code class="code">end</code></pre><div class="info module top">
+Uwt main module<br>
+</div>
+<hr width="100%">
+<br>
+Basic overview:
+<p>
+<ul>
+<li>naming conventions mirror the conventions of libuv, so you can
+   easily consult the official
+   <a href="http://docs.libuv.org/en/v1.x/index.html"> <code class="code">libuv manual</code></a>.
+   Selected parts of the manual are now included inside the mli files
+   (credits to <a href="https://github.com/libuv/libuv/blob/v1.x/AUTHORS"> <code class="code">Authors</code></a>),
+   the libuv manual is however more up-to-date.</li>
+</ul>
+<ul>
+<li>Requests are translated to lwt-threads, therefore <code class="code">uv_req_t</code> is
+   kept internal.</li>
+</ul>
+<ul>
+<li>Callbacks that are called continually are most of the time not
+   translated to the usual lwt semantic.</li>
+</ul>
+<ul>
+<li>Uwt is <b>not</b> <i>compatible</i> with <code class="code">lwt.unix</code>. It's not a further
+   <code class="code">Lwt_engine</code> in addition to <code class="code">select</code> and <code class="code">libev</code>.</li>
+</ul>
+<ul>
+<li>Uwt is <b>not</b> <i>thread safe</i>. All uwt functions should be called
+   from your main thread.</li>
+</ul>
+<ul>
+<li>Uwt is in beta stage. The interface is likely to change in the
+   first official release. Feel free to open an issue and make
+   suggestions about it :)</li>
+</ul>
+
+   Please notice, that there are subtle differences compared to
+   <code class="code">lwt.unix</code>. Because all requests are accomplished by libuv
+   (sometimes in parallel in different threads), you don't have that
+   kind of low level control, that you have with <code class="code">lwt.unix</code>. Also <code class="code">Lwt.cancel</code>
+   behaves differently and you won't notice it by looking at the type
+   information.
+<p>
+<ul>
+<li><code class="code">Stream.write</code> and related functions can never be canceled. The
+   analogous write functions in <code class="code">Lwt_unix</code> however are cancelable as
+   long as the underlying file descriptor is not opened in blocking
+   mode. (<code class="code">Stream.read</code> currently returns the only cancelable thread
+   inside <a href="Uwt.Stream.html"><code class="code">Uwt.Stream</code></a> and its subclasses)</li>
+</ul>
+<ul>
+<li>Everything that is done in work threads (e.g. File I/O, DNS
+   resolution, etc.) is cancelable, as long as the task is just queued
+   for execution and not already running in a parallel thread. However, it's
+   never possible to cancel a background task in <code class="code">Lwt_unix</code>.</li>
+</ul>
+<br>
+
+<pre><span class="keyword">include</span> <a href="Uwt_base.html">Uwt_base</a></pre>
+
+<pre><span class="keyword">module</span> <a href="Uwt.Main.html">Main</a>: <code class="code">sig</code> <a href="Uwt.Main.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Fs.html">Fs</a>: <code class="code">sig</code> <a href="Uwt.Fs.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Handle.html">Handle</a>: <code class="code">sig</code> <a href="Uwt.Handle.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Handle_ext.html">Handle_ext</a>: <code class="code">sig</code> <a href="Uwt.Handle_ext.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Handle_fileno.html">Handle_fileno</a>: <code class="code">sig</code> <a href="Uwt.Handle_fileno.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Stream.html">Stream</a>: <code class="code">sig</code> <a href="Uwt.Stream.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Tcp.html">Tcp</a>: <code class="code">sig</code> <a href="Uwt.Tcp.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Udp.html">Udp</a>: <code class="code">sig</code> <a href="Uwt.Udp.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Tty.html">Tty</a>: <code class="code">sig</code> <a href="Uwt.Tty.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Pipe.html">Pipe</a>: <code class="code">sig</code> <a href="Uwt.Pipe.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Timer.html">Timer</a>: <code class="code">sig</code> <a href="Uwt.Timer.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Signal.html">Signal</a>: <code class="code">sig</code> <a href="Uwt.Signal.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Poll.html">Poll</a>: <code class="code">sig</code> <a href="Uwt.Poll.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Fs_event.html">Fs_event</a>: <code class="code">sig</code> <a href="Uwt.Fs_event.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Fs_poll.html">Fs_poll</a>: <code class="code">sig</code> <a href="Uwt.Fs_poll.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Process.html">Process</a>: <code class="code">sig</code> <a href="Uwt.Process.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Dns.html">Dns</a>: <code class="code">sig</code> <a href="Uwt.Dns.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Unix.html">Unix</a>: <code class="code">sig</code> <a href="Uwt.Unix.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.C_worker.html">C_worker</a>: <code class="code">sig</code> <a href="Uwt.C_worker.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Uwt.Debug.html">Debug</a>: <code class="code">sig</code> <a href="Uwt.Debug.html">..</a> <code class="code">end</code></pre></body></html>
