@@ -1,6 +1,6 @@
 open Lwt.Infix
 
-let testv ?min_elems ?max_elems ?max_elem_length raw t =
+let testv ?min_elems ?max_elems ?max_elem_length writev t_orig t =
   let open Common in
   let buf_read = Bytes.create 65_536 in
   let iovecs = iovecs_create ?min_elems ?max_elems ?max_elem_length () in
@@ -21,6 +21,5 @@ let testv ?min_elems ?max_elems ?max_elem_length raw t =
       else
         read len''
   in
-  let writev = if raw then Uwt.Stream.writev_raw else Uwt.Stream.writev in
-  Lwt.join [ read iovecs_len ; writev t iovecs ] >|= fun () ->
+  Lwt.join [ read iovecs_len ; writev t_orig iovecs ] >|= fun () ->
   iovecs_to_bytes iovecs = bytes_rev_concat !res_read

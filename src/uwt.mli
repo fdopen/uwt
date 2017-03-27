@@ -385,12 +385,23 @@ module Stream : sig
   val try_writev: t -> Iovec_write.t list -> Int_result.int
   (** Windows doesn't support writing multiple buffers with a single
       syscall for some HANDLEs (e.g. it's supported for tcp handles,
-      but not pipes). uwt then writes the buffers one by one.
+      but not pipes). uwt then writes the buffers one by one
 
       If the number of buffers is greater than IOV_MAX, libuv already
       contains the necessary workarounds *)
 
   val writev: t -> Iovec_write.t list -> unit Lwt.t
+  (** See comment to {try_writev}! This function will fail with
+      [Unix.EOPNOTSUPP] on Windows for e.g. pipe handles *)
+
+  val writev_emul: t -> Iovec_write.t list -> unit Lwt.t
+  (** Similar to {!writev}, but if passing several buffers at
+      once is not supported by the OS, the buffers will be written
+      one by one. Please note that as a consequence you should not start several
+      {!writev_emul} threads in parallel. The writing order would be surprising
+      in this case. If you don't use windows, this function is identic to
+      {!writev} *)
+
   val writev_raw: t -> Iovec_write.t list -> unit Lwt.t
 
   val listen:

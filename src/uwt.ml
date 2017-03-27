@@ -391,18 +391,29 @@ module Stream = struct
     >>= fun () -> writev_raw_seriell t tl
 #endif
 
-  let writev_raw t iol =
+  let writev_internal_raw _emul t iol =
+#if HAVE_WINDOWS <> 0
+      (let h = handle_type t in
+       if _emul = false then match h with
+       | Misc.Pipe | Misc.Tty ->
+         Lwt.fail (Unix.Unix_error(Unix.EOPNOTSUPP,"writev",""))
+       | Misc.File | Misc.Tcp | Misc.Udp | Misc.Unknown -> Lwt.return_false
+       else match h with
+       | Misc.Pipe | Misc.Tty -> Lwt.return_true
+       | Misc.File | Misc.Tcp | Misc.Udp | Misc.Unknown -> Lwt.return_false)
+  >>= fun emulate ->
+#endif
     let open Iovec_write in
     match prep_for_cstub iol with
     | Invalid -> Lwt.fail (Invalid_argument "Uwt.Stream.writev")
     | Empty -> write_raw ~pos:0 t ~buf:(Bytes.create 1)
     | All_ba(ar,l) ->
 #if HAVE_WINDOWS <> 0
-      match handle_type t with
-      | Misc.Pipe | Misc.Tty -> writev_raw_seriell t (Array.to_list ar)
-      | Misc.File | Misc.Tcp | Misc.Udp | Misc.Unknown ->
+      if emulate then writev_raw_seriell t (Array.to_list ar) else
 #endif
-     qsu4 ~name:"writev" ~f:writev_raw t ar () l
+    qsu4 ~name:"writev" ~f:writev_raw t ar () l
+
+  let writev_raw t iol = writev_internal_raw false t iol
 
   external try_writev:
     t -> Iovec_write.t array -> unit -> Int_result.int =
@@ -442,21 +453,31 @@ module Stream = struct
 #endif
         try_writev t ar ()
 
-  let writev t iovs =
-    (* always us try_writev first, perhaps we don't need to create
-       a sleeping thread at all. It's faster for small write requests *)
+  let writev emul t iovs =
+#if HAVE_WINDOWS <> 0
+     (if emul = false then
+      match handle_type t with
+      | Misc.Pipe | Misc.Tty ->
+        Lwt.fail (Unix.Unix_error(Unix.EOPNOTSUPP,"writev",""))
+      | Misc.File | Misc.Tcp | Misc.Udp | Misc.Unknown -> Lwt.return_unit
+     else
+       Lwt.return_unit) >>= fun () ->
+#endif
     let name = "writev" in
     let x' = try_writev t iovs in
     let x = ( x' :> int ) in
     if x < 0 then
       if x' = Int_result.eagain then
-        writev_raw t iovs
+        writev_internal_raw emul t iovs
       else
         LInt_result.mfail ~name ~param x'
     else
       match Iovec_write.drop iovs x with
       | [] -> Lwt.return_unit
-      | iovs -> writev_raw t iovs
+      | iovs -> writev_internal_raw emul t iovs
+
+  let writev_emul t iovs = writev true t iovs
+  let writev t iovs = writev false t iovs
 
   external read:
     t -> int -> int -> ('a * int_cb) -> Int_result.unit = "uwt_read_own"

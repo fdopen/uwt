@@ -101,9 +101,10 @@ module Client = struct
     Lwt.return ((Buffer.contents buf_write) = (Buffer.contents buf_read))
 
   let testv ?min_elems ?max_elems ?max_elem_length raw addr =
+    let writev = if raw then Uwt.Tcp.writev_raw else Uwt.Tcp.writev_raw in
     Uwt.Tcp.with_connect ~addr @@ fun t ->
     Uwt.Tcp.to_stream t |>
-    Tstream.testv ?min_elems ?max_elems ?max_elem_length raw
+    Tstream.testv ?min_elems ?max_elems ?max_elem_length writev t
 end
 
 module Server = Echo_server (

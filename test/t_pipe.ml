@@ -101,8 +101,11 @@ module Client = struct
     Buffer.contents buf_write = Buffer.contents buf_read
 
   let testv raw =
+    let writev =
+      if Sys.win32 then Uwt.Pipe.writev_emul else
+      if raw then Uwt.Pipe.writev_raw else Uwt.Pipe.writev_raw in
     Uwt.Pipe.with_connect ~path:Echo_server.addr @@ fun t ->
-    Uwt.Pipe.to_stream t |> Tstream.testv raw
+    Uwt.Pipe.to_stream t |> Tstream.testv writev t
 end
 
 let server_thread = ref None
