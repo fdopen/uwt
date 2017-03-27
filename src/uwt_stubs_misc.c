@@ -706,6 +706,7 @@ uwt_win_version(value unit)
     }
   }
   value s = s_caml_copy_string(szCSDVersion);
+  free(szCSDVersion);
   value cont = Val_unit;
   Begin_roots2(s,cont);
     cont = caml_alloc_small(5,0);

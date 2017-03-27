@@ -130,11 +130,31 @@ uwt_accept_raw_na(value o_serv,
   if ( HANDLE_IS_INVALID_UNINIT(serv) || HANDLE_IS_INVALID(client) ){
     return VAL_UWT_INT_RESULT_EBADF;
   }
-  if ( client->initialized == 1 ||
-       (serv->handle->type != client->handle->type &&
-        serv->handle->type != UV_NAMED_PIPE ) ){
+  if ( client->initialized == 1 ){
     return VAL_UWT_INT_RESULT_EINVAL;
   }
+  else if ( serv->handle->type != client->handle->type ){
+    if ( serv->handle->type != UV_NAMED_PIPE ){
+      return VAL_UWT_INT_RESULT_EINVAL;
+    }
+#ifdef _WIN32
+    if ( client->handle->type != UV_TCP ){
+      return VAL_UWT_INT_RESULT_EINVAL;
+    }
+#endif
+  }
+#ifdef _WIN32
+  else {
+    /* libuv asssumes the client to be a tcp handle,
+       if the server is initialized with ipc */
+    if ( serv->handle->type == UV_NAMED_PIPE ){
+      uv_pipe_t* server = (uv_pipe_t*) serv->handle;
+      if ( server->ipc ){
+        return VAL_UWT_INT_RESULT_EINVAL;
+      }
+    }
+  }
+#endif
   int ret = uv_accept((uv_stream_t*)serv->handle,
                       (uv_stream_t*)client->handle);
   if ( ret >= 0 ){
@@ -669,13 +689,7 @@ uwt_write2_native(value o_stream,
   HANDLE2_INIT(s1,o_stream,s2,o_stream_send,o_cb,o_buf);
   value ret = Val_unit;
 #ifdef _WIN32
-  if ( s1->handle->type != UV_NAMED_PIPE || s2->handle->type != UV_TCP ){
-    ret = VAL_UWT_INT_RESULT_EINVAL;
-    goto endp;
-  }
-#else
-  if ( s1->handle->type != UV_NAMED_PIPE ||
-       (s2->handle->type != UV_TCP && s2->handle->type != UV_NAMED_PIPE) ){
+  if ( s2->handle->type != UV_TCP ){
     ret = VAL_UWT_INT_RESULT_EINVAL;
     goto endp;
   }
@@ -733,7 +747,9 @@ uwt_write2_native(value o_stream,
     }
     ret = VAL_UWT_UNIT_RESULT(erg);
   }
+#ifdef _WIN32
 endp:
+#endif
   CAMLreturn(ret);
 }
 BYTE_WRAP6(uwt_write2)

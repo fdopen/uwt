@@ -101,7 +101,7 @@ module Client = struct
     Buffer.contents buf_write = Buffer.contents buf_read
 
   let testv raw =
-    Uwt.Pipe.with_connect ~ipc:false ~path:Echo_server.addr @@ fun t ->
+    Uwt.Pipe.with_connect ~path:Echo_server.addr @@ fun t ->
     Uwt.Pipe.to_stream t |> Tstream.testv raw
 end
 

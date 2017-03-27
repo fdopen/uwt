@@ -491,33 +491,6 @@ module Stream = struct
     let dim = Bytes.length buf in
     read ?pos ?len ~dim ~buf t
 
-  external write2:
-    t -> t -> 'a -> int -> int -> unit_cb -> Int_result.unit =
-    "uwt_write2_byte" "uwt_write2_native"
-
-  let write2 ?(pos=0) ?len ~buf ~send ~dim s =
-    let len =
-      match len with
-      | None -> dim - pos
-      | Some x -> x
-    in
-    if pos < 0 || len < 0 || pos > dim - len then
-      Lwt.fail (Invalid_argument "Uwt.Stream.write2")
-    else
-      qsu5 ~name:"write2" ~f:write2 s send buf pos len
-
-  let write2_ba ?pos ?len ~(buf:buf) ~send t =
-    let dim = Bigarray.Array1.dim buf in
-    write2 ?pos ?len ~buf ~send ~dim t
-
-  let write2_string ?pos ?len ~buf ~send t =
-    let dim = String.length buf in
-    write2 ?pos ?len ~buf ~send ~dim t
-
-  let write2 ?pos ?len ~buf ~send t =
-    let dim = Bytes.length buf in
-    write2 ?pos ?len ~buf ~send ~dim t
-
   external is_readable : t -> bool = "uwt_is_readable_na" NOALLOC
   external is_writable : t -> bool = "uwt_is_writable_na" NOALLOC
 
@@ -541,81 +514,6 @@ module Stream = struct
     "uwt_stream_set_blocking_na"
 end
 
-module Pipe = struct
-  type t = u
-  include (Stream: (module type of Stream) with type t := t )
-  external to_stream : t -> Stream.t = "%identity"
-
-  include (Handle_ext: (module type of Handle_ext) with type t := t)
-  include (Handle_fileno: (module type of Handle_fileno) with type t := t)
-
-  external e_openpipe : loop -> Unix.file_descr -> bool -> t uv_result = "uwt_pipe_open"
-  let openpipe_exn ?(ipc=false) f = e_openpipe loop f ipc |> to_exn "pipe_open"
-  let openpipe ?(ipc=false) f = e_openpipe loop f ipc
-
-  external e_init : loop -> bool -> t uv_result = "uwt_pipe_init"
-  let init ?(ipc=false) () =
-    match e_init loop ipc with
-    | Ok x -> x
-    | Error ENOMEM -> raise Out_of_memory
-    | Error x ->
-      (* this can currently not happen. loop is initialized at program
-         start - and will never be closed (UWT_EFATAL not possible).
-         And uv_pipe_init always returns zero. But the libuv internals
-         might change in future versions,... *)
-      eraise "pipe_init" x
-
-  external bind:
-    t -> path:string -> Int_result.unit = "uwt_pipe_bind_na" NOALLOC
-  let bind_exn a ~path = bind a ~path |> to_exnu "pipe_bind"
-
-  external getsockname: t -> string uv_result = "uwt_pipe_getsockname"
-  let getsockname_exn a = getsockname a |> to_exn "pipe_getsockname"
-
-  external getpeername: t -> string uv_result = "uwt_pipe_getpeername"
-  let getpeername_exn a = getpeername a |> to_exn "pipe_getpeername"
-
-  external pending_instances:
-    t -> int -> Int_result.unit = "uwt_pipe_pending_instances_na" NOALLOC
-  let pending_instances_exn a b =
-    pending_instances a b |> to_exnu "pipe_pending_instances"
-
-  external connect:
-    t -> string -> unit_cb -> Int_result.unit = "uwt_pipe_connect"
-  let connect p ~path:s = qsu2 ~name:"pipe_connect" ~f:connect p s
-
-  external pending_count:
-    t -> Int_result.int = "uwt_pipe_pending_count_na" NOALLOC
-  let pending_count_exn a = pending_count a |> to_exni "pipe_pending_count"
-
-  type pending_type =
-    | Unknown
-    | Tcp
-    | Udp
-    | Pipe
-
-  external pending_type:
-    t -> pending_type = "uwt_pipe_pending_type_na" NOALLOC
-
-  let with_pipe ?ipc f =
-    let t = init ?ipc () in
-    Lwt.finalize ( fun () -> f t )
-      (fun () -> close_noerr t ; Lwt.return_unit)
-
-  let with_connect ?ipc ~path f =
-    let t = init ?ipc () in
-    Lwt.finalize (fun () ->
-        connect t ~path >>= fun () ->
-        f t
-      )(fun () -> close_noerr t ; Lwt.return_unit)
-
-  let with_open ?ipc fd f =
-    match openpipe ?ipc fd with
-    | Error x -> efail "openpipe" x
-    | Ok t ->
-      Lwt.finalize (fun () -> f t)
-        (fun () -> close_noerr t ; Lwt.return_unit)
-end
 
 module Tty = struct
   type t = u
@@ -1046,6 +944,185 @@ module Udp = struct
     let dim = Bytes.length buf in
     recv ~dim ?pos ?len ~buf t
 
+end
+
+module Pipe = struct
+  type t = u
+  include (Stream: (module type of Stream) with type t := t )
+  external to_stream : t -> Stream.t = "%identity"
+
+  include (Handle_ext: (module type of Handle_ext) with type t := t)
+  include (Handle_fileno: (module type of Handle_fileno) with type t := t)
+
+  external e_openpipe : loop -> Unix.file_descr -> bool -> t uv_result = "uwt_pipe_open"
+  let openpipe_exn ?(ipc=false) f = e_openpipe loop f ipc |> to_exn "pipe_open"
+  let openpipe ?(ipc=false) f = e_openpipe loop f ipc
+
+  external e_init : loop -> bool -> t uv_result = "uwt_pipe_init"
+  let init ?(ipc=false) () =
+    match e_init loop ipc with
+    | Ok x -> x
+    | Error ENOMEM -> raise Out_of_memory
+    | Error x ->
+      (* this can currently not happen. loop is initialized at program
+         start - and will never be closed (UWT_EFATAL not possible).
+         And uv_pipe_init always returns zero. But the libuv internals
+         might change in future versions,... *)
+      eraise "pipe_init" x
+
+  external bind:
+    t -> path:string -> Int_result.unit = "uwt_pipe_bind_na" NOALLOC
+  let bind_exn a ~path = bind a ~path |> to_exnu "pipe_bind"
+
+  external getsockname: t -> string uv_result = "uwt_pipe_getsockname"
+  let getsockname_exn a = getsockname a |> to_exn "pipe_getsockname"
+
+  external getpeername: t -> string uv_result = "uwt_pipe_getpeername"
+  let getpeername_exn a = getpeername a |> to_exn "pipe_getpeername"
+
+  external pending_instances:
+    t -> int -> Int_result.unit = "uwt_pipe_pending_instances_na" NOALLOC
+  let pending_instances_exn a b =
+    pending_instances a b |> to_exnu "pipe_pending_instances"
+
+  external connect:
+    t -> string -> unit_cb -> Int_result.unit = "uwt_pipe_connect"
+  let connect p ~path:s = qsu2 ~name:"pipe_connect" ~f:connect p s
+
+  external pending_count:
+    t -> Int_result.int = "uwt_pipe_pending_count_na" NOALLOC
+  let pending_count_exn a = pending_count a |> to_exni "pipe_pending_count"
+
+  let accept server =
+    let x = e_init loop false in
+    match x with
+    | Error _ -> x
+    | Ok client  ->
+      let p = accept_raw ~server ~client in
+      if Int_result.is_ok p then
+        x
+      else
+        let () = close_noerr client in
+        Error(Int_result.to_error p)
+
+  let accept_exn server =
+    accept server |> to_exn "accept"
+
+  type ipc_result =
+    | Ipc_error of error
+    | Ipc_none
+    | Ipc_tcp of Tcp.t
+    | Ipc_udp of Udp.t
+    | Ipc_pipe of t
+
+  type pending_type = int
+  (* TODO: howto make ocaml happy? type pending_type =
+    | Unknown [@ocaml.warning "-37"]
+    | Tcp [@ocaml.warning "-37"]
+    | Udp [@ocaml.warning "-37"]
+     | Pipe [@ocaml.warning "-37"] *)
+  external pending_type:
+    t -> pending_type = "uwt_pipe_pending_type_na" NOALLOC
+
+  let maccept ~server ~client res =
+    let x = Stream.accept_raw ~server ~client in
+    if Int_result.is_ok x then res else
+    let () = Stream.close_noerr client in
+    Ipc_error (Int_result.to_error x)
+
+  let accept_ipc t =
+    let c = pending_count t in
+    let c' = (c :> int) in
+    if c' = 0 then Ipc_none else
+    if c' < 0 then Ipc_error (Int_result.to_error c) else
+    let server = to_stream t in
+    let client,res =  match pending_type t with
+    | 1 ->
+      let c = Tcp.init () in
+      Tcp.to_stream c, Ipc_tcp c
+    | 2 ->
+      let c = Udp.init () in
+      Obj.magic c, Ipc_udp c
+    | _ ->
+      (* Note: Wrapping something inside Pipe that is not really a
+         pipe should work on *nix.
+         The handle is already 'accepted' by libuv internally
+         and we need at least a way to close it. Therefore
+         Pipe is used as a fallback type *)
+      let c = init () in
+      to_stream c, Ipc_pipe c
+    in
+    maccept ~server ~client res
+
+  external write2i:
+    t -> Handle.t -> 'a -> int -> int -> unit_cb -> Int_result.unit =
+    "uwt_write2_byte" "uwt_write2_native"
+
+  let write2i ?(pos=0) ?len ~buf ~send ~dim s =
+    let len =
+      match len with
+      | None -> dim - pos
+      | Some x -> x
+    in
+    if pos < 0 || len < 0 || pos > dim - len then
+      Lwt.fail (Invalid_argument "Uwt.Stream.write2")
+    else
+      qsu5 ~name:"write2" ~f:write2i s send buf pos len
+
+  let write2_ba ?pos ?len ~(buf:buf) ~send t =
+    let dim = Bigarray.Array1.dim buf in
+    write2i ?pos ?len ~buf ~send:(Tcp.to_handle send)  ~dim t
+
+  let write2_string ?pos ?len ~buf ~send t =
+    let dim = String.length buf in
+    write2i ?pos ?len ~buf ~send:(Tcp.to_handle send) ~dim t
+
+  let write2 ?pos ?len ~buf ~send t =
+    let dim = Bytes.length buf in
+    write2i ?pos ?len ~buf ~send:(Tcp.to_handle send) ~dim t
+
+  let write2_pipe_ba ?pos ?len ~(buf:buf) ~send t =
+    let dim = Bigarray.Array1.dim buf in
+    write2i ?pos ?len ~buf ~send:(to_handle send)  ~dim t
+
+  let write2_pipe_string ?pos ?len ~buf ~send t =
+    let dim = String.length buf in
+    write2i ?pos ?len ~buf ~send:(to_handle send) ~dim t
+
+  let write2_pipe ?pos ?len ~buf ~send t =
+    let dim = Bytes.length buf in
+    write2i ?pos ?len ~buf ~send:(to_handle send) ~dim t
+
+  let write2_udp_ba ?pos ?len ~(buf:buf) ~send t =
+    let dim = Bigarray.Array1.dim buf in
+    write2i ?pos ?len ~buf ~send:(Udp.to_handle send)  ~dim t
+
+  let write2_udp_string ?pos ?len ~buf ~send t =
+    let dim = String.length buf in
+    write2i ?pos ?len ~buf ~send:(Udp.to_handle send) ~dim t
+
+  let write2_udp ?pos ?len ~buf ~send t =
+    let dim = Bytes.length buf in
+    write2i ?pos ?len ~buf ~send:(Udp.to_handle send) ~dim t
+
+  let with_pipe ?ipc f =
+    let t = init ?ipc () in
+    Lwt.finalize ( fun () -> f t )
+      (fun () -> close_noerr t ; Lwt.return_unit)
+
+  let with_connect ~path f =
+    let t = init () in
+    Lwt.finalize (fun () ->
+        connect t ~path >>= fun () ->
+        f t
+      )(fun () -> close_noerr t ; Lwt.return_unit)
+
+  let with_open ?ipc fd f =
+    match openpipe ?ipc fd with
+    | Error x -> efail "openpipe" x
+    | Ok t ->
+      Lwt.finalize (fun () -> f t)
+        (fun () -> close_noerr t ; Lwt.return_unit)
 end
 
 module Timer = struct

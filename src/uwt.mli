@@ -250,8 +250,6 @@ module Handle : sig
 
   val has_ref: t -> bool
   (** Returns non-zero if the handle is referenced, zero otherwise. *)
-
-  val handle_type: t -> Misc.handle_type
 end
 
 module Handle_ext : sig
@@ -387,7 +385,7 @@ module Stream : sig
   val try_writev: t -> Iovec_write.t list -> Int_result.int
   (** Windows doesn't support writing multiple buffers with a single
       syscall for some HANDLEs (e.g. it's supported for tcp handles,
-      but not pipes). uwt then writes the buffers one by one
+      but not pipes). uwt then writes the buffers one by one.
 
       If the number of buffers is greater than IOV_MAX, libuv already
       contains the necessary workarounds *)
