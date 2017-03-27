@@ -186,6 +186,10 @@ uwt_spawn(value p1, value p2, value p3, value p4)
     goto error_end;
   }
   t.file = String_val(tmp);
+  if ( *(t.file) == '\0' ){
+    erg = UV_EINVAL;
+    goto error_end;
+  }
 
   tmp = Field(p4,1);
   if ( tmp == Atom(0) || Wosize_val(tmp) == 0 ){
