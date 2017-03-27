@@ -770,6 +770,7 @@ module Sys_info : sig
     | Dragonfly
     | Aix
     | Minix
+    | KFreebsd
     | Bsd
     | Unknown
 

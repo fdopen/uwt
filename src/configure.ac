@@ -227,6 +227,9 @@ if test "$OS_MACRO" = "0" ; then
 AC_CHECK_DECLS([__minix],OS_MACRO="Minix")
 fi
 if test "$OS_MACRO" = "0" ; then
+AC_CHECK_DECLS([__FreeBSD_kernel__, __GLIBC__],OS_MACRO="KFreebsd")
+fi
+if test "$OS_MACRO" = "0" ; then
 AC_CHECK_DECLS([__bsdi__],OS_MACRO="Bsd")
 fi
 if test "$OS_MACRO" = "0" ; then

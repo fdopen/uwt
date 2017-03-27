@@ -628,6 +628,7 @@ module Sys_info = struct
     | Dragonfly
     | Aix
     | Minix
+    | KFreebsd
     | Bsd
     | Unknown
   let os : os = OS_MACRO
