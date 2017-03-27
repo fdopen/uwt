@@ -27,10 +27,19 @@ uwt_pipe_open(value o_loop, value o_fd,value o_ipc)
 {
   INIT_LOOP_RESULT(l,o_loop);
 #ifdef _WIN32
-  if ( o_fd != FD_INVALID && uwt__set_crt_fd(o_fd) == false ){
-    value ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = VAL_UWT_ERROR_EBADF;
-    return ret;
+  if ( o_fd != FD_INVALID ) {
+    if ( Descr_kind_val(o_fd) == KIND_SOCKET ){
+      value ret = caml_alloc_small(1,Error_tag);
+      Field(ret,0) = VAL_UWT_ERROR_EINVAL;
+      return ret;
+    }
+    else {
+      if ( uwt__set_crt_fd(o_fd) == false ){
+        value ret = caml_alloc_small(1,Error_tag);
+        Field(ret,0) = VAL_UWT_ERROR_EBADF;
+        return ret;
+      }
+    }
   }
 #endif
   CAMLparam1(o_loop);
