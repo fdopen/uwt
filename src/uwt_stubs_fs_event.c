@@ -27,48 +27,41 @@ event_cb(uv_fs_event_t* handle,
          int events,
          int status)
 {
-  HANDLE_CB_INIT(handle);
-  value ret = Val_unit;
-  struct handle * h = handle->data;
-  if ( h->cb_read == CB_INVALID || h->cb_listen == CB_INVALID ){
-    DEBUG_PF("callback lost");
+  HANDLE_CB_START(h, handle);
+  value param;
+  if ( status < 0 ){
+    param = caml_alloc_small(1,Error_tag);
+    Field(param,0) = Val_uwt_error(status);
   }
   else {
-    value param;
-    if ( status < 0 ){
-      param = caml_alloc_small(1,Error_tag);
-      Field(param,0) = Val_uwt_error(status);
-    }
-    else {
-      value list = Val_unit;
-      value str = Val_unit;
-      value tup = Val_unit;
-      Begin_roots3(list,str,tup);
-      if ( events & UV_RENAME ){
-        tup = caml_alloc_small(2,0);
-        Field(tup,0) = Val_long(0);
-        Field(tup,1) = list;
-        list = tup;
-      }
-      if ( events & UV_CHANGE ){
-        tup = caml_alloc_small(2,0);
-        Field(tup,0) = Val_long(1);
-        Field(tup,1) = list;
-        list = tup;
-      }
-      str = s_caml_copy_string(filename);
+    value list = Val_unit;
+    value str = Val_unit;
+    value tup = Val_unit;
+    Begin_roots3(list,str,tup);
+    if ( events & UV_RENAME ){
       tup = caml_alloc_small(2,0);
-      Field(tup,0) = str;
+      Field(tup,0) = Val_long(0);
       Field(tup,1) = list;
-      param = caml_alloc_small(1,Ok_tag);
-      Field(param,0) = tup;
-      End_roots();
+      list = tup;
     }
-    value cb = GET_CB_VAL(h->cb_read);
-    value t = GET_CB_VAL(h->cb_listen);
-    ret = caml_callback2_exn(cb,t,param);
+    if ( events & UV_CHANGE ){
+      tup = caml_alloc_small(2,0);
+      Field(tup,0) = Val_long(1);
+      Field(tup,1) = list;
+      list = tup;
+    }
+    str = s_caml_copy_string(filename);
+    tup = caml_alloc_small(2,0);
+    Field(tup,0) = str;
+    Field(tup,1) = list;
+    param = caml_alloc_small(1,Ok_tag);
+    Field(param,0) = tup;
+    End_roots();
   }
-  HANDLE_CB_RET(ret);
+  value cb = GET_CB_VAL(h->cb_read);
+  value t = GET_CB_VAL(h->cb_listen);
+  param = caml_callback2_exn(cb,t,param);
+  HANDLE_CB_END(param);
 }
 
 static const int fs_event_flags[3] = {
@@ -82,50 +75,38 @@ uwt_fs_event_start(value o_loop,
                    value o_flags,
                    value o_cb)
 {
-  INIT_LOOP_RESULT(l,o_loop);
-  CAMLparam3(o_loop,o_path,o_cb);
-  CAMLlocal2(ret,v);
-  const int flags = SAFE_CONVERT_FLAG_LIST(o_flags,fs_event_flags);
-  if ( !uwt_is_safe_string(o_path) ){
-    ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = VAL_UWT_ERROR_ECHARSET;
+  if (unlikely( !uwt_is_safe_string(o_path) )){
+    return uwt__alloc_eresult(VAL_UWT_ERROR_ECHARSET);
   }
-  else if ( String_val(o_path)[0] == '\0' ){
-    ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = VAL_UWT_ERROR_EINVAL;
+  if (unlikely( String_val(o_path)[0] == '\0' )){
+    return uwt__alloc_eresult(VAL_UWT_ERROR_EINVAL);
+  }
+  INIT_LOOP_RESULT(l,o_loop);
+  CAMLparam2(o_path,o_cb);
+  const int flags = SAFE_CONVERT_FLAG_LIST(o_flags,fs_event_flags);
+  GR_ROOT_ENLARGE();
+  value ret = uwt__handle_res_create(UV_FS_EVENT, false);
+  value v = Field(ret,0);
+  struct handle * h = Handle_val(v);
+  uv_fs_event_t * f = (uv_fs_event_t*)h->handle;
+  int erg = uv_fs_event_init(&l->loop,f);
+  if ( erg < 0 ){
+    uwt__free_handle(h);
   }
   else {
-    GR_ROOT_ENLARGE();
-    v = uwt__handle_create(UV_FS_EVENT,l);
-    struct handle * h = Handle_val(v);
-    h->close_executed = 1;
-    ret = caml_alloc_small(1,Ok_tag);
-    Field(ret,0) = v;
-    h->close_executed = 0;
-    uv_fs_event_t * f = (uv_fs_event_t*)h->handle;
-    int erg = uv_fs_event_init(&l->loop,f);
+    erg = uv_fs_event_start(f,event_cb,String_val(o_path),flags);
     if ( erg < 0 ){
-      uwt__free_mem_uv_handle_t(h);
-      uwt__free_struct_handle(h);
+      uwt__handle_finalize_close(h);
     }
     else {
-      erg = uv_fs_event_start(f,event_cb,String_val(o_path),flags);
-      if ( erg < 0 ){
-        h->finalize_called = 1;
-        uwt__handle_finalize_close(h);
-      }
-      else {
-        ++h->in_use_cnt;
-        h->initialized = 1;
-        uwt__gr_register(&h->cb_read,o_cb);
-        uwt__gr_register(&h->cb_listen,v);
-      }
+      uwt__gr_register(&h->cb_read,o_cb);
+      uwt__gr_register(&h->cb_listen,v);
     }
-    if ( erg < 0 ){
-      Field(v,1) = 0;
-      Tag_val(ret) = Error_tag;
-      Field(ret,0) = Val_uwt_error(erg);
-    }
+  }
+  if ( erg < 0 ){
+    Field(v,1) = 0;
+    Tag_val(ret) = Error_tag;
+    Field(ret,0) = Val_uwt_error(erg);
   }
   CAMLreturn(ret);
 }

@@ -1417,7 +1417,3 @@ module Debug : sig
 end
 
 (**/**)
-
-(* for test suite only *)
-type loop
-val loop: loop

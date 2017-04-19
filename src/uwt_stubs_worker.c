@@ -22,47 +22,30 @@
 #include "uwt_stubs_worker.h"
 
 static void
-common_after_work_cb(uv_work_t *req, int status)
+uwork_cb(uv_work_t *req, int status)
 {
-  GET_RUNTIME();
-  struct req * r = NULL;
-  if (unlikely( !req || (r = req->data) == NULL ||
-                r->cb == CB_INVALID || r->c_cb == NULL )){
-    DEBUG_PF("fatal, no cb");
-    uwt__req_free_most(r);
+  REQ_CB_INIT(req);
+  struct req * r = req->data;
+  value param;
+  r = req->data;
+  if ( status != 0 ){
+    param = caml_alloc_small(1,Error_tag);
+    Field(param,0) = Val_uwt_error(status);
   }
   else {
-    value param;
-    r = req->data;
-    r->in_cb = 1;
-    if ( status != 0 ){
-      param = caml_alloc_small(1,Error_tag);
-      Field(param,0) = Val_uwt_error(status);
+    param = r->c_cb((uv_req_t *)req);
+    if ( r->buf_contains_ba == 1 ){
+      Begin_roots1(param);
+      value t = caml_alloc_small(1,Ok_tag);
+      Field(t,0) = param;
+      param = t;
+      End_roots();
     }
-    else {
-      param = r->c_cb((uv_req_t *)req);
-      if ( r->buf_contains_ba == 1 ){
-        Begin_roots1(param);
-        value t = caml_alloc_small(1,Ok_tag);
-        Field(t,0) = param;
-        param = t;
-        End_roots();
-      }
-    }
-    value cb = GET_CB_VAL(r->cb);
-    uwt__gr_unregister(&r->cb);
-    if ( r->clean_cb != NULL ){
-      r->clean_cb(r->req);
-      r->clean_cb = NULL;
-    }
-    uwt__free_mem_uv_req_t(r);
-    value exn = caml_callback2_exn(*uwt__global_wakeup, cb, param);
-    if ( Is_exception_result(exn) ){
-      uwt__add_exception(r->loop,exn);
-    }
-    r->in_cb = 0;
-    uwt__req_free_most(r);
   }
+  if ( r->clean_cb != NULL ){
+    r->clean_cb(r->req);
+  }
+  REQ_CB_CALL(param);
 }
 
 static int
@@ -74,47 +57,69 @@ uwt_add_worker_common(value o_uwt,
                       void * p2,
                       bool wrap)
 {
-  CAMLparam1(o_uwt);
-  struct loop * loop = Loop_val(Field(o_uwt,0));
-  struct req * req = Req_val(Field(o_uwt,1));
-  int erg;
-  if (unlikely( loop == NULL || req == NULL || loop->init_called == 0 ||
-                req->req == NULL || req->in_use == 1 )){
-    erg = UV_UWT_EFATAL;
-    if ( cleaner && req && req->req ){
-      cleaner((void*)req->req);
-    }
-    goto endp;
+  if (unlikely( worker == NULL || camlval == NULL )){
+    return VAL_UWT_INT_RESULT_EINVAL;
   }
-  GR_ROOT_ENLARGE();
+  uv_loop_t * loop = Uv_loop_val(Field(o_uwt,0));
+  struct req * req = uwt__req_create_null(UV_WORK);
+  value o_req = Field(o_uwt,1);
+  Field(o_req,0) = (intnat) req;
+
+  if (unlikely(req == NULL)){
+    if ( cleaner ){
+      struct req dummy;
+      uv_work_t w;
+      memset(&dummy, 0, sizeof dummy);
+      dummy.c.p1 = p1;
+      dummy.c.p2 = p2;
+      dummy.req = (uv_req_t*)&w;
+      memset(&w, 0, sizeof w);
+      w.data = &dummy;
+      w.type = UV_WORK;
+      cleaner((uv_req_t*)&w);
+    }
+    return VAL_UWT_INT_RESULT_ENOMEM;
+  }
 
   req->c.p1 = p1;
   req->c.p2 = p2;
+  req->clean_cb = cleaner;
+  req->c_cb = camlval;
   if ( wrap ){
     req->buf_contains_ba = 1;
   }
-  erg = uv_queue_work(&loop->loop,
-                      (uv_work_t*)req->req,
-                      worker,
-                      common_after_work_cb);
+  const int erg = uv_queue_work(loop, (uv_work_t*)req->req, worker, uwork_cb);
   if ( erg < 0 ){
-    if ( cleaner != NULL ){
-      cleaner((void*)req->req);
+    if ( cleaner ){
+      cleaner(req->req);
     }
-    value o_req = Field(o_uwt,1);
-    Field(o_req,1) = 0;
-    req->finalize_called = 1;
-    uwt__req_free_most(req);
+    uwt__req_free(req);
   }
   else {
     value o_cb = Field(o_uwt,2);
-    uwt__gr_register(&req->cb,o_cb);
-    req->c_cb = camlval;
-    req->clean_cb = cleaner;
-    req->in_use = 1;
+    uwt__gr_register__(&req->cb, o_cb);
   }
- endp:
-  CAMLreturn(VAL_UWT_UNIT_RESULT(erg));
+  return VAL_UWT_UNIT_RESULT(erg);
+}
+
+CAMLprim value
+uwt_workreq_create(value o_unit)
+{
+  (void) o_unit;
+  GR_ROOT_ENLARGE();
+  value r =caml_alloc_small(1,Abstract_tag);
+  Field(r,0) = 0;
+  return r;
+}
+
+CAMLprim value
+uwt_workreq_cancel_na(value o_req)
+{
+  struct req * wp = (void*)Field(o_req,0);
+  if ( wp && uv_cancel(wp->req) == 0 ){
+    return Val_long(1);
+  }
+  return Val_long(0);
 }
 
 int uwt_add_worker(value a,
@@ -171,7 +176,7 @@ static void
 lseek_work_cb(uv_work_t *req)
 {
   struct req * r = req->data;
-  const int fd = r->c_param;
+  const int fd = (int)r->buf.len;
   int64_t offset = voids_to_int64_t(&r->c);
 #ifdef _WIN32
   const DWORD whence = r->offset;
@@ -251,42 +256,30 @@ static const int seek_command_table[] = {
   unix functions
 */
 CAMLprim value
-uwt_lseek_native(value o_fd, value o_pos, value o_mode, value o_loop,
-                 value o_req, value o_cb)
+uwt_lseek(value o_fd, value o_pos, value o_mode, value o_loop, value o_cb)
 {
-  struct loop * loop = Loop_val(o_loop);
-  struct req * req = Req_val(o_req);
-  RETURN_INT_RESULT_INVALID_LOOP_REQ(loop,req);
-  CAMLparam3(o_loop,o_req,o_cb);
+  CAMLparam1(o_cb);
+  int erg;
+  uv_loop_t * loop = Uv_loop_val(o_loop);
   const int fd = FD_VAL(o_fd);
   const int64_t offset = Int64_val(o_pos);
-  const int sct_i = Long_val(o_mode);
-  if ( sct_i < 0 || (size_t)sct_i >= AR_SIZE(seek_command_table) ){
-    assert(false);
-    caml_failwith("invalid lseek mode");
-  }
-  const int whence = seek_command_table[sct_i];
+  const int whence = seek_command_table[ Long_val(o_mode) ];
 
   GR_ROOT_ENLARGE();
-
-  /* be careful: everything the worker thread needs, must be set
-     before uv_queue_work is called */
-  req->c_param = fd;
+  value o_ret;
+  struct req * req = uwt__req_create_res(UV_WORK, &o_ret);
+  req->buf.len = (size_t)fd;
   req->offset = whence;
+  req->c_cb = lseek_cb;
   int64_t_to_voids(offset,&req->c);
-  const int erg = uv_queue_work(&loop->loop,
-                                (uv_work_t*)req->req,
-                                lseek_work_cb,
-                                common_after_work_cb);
-  if ( erg < 0 ){
-    Field(o_req,1) = 0;
-    uwt__req_free(req);
+  erg = uv_queue_work(loop, (uv_work_t*)req->req, lseek_work_cb, uwork_cb);
+  if ( erg >= 0 ){
+    uwt__gr_register(&req->cb,o_cb);
   }
   else {
-    uwt__gr_register(&req->cb,o_cb);
-    req->c_cb = lseek_cb;
-    req->in_use = 1;
+    uwt__req_free(req);
+    Field(o_ret,0) = Val_uwt_error(erg);
+    Tag_val(o_ret) = Error_tag;
   }
-  CAMLreturn(VAL_UWT_UNIT_RESULT(erg));
+  CAMLreturn(o_ret);
 }
-BYTE_WRAP6(uwt_lseek)

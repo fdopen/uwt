@@ -24,39 +24,27 @@
 CAMLprim value
 uwt_tty_init(value o_loop,value o_fd, value o_readable)
 {
-  INIT_LOOP_RESULT(l,o_loop);
-  CAMLparam1(o_loop);
-  CAMLlocal1(dc);
-  value ret;
+  uv_loop_t * l = Uv_loop_val(o_loop);
   const int fd = FD_VAL(o_fd);
-  dc = uwt__handle_create(UV_TTY,l);
+  const int readable = Long_val(o_readable) == 1;
+  value ret = uwt__handle_res_create(UV_TTY, true);
+  value dc = Field(ret,0);
   struct handle * h =  Handle_val(dc);
-  h->close_executed = 1;
-  ret = caml_alloc_small(1,Ok_tag);
-  h->close_executed = 0;
   h->initialized = 1;
-  Field(ret,0) = dc;
-
-  const int erg = uv_tty_init(&l->loop,
-                              (uv_tty_t*)h->handle,
-                              fd,
-                              Long_val(o_readable) == 1 );
+  const int erg = uv_tty_init(l, (uv_tty_t*)h->handle, fd, readable);
   if ( erg < 0 ){
-    uwt__free_mem_uv_handle_t(h);
-    uwt__free_struct_handle(h);
+    uwt__free_handle(h);
     Field(dc,1) = 0;
     Field(ret,0) = Val_uwt_error(erg);
     Tag_val(ret) = Error_tag;
   }
-  CAMLreturn(ret);
+  return ret;
 }
 
 CAMLprim value
 uwt_tty_set_mode_na(value o_tty,value o_mode)
 {
-  HANDLE_NINIT_NA(s,o_tty);
-  HANDLE_NO_UNINIT_NA(s);
-#if HAVE_DECL_UV_TTY_MODE_IO && HAVE_DECL_UV_TTY_MODE_NORMAL && HAVE_DECL_UV_TTY_MODE_RAW
+  HANDLE_INIT_NOUNINIT_NA(s, o_tty);
   int mode ;
   switch ( Long_val(o_mode) ){
   case 2: mode = UV_TTY_MODE_IO; break;
@@ -64,9 +52,6 @@ uwt_tty_set_mode_na(value o_tty,value o_mode)
   default: assert(false); /* fall */
   case 0: mode = UV_TTY_MODE_NORMAL; break;
   }
-#else
-  int mode = Long_val(o_mode) == 0 ? 0 : 1;
-#endif
   int ret = uv_tty_set_mode((uv_tty_t*)s->handle,mode);
   return (VAL_UWT_UNIT_RESULT(ret));
 }

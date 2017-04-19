@@ -28,50 +28,65 @@
 extern "C" {
 #endif
 
-UWT_EXTERN1(uwt_fs_free);
-UWT_EXTERN1(uwt_get_fs_result);
-UWT_EXTERN6(uwt_fs_open_native);
-UWT_EXTERN_BYTE(uwt_fs_open_byte);
-UWT_EXTERN8(uwt_fs_read_native);
-UWT_EXTERN_BYTE(uwt_fs_read_byte);
-UWT_EXTERN8(uwt_fs_write_native);
-UWT_EXTERN_BYTE(uwt_fs_write_byte);
-UWT_EXTERN4(uwt_fs_close);
-UWT_EXTERN4(uwt_fs_unlink);
-UWT_EXTERN5(uwt_fs_mkdir);
-UWT_EXTERN4(uwt_fs_rmdir);
-UWT_EXTERN5(uwt_fs_rename);
-UWT_EXTERN5(uwt_fs_link);
-UWT_EXTERN4(uwt_fs_fsync);
-UWT_EXTERN4(uwt_fs_fdatasync);
-UWT_EXTERN5(uwt_fs_ftruncate);
-UWT_EXTERN7(uwt_fs_sendfile_native);
-UWT_EXTERN_BYTE(uwt_fs_sendfile_byte);
-UWT_EXTERN4(uwt_fs_scandir);
-UWT_EXTERN4(uwt_fs_mkdtemp);
-UWT_EXTERN4(uwt_fs_readlink);
-UWT_EXTERN5(uwt_fs_access);
-UWT_EXTERN5(uwt_fs_chmod);
-UWT_EXTERN5(uwt_fs_fchmod);
-UWT_EXTERN6(uwt_fs_chown_native);
-UWT_EXTERN_BYTE(uwt_fs_chown_byte);
-UWT_EXTERN6(uwt_fs_fchown_native);
-UWT_EXTERN_BYTE(uwt_fs_fchown_byte);
-UWT_EXTERN6(uwt_fs_utime_native);
-UWT_EXTERN_BYTE(uwt_fs_utime_byte);
-UWT_EXTERN6(uwt_fs_futime_native);
-UWT_EXTERN_BYTE(uwt_fs_futime_byte);
-UWT_EXTERN6(uwt_fs_symlink_native);
-UWT_EXTERN_BYTE(uwt_fs_symlink_byte);
-UWT_EXTERN4(uwt_fs_stat);
-UWT_EXTERN4(uwt_fs_lstat);
-UWT_EXTERN4(uwt_fs_fstat);
-UWT_EXTERN7(uwt_fs_writev_native);
-UWT_EXTERN_BYTE(uwt_fs_writev_byte);
+#define X7(n)                                   \
+  UWT_EXTERN7(uwt_fs_ ## n ## _native);         \
+  UWT_EXTERN_BYTE(uwt_fs_ ## n ## _byte);       \
+  UWT_EXTERN5(uwt_fs_ ## n ## _sync)
 
-#if HAVE_DECL_UV_FS_REALPATH
-UWT_EXTERN4(uwt_fs_realpath);
-#endif
+#define X6(n)                                   \
+  UWT_EXTERN6(uwt_fs_ ## n ## _native);         \
+  UWT_EXTERN_BYTE(uwt_fs_ ## n ## _byte);       \
+  UWT_EXTERN4(uwt_fs_ ## n ## _sync)
+
+#define X5(n)                                   \
+  UWT_EXTERN5(uwt_fs_ ## n );                   \
+  UWT_EXTERN3(uwt_fs_ ## n ## _sync)
+
+#define X4(n)                                   \
+  UWT_EXTERN4(uwt_fs_ ## n );                   \
+  UWT_EXTERN2(uwt_fs_ ## n ## _sync)
+
+#define X3(n)                                   \
+  UWT_EXTERN3(uwt_fs_ ## n );                   \
+  UWT_EXTERN1(uwt_fs_ ## n ## _sync)
+
+X5(open);
+X7(read);
+X7(write);
+
+X3(close);
+X3(unlink);
+X4(mkdir);
+X3(rmdir);
+X4(rename);
+X4(link);
+X3(fsync);
+X3(fdatasync);
+X4(ftruncate);
+X6(sendfile);
+X3(scandir);
+X3(mkdtemp);
+X3(readlink);
+X4(access);
+X4(chmod);
+X4(fchmod);
+X5(chown);
+X5(fchown);
+X5(utime);
+X5(futime);
+X5(symlink);
+X3(stat);
+X3(lstat);
+X3(fstat);
+X6(writev);
+X3(realpath);
+
+
+#undef X7
+#undef X6
+#undef X5
+#undef X4
+#undef X3
 
 #ifdef __cplusplus
 }

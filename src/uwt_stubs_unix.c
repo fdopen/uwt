@@ -730,12 +730,12 @@ uwt_getservbyname(value o_b, value o_uwt)
     return VAL_UWT_INT_RESULT_ECHARSET;
   }
 
-  p1 = s_strdup(String_val(o_name));
+  p1 = strdup(String_val(o_name));
   if ( p1 == NULL ){
     return VAL_UWT_INT_RESULT_ENOMEM;
   }
 
-  p2 = s_strdup(String_val(o_proto));
+  p2 = strdup(String_val(o_proto));
   if ( p2 == NULL ){
     free(p1);
     return VAL_UWT_INT_RESULT_ENOMEM;
@@ -1071,7 +1071,7 @@ gethostname_worker(uv_work_t * req)
     w->p2 = INT_TO_POINTER(ec != 0 ? ec : UV_UNKNOWN);
   }
   else {
-    w->p1 = s_strdup(name);
+    w->p1 = strdup(name);
     if ( w->p1 == NULL ){
       w->p2 = INT_TO_POINTER(UV_ENOMEM);
     }
@@ -2090,14 +2090,12 @@ uwt_pipe(value o_close_exec)
 }
 #endif
 
-/* realpath will only be used on windows (xp compatibility :))
-   or if uv_fs_realpath is not available */
-#if HAVE_DECL_UV_FS_REALPATH == 0 || defined(_WIN32)
+/* realpath for windows xp */
+#if defined(_WIN32)
 
 CAMLextern value uwt_realpath(value o_name, value o_uwt);
 CAMLextern value uwt_realpath_sync(value o_name);
 
-#ifdef _WIN32
 #define BSIZE ALLOCA_PATH_LEN
 static void
 realpath_worker_xp(uv_work_t *req)
@@ -2153,165 +2151,7 @@ realpath_worker_xp(uv_work_t *req)
     }
   }
 }
-
-typedef DWORD (WINAPI *realpath_t)(HANDLE, LPWSTR, DWORD, DWORD);
-static realpath_t pGetFinalPathNameByHandleW = NULL;
-
-static void
-realpath_worker_vista(uv_work_t *req)
-{
-  if ( pGetFinalPathNameByHandleW == NULL ){
-    realpath_worker_xp(req);
-    return;
-  }
-  struct worker_params * w = req->data;
-  WCHAR buf[BSIZE];
-  const WCHAR *name = w->p1;
-  int error_code = UV_UWT_EFATAL;
-  HANDLE h = CreateFileW(name,
-                         FILE_READ_ATTRIBUTES,
-                         /* the following attributes are always used by libuv */
-                         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                         NULL,
-                         /* only if it exists, otherwise error is
-                            ERROR_FILE_NOT_FOUND */
-                         OPEN_EXISTING,
-                         /* FILE_FLAG_BACKUP_SEMANTICS is required in order
-                            to open a folder */
-                         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS,
-                         NULL);
-  if ( h == INVALID_HANDLE_VALUE ){
-    goto eend;
-  }
-  bool dos_name = true;
-  size_t rlen = pGetFinalPathNameByHandleW(h,
-                                           buf,
-                                           BSIZE - 1,
-                                           VOLUME_NAME_DOS);
-  if ( rlen == 0 ){
-    DWORD ec = GetLastError();
-    if ( ec != ERROR_PATH_NOT_FOUND ){
-      error_code = uwt_translate_sys_error(ec);
-      goto eend2;
-    }
-    rlen = pGetFinalPathNameByHandleW(h,
-                                      buf,
-                                      BSIZE - 1,
-                                      VOLUME_NAME_GUID);
-    if ( rlen == 0 ){
-      goto eend;
-    }
-    dos_name = false;
-  }
-  CloseHandle(h);
-  h = INVALID_HANDLE_VALUE;
-
-  if ( rlen > BSIZE - 1 ){
-    error_code = UV_ENOBUFS;
-    goto eend2;
-  }
-
-  buf[BSIZE - 1] = L'\0';
-  WCHAR *p = buf;
-  if ( dos_name && rlen > 4 ){
-    if ( rlen > 8 && wcsncmp(buf, L"\\\\?\\UNC\\",8) == 0 ){
-      p += 8;
-    }
-    else {
-      if ( wcsncmp(buf, L"\\\\?\\",4) == 0 ){
-        p += 4;
-      }
-    }
-  }
-
-  free(w->p1);
-  w->p1 = uwt_utf16_to_utf8(p,&error_code);
-  if ( w->p1 == NULL ){
-    goto eend2;
-  }
-  w->p2 = NULL;
-  return;
-
- eend:
-  error_code = uwt_translate_sys_error(GetLastError());
- eend2:
-  free(w->p1);
-  w->p1 = NULL;
-  w->p2 = INT_TO_POINTER(error_code);
-  if ( h != INVALID_HANDLE_VALUE ){
-    CloseHandle(h);
-  }
-}
 #undef BSIZE
-
-static void (*realpath_worker)(uv_work_t *req) = realpath_worker_xp;
-
-CAMLextern value uwt_unix_windows_init_na(value);
-CAMLprim value
-uwt_unix_windows_init_na(value o_unit){
-  (void) o_unit;
-  if ( pGetFinalPathNameByHandleW == NULL ){
-    HMODULE m = GetModuleHandleW(L"kernel32.dll");
-    if ( m != NULL ){
-      pGetFinalPathNameByHandleW =
-        (realpath_t)GetProcAddress(m,"GetFinalPathNameByHandleW");
-      if ( pGetFinalPathNameByHandleW != NULL ){
-        realpath_worker = realpath_worker_vista;
-      }
-    }
-  }
-  return Val_unit;
-}
-
-#else /* #ifdef _WIN32 */
-
-static void
-realpath_worker(uv_work_t *req)
-{
-  struct worker_params * w = req->data;
-  const char *name = w->p1;
-  char * fp;
-#ifdef HAVE_CANONICALIZE_FILE_NAME
-  errno = 0;
-  fp = canonicalize_file_name(name);
-#elif defined(HAVE_REALPATH_NULL)
-  errno = 0;
-  fp = realpath(name,NULL);
-#else
-#if defined(PATH_MAX) && PATH_MAX > 0
-#define TBUF_LEN (UMAX_M(PATH_MAX + 1,ALLOCA_SIZE))
-#elif defined(MAXPATHLEN) && MAXPATHLEN > 0
-#define TBUF_LEN (UMAX_M(MAXPATHLEN + 1,ALLOCA_SIZE))
-#elif defined(NAME_MAX) && NAME_MAX > 0
-#define TBUF_LEN (UMAX_M(NAME_MAX + 1,ALLOCA_SIZE))
-#else
-#error "PATH_MAX not defined or not positive"
-#endif /* PATH_MAX */
-#if TBUF_LEN > ALLOC_PATH_LEN_MAX
-#error "PATH_MAX too long"
-#endif
-  char buf[TBUF_LEN];
-  errno = 0;
-  fp = realpath(name,buf);
-  if ( fp != NULL ){
-    buf[TBUF_LEN - 1] = 0;
-    fp = strdup(fp);
-    if ( fp == NULL ){
-      errno = -UV_ENOMEM;
-    }
-  }
-#endif /* HAVE_CANONICALIZE_FILE_NAME */
-  if ( fp == NULL ){
-    w->p2 = INT_TO_POINTER(-errno);
-  }
-  else {
-    w->p2 = NULL;
-  }
-  free(w->p1);
-  w->p1 = fp;
-#undef TBUF_LEN
-}
-#endif /* #ifdef _WIN32 */
 
 CAMLprim value
 uwt_realpath(value o_name, value o_uwt)
@@ -2325,20 +2165,14 @@ uwt_realpath(value o_name, value o_uwt)
   if ( *mname == '\0' ){
     return VAL_UWT_INT_RESULT_EINVAL;
   }
-#ifndef _WIN32
-  if ( (name = strdup(mname)) == NULL ){
-    return VAL_UWT_INT_RESULT_ENOMEM;
-  }
-#else
   int er;
   name = uwt_utf8_to_utf16(mname,&er);
   if ( name == NULL ){
     return (Val_uwt_int_result(er));
   }
-#endif
   ret = uwt_add_worker_result(o_uwt,
                               free_p1,
-                              realpath_worker,
+                              realpath_worker_xp,
                               getstrp1_camlval,
                               name,
                               NULL);
@@ -2368,22 +2202,16 @@ uwt_realpath_sync(value o_name)
     val_er = VAL_UWT_ERROR_EINVAL;
     goto endf;
   }
-#ifndef _WIN32
-  if ( (name = strdup(mname)) == NULL ){
-    caml_raise_out_of_memory();
-  }
-#else
   int er;
   name = uwt_utf8_to_utf16(mname,&er);
   if ( name == NULL ){
     val_er = Val_uwt_error(er);
     goto endf;
   }
-#endif
   caml_enter_blocking_section();
   wp.p1 = name;
   req.data = &wp;
-  realpath_worker(&req);
+  realpath_worker_xp(&req);
 
   if ( wp.p1 == NULL ){
     val_er = Val_uwt_error(POINTER_TO_INT(wp.p2));
@@ -2416,4 +2244,4 @@ endf:
   CAMLreturn(ret);
 }
 
-#endif  /*  HAVE_DECL_UV_FS_REALPATH == 0 || defined(_WIN32) */
+#endif /* defined(_WIN32) */

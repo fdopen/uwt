@@ -72,25 +72,21 @@ get_handle(value o_s)
 static void
 spawn_exit_cb(uv_process_t*t, int64_t exit_status, int term_signal)
 {
-  HANDLE_CB_INIT(t);
+  HANDLE_CB_INIT(h, t);
   value exn = Val_unit;
-  struct handle * h = t->data;
-  if ( h ){
-    if ( h->cb_read != CB_INVALID && h->cb_listen != CB_INVALID ){
-      const int o_signal = uwt__rev_convert_signal_number(term_signal);
-      value callback = GET_CB_VAL(h->cb_read);
-      value process = GET_CB_VAL(h->cb_listen);
-      uwt__gr_unregister(&h->cb_read);
-      uwt__gr_unregister(&h->cb_listen);
-      exn=caml_callback3_exn(callback,
-                             process,
-                             Val_long(exit_status),
-                             Val_long(o_signal));
-    }
-    if ( h->in_use_cnt ){
-      --h->in_use_cnt;
-    }
+  /* exit_cb is only optional in OCaml, we use it here to cleanup (or not...) */
+  if ( h->cb_read != CB_INVALID && h->cb_listen != CB_INVALID ){
+    const int o_signal = uwt__rev_convert_signal_number(term_signal);
+    value callback = GET_CB_VAL(h->cb_read);
+    value process = GET_CB_VAL(h->cb_listen);
+    uwt__gr_unregister(&h->cb_read);
+    uwt__gr_unregister(&h->cb_listen);
+    exn=caml_callback3_exn(callback,
+                           process,
+                           Val_long(exit_status),
+                           Val_long(o_signal));
   }
+  --h->in_use_cnt;
   HANDLE_CB_RET(exn);
 }
 
@@ -100,19 +96,16 @@ uwt_spawn(value p1, value p2, value p3, value p4)
   INIT_LOOP_RESULT(loop,Field(p1,0));
   uv_loop_t * l = &loop->loop;
   CAMLparam4(p1,p2,p3,p4);
-  CAMLlocal2(ret,op);
   unsigned int i;
   int erg = UV_UWT_EFATAL;
   bool spawn_called = false;
   uv_process_options_t t;
   uv_stdio_container_t stdio[3];
-  struct handle * handle;
 
   GR_ROOT_ENLARGE();
-  ret = caml_alloc(1,Error_tag);
-  op = uwt__handle_create(UV_PROCESS,loop);
-  handle = Handle_val(op);
-  handle->close_executed = 1;
+  value ret = uwt__handle_res_create(UV_PROCESS, true);
+  value op = Field(ret,0);
+  struct handle * handle = Handle_val(op);
 
   /* below: now further caml allocations */
   memset(&t, 0, sizeof t);
@@ -192,7 +185,7 @@ uwt_spawn(value p1, value p2, value p3, value p4)
   }
 
   tmp = Field(p4,1);
-  if ( tmp == Atom(0) || Wosize_val(tmp) == 0 ){
+  if ( Wosize_val(tmp) == 0 ){
     t.args = NULL;
   }
   else {
@@ -241,12 +234,10 @@ uwt_spawn(value p1, value p2, value p3, value p4)
   }
 
   spawn_called = true;
-  handle->close_executed = 0;
   erg = uv_spawn(l, (uv_process_t*)handle->handle, &t);
   if ( erg < 0 ){
     /* uv_process_init is called internally first, see also:
        https://groups.google.com/forum/message/raw?msg=libuv/DUBr8DtzsWk/hw11ob9sPZ4J */
-    handle->finalize_called = 1;
     uwt__handle_finalize_close(handle);
   }
   else {
@@ -266,10 +257,10 @@ error_end:
   }
   if ( erg < 0 ){
     if ( spawn_called == false ){
-      uwt__free_mem_uv_handle_t(handle);
-      uwt__free_struct_handle(handle);
+      uwt__free_handle(handle);
     }
     Field(op,1) = 0;
+    Tag_val(ret) = Error_tag;
     Field(ret,0) = Val_uwt_error(erg);
   }
   else {
@@ -279,8 +270,6 @@ error_end:
     }
     handle->initialized = 1;
     ++handle->in_use_cnt;
-    Tag_val(ret) = Ok_tag;
-    Store_field(ret,0,op);
   }
   CAMLreturn(ret);
 }
@@ -288,7 +277,7 @@ error_end:
 CAMLprim value
 uwt_pid_na(value o_h)
 {
-  HANDLE_NINIT_NA(h,o_h);
+  HANDLE_INIT_NA(h, o_h);
   uv_process_t * p = (uv_process_t *)h->handle;
   return (Val_long(p->pid));
 }
@@ -296,7 +285,7 @@ uwt_pid_na(value o_h)
 CAMLprim value
 uwt_process_kill_na(value o_h,value o_sig)
 {
-  HANDLE_NINIT_NA(h,o_h);
+  HANDLE_INIT_NA(h, o_h);
   INT_VAL_RET_IR_EINVAL(sig, o_sig);
   uv_process_t * p = (uv_process_t *)h->handle;
   int signum = uwt__convert_signal_number(sig);

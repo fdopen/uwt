@@ -19,6 +19,7 @@ section
 
 if $(not $(equal $(OSTYPE),Win32))
 	section
+		.SCANNER: scan-c-%: ../src/config.h
 		OCAMLPACKS+= lwt
 		OCAMLINCLUDES[]+= ../src
 		OCAML_LIBS+= ../src/uwt-base ../src/uwt
@@ -27,6 +28,7 @@ if $(not $(equal $(OSTYPE),Win32))
 		CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 		LDFLAGS+=$(LDFLAGS_LIBUV)
 		Repeat_targets($(MLFILES))
+		Repeat_ctargets($(CFILES))
 		GLOB=$(MixedLibrary uwtglob, $(MLFILES), $(CFILES))
 		examples:: $(GLOB)
 

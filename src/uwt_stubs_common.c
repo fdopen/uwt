@@ -40,7 +40,7 @@ uwt__safe_convert_flag_list(value list, const int flags[],size_t flags_size)
     const intnat pos = Long_val(Field(list, 0));
     list = Field(list, 1);
     if ( pos < 0 || (size_t)pos >= flags_size ){
-      DEBUG_PF("invalid position in flag_table");
+      assert(0);
     }
     else {
       res |= flags[pos];
@@ -53,13 +53,13 @@ UWT_LOCAL value
 uwt__safe_rev_convert_flag_list(int res, const int flags[],size_t flags_size)
 {
   CAMLparam0();
-  CAMLlocal2(l,tmp);
+  CAMLlocal1(l);
   size_t i;
   l = Val_unit;
   for ( i = flags_size; i != 0 ; ){
     --i;
     if ( res & flags[i] ){
-      tmp = caml_alloc_small(2,0);
+      value tmp = caml_alloc_small(2,0);
       Field(tmp,0) = Val_long(i);
       Field(tmp,1) = l;
       l = tmp;
@@ -145,7 +145,7 @@ uwt__get_sockaddr(value o_addr,struct sockaddr *saddr)
       value path;
       mlsize_t len;
       path = Field(o_addr, 0);
-      len = caml_string_length(path);
+      len = caml_string_length(path); /* not yet used. abstract sockets?! */
       if (len >= sizeof(addr->sun_path)) {
         return false;
       }
@@ -183,12 +183,12 @@ uwt__get_sockaddr(value o_addr,struct sockaddr *saddr)
   }
 }
 
-ATTR_UNUSED UWT_LOCAL value
-uwt__result_enosys(void)
+UWT_LOCAL value
+uwt__alloc_eresult(val_uwt_error_t er)
 {
-  value ret = caml_alloc_small(1,Error_tag);
-  Field(ret,0) = VAL_UWT_ERROR_ENOSYS;
-  return ret;
+  value x = caml_alloc_small(1,Error_tag);
+  Field(x,0) = er;
+  return x;
 }
 
 #ifdef _WIN32
@@ -293,7 +293,7 @@ uwt__stat_to_value(const uv_stat_t * sb)
 }
 
 #ifdef _WIN32
-#if defined(HAVE_UV_TRANSLATE_SYSERROR) && !defined(HAVE_DECL_UV_TRANSLATE_SYS_ERROR)
+#if defined(HAVE_UV_TRANSLATE_SYSERROR) && (!defined(HAVE_DECL_UV_TRANSLATE_SYS_ERROR) || HAVE_DECL_UV_TRANSLATE_SYS_ERROR == 0)
 extern int uv_translate_sys_error(int);
 #endif
 /* mapping is arbitrary under Windows, -errno doesn't work */
@@ -341,8 +341,8 @@ uwt_translate_errno(int x)
 int
 uwt_translate_sys_error(DWORD sys_errno)
 {
-  if ( sys_errno <= 0 ){
-    return sys_errno;  /* If < 0 then it's already a libuv error. */
+  if ( sys_errno == 0 || sys_errno > INT_MAX ){
+    return UV_UNKNOWN;
   }
 
 #if HAVE_DECL_UV_TRANSLATE_SYS_ERROR
@@ -490,14 +490,8 @@ uwt_translate_sys_error(DWORD sys_errno)
   case WSAENOTEMPTY:                      return UV_ENOTEMPTY;
   default:
     {
-#ifdef HAVE_UV_TRANSLATE_SYSERROR
-      int k = uv_translate_sys_error(sys_errno);
-      if ( k < 0 ){
-        return k;
-      }
-      else {
-        return UV_UNKNOWN;
-      }
+#if defined(HAVE_UV_TRANSLATE_SYSERROR) && !HAVE_DECL_UV_TRANSLATE_SYS_ERROR
+      return (uv_translate_sys_error(sys_errno));
 #else
       return UV_UNKNOWN;
 #endif

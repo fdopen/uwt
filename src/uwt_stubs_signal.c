@@ -24,19 +24,12 @@
 static void
 signal_cb(uv_signal_t* handle, int signum)
 {
-  HANDLE_CB_INIT(handle);
-  value ret = Val_unit;
-  struct handle * h = handle->data;
-  if ( h->cb_read == CB_INVALID || h->cb_listen == CB_INVALID ){
-    DEBUG_PF("callback lost");
-  }
-  else {
-    const int x = uwt__rev_convert_signal_number(signum);
-    value cb = GET_CB_VAL(h->cb_read);
-    value t = GET_CB_VAL(h->cb_listen);
-    ret = caml_callback2_exn(cb,t,Val_long(x));
-  }
-  HANDLE_CB_RET(ret);
+  HANDLE_CB_START(h, handle);
+  const int x = uwt__rev_convert_signal_number(signum);
+  value cb = GET_CB_VAL(h->cb_read);
+  value t = GET_CB_VAL(h->cb_listen);
+  t = caml_callback2_exn(cb,t,Val_long(x));
+  HANDLE_CB_END(t);
 }
 
 CAMLprim value
@@ -46,32 +39,23 @@ uwt_signal_start(value o_loop,
 {
   INT_VAL_RET_WRAP_EINVAL(sig, o_sig);
   INIT_LOOP_RESULT(l,o_loop);
-  CAMLparam2(o_loop,o_cb);
-  CAMLlocal2(ret,v);
-  uv_signal_t * t;
+  CAMLparam1(o_cb);
   GR_ROOT_ENLARGE();
-  v = uwt__handle_create(UV_SIGNAL,l);
+  value ret = uwt__handle_res_create(UV_SIGNAL, false);
+  value v = Field(ret,0);
   struct handle * h = Handle_val(v);
-  h->close_executed = 1;
-  ret = caml_alloc_small(1,Ok_tag);
-  Field(ret,0) = v;
-  h->close_executed = 0;
-  t = (uv_signal_t *)h->handle;
+  uv_signal_t * t = (uv_signal_t *)h->handle;
   int erg = uv_signal_init(&l->loop,t);
   if ( erg < 0 ){
-    uwt__free_mem_uv_handle_t(h);
-    uwt__free_struct_handle(h);
+    uwt__free_handle(h);
   }
   else {
     int signum = uwt__convert_signal_number(sig);
     erg = uv_signal_start(t,signal_cb,signum);
     if ( erg < 0 ){
-      h->finalize_called = 1;
       uwt__handle_finalize_close(h);
     }
     else {
-      ++h->in_use_cnt;
-      h->initialized = 1;
       uwt__gr_register(&h->cb_read,o_cb);
       uwt__gr_register(&h->cb_listen,v);
     }

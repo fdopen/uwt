@@ -36,9 +36,15 @@ extern "C" {
 #endif
 
 #ifndef HAVE_STATIC_ASSERT
-#define _Static_assert4__(COND,MSG) typedef char static_assertion_##MSG[(!!(COND))*2-1]
-#define _Static_assert3__(X,L) _Static_assert4__(X,static_assertion_at_line_##L)
+#define _Static_assert5__(COND,MSG) typedef char static_assertion##MSG[(!!(COND))*2-1]
+#ifdef __COUNTER__
+#define _Static_assert4__(X,C,L) _Static_assert5__(X,C##_at_line_##L)
+#define _Static_assert3__(X,C,L) _Static_assert4__(X,C,L)
+#define _Static_assert2__(X,L) _Static_assert3__(X,__COUNTER__,L)
+#else
+#define _Static_assert3__(X,L) _Static_assert5__(X,_at_line_##L)
 #define _Static_assert2__(X,L) _Static_assert3__(X,L)
+#endif
 #define _Static_assert(COND,MSG) _Static_assert2__(COND,__LINE__)
 #endif
 
@@ -372,27 +378,51 @@ strdup (const char *s)
 #define ALLOCA_PATH_LEN ((size_t)(UMAX_M(32767 + 17,MAX_PATH + 17)))
 #endif
 
-#define INT_VAL_RET_IR_EINVAL(l,b)                \
-  int l;                                          \
-  do {                                            \
-    const intnat l_real = Long_val(b);            \
-    if ( l_real < INT_MIN || l_real > INT_MAX ){  \
-      return VAL_UWT_INT_RESULT_EINVAL;           \
-    }                                             \
-    l = l_real;                                   \
+#define INT_VAL_RET_IR_EINVAL(l,b)                          \
+  int l;                                                    \
+  do {                                                      \
+    const intnat l_real = Long_val(b);                      \
+    if (unlikely( l_real < INT_MIN || l_real > INT_MAX )){  \
+      return VAL_UWT_INT_RESULT_EINVAL;                     \
+    }                                                       \
+    l = l_real;                                             \
   } while (0)
 
-#define INT_VAL_RET_WRAP_EINVAL(l,b)              \
-  int l;                                          \
-  do {                                            \
-    const intnat l_real = Long_val(b);            \
-    if ( l_real < INT_MIN || l_real > INT_MAX ){  \
-      value ret = caml_alloc_small(1, Error_tag); \
-      Field(ret,0) = VAL_UWT_ERROR_EINVAL;        \
-      return ret;                                 \
-    }                                             \
-    l = l_real;                                   \
+#define INT_VAL_RET_WRAP_EINVAL(l,b)                        \
+  int l;                                                    \
+  do {                                                      \
+    const intnat l_real = Long_val(b);                      \
+    if (unlikely( l_real < INT_MIN || l_real > INT_MAX )){  \
+      return uwt__alloc_eresult(VAL_UWT_ERROR_EINVAL);      \
+    }                                                       \
+    l = l_real;                                             \
   } while (0)
+
+#define UINT_VAL_RET_IR_EINVAL(l,b)                             \
+  unsigned int l;                                               \
+  do {                                                          \
+    const intnat l_real = Long_val(b);                          \
+    if (unlikely( l_real < 0 || (uintnat)l_real > UINT_MAX )){  \
+      return VAL_UWT_INT_RESULT_EINVAL;                         \
+    }                                                           \
+    l = l_real;                                                 \
+  } while (0)
+
+#define UINT_VAL_RET_WRAP_EINVAL(l,b)                           \
+  unsigned int l;                                               \
+  do {                                                          \
+    const intnat l_real = Long_val(b);                          \
+    if (unlikely( l_real < 0 || (uintnat)l_real > UINT_MAX )){  \
+      return uwt__alloc_eresult(VAL_UWT_ERROR_EINVAL);          \
+    }                                                           \
+    l = l_real;                                                 \
+  } while (0)
+
+#define UNTAG_POINTER(v)                        \
+  ((void *) ((uintptr_t)(v) ^ (uintptr_t)1))
+
+#define TAG_POINTER(v)                          \
+  ((intnat)(((uintptr_t)(v) | (uintptr_t)1)))
 
 #ifdef __cplusplus
 }

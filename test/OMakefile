@@ -11,6 +11,7 @@ section
 		rm -f lock_helper
 
 section
+	.SCANNER: scan-c-%: ../src/config.h
 	OCAMLPACKS+= lwt
 	OCAMLINCLUDES[]+= ../src
 	OCAML_LIBS+= ../src/uwt_base ../src/uwt
@@ -19,6 +20,7 @@ section
 	CFLAGS=$(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+=$(LDFLAGS_LIBUV)
 	Repeat_targets($(MLFILES))
+	Repeat_ctargets($(CFILES))
 	TLIB=$(MixedLibrary t_lib, $(MLFILES), $(CFILES))
 	export TLIB
 

@@ -24,38 +24,26 @@
 static void
 uwt_async_cb(uv_async_t* handle)
 {
-  HANDLE_CB_INIT(handle);
-  value exn = Val_unit;
-  struct handle * wp = handle->data;
-  if (unlikely( wp->cb_read == CB_INVALID || wp->cb_listen == CB_INVALID )){
-    DEBUG_PF("cb lost");
-  }
-  else {
-    value t = GET_CB_VAL(wp->cb_listen);
-    exn = GET_CB_VAL(wp->cb_read);
-    exn = caml_callback_exn(exn,t);
-  }
-  HANDLE_CB_RET(exn);
+  HANDLE_CB_START(wp, handle);
+  value t = GET_CB_VAL(wp->cb_listen);
+  value exn = GET_CB_VAL(wp->cb_read);
+  exn = caml_callback_exn(exn,t);
+  HANDLE_CB_END(exn);
 }
 
 CAMLprim value
 uwt_async_create(value o_loop, value o_cb)
 {
   INIT_LOOP_RESULT(l,o_loop);
-  CAMLparam2(o_loop,o_cb);
-  CAMLlocal2(ret,v);
+  CAMLparam1(o_cb);
   GR_ROOT_ENLARGE();
-  v = uwt__handle_create(UV_ASYNC,l);
+  value ret = uwt__handle_res_create(UV_ASYNC, false);
+  value v = Field(ret,0);
   struct handle *h = Handle_val(v);
-  h->close_executed = 1;
-  ret = caml_alloc_small(1,Ok_tag);
-  h->close_executed = 0;
-  Field(ret,0) = v;
   uv_async_t * a = (uv_async_t *)h->handle;
   const int erg = uv_async_init(&l->loop,a,uwt_async_cb);
   if ( erg < 0 ){
-    uwt__free_mem_uv_handle_t(h);
-    uwt__free_struct_handle(h);
+    uwt__free_handle(h);
     Field(v,1) = 0;
     Field(ret,0) = Val_uwt_error(erg);
     Tag_val(ret) = Error_tag;
@@ -71,7 +59,7 @@ uwt_async_create(value o_loop, value o_cb)
 CAMLprim value
 uwt_async_start_na(value o_async)
 {
-  HANDLE_NINIT_NA(a,o_async);
+  HANDLE_INIT_NA(a, o_async);
   uv_ref(a->handle);
   return Val_unit;
 }
@@ -79,7 +67,7 @@ uwt_async_start_na(value o_async)
 CAMLprim value
 uwt_async_stop_na(value o_async)
 {
-  HANDLE_NINIT_NA(a,o_async);
+  HANDLE_INIT_NA(a, o_async);
   uv_unref(a->handle);
   return Val_unit;
 }
@@ -87,7 +75,7 @@ uwt_async_stop_na(value o_async)
 CAMLprim value
 uwt_async_send_na(value o_async)
 {
-  HANDLE_NINIT_NA(a,o_async);
+  HANDLE_INIT_NA(a, o_async);
   /* async send doesn't return error codes.
      It only returns `-1`, if the handle is
      closed or not of type UV_ASYNC.

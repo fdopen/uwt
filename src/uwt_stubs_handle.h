@@ -59,7 +59,7 @@ uwt__pipe_tcp_connect_cb(uv_connect_t*, int);
   {                                                         \
     value ret = Val_long(0);                                \
     struct handle * s = Handle_val(o_stream);               \
-    if ( s && s->handle && (uninit_ok || s->initialized )){ \
+    if ( s && (uninit_ok || s->initialized )){              \
       type* stream = (type*)s->handle;                      \
       if ( uv_ ## fun(stream) ){                            \
         ret = Val_long(1);                                  \
@@ -73,70 +73,71 @@ uwt__pipe_tcp_connect_cb(uv_connect_t*, int);
   uwt_ ## name ## _na(value o_stream)               \
   {                                                 \
     struct handle * s = Handle_val(o_stream);       \
-    if ( s && s->handle && s->close_called == 0 ){  \
+    if ( s && s->close_called == 0 ){               \
       uv_ ## name (s->handle);                      \
     }                                               \
     return Val_unit;                                \
   }
 
-#define HANDLE_CB_INIT(x)                             \
-  struct handle *h_ = NULL;                           \
-  do {                                                \
-    uv_handle_t *x_ = (uv_handle_t*)(x);              \
-    if (unlikely( !x_ || (h_ = x_->data) == NULL )){  \
-      DEBUG_PF("data lost");                          \
-      return;                                         \
-    }                                                 \
-    if (unlikely( h_->close_called )){                \
-      DEBUG_PF("callback called after close!");       \
-      return;                                         \
-    }                                                 \
-    ++h_->in_callback_cnt;                            \
-    GET_RUNTIME();                                    \
-  } while (0)
+#define HANDLE_CB_INIT(ha, x)                         \
+  uv_handle_t * const x_ = (uv_handle_t*)(x);         \
+  struct handle * const h_ = x_->data;                \
+  struct handle * const ha = x_->data;                \
+  if (unlikely( h_->close_called )){                  \
+    DEBUG_PF("callback called after close!");         \
+    return;                                           \
+  }                                                   \
+  ++h_->in_use_cnt;                                   \
+  GET_RUNTIME()
 
-#define HANDLE_CB_INIT_WITH_CLEAN(x)                  \
-  struct handle *h_ = NULL;                           \
-  do {                                                \
-    uv_handle_t *x_ = (uv_handle_t*)(x);              \
-    if (unlikely( !x_ || (h_ = x_->data) == NULL )){  \
-      DEBUG_PF("data lost");                          \
-      return;                                         \
-    }                                                 \
-    ++h_->in_callback_cnt;                            \
-    GET_RUNTIME();                                    \
-  } while (0)
+#define HANDLE_CB_INIT_WITH_CLEAN(ha, x)        \
+  uv_handle_t * const x_ = (uv_handle_t*)(x);   \
+  struct handle * const ha = x_->data;          \
+  struct handle * const h_ = x_->data;          \
+  ++h_->in_use_cnt;                             \
+  GET_RUNTIME()
 
 
 #define CLOSE_HANDLE_IF_UNREFERENCED(s)         \
   do {                                          \
     struct handle * h__  = s;                   \
-    if (unlikely( h__->in_use_cnt == 0 &&       \
-                  h__->in_callback_cnt == 0 &&  \
-                  h__->finalize_called == 1 &&  \
+    if (unlikely( h__->finalize_called == 1 &&  \
+                  h__->in_use_cnt == 0 &&       \
                   h__->close_called == 0 )){    \
       uwt__handle_finalize_close(h__);          \
     }                                           \
   } while (0)
 
-#define HANDLE_CB_RET(val)                      \
-  do {                                          \
-    value v_ = (val);                           \
-    if (unlikely( Is_exception_result(v_) )){   \
-      uwt__add_exception(h_->loop,v_);          \
-    }                                           \
-    --h_->in_callback_cnt;                      \
-    CLOSE_HANDLE_IF_UNREFERENCED(h_);           \
+#define HANDLE_CB_RET(val)                          \
+  do {                                              \
+    value v_ = (val);                               \
+    if (unlikely( Is_exception_result(v_) )){       \
+      caml_callback_exn(*uwt_global_exception_fun,  \
+                        Extract_exception(v_));     \
+    }                                               \
+    --h_->in_use_cnt;                               \
+    CLOSE_HANDLE_IF_UNREFERENCED(h_);               \
   } while (0)
 
-#define HANDLE_IS_INVALID(_xs)                            \
-  (unlikely( !_xs || !_xs->handle || _xs->close_called ))
+#define HANDLE_CB_START(a,x)                    \
+  uv_handle_t * const x__ = (uv_handle_t*)(x);  \
+  struct handle * const a = x__->data;          \
+  GET_RUNTIME()
 
-#define HANDLE_IS_INVALID_UNINIT(_xs)                     \
-  (unlikely( !_xs || !_xs->handle || _xs->close_called || \
-             _xs->initialized == 0 ))
+#define HANDLE_CB_END(val)                          \
+  do {                                              \
+    value v_ = (val);                               \
+    if (unlikely( Is_exception_result(v_) )){       \
+      caml_callback_exn(*uwt_global_exception_fun,  \
+                        Extract_exception(v_));     \
+    }                                               \
+  } while (0)
 
-#define HANDLE_NINIT_END GR_ROOT_ENLARGE
+#define HANDLE_IS_INVALID(_xs)                  \
+  (unlikely( !_xs || _xs->close_called ))
+
+#define HANDLE_IS_INVALID_UNINIT(_xs)                               \
+  (unlikely( !_xs || _xs->close_called || _xs->initialized == 0 ))
 
 #define HANDLE_NCHECK(_xs)                      \
   do {                                          \
@@ -163,31 +164,25 @@ uwt__pipe_tcp_connect_cb(uv_connect_t*, int);
     }                                             \
   } while (0)
 
-#define HANDLE_NO_UNINIT_NA(_xs)                \
-  do {                                          \
-    if (unlikely( _xs->initialized == 0 )){     \
-      return VAL_UWT_INT_RESULT_EBADF;          \
-    }                                           \
-  } while (0)
-
-
-#define HANDLE_INIT2(s,o_s,c)                   \
+#define HANDLE_INIT2_NO_UNINIT(s,o_s,c)         \
   struct handle * s = Handle_val(o_s);          \
-  HANDLE_NCHECK(s);                             \
+  if ( HANDLE_IS_INVALID_UNINIT(s) ){           \
+    return VAL_UWT_INT_RESULT_EBADF;            \
+  }                                             \
   CAMLparam2(o_s,c);                            \
-  HANDLE_NINIT_END()
+  GR_ROOT_ENLARGE()
 
 #define HANDLE_INIT3(s,o_s,c,d)                 \
   struct handle * s = Handle_val(o_s);          \
   HANDLE_NCHECK(s);                             \
   CAMLparam3(o_s,c,d);                          \
-  HANDLE_NINIT_END()
+  GR_ROOT_ENLARGE()
 
 #define HANDLE_INIT4(s,o_s,c,d,e)               \
   struct handle * s = Handle_val(o_s);          \
   HANDLE_NCHECK(s);                             \
   CAMLparam4(o_s,c,d,e);                        \
-  HANDLE_NINIT_END()
+  GR_ROOT_ENLARGE()
 
 #define HANDLE2_INIT(s1,o_s1,s2,o_s2,x,y)       \
   struct handle * s1 = Handle_val(o_s1);        \
@@ -195,17 +190,25 @@ uwt__pipe_tcp_connect_cb(uv_connect_t*, int);
   HANDLE_NCHECK(s1);                            \
   HANDLE_NCHECK(s2);                            \
   CAMLparam4(o_s1,o_s2,x,y);                    \
-  HANDLE_NINIT_END()
+  GR_ROOT_ENLARGE()
 
 #define HANDLE_INIT(s,o_s)                      \
   struct handle * s = Handle_val(o_s);          \
   HANDLE_NCHECK(s);                             \
   CAMLparam1(o_s);                              \
-  HANDLE_NINIT_END()
+  GR_ROOT_ENLARGE()
 
-#define HANDLE_NINIT_NA(s,o_s)                  \
+#define HANDLE_INIT_NA(s,o_s)                   \
   struct handle * s = Handle_val(o_s);          \
   HANDLE_NCHECK(s)
+
+#define HANDLE_INIT_NOUNINIT_NA(s,o_s)          \
+  struct handle * s = Handle_val(o_s);          \
+  do {                                          \
+    if ( HANDLE_IS_INVALID_UNINIT(s) ){         \
+      return VAL_UWT_INT_RESULT_EBADF;          \
+    }                                           \
+  } while (0)
 
 #ifdef __cplusplus
 }

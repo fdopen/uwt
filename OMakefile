@@ -39,7 +39,7 @@ static.=
 		if $(not $(pkg_config_libuv))
 			value false
 		else
-			value $(pkg_config_between_vers LIBUV,libuv,1.0,2.0)
+			value $(pkg_config_between_vers LIBUV,libuv,1.8,2.0)
 	force_internal=
 		x=$(GetVarEnv BUILD_LIBUV)
 		value $(or $(equal $(x),$'1'), $(equal $(x),$'true'))
@@ -93,7 +93,7 @@ static.=
 		$(ConfMsgError $''cppo missing'')
 	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))
 		export
-		OCAMLFLAGS= -g -bin-annot -strict-sequence -principal -safe-string -w A-3-4 -warn-error +1..49-3-4
+		OCAMLFLAGS= -g -bin-annot -strict-sequence -principal -safe-string -w A-3-4 -warn-error +1..49-3-4-45
 		CFLAGS= $(CFLAGS) $(DEVCFLAGS)
 	else
 		export

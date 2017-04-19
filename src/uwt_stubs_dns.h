@@ -28,9 +28,8 @@
 extern "C" {
 #endif
 
-UWT_EXTERN6(uwt_getaddrinfo_native);
-UWT_EXTERN_BYTE(uwt_getaddrinfo_byte);
-UWT_EXTERN5(uwt_getnameinfo);
+UWT_EXTERN5(uwt_getaddrinfo);
+UWT_EXTERN4(uwt_getnameinfo);
 
 #ifdef __cplusplus
 }

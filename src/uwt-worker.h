@@ -81,10 +81,10 @@ uwt_add_worker_result(value o_uwt,
 
 #if defined(__GNUC__) && __GNUC__ >= 3
 value Val_uwt_error(int n) __attribute__ ((const));
-value Val_uwt_int_result(int n) __attribute__ ((const));
+value Val_uwt_int_result(intnat n) __attribute__ ((const));
 #else
 value Val_uwt_error(int n);
-value Val_uwt_int_result(int n);
+value Val_uwt_int_result(intnat n);
 #endif
 
 #ifdef _WIN32

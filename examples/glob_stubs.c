@@ -1,10 +1,11 @@
+#include "../src/config.h"
+#include "../src/uwt-worker.h"
 #include <glob.h>
 #include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
-#include "../src/uwt-worker.h"
 
 static char *
 custom_strdup (const char *s)

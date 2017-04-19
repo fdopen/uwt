@@ -42,9 +42,9 @@ $ opam pin add uwt --dev-repo
 
 Dependencies:
 
-* OCaml 4.02.1 or later (earlier versions are not supported)
+* OCaml 4.02.1 or later
 * lwt 2.6.0 or later
-* libuv 1.0 or later (0.x versions are not supported)
+* libuv 1.8 or later
 
 Build dependencies:
 

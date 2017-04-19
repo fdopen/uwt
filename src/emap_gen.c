@@ -166,28 +166,6 @@ int main(void)
 
   assert( uv_unknown != UINT_MAX );
 
-  fputs("#pragma GCC diagnostic push\n"
-    "#pragma GCC diagnostic ignored \"-Wenum-compare\"\n",c);
-
-  for ( i = 0; i < AR_SIZE(er_map); ++i ){
-    int val = er_map[i];
-    const char * x = err_name(val);
-    if ( x[0] != 'U' || x[1] != 'W' || x[2] != 'T' ){
-      unsigned int j;
-      fprintf(c,"_Static_assert( UV_%s < 0 && UV_%s >= INT16_MIN,"
-              "\"out of range\");\n", x,x);
-      for ( j = 0 ; j < AR_SIZE(er_map); ++j){
-        int val2 = er_map[j];
-        const char * y = err_name(val2);
-        if ( y[0] == 'U' && y[1] == 'W' && y[2] == 'T' ){
-          fprintf(c,"_Static_assert( UV_%s != UV_%s ,\"error code reuse\");\n",
-                  x,y);
-        }
-      }
-    }
-  }
-  fputs("#pragma GCC diagnostic pop\n\n",c);
-
   fputs("typedef enum {\n",c2);
   for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
@@ -202,15 +180,35 @@ int main(void)
     const char * x = err_name(val);
     fprintf(c2,"  VAL_UWT_INT_RESULT_%s = (Val_long(%d)),\n",x,neg_result(i));
   }
-  fputs("} val_uwt_int_result_errno_t;\n\n",c2);
+  fputs("} val_uwt_int_result_errno_t;\n",c2);
 
 
+  fputs("#pragma GCC diagnostic push\n"
+        "#pragma GCC diagnostic ignored \"-Wenum-compare\"\n",c);
 
   fputs("value\n"
         "Val_uwt_error(int n)\n"
         "{\n"
-        "  value erg;\n"
-        "  switch (n) {\n",c);
+        "  value erg;\n\n",c);
+
+  for ( i = 0; i < AR_SIZE(er_map); ++i ){
+    int val = er_map[i];
+    const char * x = err_name(val);
+    if ( x[0] != 'U' || x[1] != 'W' || x[2] != 'T' ){
+      unsigned int j;
+      fprintf(c,"  _Static_assert( UV_%s < 0 && UV_%s >= INT16_MIN,"
+              "\"out of range\");\n", x,x);
+      for ( j = 0 ; j < AR_SIZE(er_map); ++j){
+        int val2 = er_map[j];
+        const char * y = err_name(val2);
+        if ( y[0] == 'U' && y[1] == 'W' && y[2] == 'T' ){
+          fprintf(c,"  _Static_assert( UV_%s != UV_%s ,\"error code reuse\");\n",
+                  x,y);
+        }
+      }
+    }
+  }
+  fputs("  switch (n) {\n",c);
   for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
@@ -222,13 +220,13 @@ int main(void)
         "}\n",c);
 
   fputs("\n",c);
-
+  fputs("#pragma GCC diagnostic pop\n\n",c);
 
   fputs("value\n"
-        "Val_uwt_int_result(int n)\n"
+        "Val_uwt_int_result(intnat n)\n"
         "{\n"
         "  value erg;\n"
-        "  if ( n > 0 ){\n"
+        "  if ( n >= 0 ){\n"
         "    return Val_long(n);\n"
         "  }\n"
         "  switch (n) {\n",c);
@@ -300,19 +298,6 @@ int main(void)
     fputs("i/o error\n",stderr);
     return 1;
   }
-
-#if 0
-  ml = fopen("byte_order.ml","w");
-  fputs("type byte_order = Little_endian | Big_endian\n",ml);
-#ifdef WORDS_BIGENDIAN
-  fputs("let system_byte_order = Big_endian\n",ml);
-#else
-  fputs("let system_byte_order = Little_endian\n",ml);
-#endif
-  if ( fclose(ml) ){
-    fputs("i/o error\n",stderr);
-  }
-#endif
 
   ml = fopen("error_val.ml","w");
   c = fopen("error_val.mli","w");

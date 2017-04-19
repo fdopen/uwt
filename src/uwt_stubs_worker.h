@@ -28,8 +28,9 @@
 extern "C" {
 #endif
 
-UWT_EXTERN6(uwt_lseek_native);
-UWT_EXTERN_BYTE(uwt_lseek_byte);
+UWT_EXTERN1(uwt_workreq_create);
+UWT_EXTERN1(uwt_workreq_cancel_na);
+UWT_EXTERN5(uwt_lseek);
 
 #ifdef __cplusplus
 }

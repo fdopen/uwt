@@ -30,152 +30,75 @@ type loop_mode =
 open Uwt_base
 include Fs_types
 
-type loop
-external uv_default_loop: int -> loop uv_result = "uwt_default_loop"
-let loop =
-  match uv_default_loop 0 with (* sync of disabled loop_mode *)
-  | Error _ ->
-    prerr_endline "Can't init default loop";
-    exit(3)
-  | Ok x -> x
-
-module Req = struct
-  type t
-  type type' =
-    | Fs
-  (*  | Getaddr
-    | Getname
-    | Work *)
-
-  external create: loop -> type' -> t = "uwt_req_create"
-  external free: t -> unit = "uwt_fs_free"
-
-  let qlu ~typ ~f =
-    let req = create loop typ in
-    let (x: Int_result.int) = f loop req () in
-    free req;
-    if Int_result.is_error x then
-      Error (Int_result.to_error x)
-    else
-      Ok ()
-end
-
-let typ = Req.Fs
-
-external mkdir:
-  string -> int -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_mkdir"
-let mkdir ?(perm=0o777) param = Req.qlu ~typ ~f:(mkdir param perm)
-
-external rmdir:
-  string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_rmdir"
-let rmdir param = Req.qlu ~typ ~f:(rmdir param)
-
-external close:
-  file -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_close"
-let close fd = Req.qlu ~typ ~f:(close fd)
-
-external unlink:
-  string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_unlink"
-let unlink param = Req.qlu ~typ ~f:(unlink param)
-
-external rename:
-  string -> string -> loop -> Req.t -> unit -> Int_result.int =
-  "uwt_fs_rename"
-let rename ~src ~dst = Req.qlu ~typ ~f:(rename src dst)
-
-external link:
-  string -> string -> loop -> Req.t -> unit -> Int_result.int =
-  "uwt_fs_link"
-let link ~target ~link_name = Req.qlu ~typ ~f:(link target link_name)
-
-external fsync: file -> loop -> Req.t -> unit -> Int_result.int =
-  "uwt_fs_fsync"
-let fsync file = Req.qlu ~typ ~f:(fsync file)
-
-external fdatasync:
-  file -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_fsync"
-let fdatasync file = Req.qlu ~typ ~f:(fdatasync file)
-
-external ftruncate:
-  file -> int64 -> loop -> Req.t -> unit -> Int_result.int =
-  "uwt_fs_ftruncate"
-let ftruncate file ~len = Req.qlu ~typ ~f:(ftruncate file len)
-
-external symlink:
-  string -> string -> symlink_mode -> loop -> Req.t -> unit ->
-  Int_result.int = "uwt_fs_symlink_byte" "uwt_fs_symlink_native"
-let symlink ?(mode=S_Default) ~src ~dst () =
-  Req.qlu ~typ ~f:(symlink src dst mode)
-
-external utime:
-  string -> float -> float -> loop -> Req.t -> unit -> Int_result.int =
-  "uwt_fs_utime_byte" "uwt_fs_utime_native"
-let utime s ~access ~modif =
-  Req.qlu ~typ ~f:(utime s access modif)
-
-external futime:
-  file -> float -> float -> loop -> Req.t -> unit -> Int_result.int =
-  "uwt_fs_futime_byte" "uwt_fs_futime_native"
-let futime fd ~access ~modif =
-  Req.qlu ~typ ~f:(futime fd access modif)
-
-external access:
-  string -> access_permission list -> loop -> Req.t -> unit ->
-  Int_result.int = "uwt_fs_access"
-let access s al = Req.qlu ~typ ~f:(access s al)
-
-external chmod:
-  string -> int -> loop -> Req.t -> unit -> Int_result.int =
-  "uwt_fs_chmod"
-let chmod param ~perm = Req.qlu ~typ ~f:(chmod param perm)
-
-external fchmod:
-  file -> int -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_fchmod"
-let fchmod fd ~perm = Req.qlu ~typ ~f:(fchmod fd perm)
-
-external chown:
-  string -> int -> int -> loop -> Req.t -> unit -> Int_result.int =
-  "uwt_fs_chown_byte" "uwt_fs_chown_native"
-let chown s ~uid ~gid = Req.qlu ~typ ~f:(chown s uid gid)
-
-external fchown:
-  file -> int -> int -> loop -> Req.t -> unit -> Int_result.int =
-  "uwt_fs_fchown_byte" "uwt_fs_fchown_native"
-let fchown fd ~uid ~gid = Req.qlu ~typ ~f:(fchown fd uid gid)
-
-external get_result: Req.t -> 'a = "uwt_get_fs_result"
-let cu f : 'a =
-  let req = Req.create loop typ in
-  let (x: Int_result.int) = f loop req () in
+let wrap x =
   if Int_result.is_error x then
     Error (Int_result.to_error x)
   else
-    get_result req
+    Ok ()
 
-external openfile:
-  string -> uv_open_flag list -> int ->
-  loop -> Req.t -> unit ->
-  Int_result.int =
-  "uwt_fs_open_byte" "uwt_fs_open_native"
+external mkdir: string -> int -> Int_result.int = "uwt_fs_mkdir_sync"
+let mkdir ?(perm=0o777) param = mkdir param perm |> wrap
 
-let openfile ?(perm=0o644) ~mode fln : file uv_result =
-  cu (openfile fln mode perm)
+external rmdir: string -> Int_result.int = "uwt_fs_rmdir_sync"
+let rmdir param = rmdir param |> wrap
 
+external close: file -> Int_result.int = "uwt_fs_close_sync"
+let close fd = close fd |> wrap
 
-external iread:
-  file -> 'a -> int -> int -> int64 ->
-  loop -> Req.t -> unit ->
-  Int_result.int =
-  "uwt_fs_read_byte" "uwt_fs_read_native"
+external unlink: string -> Int_result.int = "uwt_fs_unlink_sync"
+let unlink param = unlink param |> wrap
 
-let read_write_common ~req (x: Int_result.int) =
-  let x =
-    if Int_result.is_ok x then
-      get_result req
-    else
-      let () = Req.free req in
-      x
-  in
+external rename: string -> string -> Int_result.int = "uwt_fs_rename_sync"
+let rename ~src ~dst = rename src dst |> wrap
+
+external link: string -> string -> Int_result.int = "uwt_fs_link_sync"
+let link ~target ~link_name = link target link_name |> wrap
+
+external fsync: file -> Int_result.int = "uwt_fs_fsync_sync"
+let fsync file = fsync file |> wrap
+
+external fdatasync: file -> Int_result.int = "uwt_fs_fdatasync_sync"
+let fdatasync file = fdatasync file |> wrap
+
+external ftruncate: file -> int64 -> Int_result.int = "uwt_fs_ftruncate_sync"
+let ftruncate file ~len = ftruncate file len |> wrap
+
+external symlink: string -> string -> symlink_mode -> Int_result.int =
+  "uwt_fs_symlink_sync"
+let symlink ?(mode=S_Default) ~src ~dst () = symlink src dst mode |> wrap
+
+external utime: string -> float -> float -> Int_result.int = "uwt_fs_utime_sync"
+let utime s ~access ~modif = utime s access modif |> wrap
+
+external futime: file -> float -> float -> Int_result.int = "uwt_fs_futime_sync"
+let futime fd ~access ~modif = futime fd access modif |> wrap
+
+external access: string -> access_permission list -> Int_result.int =
+  "uwt_fs_access_sync"
+let access s al = access s al |> wrap
+
+external chmod: string -> int -> Int_result.int = "uwt_fs_chmod_sync"
+let chmod param ~perm = chmod param perm |> wrap
+
+external fchmod: file -> int -> Int_result.int = "uwt_fs_fchmod_sync"
+let fchmod fd ~perm = fchmod fd perm |> wrap
+
+external chown: string -> int -> int -> Int_result.int =
+  "uwt_fs_chown_sync"
+let chown s ~uid ~gid = chown s uid gid |> wrap
+
+external fchown: file -> int -> int -> Int_result.int = "uwt_fs_fchown_sync"
+let fchown fd ~uid ~gid = fchown fd uid gid |> wrap
+
+external openfile: string -> uv_open_flag list -> int ->
+  file uv_result = "uwt_fs_open_sync"
+
+let openfile ?(perm=0o644) ~mode fln : file uv_result = openfile fln mode perm
+
+external iread: file -> 'a -> int -> int -> int64 ->
+  Int_result.int = "uwt_fs_read_sync"
+
+let read_write_common (x:Int_result.int) =
   let x' : int =  ( x:> int ) in
   if x' < 0 then
     Error (Int_result.to_error x)
@@ -190,9 +113,8 @@ let iread ~fd_offset ?(pos=0) ?len t ~buf ~dim =
   if pos < 0 || len < 0 || pos > dim - len then
     invalid_arg "Uwt_sync.Fs.read"
   else
-    let req = Req.create loop typ in
-    iread t buf pos len fd_offset loop req () |>
-    read_write_common ~req
+    iread t buf pos len fd_offset |>
+    read_write_common
 
 let read_ba ?pos ?len t ~(buf:buf) =
   let dim = Bigarray.Array1.dim buf in
@@ -217,10 +139,7 @@ let pread ?pos ?len t ~fd_offset ~buf =
     iread ~fd_offset ?pos ?len ~dim ~buf t
 
 external iwrite:
-  file -> 'a -> int -> int -> int64 ->
-  loop -> Req.t -> unit ->
-  Int_result.int =
-  "uwt_fs_write_byte" "uwt_fs_write_native"
+  file -> 'a -> int -> int -> int64 -> Int_result.int = "uwt_fs_write_sync"
 
 let iwrite ~fd_offset ?(pos=0) ?len ~dim t ~buf =
   let len =  match len with
@@ -230,9 +149,8 @@ let iwrite ~fd_offset ?(pos=0) ?len ~dim t ~buf =
   if pos < 0 || len < 0 || pos > dim - len then
     invalid_arg "Uwt_sync.Fs.write"
   else
-    let req = Req.create loop typ in
-    iwrite t buf pos len fd_offset loop req () |>
-    read_write_common ~req
+    iwrite t buf pos len fd_offset |>
+    read_write_common
 
 let write_ba ?pos ?len t ~(buf:buf) =
   let dim = Bigarray.Array1.dim buf in
@@ -265,10 +183,8 @@ let pwrite ?pos ?len t ~fd_offset ~buf =
   iwrite ~fd_offset ~dim ?pos ?len t ~buf
 
 external iwritev:
-  file -> Iovec_write.t array -> Iovec_write.t list -> int64 ->
-  loop -> Req.t -> unit ->
-  Int_result.int =
-  "uwt_fs_writev_byte" "uwt_fs_writev_native"
+  Iovec_write.t array -> Iovec_write.t list -> file -> int64 ->
+  Int_result.int = "uwt_fs_writev_sync"
 
 let iwritev ~fd_offset t iol =
   let open Iovec_write in
@@ -276,9 +192,8 @@ let iwritev ~fd_offset t iol =
   | Invalid -> invalid_arg "Uwt_sync.Fs.writev"
   | Empty -> write ~len:0 t ~buf:(Bytes.create 1)
   | All_ba(ar,bl) ->
-    let req = Req.create loop typ in
-    iwritev t ar bl fd_offset loop req () |>
-    read_write_common ~req
+    iwritev ar bl t fd_offset |>
+    read_write_common
 
 let writev a b = iwritev ~fd_offset:Int64.minus_one a b
 let pwritev a b fd_offset =
@@ -288,46 +203,23 @@ let pwritev a b fd_offset =
     iwritev ~fd_offset a b
 
 external sendfile:
-  file -> file -> int64 -> nativeint -> loop -> Req.t -> unit ->
-  Int_result.int = "uwt_fs_sendfile_byte" "uwt_fs_sendfile_native"
+  file -> file -> int64 -> nativeint ->
+  nativeint uv_result = "uwt_fs_sendfile_sync"
 
-let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () : nativeint uv_result =
-  cu (sendfile dst src pos len)
+let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () =
+  sendfile dst src pos len
 
-external stat:
-  string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_stat"
-
-let stat param : stats uv_result = cu (stat param)
-
-external lstat:
-  string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_lstat"
-let lstat param : stats uv_result = cu (lstat param)
-
-external fstat:
-  file -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_fstat"
-let fstat fd : stats uv_result = cu (fstat fd)
-
-external mkdtemp:
-  string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_mkdtemp"
-let mkdtemp param : string uv_result = cu (mkdtemp param)
-
-external readlink:
-  string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_readlink"
-let readlink param : string uv_result = cu (readlink param)
+external stat: string -> stats uv_result = "uwt_fs_stat_sync"
+external lstat:  string -> stats uv_result = "uwt_fs_lstat_sync"
+external fstat: file -> stats uv_result = "uwt_fs_fstat_sync"
+external mkdtemp: string -> string uv_result = "uwt_fs_mkdtemp_sync"
+external readlink: string -> string uv_result = "uwt_fs_readlink_sync"
 
 external scandir:
-  string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_scandir"
-let scandir param : (file_kind * string) array uv_result =
-  cu (scandir param)
+  string -> (file_kind * string) array uv_result = "uwt_fs_scandir_sync"
 
-#if HAVE_UV_REALPATH = 0
-external realpath: string -> string Uwt_base.uv_result = "uwt_realpath_sync"
-#else
-external realpath:
-  string -> loop -> Req.t -> unit -> Int_result.int = "uwt_fs_realpath"
-#if  HAVE_WINDOWS = 0
-let realpath param : string uv_result = cu (realpath param)
-#else
+external realpath: string -> string Uwt_base.uv_result = "uwt_fs_realpath_sync"
+#if  HAVE_WINDOWS <> 0
 external realpath_o: string -> string Uwt_base.uv_result = "uwt_realpath_sync"
 let use_own_realpath = ref (
     match Uwt_base.Sys_info.win_version () with
@@ -337,10 +229,9 @@ let realpath param  : string uv_result =
   match !use_own_realpath with
   | true -> realpath_o param
   | false ->
-    match cu (realpath param) with
+    match realpath param with
     | Error Uwt_base.ENOSYS ->
-      use_own_realpath:= true;
+      use_own_realpath := true;
       realpath_o param
     | x -> x
-#endif
 #endif

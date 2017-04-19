@@ -25,9 +25,8 @@ CAMLprim value
 uwt_guess_handle_na(value o_fd)
 {
   int t = UV_UNKNOWN_HANDLE;
-  int i = FD_VAL(o_fd);
 #ifndef _WIN32
-  t = uv_guess_handle(i);
+  t = uv_guess_handle(FD_VAL(o_fd));
 #else
   /* uv_guess_handle works with crt file descriptors */
   if ( Descr_kind_val(o_fd) == KIND_HANDLE ){
@@ -69,9 +68,6 @@ uwt_guess_handle_na(value o_fd)
         }
       }
     }
-  }
-  if ( t == UV_UNKNOWN_HANDLE && i != -1 ){
-    t = uv_guess_handle(i);
   }
 #endif
   switch ( t ){
@@ -142,76 +138,82 @@ uwt_uptime(value unit)
  return res;
 }
 
-#define IP_CONV(name,field)                                             \
-  CAMLprim value                                                        \
-  uwt_ ## name ##  _addr(value o_str,value o_port)                      \
-  {                                                                     \
-    INT_VAL_RET_WRAP_EINVAL(port, o_port);                              \
-    value ret;                                                          \
-    struct sockaddr_i ## field addr;                                    \
-    if ( !uwt_is_safe_string(o_str) ){                                  \
-      ret = caml_alloc_small(1,Error_tag);                              \
-      Field(ret,0) = VAL_UWT_ERROR_ECHARSET;                            \
-    }                                                                   \
-    else {                                                              \
-      int r = uv_ ## name ## _addr(String_val(o_str),                   \
-                                   port,&addr);                         \
-      if ( r < 0 ){                                                     \
-        ret = caml_alloc_small(1,Error_tag);                            \
-        Field(ret,0) = Val_uwt_error(r);                                \
-      }                                                                 \
-      else {                                                            \
-        value so = uwt__alloc_sockaddr((struct sockaddr *)&addr);       \
-        if ( so == Val_unit ){                                          \
-          ret = caml_alloc_small(1,Error_tag);                          \
-          Field(ret,0) = VAL_UWT_ERROR_UNKNOWN;                         \
-        }                                                               \
-        else {                                                          \
-          Begin_roots1(so);                                             \
-          ret = caml_alloc_small(1,Ok_tag);                             \
-          Field(ret,0) = so;                                            \
-          End_roots();                                                  \
-        }                                                               \
-      }                                                                 \
-    }                                                                   \
-    return ret;                                                         \
-  }                                                                     \
-  CAMLprim value                                                        \
-  uwt_ ## name ## _name(value o_sock)                                   \
-  {                                                                     \
-    enum { init_size = 128 };                                           \
-    int r;                                                              \
-    value ret;                                                          \
-    size_t s_size = init_size;                                          \
-    char dst[init_size];                                                \
-    struct sockaddr_storage x;                                          \
-    if ( !uwt__get_sockaddr(o_sock,(struct sockaddr *) &x) ){           \
-      ret = caml_alloc_small(1,Error_tag);                              \
-      Field(ret,0) = VAL_UWT_ERROR_UNKNOWN;                             \
-      return ret;                                                       \
-    }                                                                   \
-    r = uv_ ## name ## _name((struct sockaddr_i ## field *)&x ,         \
-                             dst, s_size);                              \
-    if ( r < 0 ){                                                       \
-      ret = caml_alloc_small(1,Error_tag);                              \
-      Field(ret,0) = Val_uwt_error(r);                                  \
-    }                                                                   \
-    else {                                                              \
-      value os;                                                         \
-      s_size = strnlen(dst,s_size);                                     \
-      os = caml_alloc_string(s_size);                                   \
-      memcpy(String_val(os),dst,s_size);                                \
-      Begin_roots1(os);                                                 \
-      ret = caml_alloc_small(1,Ok_tag);                                 \
-      Field(ret,0) = os;                                                \
-      End_roots();                                                      \
-    }                                                                   \
-    return ret;                                                         \
-  }                                                                     \
+typedef int(*ipx_addr)(const char *, int, void*);
+static value
+uwt_ipx_addr(value o_str,value o_port, ipx_addr func)
+{
+  INT_VAL_RET_WRAP_EINVAL(port, o_port);
+  if ( !uwt_is_safe_string(o_str) ){
+    return uwt__alloc_eresult(VAL_UWT_ERROR_ECHARSET);
+  }
+  value ret;
+  struct sockaddr_storage addr;
+  const int r = func(String_val(o_str), port, &addr);
+  if ( r < 0 ){
+    ret = caml_alloc_small(1,Error_tag);
+    Field(ret,0) = Val_uwt_error(r);
+  }
+  else {
+    value so = uwt__alloc_sockaddr((struct sockaddr *)&addr);
+    if ( so == Val_unit ){
+      ret = caml_alloc_small(1,Error_tag);
+      Field(ret,0) = VAL_UWT_ERROR_UNKNOWN;
+    }
+    else {
+      Begin_roots1(so);
+      ret = caml_alloc_small(1,Ok_tag);
+      Field(ret,0) = so;
+      End_roots();
+    }
+  }
+  return ret;
+}
 
-IP_CONV(ip4,n)
-IP_CONV(ip6,n6)
-#undef IP_CONV
+typedef int (*ipx_name)(void*, char*, size_t);
+static value
+uwt_ipx_name(value o_sock, ipx_name func)
+{
+  struct sockaddr_storage addr;
+  if ( !uwt__get_sockaddr(o_sock,(struct sockaddr *) &addr) ){
+    return uwt__alloc_eresult(VAL_UWT_ERROR_UNKNOWN);
+  }
+  enum { init_size = 47 };
+  value ret;
+  char dst[init_size];
+  const int r = func(&addr , dst, init_size);
+  if ( r < 0 ){
+    ret = caml_alloc_small(1,Error_tag);
+    Field(ret,0) = Val_uwt_error(r);
+  }
+  else {
+    value os = caml_copy_string(dst);
+    Begin_roots1(os);
+    ret = caml_alloc_small(1,Ok_tag);
+    Field(ret,0) = os;
+    End_roots();
+  }
+  return ret;
+}
+
+CAMLprim value uwt_ip6_addr(value o_str,value o_port)
+{
+  return uwt_ipx_addr(o_str,o_port,(ipx_addr)uv_ip6_addr);
+}
+
+CAMLprim value uwt_ip4_addr(value o_str,value o_port)
+{
+  return uwt_ipx_addr(o_str,o_port,(ipx_addr)uv_ip4_addr);
+}
+
+CAMLprim value uwt_ip6_name(value o_sock)
+{
+  return uwt_ipx_name(o_sock,(ipx_name)uv_ip6_name);
+}
+
+CAMLprim value uwt_ip4_name(value o_sock)
+{
+  return uwt_ipx_name(o_sock,(ipx_name)uv_ip4_name);
+}
 
 CAMLprim value
 uwt_getrusage(value unit)
@@ -420,23 +422,9 @@ uwt_os_dir(os_dir fdir_func)
   char buffer[ALLOCA_PATH_LEN];
   size_t size = ALLOCA_PATH_LEN;
   int tag;
-#if HAVE_DECL_UV_OS_HOMEDIR
-  if ( fdir_func == uv_cwd || fdir_func == uv_os_homedir )
-#else
-  if ( fdir_func == uv_cwd )
-#endif
-  {
-    caml_enter_blocking_section();
-  }
+  caml_enter_blocking_section();
   const int r = fdir_func(buffer,&size);
-#if HAVE_DECL_UV_OS_HOMEDIR
-  if ( fdir_func == uv_cwd || fdir_func == uv_os_homedir )
-#else
-  if ( fdir_func == uv_cwd )
-#endif
-  {
-    caml_leave_blocking_section();
-  }
+  caml_leave_blocking_section();
   if ( r == 0 && size > 0 && size <= ALLOCA_PATH_LEN ){
     p = caml_alloc_string(size);
     memcpy(String_val(p), buffer, size);
@@ -469,11 +457,7 @@ CAMLprim value
 uwt_os_homedir(value unit)
 {
   (void)unit;
-#if HAVE_DECL_UV_OS_HOMEDIR
   return (uwt_os_dir(uv_os_homedir));
-#else
-  return (uwt__result_enosys());
-#endif
 }
 
 CAMLprim value
@@ -483,7 +467,7 @@ uwt_os_tmpdir(value unit)
 #if HAVE_DECL_UV_OS_TMPDIR
   return (uwt_os_dir(uv_os_tmpdir));
 #else
-  return (uwt__result_enosys());
+  return (uwt__alloc_eresult(VAL_UWT_ERROR_ENOSYS));
 #endif
 }
 
@@ -511,7 +495,7 @@ uwt_get_passwd(value unit)
 {
   (void)unit;
 #if !HAVE_DECL_UV_OS_GET_PASSWD
-  return (uwt__result_enosys());
+  return (uwt__alloc_eresult(VAL_UWT_ERROR_ENOSYS));
 #else
   uv_passwd_t pwd;
   value eret;
@@ -584,52 +568,50 @@ static char ** dummy_argv = NULL;
 static int
 uwt_setup_args(value sys_argv)
 {
-  if ( sys_argv == Atom(0) || Wosize_val(sys_argv) == 0 ){
+  const int argc = Wosize_val(sys_argv);
+  int size = 0;
+  char ** argv;
+  char *p;
+  char * memb;
+  int i;
+  if ( argc == 0 ){
     return UV_UNKNOWN;
   }
-  else {
-    const int argc = Wosize_val(sys_argv);
-    int size = 0;
-    char ** argv;
-    char *p;
-    char * memb;
-    int i;
-
-    argv = malloc( (argc+1) * sizeof (char**) );
-    if ( argv == NULL ) {
-      return UV_ENOMEM;
-    }
-
-    for ( i = 0; i < argc; i++ ) {
-      value s = Field(sys_argv,i);
-      if ( !uwt_is_safe_string(s) ){
-        return UV_ECHARSET;
-      }
-      size += strlen(String_val(s)) + 1;
-    }
-
-    memb = malloc(size);
-    if ( memb == NULL ){
-      free(argv);
-      return UV_ENOMEM;
-    }
-
-    /* libuv wants the argv arguments in this order in memory.
-       Otherwise an assert failure is triggered,.... */
-    p = memb;
-    for ( i = 0; i < argc ; i++ ) {
-      size_t n = strlen(String_val(Field(sys_argv,i)));
-      argv[i] = p;
-      memcpy(p,String_val(Field(sys_argv,i)),n + 1);
-      p = p + n + 1;
-    }
-    argv[argc] = NULL;
-
-    uv_setup_args_ret = uv_setup_args(argc,argv);
-    dummy_argv = argv;
-
-    return 0;
+  argv = malloc( (argc+1) * sizeof (char**) );
+  if ( argv == NULL ) {
+    return UV_ENOMEM;
   }
+
+  for ( i = 0; i < argc; i++ ) {
+    value s = Field(sys_argv,i);
+    if ( !uwt_is_safe_string(s) ){
+      free(argv);
+      return UV_ECHARSET;
+    }
+    size += caml_string_length(s) + 1;
+  }
+
+  memb = malloc(size);
+  if ( memb == NULL ){
+    free(argv);
+    return UV_ENOMEM;
+  }
+
+  /* libuv wants the argv arguments in this order in memory.
+     Otherwise an assert failure is triggered,.... */
+  p = memb;
+  for ( i = 0; i < argc ; i++ ) {
+    size_t n = caml_string_length(Field(sys_argv,i));
+    argv[i] = p;
+    memcpy(p,String_val(Field(sys_argv,i)),n + 1);
+    p = p + n + 1;
+  }
+  argv[argc] = NULL;
+
+  uv_setup_args_ret = uv_setup_args(argc,argv);
+  dummy_argv = argv;
+
+  return 0;
 }
 
 CAMLprim value
@@ -726,7 +708,6 @@ uwt_win_version(value unit)
 }
 #endif /* _WIN32 */
 
-#if HAVE_DECL_UV_PRINT_ALL_HANDLES || HAVE_DECL_UV_PRINT_ACTIVE_HANDLES
 typedef void(*print_handles)(uv_loop_t*, FILE*);
 static value
 uwt_print_handles(value o_loop, value o_fd, print_handles phandles)
@@ -748,6 +729,11 @@ uwt_print_handles(value o_loop, value o_fd, print_handles phandles)
   fp = fdopen(fd,"w");
 #endif
   if ( fp == NULL ){
+#ifdef _WIN32
+    _close(fd);
+#else
+    close(fd);
+#endif
     return VAL_UWT_UNIT_RESULT(UWT_TRANSLATE_ERRNO(errno));
   }
   phandles(&l->loop,fp);
@@ -756,24 +742,15 @@ uwt_print_handles(value o_loop, value o_fd, print_handles phandles)
   }
   return Val_unit;
 }
-#endif
 
 CAMLprim value
 uwt_print_all_handles(value a, value b)
 {
-#if HAVE_DECL_UV_PRINT_ALL_HANDLES
   return uwt_print_handles(a,b,uv_print_all_handles);
-#else
-  return VAL_UWT_INT_RESULT_ENOSYS;
-#endif
 }
 
 CAMLprim value
 uwt_print_active_handles(value a, value b)
 {
-#if HAVE_DECL_UV_PRINT_ACTIVE_HANDLES
   return uwt_print_handles(a,b,uv_print_active_handles);
-#else
-  return VAL_UWT_INT_RESULT_ENOSYS;
-#endif
 }

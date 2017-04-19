@@ -19,20 +19,25 @@ cd "libuv"
 
 if [ "$unix" = "true" ]; then
     if [ ! -f .libs/libuv.a ]; then
-        x="$(uname)"
-        if [ "$x" = "OpenBSD" ] ; then
-            AUTOCONF_VERSION="$( ls -1 /usr/local/bin/autoreconf-* | sort | tail -n 1 )"
-            AUTOCONF_VERSION="${AUTOCONF_VERSION##*-}"
-
-            AUTOMAKE_VERSION="$( ls -1 /usr/local/bin/automake-* | sort | tail -n 1 )"
-            AUTOMAKE_VERSION="${AUTOMAKE_VERSION##*-}"
-
-            export AUTOCONF_VERSION AUTOMAKE_VERSION
+        cp -p src/unix/stream.c src/unix/stream.c.n
+        if ! patch -p1 <../dist/libuv.patch >/dev/null 2>&1; then
+            mv src/unix/stream.c.n src/unix/stream.c
+        else
+            rm src/unix/stream.c.n
         fi
         if [ ! -x ./configure ]; then
+            x="$(uname)"
+            if [ "$x" = "OpenBSD" ] ; then
+                AUTOCONF_VERSION="$( ls -1 /usr/local/bin/autoreconf-* | sort | tail -n 1 )"
+                AUTOCONF_VERSION="${AUTOCONF_VERSION##*-}"
+
+                AUTOMAKE_VERSION="$( ls -1 /usr/local/bin/automake-* | sort | tail -n 1 )"
+                AUTOMAKE_VERSION="${AUTOMAKE_VERSION##*-}"
+
+                export AUTOCONF_VERSION AUTOMAKE_VERSION
+            fi
             ./autogen.sh
         fi
-
         make=gmake
         if ! which gmake >/dev/null 2>&1 ; then
             make=make

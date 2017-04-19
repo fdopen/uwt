@@ -11,8 +11,7 @@ AC_MSG_CHECKING([posix source 200809L])
 AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h grp.h pwd.h sys/param.h byteswap.h sys/byteswap.h sys/endian.h sys/un.h arpa/inet.h)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_DECLS([strnlen], [], [], [#include <string.h>])
-AC_CHECK_DECLS([uv_pipe_getpeername,uv_print_all_handles,uv_print_active_handles,uv_tcp_init_ex,uv_udp_init_ex,uv_os_homedir,uv_os_tmpdir,uv_os_get_passwd,uv_translate_sys_error,UV_DISCONNECT,UV_TTY_MODE_NORMAL,UV_TTY_MODE_RAW,UV_TTY_MODE_IO],[],[],[#include <uv.h>])
-AC_CHECK_DECLS([uv_fs_realpath],[AC_SUBST(HAVE_UV_REALPATH,1)],[AC_SUBST(HAVE_UV_REALPATH,0)],[#include <uv.h>])
+AC_CHECK_DECLS([uv_os_tmpdir,uv_os_get_passwd,uv_translate_sys_error,UV_DISCONNECT],[],[],[#include <uv.h>])
 
 AC_HEADER_STDBOOL
 AC_SYS_LARGEFILE
@@ -413,49 +412,6 @@ uwt_translate(void)
     [AC_MSG_RESULT([yes]);
      AC_DEFINE([HAVE_UV_TRANSLATE_SYSERROR], [1], [Define to 1 if libuv supports it.])],
     [AC_MSG_RESULT([no])])
-
-# realpath test breaks cross compiling, try to avoid it
-if test "$OS_MACRO" != "Windows" -a "$ac_cv_have_decl_uv_fs_realpath" != "yes" ; then
-AC_CHECK_FUNCS(canonicalize_file_name)
-if test "$ac_cv_func_canonicalize_file_name" != "yes" ; then
-
-# Check if realpath accepts null for its second argument
-AC_MSG_CHECKING([if realpath accepts null for its second argument])
-AC_RUN_IFELSE(
-  [
-    AC_LANG_PROGRAM(
-      [
-        #include <limits.h>
-        #include <errno.h>
-        #include <stdlib.h>
-      ],
-      [
-        int status;
-        char *res;
-        res = realpath( "somefile", 0 );
-        status = !(res != 0 || errno == ENOENT);
-        exit( status );
-      ]
-    )
-  ],
-  [have_realpath_null=yes],
-  [have_realpath_null=no]
-)
-
-if test "$have_realpath_null" = yes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(
-    [HAVE_REALPATH_NULL],
-    [1],
-    [Define to 1 if realpath accepts null for its second argument.]
-  )
-else
-  AC_MSG_RESULT(no)
-fi
-
-fi
-
-fi # test "$OS_MACRO" != "Windows" -a "$ac_cv_have_decl_uv_fs_realpath" != "yes"
 
 AC_CHECK_MEMBER(struct sockaddr_in.sin_len,
                 AC_DEFINE(HAVE_SIN_LEN, 1, [Define this if your IPv4 has sin_len in sockaddr_in struct.]),,

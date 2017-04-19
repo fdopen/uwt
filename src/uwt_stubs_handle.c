@@ -24,30 +24,14 @@
 static void
 close_cb(uv_handle_t* handle)
 {
+  GET_RUNTIME();
   struct handle *s = handle->data;
-  if (unlikely( !s || s->cb_close == CB_INVALID )){
-    DEBUG_PF("data lost");
-  }
-  else {
-    value exn = Val_unit;
-    GET_RUNTIME();
-    ++s->in_callback_cnt;
-    exn = CAML_CALLBACK1(s,cb_close,Val_unit);
-    if (unlikely( Is_exception_result(exn) )){
-      uwt__add_exception(s->loop,exn);
-    }
-    --s->in_callback_cnt;
-    uwt__handle_free_common(s);
-    s->close_executed = 1;
-    if (likely( s->in_callback_cnt == 0 )){
-      uwt__free_mem_uv_handle_t(s);
-      if ( s->finalize_called ){
-        uwt__free_struct_handle(s);
-      }
-    }
-    else {
-      DEBUG_PF("close_cb not the last callback?");
-    }
+  value exn = GET_CB_VAL(s->cb_close);
+  uwt__handle_unreg_camlval(s);
+  uwt__free_handle(s);
+  exn = caml_callback2_exn(*uwt__global_wakeup, exn, Val_unit);
+  if (unlikely( Is_exception_result(exn) )){
+    caml_callback_exn(*uwt_global_exception_fun, Extract_exception(exn));
   }
 }
 
@@ -58,21 +42,13 @@ uwt_close_wait(value o_stream,value o_cb)
   if ( HANDLE_IS_INVALID(s) ){
     return VAL_UWT_INT_RESULT_EBADF;
   }
-  if (unlikely( s->cb_close != CB_INVALID )){
-    return VAL_UWT_INT_RESULT_EBUSY;
-  }
   CAMLparam2(o_stream,o_cb);
   GR_ROOT_ENLARGE();
-  ++s->in_use_cnt;
+  s->finalize_called = 1;
   s->close_called = 1;
-  /* This way, we can't wrap uv_is_closing.
-     But otherwise we "leak" memory until
-     the ocaml grabage collector finalizes
-     the handle  */
   Field(o_stream,1) = 0;
   uwt__gr_register(&s->cb_close,o_cb);
   uv_close(s->handle,close_cb);
-  s->finalize_called = 1;
   if ( s->read_waiting ){
     uwt__cancel_reader(s);
   }
@@ -84,13 +60,9 @@ uwt_close_nowait(value o_stream)
 {
   struct handle * s = Handle_val(o_stream);
   value ret = VAL_UWT_INT_RESULT_EBADF;
-  if ( s && s->handle && s->close_called == 0 ){
-    s->close_called = 1;
+  if ( s && s->close_called == 0 ){
     Field(o_stream,1) = 0;
-    if ( s->read_waiting ){
-      uwt__cancel_reader(s);
-    }
-    s->finalize_called = 1;
+    /* possibly cancels reader. noalloc impossible */
     uwt__handle_finalize_close(s);
     ret = Val_unit;
   }
@@ -106,7 +78,7 @@ uwt_close__1(value o_stream)
 {
   struct handle * s = Handle_val(o_stream);
   value ret = VAL_UWT_INT_RESULT_EBADF;
-  if ( s && s->handle && s->close_called == 0 ){
+  if ( s && s->close_called == 0 ){
     uv_close(s->handle, uwt__handle_finalize_close_cb);
     ret = Val_unit;
   }
@@ -118,7 +90,7 @@ uwt_close__2(value o_stream)
 {
   struct handle * s = Handle_val(o_stream);
   value ret = VAL_UWT_INT_RESULT_EBADF;
-  if ( s && s->handle ){
+  if ( s ){
     Field(o_stream,1) = 0;
     s->finalize_called = 1;
     s->close_called = 1;
@@ -136,8 +108,7 @@ UV_HANDLE_VOID(unref)
 CAMLprim value
 uwt_get_buffer_size_common_na(value o_stream, value o)
 {
-  HANDLE_NINIT_NA(s,o_stream);
-  HANDLE_NO_UNINIT_NA(s);
+  HANDLE_INIT_NOUNINIT_NA(s, o_stream);
   int ret;
   int x = 0;
   if ( Long_val(o) == 0 ){
@@ -152,8 +123,7 @@ uwt_get_buffer_size_common_na(value o_stream, value o)
 CAMLprim value
 uwt_set_buffer_size_common_na(value o_stream, value o_len, value o)
 {
-  HANDLE_NINIT_NA(s,o_stream);
-  HANDLE_NO_UNINIT_NA(s);
+  HANDLE_INIT_NOUNINIT_NA(s, o_stream);
   int ret;
   INT_VAL_RET_IR_EINVAL(x,o_len);
   if ( Long_val(o) == 0 ){
@@ -169,42 +139,30 @@ uwt_set_buffer_size_common_na(value o_stream, value o_len, value o)
 UWT_LOCAL void
 uwt__alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
 {
-  if ( !handle || !handle->data ){
-    DEBUG_PF("no data");
-    buf->base = NULL;
-    buf->len = 0;
-  }
-  else {
-    const struct handle * h = handle->data;
-    const size_t len = UMIN(suggested_size,h->c_read_size);
-    uwt__malloc_uv_buf_t(buf,len,h->cb_type);
-  }
+  const struct handle * h = handle->data;
+  const size_t len = UMIN(suggested_size,h->c_read_size);
+  uwt__malloc_uv_buf_t(buf,len);
 }
 
 UWT_LOCAL void
 uwt__alloc_own_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
 {
-  struct handle * h;
+  const struct handle * h = handle->data;
   (void) suggested_size;
-  if (unlikely( !handle || (h = handle->data) == NULL )){
-    DEBUG_PF("no data");
-    buf->len = 0;
-    buf->base = NULL;
-  }
-  else if ( h->use_read_ba ){
-    buf->base = h->ba_read;
+  if ( h->use_read_ba ){
+    buf->base = h->x.ba_read;
     buf->len = h->c_read_size;
   }
   else {
 #ifdef UWT_NO_COPY_READ
     GET_RUNTIME();
     value tp = Field(GET_CB_VAL(h->cb_read),0);
-    buf->base = String_val(tp) + h->obuf_offset;
+    buf->base = String_val(tp) + h->x.obuf_offset;
     buf->len = h->c_read_size;
 #else
     size_t len;
     len = UMIN(suggested_size,h->c_read_size);
-    uwt__malloc_uv_buf_t(buf,len,h->cb_type);
+    uwt__malloc_uv_buf_t(buf,len);
 #endif
   }
 }
@@ -212,29 +170,21 @@ uwt__alloc_own_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
 UWT_LOCAL void
 uwt__pipe_tcp_connect_cb(uv_connect_t* req, int status)
 {
+  REQ_CB_INIT(req);
   struct handle * s = req->handle->data;
-  struct req * r = req->data;
-  if ( !s || !r ){
-    DEBUG_PF("leaking data");
+  if ( status >= 0 ){
+    s->initialized = 1;
   }
-  else {
-    ++s->in_callback_cnt;
-    --s->in_use_cnt;
-    r->c_param = status;
-    if ( status >= 0 ){
-      s->initialized = 1;
-    }
-    uwt__req_callback((void*)req);
-    --s->in_callback_cnt;
-    CLOSE_HANDLE_IF_UNREFERENCED(s);
-  }
+  REQ_CB_CALL(VAL_UWT_UNIT_RESULT(status));
+  --s->in_use_cnt;
+  CLOSE_HANDLE_IF_UNREFERENCED(s);
 }
 
 CAMLprim value
 uwt_handle_type_na(value o_stream)
 {
   struct handle * s = Handle_val(o_stream);
-  if ( s && s->handle && s->close_called == 0 ){
+  if ( s && s->close_called == 0 ){
     switch (s->handle->type){
     case UV_FILE: return (Val_long(0));
     case UV_TTY: return (Val_long(1));

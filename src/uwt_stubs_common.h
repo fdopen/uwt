@@ -157,8 +157,8 @@ uwt__alloc_sockaddr(const struct sockaddr *);
 UWT_LOCAL bool
 uwt__get_sockaddr(value o_addr,struct sockaddr *saddr);
 
-ATTR_UNUSED UWT_LOCAL value
-uwt__result_enosys(void);
+UWT_LOCAL value
+uwt__alloc_eresult(val_uwt_error_t er);
 
 extern int caml_convert_signal_number(int);
 extern int caml_rev_convert_signal_number(int);

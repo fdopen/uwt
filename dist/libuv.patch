@@ -1,0 +1,22 @@
+commit 9f9bcd771fef70f2cc4c7d93a0cd7b685d84c08f
+Author: fdopen <andreashauptmann@t-online.de>
+Date:   Tue Apr 4 16:49:07 2017 +0200
+
+    avoid call to uv__free
+    
+    everytime I call gcov/kcachegrind or a similar tool, I'm confused
+    about zillions calls to uv__free. Let's fix it once and for all.
+
+diff --git a/src/unix/stream.c b/src/unix/stream.c
+index 7059df1..8b78341 100644
+--- a/src/unix/stream.c
++++ b/src/unix/stream.c
+@@ -1507,7 +1507,7 @@ int uv_try_write(uv_stream_t* stream,
+   /* Unqueue request, regardless of immediateness */
+   QUEUE_REMOVE(&req.queue);
+   uv__req_unregister(stream->loop, &req);
+-  if (req.bufs != req.bufsml)
++  if (req.bufs && req.bufs != req.bufsml)
+     uv__free(req.bufs);
+   req.bufs = NULL;
+ 

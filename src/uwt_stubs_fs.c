@@ -21,21 +21,49 @@
 
 #include "uwt_stubs_fs.h"
 
+#define CB_SYNC 0
+#define CB_LWT 1
+
+#define MALLOC_UV_BUF_T(buf,xlen)                       \
+  do {                                                  \
+    uv_buf_t * buf__ = buf;                             \
+    if ( callback_type == CB_SYNC ){                    \
+      buf__->base = stack_buf;                          \
+      buf__->len = UMIN(xlen,(size_t)UNIX_BUFFER_SIZE); \
+    }                                                   \
+    else {                                              \
+      uwt__malloc_uv_buf_t(buf__,xlen);                 \
+    }                                                   \
+  } while (0)
+
 #define CHECK_STRING(s)                         \
   do {                                          \
     if ( !uwt_is_safe_string(s) ){              \
-      o_ret = VAL_UWT_INT_RESULT_ECHARSET;      \
-      goto nomem;                               \
+      ret = UV_ECHARSET;                        \
+      goto eend;                                \
     }                                           \
   } while (0)
 
-#define BLOCK(code)                             \
+#define ALLOC_WP()                                  \
+  do {                                              \
+    if ( callback_type == CB_LWT ){                 \
+      GR_ROOT_ENLARGE();                            \
+      wp = uwt__req_create_res(UV_FS, &o_ret);      \
+      req =(uv_fs_t*) wp->req;                      \
+    }                                               \
+  } while (0)
+
+#define BLOCK(call)                             \
   do {                                          \
     if ( callback_type == CB_SYNC ){            \
       caml_enter_blocking_section();            \
     }                                           \
-    libuv_called = true;                        \
-    do code while(0);                           \
+    else {                                      \
+      if ( wp == NULL ){                        \
+        ALLOC_WP();                             \
+      }                                         \
+    }                                           \
+    ret = call;                                 \
     if ( callback_type == CB_SYNC ){            \
       caml_leave_blocking_section();            \
     }                                           \
@@ -46,10 +74,10 @@
     char * x##_dup = NULL;                      \
     CHECK_STRING(x);                            \
     if ( callback_type == CB_SYNC ){            \
-      x ## _dup = s_strdup(String_val(x));      \
+      x ## _dup = strdup(String_val(x));        \
       if ( x ## _dup == NULL ){                 \
-        o_ret = VAL_UWT_INT_RESULT_ENOMEM;      \
-        goto nomem;                             \
+        ret = UV_ENOMEM;                        \
+        goto eend;                              \
       }                                         \
     }                                           \
     do code while(0);                           \
@@ -65,17 +93,17 @@
     CHECK_STRING(x);                            \
     CHECK_STRING(y);                            \
     if ( callback_type == CB_SYNC ){            \
-      x ## _dup = s_strdup(String_val(x));      \
+      x ## _dup = strdup(String_val(x));        \
       if ( x ## _dup == NULL ){                 \
-        o_ret = VAL_UWT_INT_RESULT_ENOMEM;      \
-        goto nomem;                             \
+        ret = UV_ENOMEM;                        \
+        goto eend;                              \
       }                                         \
-      y ## _dup = s_strdup(String_val(y));      \
+      y ## _dup = strdup(String_val(y));        \
       if ( y ## _dup == NULL ){                 \
         free(x ## _dup);                        \
         x ## _dup = NULL;                       \
-        o_ret = VAL_UWT_INT_RESULT_ENOMEM;      \
-        goto nomem;                             \
+        ret = UV_ENOMEM;                        \
+        goto eend;                              \
       }                                         \
     }                                           \
     do code while(0);                           \
@@ -90,119 +118,179 @@
     (x ## _dup) :                               \
    String_val(x))
 
-#define R_WRAP(name,tz,code)                              \
-  value o_ret;                                            \
-  struct loop * wp_loop = Loop_val(o_loop);               \
-  struct req * wp_req = Req_val(o_req);                   \
-  cb_cleaner wp_cleaner = (cb_cleaner)uv_fs_req_cleanup ; \
-  uv_fs_t * req;                                          \
-  if (unlikely( wp_loop == NULL ||                        \
-                wp_req == NULL ||                         \
-                wp_loop->init_called == 0 ||              \
-                (req = (uv_fs_t*)wp_req->req) == NULL ||  \
-                wp_req->in_use == 1 )){                   \
-    o_ret = VAL_UWT_INT_RESULT_UWT_EFATAL;                \
-  }                                                       \
-  else {                                                  \
-    uv_loop_t * loop = &wp_loop->loop;                    \
-    bool libuv_called = false;                            \
-    int ret = UV_UWT_EFATAL;                              \
-    const int callback_type = wp_loop->loop_type;         \
-    const uv_fs_cb cb =                                   \
-      callback_type == CB_SYNC ? NULL :                   \
-      ((uv_fs_cb)uwt__req_callback);                      \
-    GR_ROOT_ENLARGE();                                    \
-    do                                                    \
-      code                                                \
-        while(0);                                         \
-    if ( libuv_called ){                                  \
-      wp_req->clean_cb = wp_cleaner;                      \
-    }                                                     \
-    if ( ret >= 0  ){                                     \
-      wp_req->c_cb = tz;                                  \
-      wp_req->cb_type = callback_type;                    \
-      if ( callback_type != CB_SYNC ){                    \
-        uwt__gr_register(&wp_req->cb,o_cb);               \
-        wp_req->in_use = 1;                               \
-        o_ret = Val_long(0);                              \
-      }                                                   \
-      else {                                              \
-        o_ret = Val_long(ret);                            \
-      }                                                   \
-    }                                                     \
-    else {                                                \
-      o_ret = Val_uwt_int_result(ret);                    \
-  nomem:                                                  \
-    ATTR_UNUSED;                                          \
-      Field(o_req,1) = 0;                                 \
-      uwt__req_free(wp_req);                              \
-    }                                                     \
-  }                                                       \
-  CAMLreturn(o_ret);                                      \
-}
+#define R_WRAP_LWT(name,tz,code)                \
+  value o_ret;                                  \
+  struct req * wp = NULL;                       \
+  uv_fs_t * req = NULL;                         \
+  ATTR_UNUSED                                   \
+  int ret = UV_UWT_EFATAL;                      \
+  uv_loop_t * loop = Uv_loop_val(o_loop);       \
+  enum { callback_type = CB_LWT };              \
+  const uv_fs_cb cb = fs_callback;              \
+  do                                            \
+    code                                        \
+      while(0);                                 \
+  if ( ret >= 0  ){                             \
+    wp->c_cb = tz;                              \
+    uwt__gr_register__(&wp->cb,o_cb);           \
+  }                                             \
+  else {                                        \
+  eend:                                         \
+    ATTR_UNUSED;                                \
+    if (wp){                                    \
+      uwt__req_free(wp);                        \
+    }                                           \
+    o_ret = caml_alloc_small(1,Error_tag);      \
+    Field(o_ret,0) = Val_uwt_error(ret);        \
+  }                                             \
+  CAMLreturn(o_ret)
+
+static value fs_read_cb(uv_req_t * r);
+static value fs_write_cb(uv_req_t * r);
+
+#define R_WRAP_SYNC(name,tz,code)                       \
+  value o_ret;                                          \
+  uv_fs_t req_;                                         \
+  uv_fs_t * req = &req_;                                \
+  struct req wp_req_;                                   \
+  ATTR_UNUSED                                           \
+  struct req * wp = &wp_req_;                           \
+  int ret = UV_UWT_EFATAL;                              \
+  uv_loop_t * loop = NULL;                              \
+  enum { callback_type = CB_SYNC };                     \
+  const uv_fs_cb cb = NULL;                             \
+  req_.data = NULL;                                     \
+  req_.fs_type = UV_FS_UNKNOWN;                         \
+  do                                                    \
+    code                                                \
+      while(0);                                         \
+  if ( ret >= 0  ){                                     \
+    if ( tz == fs_result_unit ){                        \
+      o_ret = VAL_UWT_UNIT_RESULT(ret);                 \
+    }                                                   \
+    else if ( tz == fs_read_cb || tz == fs_write_cb ){  \
+      o_ret = VAL_UWT_INT_RESULT(req->result);          \
+    }                                                   \
+    else {                                              \
+      o_ret = tz((uv_req_t*)req);                       \
+    }                                                   \
+  }                                                     \
+  else {                                                \
+  eend:                                                 \
+    ATTR_UNUSED;                                        \
+    if ( tz == fs_result_unit || tz == fs_read_cb ||    \
+         tz == fs_write_cb  ){                          \
+      o_ret = VAL_UWT_UNIT_RESULT(ret);                 \
+    }                                                   \
+    else {                                              \
+      o_ret = caml_alloc_small(1,Error_tag);            \
+      Field(o_ret,0) = Val_uwt_error(ret);              \
+    }                                                   \
+  }                                                     \
+  if ( req_.fs_type != UV_FS_UNKNOWN ){                 \
+    uv_fs_req_cleanup(&req_);                           \
+  }                                                     \
+  CAMLreturn(o_ret)
 
 #define FSFUNC_5(name,tz,a,b,c,d,e,code)                                \
   CAMLprim value                                                        \
   uwt_ ## name ## _byte(value *a, int argn)                             \
   {                                                                     \
     (void)argn;                                                         \
-    assert( argn == 8 );                                                \
-    return (uwt_ ## name ## _native(a[0],a[1],a[2],a[3],                \
-                                    a[4],a[5],a[6],a[7]));              \
-  }                                                                     \
-  CAMLprim value                                                        \
-  uwt_ ## name ## _native (value a, value b, value c,value d, value e,  \
-                           value o_loop, value o_req, value o_cb ){     \
-    CAMLparam5(a,b,o_loop,o_req,o_cb);                                  \
-    CAMLxparam3(c,d,e);                                                 \
-    R_WRAP(name,tz,code)
-
-#define FSFUNC_4(name,tz,a,b,c,d,code)                                  \
-  CAMLprim value                                                        \
-  uwt_ ## name ## _byte(value *a, int argn)                             \
-  {                                                                     \
-    (void)argn;                                                         \
-    assert( argn == 7 );                                                \
     return (uwt_ ## name ## _native(a[0],a[1],a[2],a[3],                \
                                     a[4],a[5],a[6]));                   \
   }                                                                     \
   CAMLprim value                                                        \
-  uwt_ ## name ## _native (value a, value b, value c,value d,           \
-                           value o_loop, value o_req, value o_cb ){     \
-    CAMLparam5(a,b,o_loop,o_req,o_cb);                                  \
-    CAMLxparam2(c,d);                                                   \
-    R_WRAP(name,tz,code)
+  uwt_ ## name ## _native (value a, value b, value c,value d, value e,  \
+                           value o_loop, value o_cb ){                  \
+    CAMLparam3(a,b,o_cb);                                               \
+    R_WRAP_LWT(name,tz,code);                                           \
+  }                                                                     \
+  CAMLprim value                                                        \
+  uwt_ ## name ## _sync (value a, value b, value c, value d, value e){  \
+    CAMLparam2(a,b);                                                    \
+    R_WRAP_SYNC(name,tz,code);                                          \
+  }
 
-#define FSFUNC_3(name,tz,a,b,c,code)                                  \
-  CAMLprim value                                                      \
-  uwt_ ## name ## _byte(value *a, int argn)                           \
-  {                                                                   \
-    (void)argn;                                                       \
-    assert( argn == 6 );                                              \
-    return (uwt_ ## name ## _native(a[0],a[1],a[2],a[3],a[4],a[5]));  \
-  }                                                                   \
-  CAMLprim value                                                      \
-  uwt_ ## name ## _native (value a, value b, value c,                 \
-                           value o_loop, value o_req, value o_cb ){   \
-    CAMLparam5(a,b,o_loop,o_req,o_cb);                                \
-    CAMLxparam1(c);                                                   \
-    R_WRAP(name,tz,code)
+#define FSFUNC_4(name,tz,a,b,c,d,code)                              \
+  CAMLprim value                                                    \
+  uwt_ ## name ## _byte(value *a, int argn)                         \
+  {                                                                 \
+    (void)argn;                                                     \
+    return (uwt_ ## name ## _native(a[0],a[1],a[2],a[3],            \
+                                    a[4],a[5]));                    \
+  }                                                                 \
+  CAMLprim value                                                    \
+  uwt_ ## name ## _native (value a, value b, value c,value d,       \
+                           value o_loop, value o_cb ){              \
+    CAMLparam3(a,b,o_cb);                                           \
+    R_WRAP_LWT(name,tz,code);                                       \
+  }                                                                 \
+  CAMLprim value                                                    \
+  uwt_ ## name ## _sync (value a, value b, value c, value d ){      \
+    CAMLparam2(a,b);                                                \
+    R_WRAP_SYNC(name,tz,code);                                      \
+  }
 
-#define FSFUNC_2(name,tz,a,b,code)                        \
-  CAMLprim value                                          \
-  uwt_ ## name  (value a,value b,                         \
-                 value o_loop, value o_req, value o_cb ){ \
-  CAMLparam5(a,b,o_loop,o_req,o_cb);                      \
-  R_WRAP(name,tz,code)
+#define FSFUNC_3(name,tz,a,b,c,code)                                    \
+  CAMLprim value                                                        \
+  uwt_ ## name (value a, value b, value c, value o_loop, value o_cb ){  \
+    CAMLparam3(a,b,o_cb);                                               \
+    R_WRAP_LWT(name,tz,code);                                           \
+  }                                                                     \
+  CAMLprim value                                                        \
+  uwt_ ## name ## _sync (value a, value b, value c ){                   \
+    CAMLparam2(a,b);                                                    \
+    R_WRAP_SYNC(name,tz,code);                                          \
+  }
+
+#define FSFUNC_2(name,tz,a,b,code)                            \
+  CAMLprim value                                              \
+  uwt_ ## name  (value a,value b, value o_loop, value o_cb ){ \
+    CAMLparam3(a,b,o_cb);                                     \
+    R_WRAP_LWT(name,tz,code);                                 \
+  }                                                           \
+  CAMLprim value                                              \
+  uwt_ ## name ## _sync  (value a,value b ){                  \
+    CAMLparam2(a,b);                                          \
+    R_WRAP_SYNC(name,tz,code);                                \
+  }
 
 #define FSFUNC_1(name,tz,a,code)                          \
   CAMLprim value                                          \
-  uwt_ ## name  (value a,                                 \
-                 value o_loop, value o_req, value o_cb ){ \
-  CAMLparam4(a,o_loop,o_req,o_cb);                        \
-  R_WRAP(name,tz,code)
+  uwt_ ## name  (value a, value o_loop, value o_cb ){     \
+    CAMLparam2(a,o_cb);                                   \
+    R_WRAP_LWT(name,tz,code);                             \
+  }                                                       \
+  CAMLprim value                                          \
+  uwt_ ## name ##_sync  (value a){                        \
+    CAMLparam1(a);                                        \
+    R_WRAP_SYNC(name,tz,code);                            \
+  }
 
-#define runit uwt__ret_uv_fs_result_unit
+static value
+fs_result_unit(uv_req_t * r)
+{
+  uv_fs_t * req = (uv_fs_t*)r;
+  return (VAL_UWT_UNIT_RESULT(req->result));
+}
+#define runit fs_result_unit
+
+static void
+fs_callback(uv_fs_t * req)
+{
+  REQ_CB_INIT(req);
+  struct req * wp = req->data;
+  value v;
+  if ( wp->c_cb == fs_result_unit ){
+    v = VAL_UWT_UNIT_RESULT(((uv_fs_t*)req)->result);
+  }
+  else {
+    v = wp->c_cb((uv_req_t*)req);
+  }
+  uv_fs_req_cleanup(req);
+  REQ_CB_CALL(v);
+}
 
 static const int open_flag_table[16] = {
 #ifdef _WIN32
@@ -257,15 +345,21 @@ fs_open_cb(uv_req_t * r)
 #else
     HANDLE handle = (HANDLE)(0 + _get_osfhandle(fd));
     if (unlikely( handle == INVALID_HANDLE_VALUE )){
-      uv_fs_t* creq = malloc(sizeof *creq);
-      if ( creq ){
-        int cret = uv_fs_close(req->loop, creq, fd, fs_open_clean_cb);
-        if ( cret < 0 ){
-          free(creq);
+      if (req->loop == NULL){
+        uv_fs_t creq;
+        uv_fs_close(NULL, &creq, fd, NULL);
+      }
+      else {
+        uv_fs_t* creq = malloc(sizeof *creq);
+        if ( creq ){
+          int cret = uv_fs_close(req->loop, creq, fd, fs_open_clean_cb);
+          if ( cret < 0 ){
+            free(creq);
+          }
         }
       }
       ret = caml_alloc_small(1,Error_tag);
-      Field(ret,0) = VAL_UWT_ERROR_UNKNOWN;
+      Field(ret,0) = VAL_UWT_ERROR_EBADF;
     }
     else {
       value p = win_alloc_handle(handle);
@@ -280,277 +374,254 @@ fs_open_cb(uv_req_t * r)
   return ret;
 }
 
-FSFUNC_3(fs_open,fs_open_cb,o_name,o_flag_list,o_perm,{
+FSFUNC_3(fs_open, fs_open_cb, o_name, o_flag_list, o_perm, {
   const intnat perm = Long_val(o_perm);
   if ( perm < INT_MIN || perm > INT_MAX ){
     ret = UV_EINVAL;
+    goto eend;
   }
-  else {
-    const int flags = SAFE_CONVERT_FLAG_LIST(o_flag_list,open_flag_table);
-    COPY_STR1(o_name,{
-        BLOCK({
-            ret = uv_fs_open(loop,
-                             req,
-                             STRING_VAL(o_name),
-                             flags,
-                             perm,
-                             cb);
-          });
-      });
-  }
-  })
+  const int flags = SAFE_CONVERT_FLAG_LIST(o_flag_list,open_flag_table);
+  COPY_STR1(o_name,{
+    BLOCK(uv_fs_open(loop, req, STRING_VAL(o_name), flags, perm, cb));
+  });
+})
 
 static value
 fs_read_cb(uv_req_t * r)
 {
   const uv_fs_t* req = (uv_fs_t*)r;
-  value param;
   const ssize_t result = req->result;
+  const value param = VAL_UWT_INT_RESULT(result);
   struct req * wp = r->data;
-  if ( result == 0 ){
-    param = Val_long(0);
+  if ( result > 0 && wp->buf_contains_ba == 0 ){
+    value o = GET_CB_VAL(wp->sbuf);
+    memcpy(String_val(o) + wp->offset, wp->buf.base, result);
   }
-  else if ( result < 0 ){
-    param = Val_uwt_int_result(result);
-  }
-  else if ( (size_t)result > wp->buf.len ||
-            wp->buf.base == NULL || wp->sbuf == CB_INVALID ){
-    param = VAL_UWT_INT_RESULT_UWT_EFATAL;
-  }
-  else {
-    param = Val_long(result);
-    if ( wp->buf_contains_ba == 0 ){
-      value o = GET_CB_VAL(wp->sbuf);
-      memcpy(String_val(o) + wp->offset,
-             wp->buf.base,
-             result);
-    }
+  uwt__gr_unregister(&wp->sbuf);
+  if (wp->buf_contains_ba == 0){
+    uwt__free_uv_buf_t(&wp->buf);
   }
   return param;
 }
 
-FSFUNC_5(fs_read,fs_read_cb, o_file, o_buf, o_pos, o_len, o_fd_offset,{
+FSFUNC_5(fs_read, fs_read_cb, o_file, o_buf, o_pos, o_len, o_fd_offset, {
   const size_t pos = (size_t)Long_val(o_pos);
   const size_t slen = (size_t)Long_val(o_len);
   const int64_t fd_offset = Int64_val(o_fd_offset);
-  struct req * wp = wp_req;
   const int ba = slen && (Tag_val(o_buf) != String_tag);
   const int fd = FD_VAL(o_file);
+  char stack_buf[ callback_type == CB_LWT ? 1 : UNIX_BUFFER_SIZE ];
   if ( slen > ULONG_MAX ){
     ret = UV_EINVAL;
+    goto eend;
+  }
+  ALLOC_WP();
+  if ( ba ){
+    wp->buf_contains_ba = 1;
+    wp->buf.len = slen;
+    wp->buf.base = Ba_buf_val(o_buf) + pos;
   }
   else {
-    if ( ba ){
-      wp->buf_contains_ba = 1;
-      wp->buf.len = slen;
-      wp->buf.base = Ba_buf_val(o_buf) + pos;
-    }
-    else {
-      uwt__malloc_uv_buf_t(&wp->buf,slen,wp->cb_type);
-    }
-    if ( slen && wp->buf.base == NULL ){
+    wp->offset = pos;
+    MALLOC_UV_BUF_T(&wp->buf,slen);
+    if ( wp->buf.base == NULL && slen ){
       ret = UV_ENOMEM;
+      goto eend;
+    }
+  }
+  BLOCK(uv_fs_read(loop, req, fd, &wp->buf, 1, fd_offset, cb));
+  if ( callback_type == CB_LWT ){
+    if ( ret >= 0 ){
+      uwt__gr_register__(&wp->sbuf,o_buf);
     }
     else {
-      wp->offset = pos;
-      BLOCK({
-          ret = uv_fs_read(loop, req, fd, &wp->buf, 1, fd_offset, cb);
-        });
-      if ( ret >= 0 ){
-        uwt__gr_register(&wp->sbuf,o_buf);
-      }
-      else {
-        if ( !ba ){
-          uwt__free_uv_buf_t(&wp->buf,wp->cb_type);
-        }
-        wp->offset = 0;
-        wp->buf_contains_ba = 0;
-        wp->buf.len = 0;
-        wp->buf.base = NULL;
+      if ( ba == 0 ){
+        uwt__free_uv_buf_t(&wp->buf);
       }
     }
   }
-  })
+  else {
+    if ( ret >= 0 && ba == 0 && req->result > 0 ){
+      memcpy(String_val(o_buf) + pos, wp->buf.base, req->result);
+    }
+  }
+})
 
 static value
 fs_write_cb(uv_req_t * r)
 {
   const uv_fs_t* req = (uv_fs_t*)r;
-  const ssize_t result = req->result;
-  value erg;
-  if ( result < 0 ){
-    erg = Val_uwt_int_result(result);
+  struct req * wp = r->data;
+  if ( wp->sbuf != CB_INVALID ){
+    uwt__gr_unregister(&wp->sbuf);
   }
-  else {
-    erg = Val_long(result);
+  if ( wp->buf_contains_ba == 0 ){
+    uwt__free_uv_buf_t(&wp->buf);
   }
-  return erg;
+  return VAL_UWT_INT_RESULT(req->result);
 }
 
-FSFUNC_5(fs_write,
-         fs_write_cb,
-         o_file,
-         o_buf,
-         o_pos,
-         o_len,
-         o_fd_offset,
-         {
+FSFUNC_5(fs_write, fs_write_cb, o_file, o_buf, o_pos, o_len, o_fd_offset, {
   const size_t pos = (size_t)Long_val(o_pos);
   const size_t slen = (size_t)Long_val(o_len);
   const int64_t fd_offset = Int64_val(o_fd_offset);
-  struct req * wp = wp_req;
   const int ba = slen && (Tag_val(o_buf) != String_tag);
   const int fd = FD_VAL(o_file);
+  char stack_buf[ callback_type == CB_LWT ? 1 : UNIX_BUFFER_SIZE ];
   if ( slen > ULONG_MAX ){
     ret = UV_EINVAL;
+    goto eend;
+  }
+  ALLOC_WP();
+  if ( ba ){
+    wp->buf_contains_ba = 1;
+    wp->buf.base = Ba_buf_val(o_buf) + pos;
+    wp->buf.len = slen;
   }
   else {
-    if ( ba ){
-      wp->buf_contains_ba = 1;
-      wp->buf.base = Ba_buf_val(o_buf) + pos;
-      wp->buf.len = slen;
+    MALLOC_UV_BUF_T(&wp->buf,slen);
+    if ( slen != 0 ) {
+      if ( wp->buf.base == NULL ){
+        ret = UV_ENOMEM;
+        goto eend;
+      }
+      memcpy(wp->buf.base, String_val(o_buf) + pos, wp->buf.len);
+    }
+  }
+  BLOCK(uv_fs_write(loop, req, fd, &wp->buf, 1, fd_offset, cb));
+  if ( callback_type == CB_LWT ) {
+    if ( ret >= 0 ){
+      if ( ba ){
+        uwt__gr_register__(&wp->sbuf,o_buf);
+      }
     }
     else {
-      uwt__malloc_uv_buf_t(&wp->buf,slen,wp->cb_type);
-    }
-    if ( slen && wp->buf.base == NULL ){
-      ret = UV_ENOMEM;
-    }
-    else {
-      if ( slen && ba == 0 ){
-        memcpy(wp->buf.base,
-               String_val(o_buf) + pos,
-               slen);
-      }
-      BLOCK({
-          ret = uv_fs_write(loop, req, fd, &wp->buf, 1, fd_offset, cb);
-        });
-      if ( ret >= 0 ){
-        if ( ba ){
-          uwt__gr_register(&wp->sbuf,o_buf);
-        }
-      }
-      else {
-        if ( ba == 0 ){
-          uwt__free_uv_buf_t(&wp->buf,wp->cb_type);
-        }
-        wp->buf_contains_ba = 0;
-        wp->buf.base = NULL;
-        wp->buf.len = 0;
+      if ( ba == 0 ){
+        uwt__free_uv_buf_t(&wp->buf);
       }
     }
   }
 })
 
-static void
-fs_write_clean_cb(uv_req_t * req)
+static unsigned int
+build_iovecs_stack(value o_ios, uv_buf_t * bufs, char * memory)
 {
-  uwt__clean_iovecs(req);
-  uv_fs_req_cleanup((uv_fs_t *)req);
+  const size_t ar_size = UMIN(Wosize_val(o_ios), (size_t)64);
+  size_t avail = UNIX_BUFFER_SIZE;
+  unsigned int nbufs = 0;
+  size_t i;
+  char * p = memory;
+  for ( i = 0; i < ar_size; ++i ){
+    ++nbufs;
+    value cur = Field(o_ios,i);
+    const size_t len = Long_val(Field(cur,2));
+    if ( Tag_val(cur) == 0 ){
+      bufs[i].base = Ba_buf_val(Field(cur,0)) + Long_val(Field(cur,1));
+      bufs[i].len = len;
+    }
+    else {
+      const size_t rlen = UMIN(avail, len);
+      bufs[i].len = rlen;
+      bufs[i].base = p;
+      const char *src = String_val(Field(cur,0)) + Long_val(Field(cur,1));
+      memcpy(p, src, rlen);
+      p+= rlen;
+      avail-= rlen;
+      if ( avail == 0 ){
+        break;
+      }
+    }
+  }
+  return nbufs;
 }
 
-FSFUNC_4(fs_writev,
-         fs_write_cb,
-         o_file,
-         o_ios,
-         o_iosave,
-         o_fd_offset,
-         {
-  struct req * wp = wp_req;
+FSFUNC_4(fs_writev, fs_write_cb, o_ios, o_iosave, o_file, o_fd_offset, {
   const size_t ar_size = Wosize_val(o_ios);
   const int64_t fd_offset = Int64_val(o_fd_offset);
-  size_t i;
   const int fd = FD_VAL(o_file);
-  for (i = 0; i < ar_size; ++i) {
-    if ( (size_t)Long_val(Field(Field(o_ios,i),2)) > ULONG_MAX ){
-      ret = UV_EINVAL;
-    }
-  }
-  if ( ret != UV_EINVAL ){
+  char stack_buf[ callback_type == CB_LWT ? 1 : UNIX_BUFFER_SIZE ];
+  uv_buf_t a_bufs[ callback_type == CB_LWT ? 1 : 64 ];
+  unsigned int n_bufs = ar_size;
+  uv_buf_t *bufs;
+  ALLOC_WP();
+  if ( callback_type == CB_LWT ){
     ret = uwt__build_iovecs(o_ios, wp);
-    if ( ret == 0 ){
-      uv_buf_t * buf = (uv_buf_t *)&wp->c;
-      uv_buf_t *bufs = (uv_buf_t *)buf->base;
-      wp->buf_contains_ba = 0;
-      BLOCK({
-          ret = uv_fs_write(loop, req, fd, bufs, ar_size, fd_offset, cb);
-        });
-      if ( ret >= 0 ){
-        if ( o_iosave != Val_unit ){
-          uwt__gr_register(&wp->sbuf,o_iosave);
-        }
-        wp_cleaner = fs_write_clean_cb;
+    if ( ret != 0 ){
+      goto eend;
+    }
+    bufs = (uv_buf_t *)wp->buf.base;
+  }
+  else {
+    n_bufs = build_iovecs_stack(o_ios, a_bufs, stack_buf);
+    bufs = a_bufs;
+  }
+  BLOCK(uv_fs_write(loop, req, fd, bufs, n_bufs, fd_offset, cb));
+  if ( callback_type == CB_LWT ){
+    if ( ret >= 0 ){
+      if ( o_iosave != Val_unit ){
+        uwt__gr_register__(&wp->sbuf,o_iosave);
       }
-      else {
-        uwt__free_uv_buf_t((uv_buf_t *)&wp->c,wp->cb_type);
-        uwt__free_uv_buf_t(&wp->buf, wp->cb_type);
-      }
+    }
+    else {
+      uwt__free_uv_buf_t(&wp->buf);
     }
   }
 })
 
-FSFUNC_1(fs_close,runit,o_fd,{
-    const int fd = FD_VAL(o_fd);
-    BLOCK({
-        ret = uv_fs_close(loop,req,fd,cb);
-      });
+FSFUNC_1(fs_close, runit, o_fd, {
+  const int fd = FD_VAL(o_fd);
+  BLOCK(uv_fs_close(loop, req, fd, cb));
 })
 
-FSFUNC_1(fs_unlink,runit,o_path,{
+FSFUNC_1(fs_unlink, runit, o_path, {
   COPY_STR1(o_path,{
-    BLOCK({
-      ret = uv_fs_unlink(loop,req,STRING_VAL(o_path),cb);
-    });
+    BLOCK(uv_fs_unlink(loop, req, STRING_VAL(o_path), cb));
   });
 })
 
-FSFUNC_2(fs_mkdir,runit,o_path,o_mode,{
+FSFUNC_2(fs_mkdir, runit, o_path, o_mode, {
   const intnat mode = Long_val(o_mode);
   if ( mode < INT_MIN || mode > INT_MAX ){
     ret = UV_EINVAL;
+    goto eend;
   }
-  else {
-    COPY_STR1(o_path,{
-        BLOCK({
-            ret = uv_fs_mkdir(loop,req,STRING_VAL(o_path),mode,cb);});
-      });
-  }
-})
-
-FSFUNC_1(fs_rmdir,runit,o_path,{
   COPY_STR1(o_path,{
-      BLOCK({ret = uv_fs_rmdir(loop,req,STRING_VAL(o_path),cb);});
-    });
+    BLOCK(uv_fs_mkdir(loop, req, STRING_VAL(o_path), mode, cb));
+  });
 })
 
-FSFUNC_2(fs_rename,runit,o_old,o_new,{
-  COPY_STR2(o_old,o_new,{
-      BLOCK({ret = uv_fs_rename(loop,req,STRING_VAL(o_old),
-                                STRING_VAL(o_new),cb);});
-    });
+FSFUNC_1(fs_rmdir, runit, o_path, {
+  COPY_STR1(o_path,{
+    BLOCK(uv_fs_rmdir(loop, req, STRING_VAL(o_path), cb));
+  });
 })
 
-FSFUNC_2(fs_link,runit,o_old,o_new,{
-    COPY_STR2(o_old,o_new,{
-        BLOCK({ret = uv_fs_link(loop,req,STRING_VAL(o_old),
-                                STRING_VAL(o_new),cb);});
-      });
+FSFUNC_2(fs_rename, runit, o_old, o_new, {
+  COPY_STR2(o_old, o_new, {
+    BLOCK(uv_fs_rename(loop, req, STRING_VAL(o_old), STRING_VAL(o_new), cb));
+  });
 })
 
-FSFUNC_1(fs_fsync,runit,o_fd,{
-    const int fd = FD_VAL(o_fd);
-    BLOCK({ret = uv_fs_fsync(loop,req,fd,cb);});
+FSFUNC_2(fs_link, runit, o_old, o_new, {
+  COPY_STR2(o_old, o_new,{
+    BLOCK(uv_fs_link(loop, req, STRING_VAL(o_old), STRING_VAL(o_new), cb));
+  });
 })
 
-FSFUNC_1(fs_fdatasync,runit,o_fd,{
-    const int fd = FD_VAL(o_fd);
-    BLOCK({ret = uv_fs_fdatasync(loop,req,fd,cb);});
+FSFUNC_1(fs_fsync, runit, o_fd, {
+  const int fd = FD_VAL(o_fd);
+  BLOCK(uv_fs_fsync(loop, req, fd, cb));
 })
 
-FSFUNC_2(fs_ftruncate,runit,o_fd,o_off,{
+FSFUNC_1(fs_fdatasync, runit, o_fd, {
+  const int fd = FD_VAL(o_fd);
+  BLOCK(uv_fs_fdatasync(loop, req, fd, cb));
+})
+
+FSFUNC_2(fs_ftruncate, runit, o_fd,o_off, {
   const int fd = FD_VAL(o_fd);
   const int64_t off = Int64_val(o_off);
-  BLOCK({ret = uv_fs_ftruncate(loop,req,fd,off,cb);});
+  BLOCK(uv_fs_ftruncate(loop, req, fd, off, cb));
 })
 
 static value
@@ -559,7 +630,7 @@ fs_sendfile_cb(uv_req_t * r)
   value param;
   const uv_fs_t* req = (uv_fs_t*)r;
   const ssize_t result = req->result;
-  if ( result < 0 ){ /* error */
+  if ( result < 0 ){
     param = caml_alloc_small(1,Error_tag);
     Field(param,0) = Val_uwt_error(result);
   }
@@ -573,19 +644,13 @@ fs_sendfile_cb(uv_req_t * r)
   return param;
 }
 
-FSFUNC_4(fs_sendfile,fs_sendfile_cb,o_outfd,o_infd,o_offset,o_len,{
+FSFUNC_4(fs_sendfile, fs_sendfile_cb, o_outfd, o_infd, o_offset, o_len, {
   const int outfd = FD_VAL(o_outfd);
   const int infd = FD_VAL(o_infd);
   const int64_t offset = Int64_val(o_offset);
   const int64_t len = Int64_val(o_len);
-  BLOCK({ret = uv_fs_sendfile(loop,
-                              req,
-                              outfd,
-                              infd,
-                              offset,
-                              len,
-                              cb);});
-  })
+  BLOCK(uv_fs_sendfile(loop, req, outfd, infd, offset, len, cb));
+})
 
 static value
 fs_scandir_cb(uv_req_t * r)
@@ -641,10 +706,10 @@ fs_scandir_cb(uv_req_t * r)
   }
 }
 
-FSFUNC_1(fs_scandir,fs_scandir_cb,o_path,{
-    COPY_STR1(o_path,{
-        BLOCK({ret = uv_fs_scandir(loop,req,STRING_VAL(o_path),0,cb);});
-      });
+FSFUNC_1(fs_scandir, fs_scandir_cb, o_path, {
+  COPY_STR1(o_path,{
+    BLOCK(uv_fs_scandir(loop, req, STRING_VAL(o_path), 0, cb));
+  });
 })
 
 static value
@@ -673,10 +738,10 @@ fs_mkdtemp_cb(uv_req_t * r)
   return param;
 }
 
-FSFUNC_1(fs_mkdtemp,fs_mkdtemp_cb,o_path,{
-    COPY_STR1(o_path,{
-        BLOCK({ret = uv_fs_mkdtemp(loop,req,STRING_VAL(o_path),cb);});
-      });
+FSFUNC_1(fs_mkdtemp, fs_mkdtemp_cb, o_path, {
+  COPY_STR1(o_path,{
+    BLOCK(uv_fs_mkdtemp(loop, req, STRING_VAL(o_path), cb));
+  });
 })
 
 static value
@@ -689,13 +754,9 @@ fs_readlink_cb(uv_req_t * r)
     param = caml_alloc_small(1,Error_tag);
     Field(param,0) = Val_uwt_error(result);
   }
-  else if ( req->ptr == NULL ){
-    param = caml_alloc_small(1,Error_tag);
-    Field(param,0) = VAL_UWT_ERROR_UWT_EFATAL;
-  }
   else {
     /* libuv has added the trailing zero for us */
-    value s = caml_copy_string(req->ptr);
+    value s = s_caml_copy_string(req->ptr);
     Begin_roots1(s);
     param = caml_alloc_small(1,Ok_tag);
     Field(param,0) = s;
@@ -704,11 +765,10 @@ fs_readlink_cb(uv_req_t * r)
   return param;
 }
 
-FSFUNC_1(fs_readlink,fs_readlink_cb,o_path,{
-    COPY_STR1(o_path,{
-        BLOCK({ret = uv_fs_readlink(loop,req,STRING_VAL(o_path),
-                                    cb);});
-      });
+FSFUNC_1(fs_readlink, fs_readlink_cb, o_path, {
+  COPY_STR1(o_path,{
+    BLOCK(uv_fs_readlink(loop, req, STRING_VAL(o_path), cb));
+  });
 })
 
 static const int
@@ -716,117 +776,77 @@ access_permission_table[] = {
   R_OK, W_OK, X_OK, F_OK
 };
 
-FSFUNC_2(fs_access,runit,o_path,o_list,{
-    const int fl = SAFE_CONVERT_FLAG_LIST(o_list, access_permission_table);
-    COPY_STR1(o_path,{
-        BLOCK({ret = uv_fs_access(loop,
-                                  req,
-                                  STRING_VAL(o_path),
-                                  fl,
-                                  cb);});
-    });
+FSFUNC_2(fs_access, runit, o_path, o_list, {
+  const int fl = SAFE_CONVERT_FLAG_LIST(o_list, access_permission_table);
+  COPY_STR1(o_path,{
+    BLOCK(uv_fs_access(loop, req, STRING_VAL(o_path), fl, cb));
+  });
 })
 
-FSFUNC_2(fs_chmod,runit,o_path,o_mode,{
-    const intnat mode = Long_val(o_mode);
-    if ( mode < INT_MIN || mode > INT_MAX ){
-      ret = UV_EINVAL;
-    }
-    else {
-      COPY_STR1(o_path,{
-          BLOCK({ret = uv_fs_chmod(loop,
-                                   req,
-                                   STRING_VAL(o_path),
-                                   mode,
-                                   cb
-                );});
-        });
-    }
+FSFUNC_2(fs_chmod, runit, o_path, o_mode, {
+  const intnat mode = Long_val(o_mode);
+  if ( mode < INT_MIN || mode > INT_MAX ){
+    ret = UV_EINVAL;
+    goto eend;
+  }
+  COPY_STR1(o_path,{
+    BLOCK(uv_fs_chmod(loop, req, STRING_VAL(o_path), mode, cb));
+  });
 })
 
-FSFUNC_2(fs_fchmod,runit,o_fd,o_mode,{
-    const int fd = FD_VAL(o_fd);
-    const intnat mode = Long_val(o_mode);
-    if ( mode < INT_MIN || mode > INT_MAX ){
-      ret = UV_EINVAL;
-    }
-    else {
-      BLOCK({ret = uv_fs_fchmod(loop,
-                                req,
-                                fd,
-                                mode,
-                                cb);});
-    }
+FSFUNC_2(fs_fchmod, runit, o_fd, o_mode, {
+  const int fd = FD_VAL(o_fd);
+  const intnat mode = Long_val(o_mode);
+  if ( mode < INT_MIN || mode > INT_MAX ){
+    ret = UV_EINVAL;
+    goto eend;
+  }
+  BLOCK(uv_fs_fchmod(loop, req, fd, mode, cb));
 })
 
-FSFUNC_3(fs_chown,runit,o_path,o_uid,o_gid,{
-    const intnat r_uid = Long_val(o_uid);
-    const intnat r_gid = Long_val(o_gid);
-    const uv_uid_t uid = r_uid;
-    const uv_gid_t gid = r_gid;
-    if ( r_uid != uid || gid != r_gid ){
-      ret = UV_EINVAL;
-    }
-    else {
-      COPY_STR1(o_path,{
-          BLOCK({ret = uv_fs_chown(loop,
-                                   req,
-                                   STRING_VAL(o_path),
-                                   uid,
-                                   gid,
-                                   cb);});
-        });
-    }
+FSFUNC_3(fs_chown, runit, o_path, o_uid, o_gid, {
+  const intnat r_uid = Long_val(o_uid);
+  const intnat r_gid = Long_val(o_gid);
+  const uv_uid_t uid = r_uid;
+  const uv_gid_t gid = r_gid;
+  if ( r_uid != uid || gid != r_gid ){
+    ret = UV_EINVAL;
+    goto eend;
+  }
+  COPY_STR1(o_path,{
+    BLOCK(uv_fs_chown(loop, req, STRING_VAL(o_path), uid, gid, cb));
+  });
 })
 
-FSFUNC_3(fs_fchown,runit,o_fd,o_uid,o_gid,{
-    const int fd = FD_VAL(o_fd);
-    const intnat r_uid = Long_val(o_uid);
-    const intnat r_gid = Long_val(o_gid);
-    const uv_uid_t uid = r_uid;
-    const uv_gid_t gid = r_gid;
-    if ( r_uid != uid || gid != r_gid ){
-      ret = UV_EINVAL;
-    }
-    else {
-      BLOCK({
-          ret = uv_fs_fchown(loop,
-                             req,
-                             fd,
-                             uid,
-                             gid,
-                             cb);
-        });
-    }
+FSFUNC_3(fs_fchown, runit, o_fd, o_uid, o_gid, {
+  const int fd = FD_VAL(o_fd);
+  const intnat r_uid = Long_val(o_uid);
+  const intnat r_gid = Long_val(o_gid);
+  const uv_uid_t uid = r_uid;
+  const uv_gid_t gid = r_gid;
+  if ( r_uid != uid || gid != r_gid ){
+    ret = UV_EINVAL;
+    goto eend;
+  }
+  BLOCK(uv_fs_fchown(loop, req, fd, uid, gid, cb));
 })
 
-FSFUNC_3(fs_utime,runit,o_p,o_atime,o_mtime,{
+FSFUNC_3(fs_utime, runit, o_p, o_atime, o_mtime, {
   const double atime = Double_val(o_atime);
   const double mtime = Double_val(o_mtime);
   COPY_STR1(o_p,{
-      BLOCK({ret = uv_fs_utime(loop,
-                               req,
-                               STRING_VAL(o_p),
-                               atime,
-                               mtime,
-                               cb);
-        });
-    });
+    BLOCK(uv_fs_utime(loop, req, STRING_VAL(o_p), atime, mtime, cb));
+  });
 })
 
-FSFUNC_3(fs_futime,runit,o_fd,o_atime,o_mtime,{
+FSFUNC_3(fs_futime, runit, o_fd, o_atime, o_mtime, {
   const double atime = Double_val(o_atime);
   const double mtime = Double_val(o_mtime);
   const int fd = FD_VAL(o_fd);
-  BLOCK({ret = uv_fs_futime(loop,
-                            req,
-                            fd,
-                            atime,
-                            mtime,
-                            cb);});
+  BLOCK(uv_fs_futime(loop, req, fd, atime, mtime, cb));
 })
 
-FSFUNC_3(fs_symlink,runit,o_opath,o_npath,o_mode,{
+FSFUNC_3(fs_symlink, runit, o_opath, o_npath, o_mode, {
   int flag;
   switch( Long_val(o_mode) ){
   case 1: flag = UV_FS_SYMLINK_DIR; break;
@@ -834,37 +854,11 @@ FSFUNC_3(fs_symlink,runit,o_opath,o_npath,o_mode,{
   default: assert(false); /* fall */
   case 0: flag = 0; break;
   }
-  COPY_STR2(o_opath,o_npath,{
-      BLOCK({ret = uv_fs_symlink(loop,
-                                 req,
-                                 STRING_VAL(o_opath),
-                                 STRING_VAL(o_npath),
-                                 flag,
-                                 cb
-                                 );});
-    });
+  COPY_STR2(o_opath, o_npath,{
+    BLOCK(uv_fs_symlink(loop, req, STRING_VAL(o_opath), STRING_VAL(o_npath),
+                        flag, cb ));
+  });
 })
-
-CAMLprim value
-uwt_get_fs_result(value o_req)
-{
-  CAMLparam1(o_req);
-  struct req * wp = Req_val(o_req);
-  value ret = Val_unit;
-  if ( wp == NULL || wp->req == NULL || wp->c_cb == NULL ){
-    caml_invalid_argument("uwt_get_fs_result");
-  }
-  if ( wp->c_cb == uwt__ret_uv_fs_result_unit ){
-    ret = VAL_UWT_UNIT_RESULT(((uv_fs_t*)(wp->req))->result);
-  }
-  else {
-    ret = wp->c_cb(wp->req);
-  }
-  Field(o_req,1) = 0;
-  uwt__req_free(wp);
-  CAMLreturn(ret);
-}
-
 
 static value
 fs_stat_cb(uv_req_t * r)
@@ -886,48 +880,29 @@ fs_stat_cb(uv_req_t * r)
   return param;
 }
 
-FSFUNC_1(fs_stat,fs_stat_cb,o_file,{
-    COPY_STR1(o_file,{
-        BLOCK({
-            ret = uv_fs_stat(loop,req,STRING_VAL(o_file),cb);
-              });
-      });
+FSFUNC_1(fs_stat, fs_stat_cb, o_file, {
+  COPY_STR1(o_file,{
+    BLOCK(uv_fs_stat(loop, req, STRING_VAL(o_file), cb));
+  });
 })
 
-FSFUNC_1(fs_lstat,fs_stat_cb,o_file,{
-    COPY_STR1(o_file,{
-        BLOCK({
-            ret = uv_fs_lstat(loop,req,STRING_VAL(o_file),cb);});
-      });
+FSFUNC_1(fs_lstat, fs_stat_cb, o_file, {
+  COPY_STR1(o_file,{
+    BLOCK(uv_fs_lstat(loop, req, STRING_VAL(o_file), cb));
+  });
 })
 
-FSFUNC_1(fs_fstat,fs_stat_cb,o_file,{
-    int fd = FD_VAL(o_file);
-    BLOCK({
-        ret = uv_fs_fstat(loop,req,fd,cb);
-          });
+FSFUNC_1(fs_fstat, fs_stat_cb, o_file, {
+  int fd = FD_VAL(o_file);
+  BLOCK(uv_fs_fstat(loop, req, fd, cb));
 })
 
-#if HAVE_DECL_UV_FS_REALPATH
-FSFUNC_1(fs_realpath,fs_readlink_cb,o_path,{
-    COPY_STR1(o_path,{
-        BLOCK({ret = uv_fs_realpath(loop,req,STRING_VAL(o_path),
-                                    cb);});
-      });
+FSFUNC_1(fs_realpath, fs_readlink_cb, o_path, {
+  COPY_STR1(o_path,{
+    BLOCK(uv_fs_realpath(loop, req, STRING_VAL(o_path), cb));
+  });
 })
-#endif
 
-
-CAMLprim value
-uwt_fs_free(value o_req)
-{
-  struct req * wp = Req_val(o_req);
-  if ( wp != NULL ){
-    Field(o_req,1) = 0;
-    uwt__req_free(wp);
-  }
-  return Val_unit;
-}
 #ifdef DEF_O_NONBLOCK
 #undef DEF_O_NONBLOCK
 #undef O_NONBLOCK
@@ -944,14 +919,21 @@ uwt_fs_free(value o_req)
 #undef DEF_O_RSYNC
 #undef O_RSYNC
 #endif
-#undef runit
-#undef CHECK_STRING
+
+#undef ALLOC_WP
 #undef BLOCK
+#undef CB_LWT
+#undef CB_SYNC
+#undef CHECK_STRING
 #undef COPY_STR1
 #undef COPY_STR2
-#undef STRING_VAL
-#undef R_WRAP
-#undef FSFUNC_4
-#undef FSFUNC_3
-#undef FSFUNC_2
 #undef FSFUNC_1
+#undef FSFUNC_2
+#undef FSFUNC_3
+#undef FSFUNC_4
+#undef FSFUNC_5
+#undef MALLOC_UV_BUF_T
+#undef R_WRAP_LWT
+#undef R_WRAP_SYNC
+#undef STRING_VAL
+#undef runit

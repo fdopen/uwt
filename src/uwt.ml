@@ -23,13 +23,8 @@
 #include "config.inc"
 
 open Lwt.Infix
-external init_stacks : unit -> unit = "uwt_init_stacks_na" NOALLOC
-let () = init_stacks ()
-
-#if HAVE_WINDOWS <> 0
-external init_unix_windows : unit -> unit = "uwt_unix_windows_init_na" NOALLOC
-let () = init_unix_windows ()
-#endif
+external init_uwt : unit -> unit = "uwt_init_na" NOALLOC
+let () = init_uwt ()
 
 include Uwt_base
 
@@ -51,17 +46,6 @@ type int_cb = Int_result.int Lwt.u
 type unit_cb = Int_result.unit Lwt.u
 type loop
 
-(*
-type loop_mode =
-  | Sync
-  | Lwt
-  | Cb
-*)
-type uv_run_mode =
-  | Run_once
-  | Run_nowait
-  (* | Run_default *)
-
 let add_exception_from_c (e:exn) = !Lwt.async_exception_hook e
 let () = Callback.register "uwt.add_exception" add_exception_from_c
 
@@ -70,17 +54,8 @@ let () = Callback.register "uwt.add_exception" add_exception_from_c
    nor canceled *)
 let () = Callback.register "uwt.wakeup" Lwt.wakeup
 
-(* external uv_loop_close: loop -> Int_result.unit = "uwt_loop_close" *)
-external uv_run_loop: loop -> uv_run_mode -> Int_result.int = "uwt_run_loop"
-
-external uv_default_loop: int -> loop uv_result = "uwt_default_loop"
-let loop =
-  match uv_default_loop 1 with (* Lwt of disabled loop_mode *)
-  | Error _ ->
-    prerr_endline "uwt error: can't initialize default loop";
-    exit(3)
-  | Ok x -> x
-
+external uv_default_loop: unit -> loop = "uwt_default_loop"
+let loop = uv_default_loop ()
 let param = ""
 
 let get_exn ?(param="") name x = Unix.Unix_error(to_unix_error x,name,param)
@@ -89,27 +64,18 @@ let eraise ?param name x = raise (get_exn ?param name x)
 
 module Req = struct
   type t
-  type type' =
-    | Fs
-    | Getaddr
-    | Getname
-    | Work
+  type r = t uv_result
 
-  external create: loop -> type' -> t = "uwt_req_create"
   external cancel: t -> bool = "uwt_req_cancel_na" NOALLOC
-  external finalize: t -> unit = "uwt_req_finalize_na" NOALLOC
 
   let canceled = Lwt.fail Lwt.Canceled
-  let ql ~typ ~f ~name ~param =
+  let ql ~f ~name ~param =
     let sleeper,waker = Lwt.task ()
-    and wait_sleeper,wait_waker = Lwt.wait ()
-    and req = create loop typ in
-    let (x: Int_result.unit) = f loop req wait_waker in
-    if Int_result.is_error x then
-      LInt_result.mfail ~name ~param x
-    else
+    and wait_sleeper,wait_waker = Lwt.wait () in
+    match f loop wait_waker with
+    | Error x -> efail ~param name x
+    | Ok req ->
       let t = wait_sleeper >>= fun x ->
-        finalize req;
         if Lwt.is_sleeping sleeper then (
           (match x with
           | Ok x -> Lwt.wakeup waker x
@@ -122,19 +88,20 @@ module Req = struct
           | Error x -> efail ~param name x
       in
       Lwt.catch (fun () -> sleeper) (function
-        | Lwt.Canceled -> if cancel req then canceled else t
+        | Lwt.Canceled ->
+          if Lwt.is_sleeping wait_sleeper && cancel req then
+            canceled
+          else
+            t
         | x -> Lwt.fail x)
 
-  let qli ~typ ~f ~name ~param =
+  let qli ~f ~name ~param =
     let wait_sleeper,wait_waker = Lwt.wait ()
-    and sleeper,waker = Lwt.task ()
-    and req = create loop typ in
-    let (x: Int_result.unit) = f loop req wait_waker in
-    if Int_result.is_error x then
-      LInt_result.mfail ~name ~param x
-    else
+    and sleeper,waker = Lwt.task () in
+    match f loop wait_waker with
+    | Error x -> efail ~param name x
+    | Ok req ->
       let t = wait_sleeper >>= fun x ->
-        finalize req;
         if Lwt.is_sleeping sleeper then (
           if Int_result.is_ok x then
             Lwt.wakeup waker x
@@ -152,15 +119,19 @@ module Req = struct
         )
       in
       Lwt.catch (fun () -> sleeper) (function
-        | Lwt.Canceled -> if cancel req then canceled else t
+        | Lwt.Canceled ->
+          if Lwt.is_sleeping wait_sleeper && cancel req then
+            canceled
+          else
+            t
         | x -> Lwt.fail x)
 
-  let qlu ~typ ~f ~name ~param =
-    qli ~typ ~f ~name ~param >>= fun (_:unit Int_result.t) ->
+  let qlu ~f ~name ~param =
+    qli ~f ~name ~param >>= fun (_:unit Int_result.t) ->
     Lwt.return_unit
 
-  let qli ~typ ~f ~name ~param =
-    qli ~typ ~f ~name ~param >|= fun (x:int Int_result.t) -> (x :> int)
+  let qli ~f ~name ~param =
+    qli ~f ~name ~param >|= fun (x:int Int_result.t) -> (x :> int)
 end
 
 let qsu_common ~name sleeper (x: Int_result.unit) =
@@ -219,6 +190,7 @@ type u
 
 module Handle = struct
   type t = u
+  external to_handle : t -> t = "%identity"
 
   external close_wait: t -> unit_cb -> Int_result.unit = "uwt_close_wait"
   let close_wait t = qsu1 ~f:close_wait ~name:"close" t
@@ -270,7 +242,7 @@ end
 module Stream = struct
   type t = u
   include (Handle: (module type of Handle) with type t := t )
-  external to_handle : t -> Handle.t = "%identity"
+  let to_stream = to_handle
 
   external write_queue_size : t -> int = "uwt_write_queue_size_na" NOALLOC
 
@@ -540,7 +512,6 @@ module Tty = struct
   type t = u
   include (Stream: (module type of Stream) with type t := t )
   include (Handle_fileno: (module type of Handle_fileno) with type t := t)
-  external to_stream : t -> Stream.t = "%identity"
 
   external init: loop -> file -> bool -> t uv_result = "uwt_tty_init"
   let init_exn f ~read = init loop f read |> to_exn "uv_tty_init"
@@ -577,7 +548,6 @@ module Tcp = struct
   include (Stream: (module type of Stream) with type t := t )
   include (Handle_ext: (module type of Handle_ext) with type t := t)
   include (Handle_fileno: (module type of Handle_fileno) with type t := t)
-  external to_stream : t -> Stream.t = "%identity"
 
   type mode =
     | Ipv6_only
@@ -693,7 +663,6 @@ module Udp = struct
   include (Handle: (module type of Handle) with type t := t )
   include (Handle_ext: (module type of Handle_ext) with type t := t)
   include (Handle_fileno: (module type of Handle_fileno) with type t := t)
-  external to_handle : t -> Handle.t = "%identity"
 
   external send_queue_size: t -> int = "uwt_udp_send_queue_size_na" NOALLOC
   external send_queue_count: t -> int = "uwt_udp_send_queue_count_na" NOALLOC
@@ -970,7 +939,6 @@ end
 module Pipe = struct
   type t = u
   include (Stream: (module type of Stream) with type t := t )
-  external to_stream : t -> Stream.t = "%identity"
 
   include (Handle_ext: (module type of Handle_ext) with type t := t)
   include (Handle_fileno: (module type of Handle_fileno) with type t := t)
@@ -1149,7 +1117,6 @@ end
 module Timer = struct
   type t = u
   include (Handle: (module type of Handle) with type t := t )
-  external to_handle : t -> Handle.t = "%identity"
 
   external start:
     loop -> ( t -> unit ) -> int -> int -> t uv_result = "uwt_timer_start"
@@ -1176,7 +1143,6 @@ end
 module Signal = struct
   type t = u
   include (Handle: (module type of Handle) with type t := t )
-  external to_handle : t -> Handle.t = "%identity"
 
   external start:
     loop -> int -> (t -> int -> unit) -> t uv_result = "uwt_signal_start"
@@ -1192,7 +1158,6 @@ module Poll = struct
   type t = u
   include ( Handle: (module type of Handle) with type t := t )
   include (Handle_fileno: (module type of Handle_fileno) with type t := t)
-  external to_handle : t -> Handle.t = "%identity"
 
   type event =
     | Readable
@@ -1210,7 +1175,6 @@ end
 module Fs_event = struct
   type t = u
   include ( Handle: (module type of Handle) with type t := t )
-  external to_handle : t -> Handle.t = "%identity"
 
   type event =
     | Rename
@@ -1255,9 +1219,8 @@ module Dns = struct
   }
 
   external getaddrinfo:
-    string -> string -> getaddrinfo_option list ->
-    loop -> Req.t -> addr_info list cb -> Int_result.unit
-    = "uwt_getaddrinfo_byte" "uwt_getaddrinfo_native"
+    string -> string -> getaddrinfo_option list -> loop ->
+    addr_info list cb -> Req.r = "uwt_getaddrinfo"
 
   (* getaddrinfo / getnameinfo return custom error codes.
      Modify Req.ql as soon it happens more frequently  *)
@@ -1270,7 +1233,6 @@ module Dns = struct
   let getaddrinfo ~host ~service options =
     re_conv @@ fun () ->
     Req.ql
-      ~typ:Req.Getaddr
       ~f:(getaddrinfo host service options)
       ~name:"getaddrinfo"
       ~param
@@ -1285,7 +1247,7 @@ module Dns = struct
 
   external getnameinfo :
     sockaddr -> getnameinfo_option list ->
-    loop -> Req.t -> name_info cb -> Int_result.unit
+    loop -> name_info cb -> Req.r
     = "uwt_getnameinfo"
 
   let getnameinfo sock options =
@@ -1294,7 +1256,6 @@ module Dns = struct
     | Unix.ADDR_INET _ ->
       re_conv @@ fun () ->
       Req.ql
-        ~typ:Req.Getname
         ~f:(getnameinfo sock options)
         ~name:"getnameinfo"
         ~param
@@ -1304,7 +1265,6 @@ end
 module Process = struct
   type t = u
   include (Handle: (module type of Handle) with type t := t )
-  external to_handle : t -> Handle.t = "%identity"
 
   type stdio =
     | Inherit_file of file
@@ -1377,7 +1337,6 @@ end
 module Async = struct
   type t = u
   include (Handle: (module type of Handle) with type t := t )
-  external to_handle : t -> Handle.t = "%identity"
 
   external create: loop -> ( t -> unit ) -> t uv_result = "uwt_async_create"
   let create cb = create loop cb
@@ -1390,22 +1349,24 @@ end
 
 module C_worker = struct
   type t = unit Int_result.t
-  type 'a u = loop * Req.t * 'a uv_result Lwt.u
+
+  type req
+  type 'a u = loop * req * 'a uv_result Lwt.u
+
+  external create: unit -> req = "uwt_workreq_create"
+  external cancel: req -> bool = "uwt_workreq_cancel_na" NOALLOC
 
   let call_internal ?(param="") ?(name="") (f: 'a -> 'b u -> t) (a:'a) : 'b Lwt.t =
     let sleeper,waker = Lwt.task ()
     and wait_sleeper,wait_waker = Lwt.wait ()
-    and req = Req.create loop Req.Work in
+    and req = create () in
     match f a (loop,req,wait_waker) with
-    | exception x ->
-      Req.finalize req;
-      Lwt.fail x
+    | exception x -> Lwt.fail x
     | x ->
       if Int_result.is_error x then
         LInt_result.mfail ~name ~param x
       else
         let t = wait_sleeper >>= fun x ->
-          Req.finalize req;
           if Lwt.is_sleeping sleeper then (
             (match x with
             | Ok x -> Lwt.wakeup waker x
@@ -1418,24 +1379,22 @@ module C_worker = struct
             | Error x -> efail ~param name x
         in
         Lwt.catch (fun () -> sleeper) (function
-          | Lwt.Canceled -> if Req.cancel req then Req.canceled else t
+          | Lwt.Canceled ->
+            if Lwt.is_sleeping wait_sleeper && cancel req then
+              Req.canceled
+            else
+              t
           | x -> Lwt.fail x)
 
   let call a b = call_internal a b
 end
 
 module Unix = struct
+
   type seek_command = Unix.seek_command = SEEK_SET | SEEK_CUR | SEEK_END
   external lseek:
-    file -> int64 -> seek_command -> loop -> Req.t -> int64 cb ->
-    Int_result.unit = "uwt_lseek_byte" "uwt_lseek_native"
-
-  let lseek f o m  =
-    Req.ql
-      ~typ:Req.Work
-      ~f:(lseek f o m)
-      ~name:"lseek"
-      ~param
+    file -> int64 -> seek_command -> loop -> int64 cb -> Req.r = "uwt_lseek"
+  let lseek f o m  = Req.ql ~f:(lseek f o m) ~name:"lseek" ~param
 
   external gethostname:
     unit -> string C_worker.u -> C_worker.t = "uwt_gethostname"
@@ -1605,13 +1564,11 @@ module Unix = struct
         | _ , ((Error _) as x) -> x
         | Ok _, Ok _ -> assert false
 
-#if HAVE_UV_REALPATH = 0
-  external realpath: string -> string C_worker.u -> C_worker.t = "uwt_realpath"
-  let realpath s = C_worker.call_internal ~name:"realpath" ~param:s realpath s
-#else
   external realpath:
-    string -> loop -> Req.t -> string cb -> Int_result.unit = "uwt_fs_realpath"
-#if HAVE_WINDOWS <> 0
+    string -> loop -> string cb -> Req.r = "uwt_fs_realpath"
+#if HAVE_WINDOWS = 0
+  let realpath param = Req.ql ~f:(realpath param) ~name:"realpath" ~param
+#else
   external realpath_o: string -> string C_worker.u -> C_worker.t = "uwt_realpath"
   let realpath_o s =
     C_worker.call_internal ~name:"realpath" ~param:s realpath_o s
@@ -1624,36 +1581,27 @@ module Unix = struct
     | true -> realpath_o param
     | false ->
       Lwt.catch (fun () ->
-          Req.ql ~typ:Req.Fs ~f:(realpath param) ~name:"realpath" ~param)
+          Req.ql ~f:(realpath param) ~name:"realpath" ~param)
         (function
         | Unix.Unix_error(Unix.ENOSYS,"realpath",x) when x = param ->
           use_own_realpath := true;
           realpath_o param
         | x -> Lwt.fail x)
-#else
-  let realpath param = Req.ql ~typ:Req.Fs ~f:(realpath param) ~name:"realpath" ~param
-#endif
 #endif
 end
 
 module Fs = struct
   include Fs_types
 
-  let typ = Req.Fs
-
   external openfile:
-    string -> uv_open_flag list -> int ->
-    loop -> Req.t -> file cb ->
-    Int_result.unit =
-    "uwt_fs_open_byte" "uwt_fs_open_native"
+    string -> uv_open_flag list -> int -> loop -> file cb -> Req.r =
+    "uwt_fs_open"
 
   let openfile ?(perm=0o644) ~mode fln =
-    Req.ql ~typ ~name:"open" ~param:fln ~f:(openfile fln mode perm)
+    Req.ql ~name:"open" ~param:fln ~f:(openfile fln mode perm)
 
   external iread:
-    file -> 'a -> int -> int -> int64 ->
-    loop -> Req.t -> int_cb ->
-    Int_result.unit =
+    file -> 'a -> int -> int -> int64 -> loop -> int_cb -> Req.r =
     "uwt_fs_read_byte" "uwt_fs_read_native"
 
   let iread ?(pos=0) ?len ~fd_offset t ~buf ~dim =
@@ -1665,7 +1613,7 @@ module Fs = struct
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Fs.read")
     else
-      Req.qli ~typ ~name:"read" ~param ~f:(iread t buf pos len fd_offset)
+      Req.qli ~name:"read" ~param ~f:(iread t buf pos len fd_offset)
 
   let read_ba ?pos ?len t ~(buf:buf) =
     let dim = Bigarray.Array1.dim buf in
@@ -1690,8 +1638,8 @@ module Fs = struct
      iread ~fd_offset ?pos ?len ~dim ~buf t
 
   external iwrite:
-    file -> 'a -> int -> int -> int64 -> loop -> Req.t -> int_cb ->
-    Int_result.unit = "uwt_fs_write_byte" "uwt_fs_write_native"
+    file -> 'a -> int -> int -> int64 -> loop -> int_cb ->
+    Req.r = "uwt_fs_write_byte" "uwt_fs_write_native"
 
   let iwrite ~fd_offset ?(pos=0) ?len ~dim t ~buf =
     let len =
@@ -1702,7 +1650,7 @@ module Fs = struct
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Fs.write")
     else
-      Req.qli ~typ ~name:"write" ~param ~f:(iwrite t buf pos len fd_offset)
+      Req.qli ~name:"write" ~param ~f:(iwrite t buf pos len fd_offset)
 
   let write_ba ?pos ?len t ~(buf:buf) =
     let dim = Bigarray.Array1.dim buf in
@@ -1735,9 +1683,8 @@ module Fs = struct
     iwrite ~fd_offset ~dim ?pos ?len t ~buf
 
   external iwritev:
-    file -> Iovec_write.t array -> Iovec_write.t list -> int64 ->
-    loop -> Req.t -> int_cb ->
-    Int_result.unit =
+    Iovec_write.t array -> Iovec_write.t list -> file -> int64 ->
+    loop -> int_cb -> Req.r =
     "uwt_fs_writev_byte" "uwt_fs_writev_native"
 
   let iwritev ~fd_offset t iol =
@@ -1746,7 +1693,7 @@ module Fs = struct
     | Invalid -> Lwt.fail (Invalid_argument "Uwt.Fs.writev")
     | Empty -> write ~pos:0 ~len:0 t ~buf:(Bytes.create 1)
     | All_ba(ar,bl) ->
-      Req.qli ~typ ~name:"writev" ~param ~f:(iwritev t ar bl fd_offset)
+      Req.qli ~name:"writev" ~param ~f:(iwritev ar bl t fd_offset)
 
   let writev a b = iwritev ~fd_offset:Int64.minus_one a b
   let pwritev a b fd_offset =
@@ -1755,134 +1702,96 @@ module Fs = struct
     else
       iwritev ~fd_offset a b
 
-  external close:
-    file -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_close"
+  external close: file -> loop -> unit_cb -> Req.r = "uwt_fs_close"
+  let close fd = Req.qlu ~f:(close fd) ~name:"close" ~param
 
-  let close fd = Req.qlu ~typ ~f:(close fd) ~name:"close" ~param
+  external unlink: string -> loop -> unit_cb -> Req.r = "uwt_fs_unlink"
+  let unlink param = Req.qlu ~f:(unlink param) ~name:"unlink" ~param
 
-  external unlink:
-    string -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_unlink"
-  let unlink param = Req.qlu ~typ ~f:(unlink param) ~name:"unlink" ~param
-
-  external mkdir:
-    string -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_mkdir"
+  external mkdir: string -> int -> loop -> unit_cb -> Req.r = "uwt_fs_mkdir"
   let mkdir ?(perm=0o777) param =
-    Req.qlu ~typ ~f:(mkdir param perm) ~name:"mkdir" ~param
+    Req.qlu ~f:(mkdir param perm) ~name:"mkdir" ~param
 
-  external rmdir:
-    string -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_rmdir"
-  let rmdir param =
-    Req.qlu ~typ ~f:(rmdir param) ~name:"rmdir" ~param
+  external rmdir: string -> loop -> unit_cb -> Req.r = "uwt_fs_rmdir"
+  let rmdir param = Req.qlu ~f:(rmdir param) ~name:"rmdir" ~param
 
   external rename:
-    string -> string -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_rename"
+    string -> string -> loop -> unit_cb -> Req.r = "uwt_fs_rename"
   let rename ~src ~dst =
-    Req.qlu ~typ ~f:(rename src dst) ~name:"rename" ~param:src
+    Req.qlu ~f:(rename src dst) ~name:"rename" ~param:src
 
-  external link:
-    string -> string -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_link"
+  external link: string -> string -> loop -> unit_cb -> Req.r = "uwt_fs_link"
   let link ~target ~link_name =
-    Req.qlu ~typ ~f:(link target link_name) ~name:"link" ~param:target
+    Req.qlu ~f:(link target link_name) ~name:"link" ~param:target
 
-  external fsync: file -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_fsync"
-  let fsync file =
-    Req.qlu ~typ ~f:(fsync file) ~name:"fsync" ~param
+  external fsync: file -> loop -> unit_cb -> Req.r = "uwt_fs_fsync"
+  let fsync file = Req.qlu ~f:(fsync file) ~name:"fsync" ~param
 
-  external fdatasync:
-    file -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_fsync"
-  let fdatasync file =
-    Req.qlu ~typ ~f:(fdatasync file) ~name:"fdatasync" ~param
+  external fdatasync: file -> loop -> unit_cb -> Req.r = "uwt_fs_fdatasync"
+  let fdatasync file = Req.qlu ~f:(fdatasync file) ~name:"fdatasync" ~param
 
-  external ftruncate:
-    file -> int64 -> loop -> Req.t -> unit_cb -> Int_result.unit =
+  external ftruncate: file -> int64 -> loop -> unit_cb -> Req.r =
     "uwt_fs_ftruncate"
   let ftruncate file ~len =
-    Req.qlu ~typ ~f:(ftruncate file len) ~name:"ftruncate" ~param
+    Req.qlu ~f:(ftruncate file len) ~name:"ftruncate" ~param
 
-  external stat:
-    string -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_stat"
-  let stat param = Req.ql ~typ ~f:(stat param) ~name:"stat" ~param
+  external stat: string -> loop -> stats cb -> Req.r = "uwt_fs_stat"
+  let stat param = Req.ql ~f:(stat param) ~name:"stat" ~param
 
-  external lstat:
-    string -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_lstat"
-  let lstat param = Req.ql ~typ ~f:(lstat param) ~name:"lstat" ~param
+  external lstat: string -> loop -> stats cb -> Req.r = "uwt_fs_lstat"
+  let lstat param = Req.ql ~f:(lstat param) ~name:"lstat" ~param
 
-  external fstat:
-    file -> loop -> Req.t -> stats cb -> Int_result.unit = "uwt_fs_fstat"
-  let fstat fd = Req.ql ~typ ~f:(fstat fd) ~name:"fstat" ~param
+  external fstat: file -> loop -> stats cb -> Req.r = "uwt_fs_fstat"
+  let fstat fd = Req.ql ~f:(fstat fd) ~name:"fstat" ~param
 
-  external symlink:
-    string -> string -> symlink_mode -> loop -> Req.t -> unit_cb ->
-    Int_result.unit = "uwt_fs_symlink_byte" "uwt_fs_symlink_native"
+  external symlink: string -> string -> symlink_mode -> loop -> unit_cb ->
+    Req.r = "uwt_fs_symlink"
   let symlink ?(mode=S_Default) ~src ~dst () =
-    Req.qlu ~typ ~f:(symlink src dst mode) ~name:"symlink" ~param:dst
+    Req.qlu ~f:(symlink src dst mode) ~name:"symlink" ~param:dst
 
-  external mkdtemp:
-    string -> loop -> Req.t -> string cb -> Int_result.unit = "uwt_fs_mkdtemp"
-  let mkdtemp param =
-    Req.ql ~typ ~f:(mkdtemp param) ~name:"mkdtemp" ~param
+  external mkdtemp: string -> loop -> string cb -> Req.r = "uwt_fs_mkdtemp"
+  let mkdtemp param = Req.ql ~f:(mkdtemp param) ~name:"mkdtemp" ~param
 
   external sendfile:
-    file -> file -> int64 -> nativeint -> loop -> Req.t -> nativeint cb ->
-    Int_result.unit = "uwt_fs_sendfile_byte" "uwt_fs_sendfile_native"
+    file -> file -> int64 -> nativeint -> loop -> nativeint cb ->
+    Req.r = "uwt_fs_sendfile_byte" "uwt_fs_sendfile_native"
   let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () =
-    Req.ql ~typ ~f:(sendfile dst src pos len) ~name:"sendfile" ~param
+    Req.ql ~f:(sendfile dst src pos len) ~name:"sendfile" ~param
 
-  external utime:
-    string -> float -> float -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_utime_byte" "uwt_fs_utime_native"
+  external utime: string -> float -> float -> loop -> unit_cb -> Req.r =
+    "uwt_fs_utime"
   let utime s ~access ~modif =
-    Req.qlu ~typ ~f:(utime s access modif) ~name:"utime" ~param:s
+    Req.qlu ~f:(utime s access modif) ~name:"utime" ~param:s
 
-  external futime:
-    file -> float -> float -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_futime_byte" "uwt_fs_futime_native"
+  external futime: file -> float -> float -> loop -> unit_cb -> Req.r =
+    "uwt_fs_futime"
   let futime fd ~access ~modif =
-    Req.qlu ~typ ~f:(futime fd access modif) ~name:"futime" ~param
+    Req.qlu ~f:(futime fd access modif) ~name:"futime" ~param
 
-  external readlink:
-    string -> loop -> Req.t -> string cb -> Int_result.unit = "uwt_fs_readlink"
-  let readlink param =
-    Req.ql ~typ ~f:(readlink param) ~name:"readlink" ~param
+  external readlink: string -> loop -> string cb -> Req.r = "uwt_fs_readlink"
+  let readlink param = Req.ql ~f:(readlink param) ~name:"readlink" ~param
 
-  external access:
-    string -> access_permission list -> loop -> Req.t -> unit_cb ->
-    Int_result.unit = "uwt_fs_access"
-  let access s al = Req.qlu ~typ ~f:(access s al) ~name:"access" ~param:s
+  external access: string -> access_permission list -> loop -> unit_cb ->
+    Req.r = "uwt_fs_access"
+  let access s al = Req.qlu ~f:(access s al) ~name:"access" ~param:s
 
-  external chmod:
-    string -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_chmod"
-  let chmod param ~perm =
-    Req.qlu ~typ ~f:(chmod param perm) ~name:"chmod" ~param
+  external chmod: string -> int -> loop -> unit_cb -> Req.r = "uwt_fs_chmod"
+  let chmod param ~perm = Req.qlu ~f:(chmod param perm) ~name:"chmod" ~param
 
-  external fchmod:
-    file -> int -> loop -> Req.t -> unit_cb -> Int_result.unit = "uwt_fs_fchmod"
-  let fchmod fd ~perm =
-    Req.qlu ~typ ~f:(fchmod fd perm) ~name:"fchmod" ~param
+  external fchmod: file -> int -> loop -> unit_cb -> Req.r = "uwt_fs_fchmod"
+  let fchmod fd ~perm = Req.qlu ~f:(fchmod fd perm) ~name:"fchmod" ~param
 
   external chown:
-    string -> int -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_chown_byte" "uwt_fs_chown_native"
-  let chown s ~uid ~gid =
-    Req.qlu ~typ ~f:(chown s uid gid) ~name:"chown" ~param:s
+    string -> int -> int -> loop -> unit_cb -> Req.r = "uwt_fs_chown"
+  let chown s ~uid ~gid = Req.qlu ~f:(chown s uid gid) ~name:"chown" ~param:s
 
-  external fchown:
-    file -> int -> int -> loop -> Req.t -> unit_cb -> Int_result.unit =
-    "uwt_fs_fchown_byte" "uwt_fs_fchown_native"
-  let fchown fd ~uid ~gid =
-    Req.qlu ~typ ~f:(fchown fd uid gid) ~name:"fchown" ~param
+  external fchown: file -> int -> int -> loop -> unit_cb -> Req.r =
+    "uwt_fs_fchown"
+  let fchown fd ~uid ~gid = Req.qlu ~f:(fchown fd uid gid) ~name:"fchown" ~param
 
-  external scandir:
-    string -> loop -> Req.t -> (file_kind * string) array cb ->
-    Int_result.unit = "uwt_fs_scandir"
-  let scandir param =
-    Req.ql ~typ ~f:(scandir param) ~name:"scandir" ~param
+  external scandir: string -> loop -> (file_kind * string) array cb ->
+    Req.r = "uwt_fs_scandir"
+  let scandir param = Req.ql ~f:(scandir param) ~name:"scandir" ~param
 
   let realpath = Unix.realpath
 end
@@ -1890,7 +1799,6 @@ end
 module Fs_poll = struct
   type t = u
   include ( Handle: (module type of Handle) with type t := t )
-  external to_handle : t -> Handle.t = "%identity"
 
   type report = {
     prev: Fs.stats;
@@ -1906,6 +1814,11 @@ module Fs_poll = struct
 end
 
 module Main = struct
+
+  type uv_run_mode =
+    | Run_once
+    | Run_nowait
+  external uv_run_loop: loop -> uv_run_mode -> Int_result.int = "uwt_run_loop"
 
   let fatal_found = ref false (* information for exit_hook and run *)
 
