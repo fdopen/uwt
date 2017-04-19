@@ -49,7 +49,7 @@ uwt_udp_set_membership_na(value o_udp, value o_mul,
                           value o_int, value o_mem)
 {
   HANDLE_NINIT_NA(u,o_udp);
-  HANDLE_NO_UNINIT_NA(u);
+  /* uninit allowed, will trigger implicit binding */
   uv_membership membership = Long_val(o_mem) ? UV_JOIN_GROUP : UV_LEAVE_GROUP;
   const char* multicast_addr = String_val(o_mul);
   char* interface_addr = NULL;
@@ -67,6 +67,9 @@ uwt_udp_set_membership_na(value o_udp, value o_mul,
                                   multicast_addr,
                                   interface_addr,
                                   membership);
+  if ( ret >= 0 ){
+    u->initialized = 1;
+  }
   return (VAL_UWT_UNIT_RESULT(ret));
 }
 
@@ -238,6 +241,7 @@ uwt_udp_recv_start(value o_udp, value o_cb)
 {
   HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_udp);
   HANDLE_INIT2(u,o_udp,o_cb);
+  /* uninit allowed, but forbidden by me :D */
   value ret;
   if ( u->cb_read != CB_INVALID ){
     ret = VAL_UWT_INT_RESULT_EBUSY;

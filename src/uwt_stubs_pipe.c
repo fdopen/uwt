@@ -178,7 +178,6 @@ CAMLprim value
 uwt_pipe_pending_instances_na(value o_pipe, value o_count)
 {
   HANDLE_NINIT_NA(op,o_pipe);
-  HANDLE_NO_UNINIT_NA(op);
   uv_pipe_t* p = (uv_pipe_t*)op->handle;
   INT_VAL_RET_IR_EINVAL(count, o_count);
   uv_pipe_pending_instances(p, count);
