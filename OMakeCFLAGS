@@ -17,7 +17,7 @@ static. =
 					DEVCFLAGS+= $(f)
 				export
 			export
-		if $(not $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64)))
+		if $(not $(or $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)), $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64))))
 			Add_flags(-Wall -Wextra -O2 -g -Waggregate-return -Wbad-function-cast -Wcast-align -Wdate-time -Wendif-labels -Werror=overflow -Wfloat-equal -Wformat=2 -Wformat-security -Wformat-nonliteral -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wpointer-arith -Wredundant-decls -Wshadow -Wsign-compare -Wstrict-prototypes -Wsuggest-attribute=noreturn -Wundef -Wuninitialized  -Wunused  -Wunused-macros -Wwrite-strings)
 			CC=$(OCAMLC_CC)
 			CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS)

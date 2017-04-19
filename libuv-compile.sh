@@ -6,6 +6,14 @@ CC=$1
 CFLAGS=$2
 unix=$3
 system=$4
+set +u
+build_jobs=$5
+if [ -n "$MAKEFLAGS" ] || [ -z "$build_jobs" ] || [ "$build_jobs" = "0" ]; then
+    make_parallel_flags=''
+else
+    make_parallel_flags="-j${build_jobs}"
+fi
+set -u
 
 cd "libuv"
 
@@ -34,7 +42,7 @@ if [ "$unix" = "true" ]; then
             $make distclean || true
         fi
         ./configure --enable-static --disable-shared CC="$CC" CFLAGS="$CFLAGS -DNDEBUG"
-        $make all
+        $make all $make_parallel_flags
     fi
     cd ..
     lib="../libuv/.libs/libuv.a"
@@ -108,8 +116,8 @@ else
                 ./configure --host=$host --enable-static --disable-shared CC="$CC" CFLAGS="$CFLAGS -DNDEBUG" ac_cv_search_pthread_create=no
             fi
             set +u
-            jflags=
-            if [ -n "$NUMBER_OF_PROCESSORS" ] && [ -z "$MAKEFLAGS" ]; then
+            jflags=$make_parallel_flags
+            if [ -z "$jflags" ] && [ -n "$NUMBER_OF_PROCESSORS" ] && [ -z "$MAKEFLAGS" ]; then
                 case "$NUMBER_OF_PROCESSORS" in
                     ''|*[!0-9]*)
                         jflags=

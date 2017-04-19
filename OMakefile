@@ -8,9 +8,9 @@ BYTE_ENABLED=	true
 include OMakeIncludes
 include OMakeCFLAGS
 
-CompileLibuv()=
+CompileLibuv(build_jobs)=
 	if $(equal $(OSTYPE),Win32)
-		x=$(shell-code sh libuv-compile.sh "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" false "$(OCAMLC_SYSTEM)")
+		x=$(shell-code sh libuv-compile.sh "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" false "$(OCAMLC_SYSTEM)" "$(build_jobs)")
 		if $(not $(eq $(x), 0))
 			y[]=
 			return($(y))
@@ -22,17 +22,12 @@ CompileLibuv()=
 			export
 		return($(LIBUV_LDFLAGS))
 	else
-		x=$(shell-code ./libuv-compile.sh "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" true "$(OCAMLC_SYSTEM)")
+		x=$(shell-code ./libuv-compile.sh "$(OCAMLC_CC)" "$(OCAMLC_CC_CFLAGS)" true "$(OCAMLC_SYSTEM)" "$(build_jobs)")
 		if $(not $(eq $(x), 0))
 			y[]=
 			return($(y))
 		LIBUV_LDFLAGS=$(shell awk $''/^Lib/ {for(i=3;i<NF;i++)printf "%s",$i OFS; if (NF) printf "%s",$NF; printf ORS}'' libuv/libuv.pc )
 		return($(LIBUV_LDFLAGS))
-
-.PHONY: libuv-compile
-libuv-compile:
-	section
-		echo $(CompileLibuv )
 
 static.=
 	PATH_PKG_CONFIG=$(Check_prog_in_path pkg-config)
@@ -50,6 +45,7 @@ static.=
 		value $(or $(equal $(x),$'1'), $(equal $(x),$'true'))
 	LIBUV_CFLAGS=$(GetVarEnv LIBUV_CFLAGS)
 	LIBUV_LDFLAGS=$(GetVarEnv LIBUV_LDFLAGS)
+	UWT_BUILD_JOBS=$(GetVarEnv UWT_BUILD_JOBS)
 	# BUILD_LIBUV comes first, then LIBUV_CFLAGS / LIBUV_LDFLAGS are picked from the environment, then pkg-config
 	if $(and $(not $(force_internal)), $(or $(not $(equal $(LIBUV_LDFLAGS),$(EMPTY))), $(not $(equal $(LIBUV_CFLAGS),$(EMPTY)))))
 		CFLAGS_LIBUV=$(LIBUV_CFLAGS)
@@ -69,7 +65,7 @@ static.=
 			$(ConfMsgError $''libuv missing'')
 		if $(not $(or $(equal $(x),$'1'), $(equal $(x),$'true')))
 			ConfMsgWarn($''libuv not found. I will try to compile it from source'')
-		LDFLAGS_LIBUV=$(CompileLibuv )
+		LDFLAGS_LIBUV=$(CompileLibuv $(UWT_BUILD_JOBS))
 		if $(eq 0, $(LDFLAGS_LIBUV.length))
 			$(ConfMsgError $''couldn't compile libuv'')
 		if $(not $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64)))
@@ -107,7 +103,12 @@ static.=
 		if $(not $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64)))
 			CFLAGS= $(CFLAGS) -O2 -g
 			export
-	export OCAMLFLAGS CFLAGS LDFLAGS_LIBUV CFLAGS_LIBUV INTERNAL_LIBUV HAVE_LWT INTERNAL_LIBUV
+	export OCAMLFLAGS CFLAGS LDFLAGS_LIBUV CFLAGS_LIBUV INTERNAL_LIBUV HAVE_LWT INTERNAL_LIBUV UWT_BUILD_JOBS
+
+.PHONY: libuv-compile
+libuv-compile:
+	section
+		echo $(CompileLibuv $(UWT_BUILD_JOBS))
 
 ConfReplace(_oasis)
 
