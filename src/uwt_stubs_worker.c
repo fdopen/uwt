@@ -180,6 +180,20 @@ lseek_work_cb(uv_work_t *req)
     r->offset = UV_EBADF;
     offset = -1;
   }
+  else if ( GetFileType(handle) != FILE_TYPE_DISK ){
+    /*
+      from: https://msdn.microsoft.com/en-us/library/windows/desktop/aa365542(v=vs.85).aspx
+
+      "You cannot use the SetFilePointerEx function with a handle to a
+      nonseeking device such as a pipe or a communications device. To
+      determine the file type for hFile, use the GetFileType function."
+
+      But it doesn't return an error for whatever reason. So I check
+      it manually
+    */
+    r->offset = UV_ESPIPE;
+    offset = -1;
+  }
   else {
     LARGE_INTEGER distance_to_move;
     LARGE_INTEGER new_position;
