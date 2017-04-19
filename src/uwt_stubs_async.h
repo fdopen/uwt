@@ -31,7 +31,7 @@ extern "C" {
 UWT_EXTERN2(uwt_async_create);
 UWT_EXTERN1(uwt_async_start_na);
 UWT_EXTERN1(uwt_async_stop_na);
-UWT_EXTERN1(uwt_async_send);
+UWT_EXTERN1(uwt_async_send_na);
 
 #ifdef __cplusplus
 }

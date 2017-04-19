@@ -1355,6 +1355,43 @@ module C_worker : sig
   val call: ('a -> 'b u -> t) -> 'a -> 'b Lwt.t
 end
 
+module Async : sig
+  (**
+     Async handles allow the user to "wakeup" the event loop and get a callback
+     called from another (system) thread.
+  *)
+
+  type t
+  include module type of Handle with type t := t
+  val to_handle: t -> Handle.t
+
+  val create: ( t -> unit ) -> t uv_result
+  (** Creates a new async handle. The handle is {b not} active immediately. You
+      have to use {!start} *)
+
+  val start: t -> Int_result.unit
+  (** This will increase the reference count of the async handle. {!Main.run}
+      will wait until [send] is called, if there are no other pendings tasks. *)
+
+  val stop: t -> Int_result.unit
+  (** Decrease the reference count again *)
+
+  val send: t -> Int_result.unit
+  (**
+     Wakeup the event loop and call the async handle's callback.
+
+     It's safe to call this function from any system thread. The callback
+     will be called on the loop thread. {!create}, {!start}, and {!stop}
+     however must be called from the main thread.
+
+     Warning: libuv will coalesce calls to {!send}, that is, not every
+     call to it will yield an execution of the callback. For example:
+     if {!send} is called 5 times in a row before the callback is
+     called, the callback will only be called once. If {!send} is
+     called again after the callback was called, it will be called
+     again. *)
+end
+
 module Debug : sig
   (**
 
@@ -1378,16 +1415,6 @@ module Debug : sig
 end
 
 (**/**)
-(* Interface not stable; currently only used by Uwt_preemptive. *)
-module Async : sig
-  type t
-  include module type of Handle with type t := t
-  val to_handle: t -> Handle.t
-  val create: ( t -> unit ) -> t uv_result
-  val start: t -> Int_result.unit
-  val stop: t -> Int_result.unit
-  val send: t -> Int_result.unit
-end
 
 (* for test suite only *)
 type loop

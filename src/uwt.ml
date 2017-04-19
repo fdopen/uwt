@@ -1385,7 +1385,7 @@ module Async = struct
   external start: t -> Int_result.unit = "uwt_async_start_na" NOALLOC
   external stop: t -> Int_result.unit = "uwt_async_stop_na" NOALLOC
 
-  external send: t -> Int_result.unit = "uwt_async_send"
+  external send: t -> Int_result.unit = "uwt_async_send_na" NOALLOC
 end
 
 module C_worker = struct
