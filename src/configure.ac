@@ -181,10 +181,6 @@ fi
 AC_SEARCH_LIBS(gethostbyname_r, [socket nsl])
 AC_SEARCH_LIBS(getservbyname_r, [socket nsl])
 
-AH_TEMPLATE([HAVE_GETHOSTBYyyyy_R_POSIX], [Define if POSIX-style gethostbyYYYY_r functions are available.])
-AH_TEMPLATE([HAVE_GETSERVBYyyyy_R_POSIX], [Define if POSIX-style getservbyYYYY_r functions are available.])
-AH_TEMPLATE([HAVE_GETPROTOBYyyyy_R_POSIX], [Define if POSIX-style getprotobyYYYY_r functions are available.])
-
 OS_MACRO=0
 AC_CHECK_DECLS([_WIN32],
 OS_MACRO="Windows"
@@ -238,10 +234,23 @@ fi
 AC_SUBST(OS_MACRO)
 
 
+AH_TEMPLATE([HAVE_GETHOSTBYyyyy_R_POSIX], [Define if POSIX-style gethostbyYYYY_r functions are available.])
+AH_TEMPLATE([HAVE_GETSERVBYyyyy_R_POSIX], [Define if POSIX-style getservbyYYYY_r functions are available.])
+AH_TEMPLATE([HAVE_GETPROTOBYyyyy_R_POSIX], [Define if POSIX-style getprotobyYYYY_r functions are available.])
+
+AH_TEMPLATE([HAVE_GETHOSTBYyyyy_R_SUN], [Define if SUN-style gethostbyYYYY_r functions are available.])
+AH_TEMPLATE([HAVE_GETSERVBYyyyy_R_SUN], [Define if SUN-style getservbyYYYY_r functions are available.])
+AH_TEMPLATE([HAVE_GETPROTOBYyyyy_R_SUN], [Define if SUN-style getprotobyYYYY_r functions are available.])
+
+
 if test "$OS_MACRO" = "Netbsd" -o "$OS_MACRO" = "Windows" ; then
 HAVE_REENTRANT_HOST_POSIX=0
 HAVE_REENTRANT_PROTO_POSIX=0
 HAVE_REENTRANT_SERV_POSIX=0
+
+HAVE_REENTRANT_HOST_SUN=0
+HAVE_REENTRANT_PROTO_SUN=0
+HAVE_REENTRANT_SERV_SUN=0
 else
 AC_MSG_CHECKING([for POSIX-style gethostbyXXXX_r])
 AC_TRY_LINK([
@@ -261,6 +270,25 @@ HAVE_REENTRANT_HOST_POSIX=1
 AC_DEFINE(HAVE_GETHOSTBYyyyy_R_POSIX)
 AC_MSG_RESULT([yes]),
 HAVE_REENTRANT_HOST_POSIX=0
+AC_MSG_RESULT([no])
+)
+
+AC_MSG_CHECKING([for SUN-style gethostbyXXXX_r])
+AC_TRY_LINK([
+#include <netdb.h>
+#include <stddef.h>
+],
+[
+struct hostent *he;
+he = gethostbyname_r((const char *)NULL, (struct hostent *)NULL,
+(char *)NULL, (int)0, (int *)NULL);
+he = gethostbyaddr_r((const char *)NULL, (int)0, (int)0,
+(struct hostent *)NULL, (char *)NULL, (int)0, (int *)NULL);
+],
+HAVE_REENTRANT_HOST_SUN=1
+AC_DEFINE(HAVE_GETHOSTBYyyyy_R_SUN)
+AC_MSG_RESULT([yes]),
+HAVE_REENTRANT_HOST_SUN=0
 AC_MSG_RESULT([no])
 )
 
@@ -284,6 +312,25 @@ HAVE_REENTRANT_SERV_POSIX=0
 AC_MSG_RESULT([no])
 )
 
+AC_MSG_CHECKING([for SUN-style getservbyXXXX_r])
+AC_TRY_LINK([
+#include <netdb.h>
+#include <stddef.h>
+],
+[
+struct servent *se;
+se = getservbyname_r((const char *)NULL, (const char *)NULL,
+(struct servent *)NULL, (char *)NULL, (int)0);
+se = getservbyport_r((int)0, (const char *)NULL,
+(struct servent *)NULL, (char *)NULL, (int)0);
+],
+HAVE_REENTRANT_SERV_SUN=1
+AC_DEFINE(HAVE_GETSERVBYyyyy_R_SUN)
+AC_MSG_RESULT([yes]),
+HAVE_REENTRANT_SERV_SUN=0
+AC_MSG_RESULT([no])
+)
+
 AC_MSG_CHECKING([for POSIX-style getprotobyXXXX_r])
 AC_TRY_LINK([
 #define _POSIX_PTHREAD_SEMANTICS
@@ -302,12 +349,30 @@ HAVE_REENTRANT_PROTO_POSIX=0
 AC_MSG_RESULT([no])
 )
 
-
+AC_MSG_CHECKING([for SUN-style getprotobyXXXX_r])
+AC_TRY_LINK([
+#include <netdb.h>
+#include <stddef.h>
+],
+[
+int x;
+x = getprotobyname_r(NULL,NULL,NULL,(size_t)0);
+x = getprotobynumber_r(0,NULL,NULL,(size_t)0);
+],
+HAVE_REENTRANT_PROTO_SUN=1
+AC_DEFINE(HAVE_GETPROTOBYyyyy_R_SUN)
+AC_MSG_RESULT([yes]),
+HAVE_REENTRANT_PROTO_SUN=0
+AC_MSG_RESULT([no])
+)
 fi
 
 AC_SUBST(HAVE_REENTRANT_HOST_POSIX)
 AC_SUBST(HAVE_REENTRANT_SERV_POSIX)
 AC_SUBST(HAVE_REENTRANT_PROTO_POSIX)
+AC_SUBST(HAVE_REENTRANT_HOST_SUN)
+AC_SUBST(HAVE_REENTRANT_SERV_SUN)
+AC_SUBST(HAVE_REENTRANT_PROTO_SUN)
 
 
 AC_CHECK_FUNCS(getlogin cuserid getpwnam getgrnam getpwuid getgrgid)

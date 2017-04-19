@@ -2,6 +2,9 @@
 #define HAVE_REENTRANT_PROTO_POSIX @HAVE_REENTRANT_PROTO_POSIX@
 #define HAVE_REENTRANT_SERV_POSIX @HAVE_REENTRANT_SERV_POSIX@
 
+#define HAVE_REENTRANT_PROTO_SUN @HAVE_REENTRANT_PROTO_SUN@
+#define HAVE_REENTRANT_SERV_SUN @HAVE_REENTRANT_SERV_SUN@
+
 #define HAVE_WINDOWS @HAVE_WINDOWS@
 #define HAVE_REENTRANT_PASSWD @HAVE_REENTRANT_PASSWD@
 #define HAVE_GETLOGIN_R @HAVE_GETLOGIN_R@
@@ -23,14 +26,14 @@
 #define host_protect(args) args
 #endif
 
-#if HAVE_REENTRANT_SERV_POSIX = 0
+#if HAVE_REENTRANT_SERV_POSIX = 0 && HAVE_REENTRANT_SERV_SUN = 0
   let serv_mutex = Lwt_mutex.create ()
 #define serv_protect(args) Lwt_mutex.with_lock serv_mutex ( fun () -> args )
 #else
 #define serv_protect(args) args
 #endif
 
-#if HAVE_REENTRANT_PROTO_POSIX = 0
+#if HAVE_REENTRANT_PROTO_POSIX = 0 && HAVE_REENTRANT_PROTO_SUN = 0
   let proto_mutex = Lwt_mutex.create ()
 #define proto_protect(args) Lwt_mutex.with_lock proto_mutex ( fun () -> args )
 #else

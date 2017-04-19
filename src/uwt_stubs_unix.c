@@ -278,7 +278,7 @@ nomem1:
   return NULL;
 }
 
-#ifdef HAVE_GETHOSTBYyyyy_R_POSIX
+#if defined(HAVE_GETHOSTBYyyyy_R_POSIX) /*|| defined(HAVE_GETHOSTBYyyyy_R_SUN)*/
 static void *
 gethost_error_code(int hno)
 {
@@ -315,12 +315,22 @@ gethostbyname_worker(uv_work_t *req)
 {
   struct worker_params * w = req->data;
   char *name = w->p1;
-#ifdef HAVE_GETHOSTBYyyyy_R_POSIX
+#if defined(HAVE_GETHOSTBYyyyy_R_POSIX) /*|| defined(HAVE_GETHOSTBYyyyy_R_SUN)*/
+  /*
+    gehostbyname_r and gethostbyaddr_r are not used on solaris, because at least
+    some variants don't support ipv6.
+    See: https://www.illumos.org/issues/7494
+  */
   struct hostent result_buf;
   struct hostent *host = NULL;
   char buf[ALLOCA_SIZE];
   int hno = 0;
-  const int err = gethostbyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&host,&hno);
+  int err = 0;
+#if defined(HAVE_GETHOSTBYyyyy_R_POSIX)
+  err = gethostbyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&host,&hno);
+#else
+  host = gethostbyname_r(name,&result_buf,&buf[0],ALLOCA_SIZE,&hno);
+#endif
   if ( err != 0 || host == NULL ){
     w->p1 = NULL;
     host = NULL;
@@ -471,13 +481,19 @@ gethostbyaddr_worker(uv_work_t *req)
     len = sizeof(struct in_addr);
     type = AF_INET;
   }
-#ifdef HAVE_GETHOSTBYyyyy_R_POSIX
+#if defined(HAVE_GETHOSTBYyyyy_R_POSIX) /*|| defined(HAVE_GETHOSTBYyyyy_R_SUN)*/
   struct hostent result_buf;
   struct hostent *host = NULL;
   char buf[ALLOCA_SIZE];
   int hno = 0;
-  const int err = gethostbyaddr_r(addr, len, type, &result_buf, &buf[0],
-                                  ALLOCA_SIZE, &host, &hno);
+  int err = 0;
+#ifdef HAVE_GETHOSTBYyyyy_R_POSIX
+  err = gethostbyaddr_r(addr, len, type, &result_buf, &buf[0],
+                        ALLOCA_SIZE, &host, &hno);
+#else
+  host = gethostbyaddr_r(addr, len, type, &result_buf, &buf[0],
+                         ALLOCA_SIZE, &hno);
+#endif
   if ( err != 0 || host == NULL ){
     w->p1 = NULL;
     host = NULL;
@@ -575,7 +591,7 @@ nomem1:
   return NULL;
 }
 
-#if defined(HAVE_GETSERVBYyyyy_R_POSIX) || defined(HAVE_GETPROTOBYyyyy_R_POSIX) || defined(HAVE_GETPWNAM_R) || defined(HAVE_GETPWUID_R) || defined(HAVE_GETGRNAM_R) || defined(HAVE_GETGRGID_R)
+#if defined(HAVE_GETSERVBYyyyy_R_POSIX) || defined(HAVE_GETPROTOBYyyyy_R_POSIX) || defined(HAVE_GETPWNAM_R) || defined(HAVE_GETPWUID_R) || defined(HAVE_GETGRNAM_R) || defined(HAVE_GETGRGID_R) || defined(HAVE_GETSERVBYyyyy_R_SUN) || defined(HAVE_GETPROTOBYyyyy_R_SUN)
 static int
 geterror_helper(int err, void *p)
 {
@@ -602,13 +618,20 @@ getservbyname_worker(uv_work_t *req)
   char * name = w->p1;
   char * p2_orig = w->p2;
   const char * proto = *p2_orig == '\0' ? NULL : p2_orig;
-#ifdef HAVE_GETSERVBYyyyy_R_POSIX
+#if defined(HAVE_GETSERVBYyyyy_R_POSIX) || defined(HAVE_GETSERVBYyyyy_R_SUN)
   struct servent result_buf;
   struct servent *serv = NULL;
   char buf[ALLOCA_SIZE];
   errno = 0;
-  const int err = getservbyname_r(name, proto, &result_buf,
-                                  &buf[0], ALLOCA_SIZE, &serv);
+  int err = 0;
+#ifdef HAVE_GETSERVBYyyyy_R_POSIX
+  err = getservbyname_r(name, proto, &result_buf, &buf[0], ALLOCA_SIZE, &serv);
+#else
+  serv = getservbyname_r(name, proto, &result_buf, &buf[0], ALLOCA_SIZE);
+  if (serv == NULL){
+    err = errno;
+  }
+#endif
   if ( err != 0 || serv == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(geterror_helper(err,serv));
@@ -756,13 +779,20 @@ getservbyport_worker(uv_work_t *req)
   memcpy(&port,p1_orig,sizeof port);
   const char * proto =
     p1_orig[sizeof port] == '\0' ? NULL : (p1_orig + sizeof port);
-#ifdef HAVE_GETSERVBYyyyy_R_POSIX
+#if defined(HAVE_GETSERVBYyyyy_R_POSIX) || defined(HAVE_GETSERVBYyyyy_R_SUN)
   struct servent result_buf;
   struct servent *serv = NULL;
   char buf[ALLOCA_SIZE];
+  int err = 0;
   errno = 0;
-  const int err = getservbyport_r(port, proto, &result_buf,
-                                  &buf[0], ALLOCA_SIZE, &serv);
+#ifdef HAVE_GETSERVBYyyyy_R_POSIX
+  err = getservbyport_r(port, proto, &result_buf,&buf[0], ALLOCA_SIZE, &serv);
+#else
+  serv = getservbyport_r(port, proto, &result_buf,&buf[0], ALLOCA_SIZE);
+  if (serv == NULL){
+    err = errno;
+  }
+#endif
   if ( err != 0 || serv == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(geterror_helper(err,serv));
@@ -904,9 +934,16 @@ getprotobyname_worker(uv_work_t * req)
   struct protoent result_buf;
   struct protoent *proto = NULL;
   char buf[ALLOCA_SIZE];
+  int err = 0;
   errno = 0;
-  const int err = getprotobyname_r(name, &result_buf, &buf[0],
-                                   ALLOCA_SIZE, &proto);
+#ifdef HAVE_GETPROTOBYyyyy_R_POSIX
+  err = getprotobyname_r(name, &result_buf, &buf[0], ALLOCA_SIZE, &proto);
+#else
+  proto = getprotobyname_r(name, &result_buf, &buf[0], ALLOCA_SIZE);
+  if (proto == NULL){
+    err = errno;
+  }
+#endif
   if ( err != 0 || proto == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(geterror_helper(err,proto));
@@ -963,13 +1000,20 @@ getprotobynumber_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
   const int number = POINTER_TO_INT(w->p2);
-#ifdef HAVE_GETPROTOBYyyyy_R_POSIX
+#if defined(HAVE_GETPROTOBYyyyy_R_POSIX) || defined(HAVE_GETPROTOBYyyyy_R_SUN)
   struct protoent result_buf;
   struct protoent *proto = NULL;
   char buf[ALLOCA_SIZE];
+  int err = 0;
   errno = 0;
-  const int err = getprotobynumber_r(number, &result_buf, &buf[0],
-                                     ALLOCA_SIZE, &proto);
+#ifdef HAVE_GETPROTOBYyyyy_R_POSIX
+  err = getprotobynumber_r(number, &result_buf, &buf[0], ALLOCA_SIZE, &proto);
+#else
+  proto = getprotobynumber_r(number, &result_buf, &buf[0], ALLOCA_SIZE);
+  if (proto == NULL){
+    err = errno;
+  }
+#endif
   if ( err != 0 || proto == NULL ){
     w->p1 = NULL;
     w->p2 = INT_TO_POINTER(geterror_helper(err,proto));
