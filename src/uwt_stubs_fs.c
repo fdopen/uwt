@@ -657,9 +657,11 @@ fs_mkdtemp_cb(uv_req_t * r)
     param = caml_alloc_small(1,Error_tag);
     Field(param,0) = Val_uwt_error(result);
   }
-  else if ( req->path == NULL ){
-    param = caml_alloc_small(1,Error_tag);
-    Field(param,0) =  VAL_UWT_ERROR_UWT_EFATAL;
+  else if ( req->path == NULL || req->path[0] == '\0' ){
+    /* Protect against outdated or buggy mkdtemp implementations. The
+     * original errno value is unfortunately lost. */
+    param = caml_alloc_small(1, Error_tag);
+    Field(param,0) =  VAL_UWT_ERROR_UNKNOWN;
   }
   else {
     value s = caml_copy_string(req->path);
