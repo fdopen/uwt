@@ -57,8 +57,10 @@
    - [Stream.write] and related functions can never be canceled. The
    analogous write functions in [Lwt_unix] however are cancelable as
    long as the underlying file descriptor is not opened in blocking
-   mode. ([Stream.read] currently returns the only cancelable thread
-   inside {!Stream} and its subclasses)
+   mode. ({Stream.read} currently returns the only cancelable thread
+   inside {!Stream} and its subclasses. But there is no guarantee that
+   {!Tcp.read} will continue to be cancelable under Windows in future
+   libuv versions.)
 
    - Everything that is done in work threads (e.g. File I/O, DNS
    resolution, etc.) is cancelable, as long as the task is just queued
