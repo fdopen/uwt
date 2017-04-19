@@ -30,7 +30,9 @@
    and `Lwt_unix`. If it's not obvious (by just looking at the name),
    which function is called by libuv, `uv_foo` is used instead.
 
--  The mli files are now better documented.
+- new functions: `Uwt.Fs.pread` / `Uwt.Fs.pwrite` / `Uwt.Fs.pwritev`
+
+- The mli files are now better documented.
 
 - `Uwt.Tcp.keepalive` has been split in two functions:
   `Uwt.Tcp.enable_keepalive` and `Uwt.Tcp.disable_keepalive`

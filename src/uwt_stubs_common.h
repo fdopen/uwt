@@ -107,6 +107,9 @@
 #define UWT_EXTERN7(x)                                        \
   CAMLprim value x(value,value,value,value,value,value,value)
 
+#define UWT_EXTERN8(x)                                              \
+  CAMLprim value x(value,value,value,value,value,value,value,value)
+
 #define UWT_EXTERN_BYTE(x)                      \
   CAMLprim value x(value*,int)
 

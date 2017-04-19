@@ -32,9 +32,9 @@ UWT_EXTERN1(uwt_fs_free);
 UWT_EXTERN1(uwt_get_fs_result);
 UWT_EXTERN6(uwt_fs_open_native);
 UWT_EXTERN_BYTE(uwt_fs_open_byte);
-UWT_EXTERN7(uwt_fs_read_native);
+UWT_EXTERN8(uwt_fs_read_native);
 UWT_EXTERN_BYTE(uwt_fs_read_byte);
-UWT_EXTERN7(uwt_fs_write_native);
+UWT_EXTERN8(uwt_fs_write_native);
 UWT_EXTERN_BYTE(uwt_fs_write_byte);
 UWT_EXTERN4(uwt_fs_close);
 UWT_EXTERN4(uwt_fs_unlink);
@@ -66,7 +66,7 @@ UWT_EXTERN_BYTE(uwt_fs_symlink_byte);
 UWT_EXTERN4(uwt_fs_stat);
 UWT_EXTERN4(uwt_fs_lstat);
 UWT_EXTERN4(uwt_fs_fstat);
-UWT_EXTERN6(uwt_fs_writev_native);
+UWT_EXTERN7(uwt_fs_writev_native);
 UWT_EXTERN_BYTE(uwt_fs_writev_byte);
 
 #if HAVE_DECL_UV_FS_REALPATH

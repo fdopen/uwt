@@ -162,8 +162,8 @@ let openfile ?(perm=0o644) ~mode fln : file uv_result =
   cu (openfile fln mode perm)
 
 
-external read:
-  file -> 'a -> int -> int ->
+external iread:
+  file -> 'a -> int -> int -> int64 ->
   loop -> Req.t -> unit ->
   Int_result.int =
   "uwt_fs_read_byte" "uwt_fs_read_native"
@@ -182,7 +182,7 @@ let read_write_common ~req (x: Int_result.int) =
   else
     Ok x'
 
-let read ?(pos=0) ?len t ~buf ~dim =
+let iread ~fd_offset ?(pos=0) ?len t ~buf ~dim =
   let len =  match len with
   | None -> dim - pos
   | Some x -> x
@@ -191,24 +191,38 @@ let read ?(pos=0) ?len t ~buf ~dim =
     invalid_arg "Uwt_sync.Fs.read"
   else
     let req = Req.create loop typ in
-    read t buf pos len loop req () |>
+    iread t buf pos len fd_offset loop req () |>
     read_write_common ~req
 
 let read_ba ?pos ?len t ~(buf:buf) =
   let dim = Bigarray.Array1.dim buf in
-  read ?pos ?len ~dim ~buf t
+  iread ~fd_offset:Int64.minus_one ?pos ?len ~dim ~buf t
 
 let read ?pos ?len t ~buf =
   let dim = Bytes.length buf in
-  read ?pos ?len ~dim ~buf t
+  iread ~fd_offset:Int64.minus_one ?pos ?len ~dim ~buf t
 
-external write:
-  file -> 'a -> int -> int ->
+let pread_ba ?pos ?len t ~fd_offset ~(buf:buf) =
+  if Int64.compare fd_offset Int64.zero < 0 then
+    Error EINVAL
+  else
+    let dim = Bigarray.Array1.dim buf in
+    iread ~fd_offset ?pos ?len ~dim ~buf t
+
+let pread ?pos ?len t ~fd_offset ~buf =
+  if Int64.compare fd_offset Int64.zero < 0 then
+    Error EINVAL
+  else
+    let dim = Bytes.length buf in
+    iread ~fd_offset ?pos ?len ~dim ~buf t
+
+external iwrite:
+  file -> 'a -> int -> int -> int64 ->
   loop -> Req.t -> unit ->
   Int_result.int =
   "uwt_fs_write_byte" "uwt_fs_write_native"
 
-let write ?(pos=0) ?len ~dim t ~buf =
+let iwrite ~fd_offset ?(pos=0) ?len ~dim t ~buf =
   let len =  match len with
   | None -> dim - pos
   | Some x -> x
@@ -217,36 +231,61 @@ let write ?(pos=0) ?len ~dim t ~buf =
     invalid_arg "Uwt_sync.Fs.write"
   else
     let req = Req.create loop typ in
-    write t buf pos len loop req () |>
+    iwrite t buf pos len fd_offset loop req () |>
     read_write_common ~req
 
 let write_ba ?pos ?len t ~(buf:buf) =
   let dim = Bigarray.Array1.dim buf in
-  write ~dim ?pos ?len t ~buf
+  iwrite ~fd_offset:Int64.minus_one ~dim ?pos ?len t ~buf
 
 let write_string ?pos ?len t ~buf =
   let dim = String.length buf in
-  write ~dim ?pos ?len t ~buf
+  iwrite ~fd_offset:Int64.minus_one ~dim ?pos ?len t ~buf
 
 let write ?pos ?len t ~buf =
   let dim = Bytes.length buf in
-  write ~dim ?pos ?len t ~buf
+  iwrite ~fd_offset:Int64.minus_one ~dim ?pos ?len t ~buf
 
-external writev:
-  file -> Iovec_write.t array -> Iovec_write.t list ->
+let iwrite ~fd_offset ?pos ?len ~dim t ~buf =
+  if Int64.compare fd_offset Int64.zero < 0 then
+    Error EINVAL
+  else
+    iwrite ~fd_offset ~dim ?pos ?len t ~buf
+
+let pwrite_ba ?pos ?len t ~fd_offset ~(buf:buf) =
+  let dim = Bigarray.Array1.dim buf in
+  iwrite ~fd_offset ~dim ?pos ?len t ~buf
+
+let pwrite_string ?pos ?len t ~fd_offset ~buf =
+  let dim = String.length buf in
+  iwrite ~fd_offset ~dim ?pos ?len t ~buf
+
+let pwrite ?pos ?len t ~fd_offset ~buf =
+  let dim = Bytes.length buf in
+  iwrite ~fd_offset ~dim ?pos ?len t ~buf
+
+external iwritev:
+  file -> Iovec_write.t array -> Iovec_write.t list -> int64 ->
   loop -> Req.t -> unit ->
   Int_result.int =
   "uwt_fs_writev_byte" "uwt_fs_writev_native"
 
-let writev t iol =
+let iwritev ~fd_offset t iol =
   let open Iovec_write in
   match prep_for_cstub iol with
   | Invalid -> invalid_arg "Uwt_sync.Fs.writev"
   | Empty -> write ~len:0 t ~buf:(Bytes.create 1)
   | All_ba(ar,bl) ->
     let req = Req.create loop typ in
-    writev t ar bl loop req () |>
+    iwritev t ar bl fd_offset loop req () |>
     read_write_common ~req
+
+let writev a b = iwritev ~fd_offset:Int64.minus_one a b
+let pwritev a b fd_offset =
+  if Int64.compare fd_offset Int64.zero < 0 then
+    Error EINVAL
+  else
+    iwritev ~fd_offset a b
 
 external sendfile:
   file -> file -> int64 -> nativeint -> loop -> Req.t -> unit ->

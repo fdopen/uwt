@@ -435,10 +435,21 @@ module type Fs_functions = sig
   val openfile : ?perm:int -> mode:uv_open_flag list -> string -> file t
   val read : ?pos:int -> ?len:int -> file -> buf:bytes -> int t
   val read_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int t
+  val pread : ?pos:int -> ?len:int -> file -> fd_offset:int64 -> buf:bytes ->
+    int t
+  val pread_ba : ?pos:int -> ?len:int -> file -> fd_offset:int64 -> buf:buf ->
+    int t
   val write : ?pos:int -> ?len:int -> file -> buf:bytes -> int t
   val write_string : ?pos:int -> ?len:int -> file -> buf:string -> int t
   val write_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int t
+  val pwrite : ?pos:int -> ?len:int -> file -> fd_offset:int64 ->
+    buf:bytes -> int t
+  val pwrite_string : ?pos:int -> ?len:int -> file -> fd_offset:int64 ->
+    buf:string -> int t
+  val pwrite_ba : ?pos:int -> ?len:int -> file -> fd_offset:int64 ->
+    buf:buf -> int t
   val writev : file -> Iovec_write.t list -> int t
+  val pwritev : file -> Iovec_write.t list -> int64 -> int t
   val close : file -> unit t
   val unlink : string -> unit t
   val mkdir : ?perm:int -> string -> unit t

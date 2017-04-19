@@ -407,6 +407,14 @@ module type Fs_functions = sig
       to libuv (no copy to c heap or stack). It's faster, but you must manually
       ensure, that the bigarray is not accessed from another thread. *)
 
+  val pread : ?pos:int -> ?len:int -> file -> fd_offset:int64 -> buf:bytes ->
+    int t
+  (** {!pread} is equivalent to {!read}, except that it reads from a given
+      position [~fd_offset] in the file without changing the file offset. *)
+
+  val pread_ba : ?pos:int -> ?len:int -> file -> fd_offset:int64 -> buf:buf ->
+    int t
+
   val write : ?pos:int -> ?len:int -> file -> buf:bytes -> int t
   (** [write fd ~pos ~len fd ~buf] writes [~len] bytes to descriptor [fd],
       taking them from byte sequence [buf], starting at position [~pos]
@@ -415,10 +423,24 @@ module type Fs_functions = sig
   val write_string : ?pos:int -> ?len:int -> file -> buf:string -> int t
   val write_ba : ?pos:int -> ?len:int -> file -> buf:buf -> int t
 
+  val pwrite : ?pos:int -> ?len:int -> file -> fd_offset:int64 ->
+    buf:bytes -> int t
+  (** {!pwrite} is equivalent to {!write}, except that it writes into
+      a given position [~fd_offset] and does not change the file offset *)
+
+  val pwrite_string : ?pos:int -> ?len:int -> file -> fd_offset:int64 ->
+    buf:string -> int t
+  val pwrite_ba : ?pos:int -> ?len:int -> file -> fd_offset:int64 ->
+    buf:buf -> int t
+
   val writev : file -> Iovec_write.t list -> int t
   (** write multiple buffers at once. If the number of buffers is
       greater than IOV_MAX, newer libuv versions already contains code
       to circumvent this issue *)
+
+  val pwritev : file -> Iovec_write.t list -> int64 -> int t
+  (** {!pwritev} is equivalent to {!pwrite}, except that it writes into
+      a given position and does not change the file offset *)
 
   val close : file -> unit t
   (** Close a file descriptor. *)

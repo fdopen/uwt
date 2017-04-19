@@ -141,6 +141,22 @@
   CAMLreturn(o_ret);                                      \
 }
 
+#define FSFUNC_5(name,tz,a,b,c,d,e,code)                                \
+  CAMLprim value                                                        \
+  uwt_ ## name ## _byte(value *a, int argn)                             \
+  {                                                                     \
+    (void)argn;                                                         \
+    assert( argn == 8 );                                                \
+    return (uwt_ ## name ## _native(a[0],a[1],a[2],a[3],                \
+                                    a[4],a[5],a[6],a[7]));              \
+  }                                                                     \
+  CAMLprim value                                                        \
+  uwt_ ## name ## _native (value a, value b, value c,value d, value e,  \
+                           value o_loop, value o_req, value o_cb ){     \
+    CAMLparam5(a,b,o_loop,o_req,o_cb);                                  \
+    CAMLxparam3(c,d,e);                                                 \
+    R_WRAP(name,tz,code)
+
 #define FSFUNC_4(name,tz,a,b,c,d,code)                                  \
   CAMLprim value                                                        \
   uwt_ ## name ## _byte(value *a, int argn)                             \
@@ -313,10 +329,11 @@ fs_read_cb(uv_req_t * r)
   return param;
 }
 
-FSFUNC_4(fs_read,fs_read_cb,o_file,o_buf,o_offset,o_len,{
+FSFUNC_5(fs_read,fs_read_cb, o_file, o_buf, o_pos, o_len, o_fd_offset,{
+  const size_t pos = (size_t)Long_val(o_pos);
   const size_t slen = (size_t)Long_val(o_len);
+  const int64_t fd_offset = Int64_val(o_fd_offset);
   struct req * wp = wp_req;
-  size_t offset = Long_val(o_offset);
   const int ba = slen && (Tag_val(o_buf) != String_tag);
   const int fd = FD_VAL(o_file);
   if ( slen > ULONG_MAX ){
@@ -326,7 +343,7 @@ FSFUNC_4(fs_read,fs_read_cb,o_file,o_buf,o_offset,o_len,{
     if ( ba ){
       wp->buf_contains_ba = 1;
       wp->buf.len = slen;
-      wp->buf.base = Ba_buf_val(o_buf) + offset;
+      wp->buf.base = Ba_buf_val(o_buf) + pos;
     }
     else {
       uwt__malloc_uv_buf_t(&wp->buf,slen,wp->cb_type);
@@ -335,9 +352,9 @@ FSFUNC_4(fs_read,fs_read_cb,o_file,o_buf,o_offset,o_len,{
       ret = UV_ENOMEM;
     }
     else {
-      wp->offset = offset;
+      wp->offset = pos;
       BLOCK({
-          ret = uv_fs_read(loop, req, fd, &wp->buf, 1, -1, cb);
+          ret = uv_fs_read(loop, req, fd, &wp->buf, 1, fd_offset, cb);
         });
       if ( ret >= 0 ){
         uwt__gr_register(&wp->sbuf,o_buf);
@@ -370,13 +387,17 @@ fs_write_cb(uv_req_t * r)
   return erg;
 }
 
-FSFUNC_4(fs_write,
+FSFUNC_5(fs_write,
          fs_write_cb,
          o_file,
          o_buf,
          o_pos,
-         o_len,{
+         o_len,
+         o_fd_offset,
+         {
+  const size_t pos = (size_t)Long_val(o_pos);
   const size_t slen = (size_t)Long_val(o_len);
+  const int64_t fd_offset = Int64_val(o_fd_offset);
   struct req * wp = wp_req;
   const int ba = slen && (Tag_val(o_buf) != String_tag);
   const int fd = FD_VAL(o_file);
@@ -386,7 +407,7 @@ FSFUNC_4(fs_write,
   else {
     if ( ba ){
       wp->buf_contains_ba = 1;
-      wp->buf.base = Ba_buf_val(o_buf) + Long_val(o_pos);
+      wp->buf.base = Ba_buf_val(o_buf) + pos;
       wp->buf.len = slen;
     }
     else {
@@ -398,11 +419,11 @@ FSFUNC_4(fs_write,
     else {
       if ( slen && ba == 0 ){
         memcpy(wp->buf.base,
-               String_val(o_buf) + Long_val(o_pos),
+               String_val(o_buf) + pos,
                slen);
       }
       BLOCK({
-          ret = uv_fs_write(loop, req, fd, &wp->buf, 1, -1, cb);
+          ret = uv_fs_write(loop, req, fd, &wp->buf, 1, fd_offset, cb);
         });
       if ( ret >= 0 ){
         if ( ba ){
@@ -428,14 +449,16 @@ fs_write_clean_cb(uv_req_t * req)
   uv_fs_req_cleanup((uv_fs_t *)req);
 }
 
-FSFUNC_3(fs_writev,
+FSFUNC_4(fs_writev,
          fs_write_cb,
          o_file,
          o_ios,
          o_iosave,
+         o_fd_offset,
          {
   struct req * wp = wp_req;
   const size_t ar_size = Wosize_val(o_ios);
+  const int64_t fd_offset = Int64_val(o_fd_offset);
   size_t i;
   const int fd = FD_VAL(o_file);
   for (i = 0; i < ar_size; ++i) {
@@ -450,7 +473,7 @@ FSFUNC_3(fs_writev,
       uv_buf_t *bufs = (uv_buf_t *)buf->base;
       wp->buf_contains_ba = 0;
       BLOCK({
-          ret = uv_fs_write(loop, req, fd, bufs, ar_size, -1, cb);
+          ret = uv_fs_write(loop, req, fd, bufs, ar_size, fd_offset, cb);
         });
       if ( ret >= 0 ){
         if ( o_iosave != Val_unit ){
