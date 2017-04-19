@@ -1,10 +1,6 @@
 version = "@VERSION@"
 description = "libuv bindings"
-requires = "lwt uwt.base"
-archive(byte) = "uwt.cma"
-archive(byte, plugin) = "uwt.cma"
-archive(native) = "uwt.cmxa"
-archive(native, plugin) = "uwt.cmxs"
+requires = "lwt uwt.async uwt.ext uwt.compat"
 
 package "base" (
  version = "@VERSION@"
@@ -15,6 +11,16 @@ package "base" (
  archive(native) = "uwt-base.cmxa"
  archive(native, plugin) = "uwt-base.cmxs"
  exists_if = "uwt-base.cma"
+)
+
+package "async" (
+ version = "@VERSION@"
+ description = "Asynchronous libuv functions"
+ requires = "lwt uwt.base"
+ archive(byte) = "uwt.cma"
+ archive(byte, plugin) = "uwt.cma"
+ archive(native) = "uwt.cmxa"
+ archive(native, plugin) = "uwt.cmxs"
 )
 
 package "sync" (
@@ -31,7 +37,7 @@ package "sync" (
 package "ext" (
  version = "@VERSION@"
  description = "higher level APIs like Uwt_io"
- requires = "uwt lwt.log"
+ requires = "uwt.async lwt.log"
  archive(byte) = "uwt-ext.cma"
  archive(byte, plugin) = "uwt-ext.cma"
  archive(native) = "uwt-ext.cmxa"
@@ -42,7 +48,7 @@ package "ext" (
 package "preemptive" (
  version = "@VERSION@"
  description = "Preemptive threads support for Uwt"
- requires = "uwt uwt.ext threads"
+ requires = "uwt.async uwt.ext threads"
  archive(byte) = "uwt-preemptive.cma"
  archive(byte, plugin) = "uwt-preemptive.cma"
  archive(native) = "uwt-preemptive.cmxa"
@@ -53,7 +59,7 @@ package "preemptive" (
 package "compat" (
  version = "@VERSION@"
  description = "compat mode for lwt.unix"
- requires = "uwt uwt.ext"
+ requires = "uwt.async uwt.ext"
  archive(byte) = "uwt-compat.cma"
  archive(byte, plugin) = "uwt-compat.cma"
  archive(native) = "uwt-compat.cmxa"

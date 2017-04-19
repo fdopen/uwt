@@ -34,10 +34,10 @@ Uv_fs_sync
 
 {2 Uwt}
 
-The main part of this library (findlib name: [uwt]). The naming
-conventions mirror the conventions of libuv, so you can easily consult
-the official {{:http://docs.libuv.org/en/v1.x/index.html} [libuv
-manual]}.
+The main part of this library (findlib name: [uwt.async], included in
+[uwt]) The naming conventions mirror the conventions of libuv, so you
+can easily consult the official
+{{:http://docs.libuv.org/en/v1.x/index.html} [libuv manual]}.
 
 Selected parts of the manual are now included inside the mli files
 (credits to the {{:https://github.com/libuv/libuv/blob/v1.x/AUTHORS}
@@ -50,7 +50,8 @@ Uwt
 {2 Higher Level Helpers}
 
 [lwt.unix] also provides higher level modules. They have been ported
-to [uwt] and have a very similar interface (findlib name: [uwt.ext]).
+to [uwt] and have a very similar interface (findlib name: [uwt.ext],
+included in [uwt]).
 
 {!modules:
 Uwt_log
