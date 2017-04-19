@@ -686,7 +686,9 @@ module Udp : sig
   (** Wrappers around {!recv_start} and {!recv_stop} for you convenience,
       no callback soup. ~len should be greater than zero.
 
-      See also the comments to {!Stream.read}.*)
+      See also the comments to {!Stream.read}.
+      Don't pass [~len:0] or an empty [buf] to recv. This case is
+      captured by uwt/libuv, not your operating system :D *)
 
   val recv_ba : ?pos:int -> ?len:int -> buf:buf -> t -> recv Lwt.t
 
