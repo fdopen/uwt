@@ -416,11 +416,12 @@ val with_connection :
 type server
   (** Type of a server *)
 
-val establish_server_safe :
+val establish_server :
   ?buffer_size : int ->
   ?backlog : int ->
-  Unix.sockaddr -> (input_channel * output_channel -> unit Lwt.t) -> server
-(** [establish_server_safe ?buffer_size ?backlog sockaddr f] creates a
+  Unix.sockaddr ->
+  (input_channel * output_channel -> unit Lwt.t) -> server Lwt.t
+(** [establish_server ?buffer_size ?backlog sockaddr f] creates a
       server which listens for incoming connections. New connections are passed
       to [f]. When threads returned by [f] complete, the connections are closed
       automatically.
@@ -434,30 +435,7 @@ val establish_server_safe :
       [!Lwt.async_exception_hook]. To handle exceptions raised by [close], call
       it manually inside [f]. *)
 
-val establish_server :
-  ?buffer_size : int ->
-  ?backlog : int ->
-  Unix.sockaddr -> (input_channel * output_channel -> unit) -> server
-  (** [establish_server ?buffer_size ?backlog sockaddr f] creates a server
-      which listens for incoming connections. New connections are passed to [f].
-
-      [establish_server] does not start separate threads for running [f], nor
-      close the connections passed to [f]. Thus, the skeleton of a practical
-      server based on [establish_server] might look like this:
-
-      {[
-        Uwt_io.establish_server address (fun (ic, oc) ->
-          Lwt.async (fun () ->
-
-            (* ... *)
-
-            Lwt.catch (fun () -> Uwt_io.close oc) (fun _ -> Lwt.return_unit) >>=
-            Lwt.catch (fun () -> Uwt_io.close ic) (fun _ -> Lwt.return_unit)))
-      ]}
-
-      [backlog] is the argument passed to [Uwt.Stream.listen]. *)
-
-val shutdown_server : server -> unit
+val shutdown_server : server -> unit Lwt.t
   (** Shutdown the given server *)
 
 

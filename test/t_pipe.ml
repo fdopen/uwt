@@ -273,18 +273,16 @@ let l = [
        | false -> Filename.concat (Filename.get_temp_dir_name ()) s
      in
      let addr = Unix.ADDR_UNIX path in
-     let server = Uwt_io.establish_server addr @@ fun (ic,oc) ->
-       let rec iter () =
-         Uwt_io.read_char ic >>= fun s ->
-         Uwt_io.write_char oc s >>= fun () ->
-         iter ()
-       in
-       let t = Lwt.finalize iter (fun () ->
-           Uwt_io.close ic >>= fun () -> Uwt_io.close oc )
-       in
-       ignore t
-     in
      let t =
+       Uwt_io.establish_server addr (fun (ic,oc) ->
+           let rec iter () =
+             Uwt_io.read_char_opt ic >>= function
+             | None -> Lwt.return_unit
+             | Some s -> Uwt_io.write_char oc s >>= iter
+           in
+           Lwt.finalize iter (fun () ->
+               Uwt_io.close ic >>= fun () -> Uwt_io.close oc ))
+       >>= fun server ->
        Lwt.finalize ( fun () ->
            with_client @@ fun client ->
            connect client ~path >>= fun () ->
@@ -308,7 +306,7 @@ let l = [
                t2 (succ n)
            in
            Lwt.join [t1 0; t2 0] >>= fun () -> Lwt.return_true )
-         ( fun () -> Uwt_io.shutdown_server server ; Lwt.return_unit)
+         ( fun () -> Uwt_io.shutdown_server server )
      in
      m_true t);
   ("sockname/peername">::

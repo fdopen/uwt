@@ -1426,9 +1426,14 @@ let with_connection ?in_buffer ?out_buffer sockaddr f =
   Lwt.finalize (fun () -> f chs) (fun () -> close_once ic <&> close_once oc)
 
 type server = {
-  shutdown : unit Lazy.t;
-  server: Uwt.Stream.t;
+  shutdown : unit Lwt.t Lazy.t;
 }
+
+let sb_close s c =
+  if s || c.state = Closed then Lwt.return_unit else
+    Lwt.catch
+      (fun () -> close c)
+      (fun x -> !Lwt.async_exception_hook x; Lwt.return_unit)
 
 let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) addr f =
   let f_cb s_client =
@@ -1438,13 +1443,29 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) addr f =
     let ic = of_stream ~close ~buffer ~mode:input s_client in
     let buffer = Uwt_bytes.create buffer_size in
     let oc = of_stream ~close ~buffer ~mode:output s_client in
-    f (ic,oc)
+    Lwt.async (fun () ->
+        let ic_closed = ref false
+        and oc_closed = ref false in
+        Lwt.catch (fun () ->
+            f (ic,oc) >>= fun () ->
+            ic_closed := true;
+            close_once ic >>= fun () ->
+            oc_closed := true;
+            close_once oc)
+          (fun x ->
+             sb_close !ic_closed ic >>= fun () ->
+             sb_close !oc_closed oc >>= fun () ->
+             Lwt.fail x ))
   and f_es server er =
     if Uwt.Int_result.is_error er then
       let () = Uwt.Stream.close_noerr server in
-      raise (Uwt.Int_result.to_exn ~name:"listen" er)
+      Lwt.fail (Uwt.Int_result.to_exn ~name:"listen" er)
     else
-      { server ; shutdown = lazy (Uwt.Stream.close_noerr server) }
+      let shutdown () =
+        Uwt.Stream.close_noerr server;
+        Lwt.return_unit
+      in
+      Lwt.return { shutdown = Lazy.from_fun shutdown }
   in
   match addr with
   | Unix.ADDR_UNIX path ->
@@ -1479,30 +1500,6 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) addr f =
     in
     let er = Uwt.Tcp.listen server ~max:backlog ~cb in
     f_es s_server er
-
-let establish_server_safe ?buffer_size ?backlog addr f =
-  let f ((ic,oc) as channels) =
-    let s_close s c =
-      if s || c.state = Closed then Lwt.return_unit else
-        Lwt.catch
-          (fun () -> close c)
-          (fun x -> !Lwt.async_exception_hook x; Lwt.return_unit)
-    in
-    Lwt.async (fun () ->
-        let ic_closed = ref false
-        and oc_closed = ref false in
-        Lwt.catch (fun () ->
-            f channels >>= fun () ->
-            ic_closed := true;
-            close_once ic >>= fun () ->
-            oc_closed := true;
-            close_once oc )
-          (fun x ->
-             s_close !ic_closed ic >>= fun () ->
-             s_close !oc_closed oc >>= fun () ->
-             Lwt.fail x ))
-  in
-  establish_server ?buffer_size ?backlog addr f
 
 let shutdown_server server = Lazy.force server.shutdown
 
