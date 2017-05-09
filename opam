@@ -8,13 +8,14 @@ bug-reports: "https://github.com/fdopen/uwt/issues"
 tags: ["clib:libuv"]
 build: ["omake" "-j%{jobs}%" "lib" "BUILD_LIBUV=true" "UWT_BUILD_JOBS=%{jobs}%"]
 install: [
-  ["omake" "install"]
+  ["omake" "opam-install" "PREFIX=%{prefix}%"]
 ]
 build-test: [
   ["omake" "test" ]
 ]
 remove: [
   ["ocamlfind" "remove" "uwt"]
+  ["rm" "-rf" "%{prefix}%/doc/uwt"]
 ]
 available: [ocaml-version >= "4.02.1"]
 depends: [

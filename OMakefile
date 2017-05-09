@@ -137,6 +137,21 @@ distclean:: clean
 	rm -f *~ .*~ setup.ml _oasis *.xz *.gz  *.tar.*
 	rm -rf libuv-v*
 
+.PHONY: opam-install
+opam-install:: install
+	section
+		t=
+			x=$(GetVarEnv PREFIX)
+			if $(equal $(x),$(EMPTY))
+				value $(shell opam config var prefix)
+			else
+				value $(x)
+		docdir=$(t)/doc/uwt
+		mkdir(0o755,-p $(docdir))
+		cp(CHANGES.md COPYING README.md $(docdir))
+		if $(not $(equal $(INTERNAL_LIBUV),$(EMPTY)))
+			cp(libuv/LICENSE $(docdir))
+
 .PHONY: echo-pkg
 echo-pkg:
 	@echo $(PROJNAME)-$(VERSION)
