@@ -91,22 +91,28 @@ let rec call_notifications async_handle =
   | Non_s -> ()
   | Non_c -> call_notifications async_handle
   | Ok_s f -> f ()
-  | Ok_c f -> f (); call_notifications async_handle
+  | Ok_c f ->
+    (match f () with
+    | exception x -> !Lwt.async_exception_hook x
+    | () -> ());
+    call_notifications async_handle
 
 let async_handle =
   match Uwt.Async.create call_notifications with
   | Error _ -> failwith "can't create async handle for uwt_preemptive"
   | Ok x -> x
 
+(*
 let () =
   Uwt.Main.at_exit ( fun () -> Uwt.Async.close_noerr async_handle;
                      Lwt.return_unit )
-
+*)
 
 let send_notification (a:int) =
   Mutex.lock notification_mutex;
   Queue.push a notification_queue;
-  ignore(Uwt.Async.send async_handle) ; (* TODO: Failing? *)
+  (* It won't fail, async_handle is never closed. *)
+  let _ : Uwt.Int_result.unit = Uwt.Async.send async_handle in
   Mutex.unlock notification_mutex
 
 (* +-----------------------------------------------------------------+
@@ -190,7 +196,6 @@ type thread = {
   mutable reuse : bool;
   (* Whether the thread must be readded to the pool when the work is
      done. *)
-  mutable exn: exn option;
 }
 
 (* Pool of worker threads: *)
@@ -217,7 +222,6 @@ let make_worker () =
     task_cell = CELL.make ();
     thread = Thread.self ();
     reuse = true;
-    exn = None;
   } in
   worker.thread <- Thread.create worker_loop worker;
   worker
@@ -231,14 +235,9 @@ let add_worker worker =
     Lwt.wakeup w worker
 
 (* Wait for worker to be available, then return it: *)
-let rec get_worker () =
+let get_worker () =
   if not (Queue.is_empty workers) then
-    let p = Queue.take workers in
-    if p.exn = None then
-      Lwt.return p
-    else
-      let () = decr threads_count in
-      get_worker ()
+    Lwt.return (Queue.take workers)
   else if !threads_count < !max_threads then
     Lwt.return (make_worker ())
   else
@@ -294,51 +293,41 @@ let detach f args =
     with exn ->
       result := Error exn
   in
-  let x = Uwt.Async.start async_handle in
-  if Uwt.Int_result.is_error x then
-    Lwt.fail(Uwt.Int_result.to_exn ~name:"Uwt_preemptive.detach" x)
-  else
-    get_worker () >>= fun worker ->
-    let waiter, wakener = Lwt.wait () in
-    let id =
-      make_notification ~once:true
-        (fun () -> Lwt.wakeup_result wakener !result)
-    and exn_catched = ref false in
-    Lwt.finalize
-      (fun () ->
-         incr detached_cnt;
-         (* Send the id and the task to the worker: *)
-         CELL.set worker.task_cell (id, task);
-         match worker.exn with
-         | None -> waiter
-         | Some x ->
-           exn_catched:= true;
-           Lwt.fail x)
-      (fun () ->
-         let erg =
-           try
-             if worker.reuse || !exn_catched then
-               (* Put back the worker to the pool: *)
-               add_worker worker
-             else begin
-               decr threads_count;
-               (* Or wait for the thread to terminates, to free its associated
+  get_worker () >>= fun worker ->
+  let waiter, wakener = Lwt.wait () in
+  let id =
+    make_notification ~once:true
+      (fun () -> Lwt.wakeup_result wakener !result) in
+  Lwt.finalize
+    (fun () ->
+       incr detached_cnt;
+       let _ : Uwt.Int_result.unit = Uwt.Async.start async_handle in
+       (* Send the id and the task to the worker: *)
+       CELL.set worker.task_cell (id, task);
+       waiter)
+    (fun () ->
+       let erg =
+         try
+           if worker.reuse then
+             (* Put back the worker to the pool: *)
+             add_worker worker
+           else begin
+             decr threads_count;
+             (* Or wait for the thread to terminates, to free its associated
                   resources: *)
-               Thread.join worker.thread
-             end;
-             Lwt.return_unit
-           with
-           | x -> Lwt.fail x
-         in
-         decr detached_cnt;
-         if !detached_cnt <> 0 then
-           erg
-         else
-           let x = Uwt.Async.stop async_handle in
-           if erg != Lwt.return_unit && Uwt.Int_result.is_error x then
-             Lwt.fail(Uwt.Int_result.to_exn ~name:"Uwt_preemptive.detach" x)
-           else
-             erg)
+             Thread.join worker.thread
+           end;
+           None
+         with
+         | e -> Some e
+       in
+       decr detached_cnt;
+       if !detached_cnt = 0 then (
+         let _ : Uwt.Int_result.unit = Uwt.Async.stop async_handle in
+         () );
+       match erg with
+       | None -> Lwt.return_unit
+       | Some x -> Lwt.fail x)
 
 (* +-----------------------------------------------------------------+
    | Running Lwt threads in the main thread                          |
