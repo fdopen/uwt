@@ -1,4 +1,4 @@
-0.2.0 2017-XX-XX
+0.2.0 2017-12-05
 ---------------------------
 - `Uwt.Misc.guess_handle` now takes an `Unix.file_descr` as parameter
    (instead of `Uwt.file`). This doesn't follow the libuv prototypes,
