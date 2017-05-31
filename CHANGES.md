@@ -1,3 +1,11 @@
+0.2.1 2017-06-01
+---------------------------
+
+- update internal libuv version to to 1.12.0
+  * new functions: `Uwt.Signal.oneshot` and
+    `Uwt_base.Misc.{put,set,unset}env` (added because of utf8 support
+    under windows)
+
 0.2.0 2017-12-05
 ---------------------------
 - `Uwt.Misc.guess_handle` now takes an `Unix.file_descr` as parameter
