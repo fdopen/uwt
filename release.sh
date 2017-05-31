@@ -45,7 +45,7 @@ fi
 
 cd "$mtmpf"
 touch src/configure libuv/configure
-rm -f .git* libuv/.git*
+rm -rf .git* libuv/.git*
 
 for f in "${curdir}/dist/libuv32.vcxproj" "${curdir}/dist/libuv64.vcxproj" ; do
     if [ -f "$f" ]; then
