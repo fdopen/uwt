@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-UWT_EXTERN3(uwt_signal_start);
+UWT_EXTERN4(uwt_signal_start);
 
 #ifdef __cplusplus
 }

@@ -967,6 +967,10 @@ module Signal : sig
   (** use {!Sys.sigterm}, {!Sys.sigstop}, etc *)
 
   val start_exn : int -> cb:(t -> int -> unit) -> t
+
+  val oneshot : int -> unit Lwt.t
+  (** Wait for the signal once and reset the moment the signal is received.
+      Use Lwt.cancel to stop the signal handler *)
 end
 
 module Poll : sig

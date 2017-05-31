@@ -1145,13 +1145,26 @@ module Signal = struct
   include (Handle: (module type of Handle) with type t := t )
 
   external start:
-    loop -> int -> (t -> int -> unit) -> t uv_result = "uwt_signal_start"
+    loop -> int -> (t -> int -> unit) -> bool -> t uv_result = "uwt_signal_start"
 
   let sigbreak = -50
   let sigwinch = -51
 
-  let start_exn i ~cb = start loop i cb |> to_exn "uv_signal_start"
-  let start i ~cb = start loop i cb
+  let oneshot signal =
+    let s,w = Lwt.task () in
+    let cb t _i =
+      close_noerr t;
+      Lwt.wakeup w ()
+    in
+    match start loop signal cb true with
+    | Ok t ->
+      Lwt.on_cancel s ( fun () -> close_noerr t );
+      s
+    | Error x ->
+      efail "uv_signal_start_oneshot" x
+
+  let start_exn i ~cb = start loop i cb false |> to_exn "uv_signal_start"
+  let start i ~cb = start loop i cb false
 end
 
 module Poll = struct
