@@ -754,3 +754,57 @@ uwt_print_active_handles(value a, value b)
 {
   return uwt_print_handles(a,b,uv_print_active_handles);
 }
+
+CAMLprim value
+uwt_os_getenv(value on)
+{
+#if HAVE_DECL_UV_OS_GETENV
+  CAMLparam1(on);
+  CAMLlocal1(p);
+  char buffer[ALLOCA_PATH_LEN];
+  size_t size = ALLOCA_PATH_LEN;
+  int tag = Ok_tag;
+  int r = uv_os_getenv(String_val(on), buffer, &size);
+  if ( r == 0 ){
+    p = caml_alloc_string(size);
+    memcpy(String_val(p), buffer, size);
+  }
+  else {
+    if ( r == UV_ENOBUFS ){
+      p = caml_alloc_string(size-1);
+      r = uv_os_getenv(String_val(on), String_val(p), &size);
+    }
+    if ( r != 0 ){
+      p = Val_uwt_error(r);
+      tag = Error_tag;
+    }
+  }
+  value ret = caml_alloc_small(1,tag);
+  Field(ret,0) = p;
+  CAMLreturn(ret);
+#else
+  return (uwt__alloc_eresult(VAL_UWT_ERROR_ENOSYS));
+#endif
+}
+
+CAMLprim value
+uwt_os_setenv_na(value on, value ov)
+{
+#if HAVE_DECL_UV_OS_SETENV
+  const int r = uv_os_setenv(String_val(on), String_val(ov));
+  return (VAL_UWT_UNIT_RESULT(r));
+#else
+  return VAL_UWT_INT_RESULT_ENOSYS;
+#endif
+}
+
+CAMLprim value
+uwt_os_unsetenv_na(value on)
+{
+#if HAVE_DECL_UV_OS_UNSETENV
+  const int r = uv_os_unsetenv(String_val(on));
+  return (VAL_UWT_UNIT_RESULT(r));
+#else
+  return VAL_UWT_INT_RESULT_ENOSYS;
+#endif
+}

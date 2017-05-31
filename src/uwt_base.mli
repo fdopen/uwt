@@ -762,6 +762,20 @@ module Misc : sig
   val chdir: string -> Int_result.unit
   (** Changes the current working directory. *)
 
+  val getenv: string -> string uv_result
+  (** Return the value associated to a variable in the process environment.
+      ENOENT is returned, if the variable is unbound. *)
+
+  val putenv: key:string -> data:string -> Int_result.unit
+  (** [putenv ~key ~data] sets the value associated to a variable in
+      the process environment. [key] is the name of the environment
+      variable, and [data] its new associated value. *)
+
+  val unsetenv: string -> Int_result.unit
+  (** Deletes the environment variable specified by name. If no such
+      environment variable exists, this function returns
+      successfully. *)
+
   val set_process_title: string -> Int_result.unit
   (** The following two functions don't work reliable,
       especially with byte code. And set_process_title won't

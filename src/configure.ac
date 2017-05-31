@@ -11,7 +11,7 @@ AC_MSG_CHECKING([posix source 200809L])
 AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h grp.h pwd.h sys/param.h byteswap.h sys/byteswap.h sys/endian.h sys/un.h arpa/inet.h)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_DECLS([strnlen], [], [], [#include <string.h>])
-AC_CHECK_DECLS([uv_os_tmpdir,uv_os_get_passwd,uv_translate_sys_error,UV_DISCONNECT],[],[],[#include <uv.h>])
+AC_CHECK_DECLS([uv_os_tmpdir,uv_os_get_passwd,uv_translate_sys_error,uv_os_getenv,uv_os_setenv,uv_os_unsetenv,UV_DISCONNECT],[],[],[#include <uv.h>])
 
 AC_HEADER_STDBOOL
 AC_SYS_LARGEFILE

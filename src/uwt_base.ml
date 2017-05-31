@@ -622,6 +622,10 @@ module Misc = struct
     string array -> string -> Int_result.unit = "uwt_set_process_title_na" NOALLOC
   let set_process_title s = set_process_title Sys.argv s
 
+  external getenv: string -> string uv_result = "uwt_os_getenv"
+  external putenv: key:string -> data:string -> Int_result.unit =
+    "uwt_os_setenv_na" NOALLOC
+  external unsetenv: string -> Int_result.unit = "uwt_os_unsetenv_na" NOALLOC
 end
 
 module Sys_info = struct

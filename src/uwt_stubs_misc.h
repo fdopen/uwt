@@ -53,6 +53,9 @@ UWT_EXTERN2(uwt_set_process_title_na);
 UWT_EXTERN2(uwt_print_all_handles);
 UWT_EXTERN2(uwt_print_active_handles);
 UWT_EXTERN1(uwt_chdir);
+UWT_EXTERN1(uwt_os_getenv);
+UWT_EXTERN2(uwt_os_setenv_na);
+UWT_EXTERN1(uwt_os_unsetenv_na);
 
 #ifdef __cplusplus
 }
