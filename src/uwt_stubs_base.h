@@ -195,6 +195,7 @@ struct handle {
   ((struct handle*)(Field((x),1)))
 
 UWT_LOCAL value uwt__handle_res_create(uv_handle_type, bool);
+UWT_LOCAL int uwt__pipe_handle_reinit(struct handle *);
 UWT_LOCAL void uwt__handle_unreg_camlval(struct handle *);
 UWT_LOCAL void uwt__cancel_reader(struct handle *);
 UWT_LOCAL void uwt__handle_finalize_close_cb(uv_handle_t *);

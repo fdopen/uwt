@@ -90,6 +90,57 @@ spawn_exit_cb(uv_process_t*t, int64_t exit_status, int term_signal)
   HANDLE_CB_RET(exn);
 }
 
+static value
+close_tmp_fds(value tmp)
+{
+  CAMLparam1(tmp);
+  CAMLlocal1(cur);
+  int i;
+  for ( i = 0; i < 3; ++i ){
+    cur = Field(tmp,i);
+    if ( cur == Val_unit ){
+      continue;
+    }
+    cur = Field(cur,0);
+    struct handle * h;
+    const int tag = Tag_val(cur);
+    cur = Field(cur,0);
+    if ( tag == 0 ){
+      continue;
+    }
+    h = get_handle(cur);
+    if ( h == NULL ){
+      continue;
+    }
+    switch(tag){
+    case 2: /* fall */ /* Inherit_pipe */
+    case 3: /* Inherit_stream */
+      continue;
+    case 1:  /* Create_pipe */
+    case 4: /* Create_pipe_read */
+    case 5: /* Create_pipe_write */
+    case 6: /* Create_pipe_duplex */
+      break;
+    default:
+      assert(false);
+    }
+    uv_os_fd_t fd;
+    int r = uv_fileno(h->handle,&fd);
+    if ( r < 0 ){
+      continue;
+    }
+    r = uwt__pipe_handle_reinit(h);
+    if ( r != 0 ){
+      /* unfortune case, the user pipe's handle
+         is invalid now. This can only happen
+         in case of a malloc failure. uv_pipe_init
+         can't fail */
+      uwt_close_nowait(cur);
+    }
+  }
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value
 uwt_spawn(value p1, value p2, value p3, value p4)
 {
@@ -113,7 +164,7 @@ uwt_spawn(value p1, value p2, value p3, value p4)
 
   value tmp = Field(p1,1);
 
-  for ( i = 0; i < 3; ++i ){
+  for ( i = 0; i < 3; ++i ){ /* keep in sync with close_tmp_fds! */
     value cur = Field(tmp,i);
     if ( cur == Val_unit ){
       stdio[i].flags = UV_IGNORE;
@@ -258,6 +309,9 @@ error_end:
   if ( erg < 0 ){
     if ( spawn_called == false ){
       uwt__free_handle(handle);
+    }
+    else {
+      close_tmp_fds(Field(p1,1));
     }
     Field(op,1) = 0;
     Tag_val(ret) = Error_tag;

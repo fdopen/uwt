@@ -881,6 +881,45 @@ uwt__handle_res_create(uv_handle_type handle_type, bool finalizable)
   return v;
 }
 
+static void
+close_pipe_handle(uv_handle_t *h)
+{
+  mem_stack_free(&stacks_handle_t[UV_NAMED_PIPE], h);
+}
+
+/*
+  special case:
+  if uv_spawn fails, and UV_CREATE_PIPE was specified, pipes could have
+  been created.
+  The library user might not expect this. So I close them to avoid descriptor
+  leakage. But I also create new uv_pipe_t handles (without file descriptors),
+  that can be used or closed like the original handles.
+  Hash value and the behaviour of the compare and identity function won't change
+*/
+UWT_LOCAL int
+uwt__pipe_handle_reinit(struct handle * wp)
+{
+  uv_handle_t * h = wp->handle;
+  uv_pipe_t * p = (uv_pipe_t*) h;
+  uv_loop_t * l = p->loop;
+  int ipc = p->ipc;
+  uv_handle_t * nh;
+  nh = malloc_uv_handle_t(UV_NAMED_PIPE);
+  if ( nh == NULL ){
+    return UV_ENOMEM;
+  }
+  int erg = uv_pipe_init(l,(uv_pipe_t*)nh, ipc);
+  if (erg < 0){
+    mem_stack_free(&stacks_handle_t[UV_NAMED_PIPE], nh);
+    return erg;
+  }
+  uv_close(h,close_pipe_handle);
+  wp->handle = nh;
+  wp->handle->data = wp;
+  wp->initialized = 0;
+  return 0;
+}
+
 /* Memory debugging and TODO */
 
 static void
