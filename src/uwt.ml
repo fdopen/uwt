@@ -798,10 +798,6 @@ module Udp = struct
     in
     if pos < 0 || len < 0 || pos > dim - len then
       Lwt.fail (Invalid_argument "Uwt.Udp.send")
-#if HAVE_WINDOWS <> 0
-    else (* windows doesn't support try_send *)
-      qsu5 ~name ~f:send s buf pos len addr
-#else
     else
       let x' = try_send ~pos ~len ~buf ~dim s addr in
       let x = ( x' :> int ) in
@@ -815,7 +811,6 @@ module Udp = struct
       else (* doc says it will match the given buffer size, although
               it returns len not zero like uv_udp_send *)
         efail name UWT_EFATAL
-#endif
 
   let send_ba ?pos ?len ~(buf:buf) t addr =
     let dim = Bigarray.Array1.dim buf in
@@ -863,15 +858,12 @@ module Udp = struct
     | Empty -> send_raw ~len:0 t ~buf:(Bytes.create 1) addr
     | All_ba(ar,l) -> qsu4 ~name:"sendv" ~f:sendv_raw t ar addr l
 
-#if HAVE_WINDOWS <> 0
-  let sendv = sendv_raw (* windows doesn't support try_send *)
-#else
   let sendv t iovs addr =
     let name = "sendv" in
     let x' = try_sendv t iovs addr in
     let x = ( x' :> int ) in
     if x < 0 then
-      if x' = Int_result.eagain then
+      if x' = Int_result.eagain || x' = Int_result.enosys then
         sendv_raw t iovs addr
       else
         LInt_result.mfail ~name ~param x'
@@ -879,7 +871,6 @@ module Udp = struct
       match Iovec_write.drop iovs x with
       | [] -> Lwt.return_unit
       | _ -> LInt_result.mfail ~name ~param Int_result.uwt_efatal
-#endif
 
   type recv_result =
     | Data of Bytes.t * sockaddr option
