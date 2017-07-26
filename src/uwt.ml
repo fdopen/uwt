@@ -38,6 +38,8 @@ module LInt_result = struct
       mfail ~name ~param x
     else
       Lwt.fail_invalid_arg "Uwt.Int_result.fail"
+
+  external uforce: Int_result.int -> Int_result.unit = "%identity"
 end
 
 type 'a cb = 'a uv_result Lwt.u
@@ -60,6 +62,7 @@ let param = ""
 
 let get_exn ?(param="") name x = Unix.Unix_error(to_unix_error x,name,param)
 let efail ?param name x = get_exn ?param name x |> Lwt.fail
+let ufail ?(param="") name x = Lwt.fail (Unix.Unix_error(x,name,param))
 let eraise ?param name x = raise (get_exn ?param name x)
 
 module Req = struct
@@ -583,8 +586,17 @@ module Tcp = struct
 
   external bind:
     t -> sockaddr -> mode list -> Int_result.unit = "uwt_tcp_bind_na" NOALLOC
-  let bind_exn ?(mode=[]) t ~addr () = bind t addr mode |> to_exnu "bind"
-  let bind ?(mode=[]) t ~addr () = bind t addr mode
+
+  let is_invalid_inet_addr = function
+  | Unix.ADDR_UNIX _ -> true
+  | Unix.ADDR_INET (_,p) when p < 0 || p >= 65536 -> true
+  | Unix.ADDR_INET _ -> false
+
+  let bind ?(mode=[]) t ~addr () =
+    if is_invalid_inet_addr addr then (LInt_result.uforce Int_result.einval)
+    else bind t addr mode
+
+  let bind_exn ?mode t ~addr () = bind ?mode t ~addr () |> to_exnu "bind"
 
   external nodelay: t -> bool -> Int_result.unit = "uwt_tcp_nodelay_na" NOALLOC
   let nodelay_exn t x = nodelay t x |> to_exnu "uv_tcp_nodelay"
@@ -613,7 +625,9 @@ module Tcp = struct
 
   external connect:
     t -> sockaddr -> unit_cb -> Int_result.unit = "uwt_tcp_connect"
-  let connect p ~addr = qsu2 ~name:"connect" ~f:connect p addr
+  let connect p ~addr =
+    if is_invalid_inet_addr addr then ufail "connect" Unix.EINVAL
+    else qsu2 ~name:"connect" ~f:connect p addr
 
   let accept server =
     let x = init_raw loop in
@@ -700,8 +714,11 @@ module Udp = struct
 
   external bind:
     t -> sockaddr -> mode list -> Int_result.unit = "uwt_udp_bind_na" NOALLOC
-  let bind_exn ?(mode=[]) t ~addr () = bind t addr mode |> to_exnu "bind"
-  let bind ?(mode=[]) t ~addr () = bind t addr mode
+
+  let bind ?(mode=[]) t ~addr () =
+    if Tcp.is_invalid_inet_addr addr then (LInt_result.uforce Int_result.einval)
+    else bind t addr mode
+  let bind_exn ?mode t ~addr () = bind ?mode t ~addr () |> to_exnu "bind"
 
   external getsockname: t -> sockaddr uv_result = "uwt_udp_getsockname"
   let getsockname_exn t = getsockname t |> to_exn "getsockname"
@@ -752,6 +769,7 @@ module Udp = struct
     "uwt_udp_try_send_na" NOALLOC
 
   let try_send ?(pos=0) ?len ~buf ~dim t s =
+    if Tcp.is_invalid_inet_addr s then Int_result.einval else
     let len = match len with
     | None -> dim - pos
     | Some x -> x
@@ -767,6 +785,7 @@ module Udp = struct
 
   let send_raw ?(pos=0) ?len ~buf ~dim s addr =
     let name = "send" in
+    if Tcp.is_invalid_inet_addr addr then ufail name Unix.EINVAL else
     let len =
       match len with
       | None -> dim - pos
@@ -841,6 +860,7 @@ module Udp = struct
     "uwt_try_writev_na" NOALLOC
 
   let try_sendv t iovs sockaddr =
+    if Tcp.is_invalid_inet_addr sockaddr then Int_result.einval else
     let open Iovec_write in
     match prep_for_cstub iovs with
     | Invalid -> Int_result.einval
@@ -852,6 +872,7 @@ module Udp = struct
     unit_cb -> Int_result.unit = "uwt_writev"
 
   let sendv_raw t iol addr =
+    if Tcp.is_invalid_inet_addr addr then ufail "sendv" Unix.EINVAL else
     let open Iovec_write in
     match prep_for_cstub iol with
     | Invalid -> Lwt.fail (Invalid_argument "Uwt.Stream.writev")
@@ -1255,9 +1276,9 @@ module Dns = struct
     = "uwt_getnameinfo"
 
   let getnameinfo sock options =
-    match sock with
-    | Unix.ADDR_UNIX _ -> Lwt.return (Error EINVAL)
-    | Unix.ADDR_INET _ ->
+    if Tcp.is_invalid_inet_addr sock then
+      Lwt.return (Error EINVAL)
+    else
       re_conv @@ fun () ->
       Req.ql
         ~f:(getnameinfo sock options)
