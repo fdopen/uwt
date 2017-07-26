@@ -187,7 +187,7 @@ let syslog_connect paths =
                   Unix.connect fd (Unix.ADDR_UNIX path);
                   Unix.set_close_on_exec fd;
                   Unix.set_nonblock fd;
-                  let p = Uwt.Pipe.openpipe_exn ~ipc:true fd in
+                  let p = Uwt.Pipe.openpipe_exn ~ipc:false fd in
                   Lwt.return (DGRAM, p)
                 )
                 (function
@@ -199,7 +199,7 @@ let syslog_connect paths =
                        Unix.connect fd (Unix.ADDR_UNIX path);
                        Unix.set_close_on_exec fd;
                        Unix.set_nonblock fd;
-                       let p = Uwt.Pipe.openpipe_exn ~ipc:true fd in
+                       let p = Uwt.Pipe.openpipe_exn ~ipc:false fd in
                        Lwt.return (STREAM, p)
                     )
                     (function
