@@ -134,8 +134,13 @@ uwt_tcp_keepalive_na(value o_tcp,value o_enable, value o_delay)
 {
   HANDLE_INIT_NA(th, o_tcp);
   UINT_VAL_RET_IR_EINVAL(d,o_delay);
-  /* uninit allowed */
-  int ret = uv_tcp_keepalive((uv_tcp_t *)th->handle, Long_val(o_enable), d);
+  int enable = Long_val(o_enable);
+  /* uninit allowed, but forbidden by me. delay is ignored by libuv,
+     when no socket was created */
+  if ( enable && th->initialized == 0 ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
+  int ret = uv_tcp_keepalive((uv_tcp_t *)th->handle, enable, d);
   return (VAL_UWT_UNIT_RESULT(ret));
 }
 
