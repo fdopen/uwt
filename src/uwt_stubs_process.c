@@ -287,9 +287,15 @@ uwt_process_kill_na(value o_h,value o_sig)
 {
   HANDLE_INIT_NA(h, o_h);
   INT_VAL_RET_IR_EINVAL(sig, o_sig);
+  if ( h->x.process_killed == 1 ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
   uv_process_t * p = (uv_process_t *)h->handle;
   int signum = uwt__convert_signal_number(sig);
   int ret = uv_process_kill(p,signum);
+  if (ret == 0){
+    h->x.process_killed = 1;
+  }
   return (VAL_UWT_UNIT_RESULT(ret));
 }
 
