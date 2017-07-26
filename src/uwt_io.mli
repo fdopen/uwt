@@ -280,7 +280,19 @@ val read_into_exactly : input_channel -> Bytes.t -> int -> int -> unit Lwt.t
       @raise End_of_file on end of input *)
 
 val read_value : input_channel -> 'a Lwt.t
-  (** [read_value ic] reads a marshaled value from [ic] *)
+(** [read_value channel] reads a marshaled value from [channel]; it corresponds
+    to the standard library's
+    {{:https://caml.inria.fr/pub/docs/manual-ocaml/libref/Marshal.html#VALfrom_channel} [Marshal.from_channel]}.
+    The corresponding writing function is {!write_value}.
+
+    Note that reading marshaled values is {e not}, in general, type-safe. See
+    the warning in the description of module
+    {{:https://caml.inria.fr/pub/docs/manual-ocaml/libref/Marshal.html}
+    [Marshal]} for details. The short version is: if you read a value of one
+    type, such as [string], when a value of another type, such as [int] has
+    actually been marshaled to [channel], you may get arbitrary behavior,
+    including segmentation faults, access violations, security bugs, etc. *)
+
 
 (** {2 Writing} *)
 
@@ -416,24 +428,62 @@ val with_connection :
 type server
   (** Type of a server *)
 
+
+val establish_server_with_client_address :
+  ?buffer_size : int ->
+  ?backlog : int ->
+  ?no_close : bool ->
+  Unix.sockaddr ->
+  (Unix.sockaddr -> input_channel * output_channel -> unit Lwt.t) ->
+    server Lwt.t
+(** [establish_server_with_client_address listen_address f] creates a server
+    which listens for incoming connections on [listen_address]. When a client
+    makes a new connection, it is passed to [f]: more precisely, the server
+    calls
+
+{[
+f client_address (in_channel, out_channel)
+]}
+
+    where [client_address] is the address (peer name) of the new client, and
+    [in_channel] and [out_channel] are two channels wrapping the socket for
+    communicating with that client.
+
+    The server does not block waiting for [f] to complete: it concurrently tries
+    to accept more client connections while [f] is handling the client.
+
+    When the promise returned by [f] completes (i.e., [f] is done handling the
+    client), [establish_server_with_client_address] automatically closes
+    [in_channel] and [out_channel]. This is a default behavior that is useful
+    for simple cases, but for a robust application you should explicitly close
+    these channels yourself, and handle any exceptions. If the channels are
+    still open when [f] completes, and their automatic closing raises an
+    exception, [establish_server_with_client_address] treats it as an unhandled
+    exception reaching the top level of the application: it passes that
+    exception to {!Lwt.async_exception_hook}, the default behavior of which is
+    to print the exception and {e terminate your process}.
+
+    Automatic closing can be completely disabled by passing [~no_close:true].
+
+    Similarly, if [f] raises an exception (or the promise it returns fails with
+    an exception), [establish_server_with_client_address] can do nothing with
+    that exception, except pass it to {!Lwt.async_exception_hook}.
+
+    [~backlog] is the argument passed to {!Lwt_unix.listen}.
+
+    The returned promise (a [server Lwt.t]) resolves when the server has just
+    started listening on [listen_address]: right after the internal call to
+    [listen], and right before the first internal call to [accept]. *)
+
+
 val establish_server :
   ?buffer_size : int ->
   ?backlog : int ->
+  ?no_close : bool ->
   Unix.sockaddr ->
   (input_channel * output_channel -> unit Lwt.t) -> server Lwt.t
-(** [establish_server ?buffer_size ?backlog sockaddr f] creates a
-      server which listens for incoming connections. New connections are passed
-      to [f]. When threads returned by [f] complete, the connections are closed
-      automatically.
-
-      The server does not wait for each thread. It begins accepting new
-      connections immediately.
-
-      If a thread raises an exception, it is passed to
-      [!Lwt.async_exception_hook]. Likewise, if the automatic [close] of a
-      connection raises an exception, it is passed to
-      [!Lwt.async_exception_hook]. To handle exceptions raised by [close], call
-      it manually inside [f]. *)
+(** Like [establish_server_with_client_address], but does not pass the client
+    address to the callback [f]. *)
 
 val shutdown_server : server -> unit Lwt.t
   (** Shutdown the given server *)

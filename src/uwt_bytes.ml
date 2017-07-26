@@ -73,7 +73,7 @@ let blit_from_bytes src_buf src_ofs dst_buf dst_ofs len =
   if (len < 0
       || src_ofs < 0 || src_ofs > Bytes.length src_buf - len
       || dst_ofs < 0 || dst_ofs > length dst_buf - len) then
-    invalid_arg "String.blit"
+    invalid_arg "Uwt_bytes.blit_from_bytes"
   else
     unsafe_blit_from_bytes src_buf src_ofs dst_buf dst_ofs len
 
@@ -81,7 +81,7 @@ let blit_to_bytes src_buf src_ofs dst_buf dst_ofs len =
   if (len < 0
       || src_ofs < 0 || src_ofs > length src_buf - len
       || dst_ofs < 0 || dst_ofs > Bytes.length dst_buf - len) then
-    invalid_arg "String.blit"
+    invalid_arg "Uwt_bytes.blit_to_bytes"
   else
     unsafe_blit_to_bytes src_buf src_ofs dst_buf dst_ofs len
 
@@ -89,7 +89,7 @@ let blit src_buf src_ofs dst_buf dst_ofs len =
   if (len < 0
       || src_ofs < 0 || src_ofs > length src_buf - len
       || dst_ofs < 0 || dst_ofs > length dst_buf - len) then
-    invalid_arg "String.blit"
+    invalid_arg "Uwt_bytes.blit"
   else
     unsafe_blit src_buf src_ofs dst_buf dst_ofs len
 

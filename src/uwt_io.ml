@@ -32,9 +32,9 @@ let min_buffer_size = 16
 
 let check_buffer_size fun_name buffer_size =
   if buffer_size < min_buffer_size then
-    Printf.ksprintf invalid_arg "Lwt_io.%s: too small buffer size (%d)" fun_name buffer_size
+    Printf.ksprintf invalid_arg "Uwt_io.%s: too small buffer size" fun_name
   else if buffer_size > Sys.max_string_length then
-    Printf.ksprintf invalid_arg "Lwt_io.%s: too big buffer size (%d)" fun_name buffer_size
+    Printf.ksprintf invalid_arg "Uwt_io.%s: too big buffer size" fun_name
   else
     ()
 
@@ -175,7 +175,7 @@ let name : type mode. mode _channel -> string = fun ch ->
     | Output -> "output"
 
 let closed_channel ch = Channel_closed(name ch)
-let invalid_channel ch = Failure(Printf.sprintf "temporary atomic %s channel no more valid" (name ch))
+let invalid_channel ch = Failure(Printf.sprintf "temporary atomic channel %s no more valid" (name ch))
 
 let is_busy ch =
   match ch.state with
@@ -218,8 +218,8 @@ let perform_io : type mode. mode _channel -> int Lwt.t = fun ch -> match ch.main
                      ] >>= fun n ->
             (* Never trust user functions... *)
             if n < 0 || n > len then
-              Lwt.fail (Failure (Printf.sprintf "Lwt_io: invalid result of the [%s] function(request=%d,result=%d)"
-                                    (match ch.mode with Input -> "read" | Output -> "write") len n))
+              Lwt.fail (Failure (Printf.sprintf "Uwt_io.perform_io: invalid result of the [%s] function"
+                                   (match ch.mode with Input -> "read" | Output -> "write")))
             else begin
               (* Update the global offset: *)
               ch.offset <- Int64.add ch.offset (Int64.of_int n);
@@ -595,7 +595,7 @@ let buffered : type m. m channel -> int = fun ch ->
 let buffer_size ch = ch.channel.length
 
 let resize_buffer : type m. m channel -> int -> unit Lwt.t = fun wrapper len ->
-  if len < min_buffer_size then invalid_arg "Lwt_io.resize_buffer";
+  if len < min_buffer_size then invalid_arg "Uwt_io.resize_buffer: buffer size too small";
   match wrapper.channel.typ with
     | Type_bytes ->
         Lwt.fail (Failure "Lwt_io.resize_buffer: cannot resize the buffer of a channel created with Lwt_io.of_string")
@@ -607,7 +607,7 @@ let resize_buffer : type m. m channel -> int -> unit Lwt.t = fun wrapper len ->
                 (* Fail if we want to decrease the buffer size and there is
                    too much unread data in the buffer: *)
                 if len < unread_count then
-                  Lwt.fail (Failure "Lwt_io.resize_buffer: cannot decrease buffer size")
+                  Lwt.fail (Failure "Uwt_io.resize_buffer: cannot decrease buffer size, too much unread data")
                 else begin
                   let buffer = Uwt_bytes.create len in
                   Uwt_bytes.unsafe_blit ch.buffer ch.ptr buffer 0 unread_count;
@@ -798,9 +798,7 @@ struct
 
   let read_into ic buf ofs len =
     if ofs < 0 || len < 0 || ofs + len > Bytes.length buf then
-      Lwt.fail (Invalid_argument (Printf.sprintf
-                                    "Lwt_io.read_into(ofs=%d,len=%d,str_len=%d)"
-                                    ofs len (Bytes.length buf)))
+      Lwt.fail (Invalid_argument "Uwt_io.read_into")
     else begin
       if len = 0 then
         Lwt.return 0
@@ -821,9 +819,7 @@ struct
 
   let read_into_exactly ic buf ofs len =
     if ofs < 0 || len < 0 || ofs + len > Bytes.length buf then
-      Lwt.fail (Invalid_argument (Printf.sprintf
-                                    "Lwt_io.read_into_exactly(ofs=%d,len=%d,str_len=%d)"
-                                    ofs len (Bytes.length buf)))
+      Lwt.fail (Invalid_argument "Uwt_io.read_into_exactly")
     else begin
       if len = 0 then
         Lwt.return_unit
@@ -904,9 +900,7 @@ struct
 
   let write_from oc buf ofs len =
     if ofs < 0 || len < 0 || ofs + len > Bytes.length buf then
-      Lwt.fail (Invalid_argument (Printf.sprintf
-                                    "Lwt_io.write_from(ofs=%d,len=%d,str_len=%d)"
-                                    ofs len (Bytes.length buf)))
+      Lwt.fail (Invalid_argument "Lwt_io.write_from")
     else begin
       if len = 0 then
         Lwt.return 0
@@ -927,9 +921,7 @@ struct
 
   let write_from_exactly oc buf ofs len =
     if ofs < 0 || len < 0 || ofs + len > Bytes.length buf then
-      Lwt.fail (Invalid_argument (Printf.sprintf
-                                    "Lwt_io.write_from_exactly(ofs=%d,len=%d,str_len=%d)"
-                                    ofs len (Bytes.length buf)))
+      Lwt.fail (Invalid_argument "Uwt_io.write_from_exactly")
     else begin
       if len = 0 then
         Lwt.return_unit
@@ -982,7 +974,7 @@ struct
 
   let block : type m. m _channel -> int -> (Uwt_bytes.t -> int -> 'a Lwt.t) -> 'a Lwt.t = fun ch size f ->
     if size < 0 || size > min_buffer_size then
-      Lwt.fail (Invalid_argument(Printf.sprintf "Uwt_io.block(size=%d)" size))
+      Lwt.fail (Invalid_argument "Uwt_io.block")
     else
       if ch.max - ch.ptr >= size then begin
         let ptr = ch.ptr in
@@ -998,7 +990,7 @@ struct
   let perform token da ch =
     if !token then begin
       if da.da_max <> ch.max || da.da_ptr < ch.ptr || da.da_ptr > ch.max then
-        Lwt.fail (Invalid_argument "Lwt_io.direct_access.perform")
+        Lwt.fail (Invalid_argument "Uwt_io.direct_access.da_perform")
       else begin
         ch.ptr <- da.da_ptr;
         perform_io ch >>= fun count ->
@@ -1007,7 +999,7 @@ struct
         Lwt.return count
       end
     end else
-      Lwt.fail (Failure "Lwt_io.direct_access.perform: this function can not be called outside Lwt_io.direct_access")
+      Lwt.fail (Failure "Uwt_io.perform: this function can not be called outside Lwt_io.direct_access")
 
   let direct_access ch f =
     let token = ref true in
@@ -1135,17 +1127,17 @@ struct
      | Random access                                                 |
      +---------------------------------------------------------------+ *)
 
-  let do_seek seek pos =
+  let do_seek fun_name seek pos =
     seek pos Unix.SEEK_SET >>= fun offset ->
     if offset <> pos then
-      Lwt.fail (Failure "Lwt_io.set_position: seek failed")
+      Lwt.fail (Failure (Printf.sprintf "Lwt_io.%s: seek failed" fun_name))
     else
       Lwt.return_unit
 
   let set_position : type m. m _channel -> int64 -> unit Lwt.t = fun ch pos -> match ch.typ, ch.mode with
     | Type_normal(_perform_io, seek), Output ->
         flush_total ch >>= fun () ->
-        do_seek seek pos >>= fun () ->
+        do_seek "set_position" seek pos >>= fun () ->
         ch.offset <- pos;
         Lwt.return_unit
     | Type_normal(_perform_io, seek), Input ->
@@ -1154,7 +1146,7 @@ struct
           ch.ptr <- ch.max - (Int64.to_int (Int64.sub ch.offset pos));
           Lwt.return_unit
         end else begin
-          do_seek seek pos >>= fun () ->
+          do_seek "set_position" seek pos >>= fun () ->
           ch.offset <- pos;
           ch.ptr <- 0;
           ch.max <- 0;
@@ -1171,7 +1163,7 @@ struct
   let length ch = match ch.typ with
     | Type_normal(_perform_io, seek) ->
         seek 0L Unix.SEEK_END >>= fun len ->
-        do_seek seek ch.offset >>= fun () ->
+        do_seek "length" seek ch.offset >>= fun () ->
         Lwt.return len
     | Type_bytes ->
         Lwt.return (Int64.of_int ch.length)
@@ -1428,26 +1420,43 @@ let with_connection ?in_buffer ?out_buffer sockaddr f =
 type server = {
   shutdown : unit Lwt.t Lazy.t;
 }
-
 let sb_close s c =
   if s || c.state = Closed then Lwt.return_unit else
     Lwt.catch
       (fun () -> close c)
       (fun x -> !Lwt.async_exception_hook x; Lwt.return_unit)
 
-let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) addr f =
-  let f_cb s_client =
-    let close = lazy (close_socket s_client) in
-    let close () = Lazy.force close in
+let dummy_address_tcp = Unix.ADDR_INET(Unix.inet_addr_of_string "192.0.2.0",0)
+let dummy_address_pipe = Unix.ADDR_UNIX("(unknown)")
+
+let establish_server_intern
+    ?(buffer_size = !default_buffer_size)
+    ?(backlog=5)
+    ?(no_close=false)
+    addr
+    ft =
+  let with_address,f = match ft with
+  | `With_address f -> true,f
+  | `No_address f -> false, (fun _addr x -> f x) in
+  let f_cb address s_client =
+    let closed = ref false in
+    let close () =
+      if !closed then Lwt.return_unit else
+      let () = closed := true in
+      close_socket s_client
+    in
     let buffer = Uwt_bytes.create buffer_size in
     let ic = of_stream ~close ~buffer ~mode:input s_client in
     let buffer = Uwt_bytes.create buffer_size in
     let oc = of_stream ~close ~buffer ~mode:output s_client in
-    Lwt.async (fun () ->
+    if no_close then
+      Lwt.async (fun () -> f addr (ic,oc))
+    else
+      Lwt.async (fun () ->
         let ic_closed = ref false
         and oc_closed = ref false in
         Lwt.catch (fun () ->
-            f (ic,oc) >>= fun () ->
+            f address (ic,oc) >>= fun () ->
             ic_closed := true;
             close_once ic >>= fun () ->
             oc_closed := true;
@@ -1479,7 +1488,16 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) addr f =
         let client = Uwt.Pipe.init () in
         let r =  Uwt.Pipe.accept_raw ~server ~client in
         if Uwt.Int_result.is_ok r then
-          Uwt.Pipe.to_stream client |> f_cb
+          let address = match with_address with
+          | false -> dummy_address_pipe
+          | true ->
+            match Uwt.Pipe.getpeername client with
+            | Ok p -> Unix.ADDR_UNIX p
+            | Error _ -> dummy_address_pipe
+            (* very ugly, but otherwise the API would be different
+               from Lwt_io :-( *)
+          in
+          Uwt.Pipe.to_stream client |> f_cb address
     in
     let er = Uwt.Pipe.listen server ~max:backlog ~cb in
     f_es s_server er
@@ -1496,10 +1514,22 @@ let establish_server ?(buffer_size = !default_buffer_size) ?(backlog=5) addr f =
         | Ok client ->
           ignore (Uwt.Tcp.nodelay client true);
           let s_client = Uwt.Tcp.to_stream client in
-          f_cb s_client
+          let address = match with_address with
+          | false -> dummy_address_tcp
+          | true ->
+            match Uwt.Tcp.getpeername client with
+            | Error _ -> dummy_address_tcp (* see comment above *)
+            | Ok x -> x in
+          f_cb address s_client
     in
     let er = Uwt.Tcp.listen server ~max:backlog ~cb in
     f_es s_server er
+
+let establish_server ?buffer_size ?backlog ?no_close addr f =
+  establish_server_intern ?no_close ?buffer_size ?backlog addr (`No_address f)
+
+let establish_server_with_client_address ?buffer_size ?backlog ?no_close addr f =
+  establish_server_intern ?no_close ?buffer_size ?backlog addr (`With_address f)
 
 let shutdown_server server = Lazy.force server.shutdown
 
