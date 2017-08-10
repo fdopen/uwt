@@ -27,7 +27,6 @@ uwork_cb(uv_work_t *req, int status)
   REQ_CB_INIT(req);
   struct req * r = req->data;
   value param;
-  r = req->data;
   if ( status != 0 ){
     param = caml_alloc_small(1,Error_tag);
     Field(param,0) = Val_uwt_error(status);

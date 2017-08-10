@@ -34,7 +34,7 @@ static void
 poll_cb(uv_poll_t* handle, int status, int events)
 {
   HANDLE_CB_START(h, handle);
-  int tag = Ok_tag;
+  uint8_t tag = Ok_tag;
   value val;
   value param;
   if ( status < 0 ){

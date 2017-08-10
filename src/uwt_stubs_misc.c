@@ -222,7 +222,7 @@ uwt_getrusage(value unit)
   CAMLlocal2(ar,tup);
   uv_rusage_t u;
   int r = uv_getrusage(&u);
-  int tag;
+  uint8_t tag;
   (void) unit;
   if ( r < 0 ){
     ar = Val_uwt_error(r);
@@ -277,7 +277,7 @@ uwt_cpu_info(value unit)
   uv_cpu_info_t * cpu_infos;
   int n_cpu;
   const int r = uv_cpu_info(&cpu_infos,&n_cpu);
-  int tag;
+  uint8_t tag;
   (void) unit;
   if ( r < 0 || n_cpu <= 0 ){
     ar_out = Val_uwt_error(r);
@@ -287,7 +287,6 @@ uwt_cpu_info(value unit)
     tag = Ok_tag;
     ar_out = caml_alloc(n_cpu,0);
     int i;
-    int j;
     for ( i = 0; i < n_cpu; ++i ){
       uv_cpu_info_t * c = &cpu_infos[i];
       tup = caml_alloc(3,0);
@@ -295,8 +294,8 @@ uwt_cpu_info(value unit)
       Store_field(tup,0,tmp);
       Field(tup,1) = Val_long(c->speed);
 
-      j = 0;
       ar_in = caml_alloc(5,0);
+      int j = 0;
 #define X(y)                                    \
       tmp = caml_copy_int64(c->cpu_times.y);    \
       Store_field(ar_in,j,tmp);                 \
@@ -326,7 +325,7 @@ uwt_interface_addresses(value unit)
   uv_interface_address_t* addresses;
   int n_addresses;
   const int r = uv_interface_addresses(&addresses,&n_addresses);
-  int tag;
+  uint8_t tag;
   (void) unit;
   if ( r < 0 || n_addresses < 0 ){
     ar_out = Val_uwt_error(r);
@@ -568,16 +567,16 @@ static char ** dummy_argv = NULL;
 static int
 uwt_setup_args(value sys_argv)
 {
-  const int argc = Wosize_val(sys_argv);
-  int size = 0;
+  const unsigned int argc = Wosize_val(sys_argv);
+  size_t size = 0;
   char ** argv;
   char *p;
   char * memb;
-  int i;
+  unsigned int i;
   if ( argc == 0 ){
     return UV_UNKNOWN;
   }
-  argv = malloc( (argc+1) * sizeof (char**) );
+  argv = malloc( (argc+1) * sizeof (char*) );
   if ( argv == NULL ) {
     return UV_ENOMEM;
   }
@@ -622,7 +621,7 @@ uwt_get_process_title(value sys_argv)
 #define BSIZE 16384
   value ret;
   char buffer[BSIZE];
-  int tag;
+  uint8_t tag;
   int r;
   if ( uv_setup_args_ret == NULL ){
     r = uwt_setup_args(sys_argv);
@@ -681,11 +680,10 @@ uwt_win_version(value unit)
     goto error_end;
   }
   char * szCSDVersion = NULL;
-  if ( os.szCSDVersion != NULL ){
-    szCSDVersion = uwt_utf16_to_utf8(os.szCSDVersion,&error);
-    if ( szCSDVersion == NULL ){
-      goto error_end;
-    }
+  os.wServicePackMajor = 0; /* not used, first value after szCSDVersion */
+  szCSDVersion = uwt_utf16_to_utf8(os.szCSDVersion,&error);
+  if ( szCSDVersion == NULL ){
+    goto error_end;
   }
   value s = s_caml_copy_string(szCSDVersion);
   free(szCSDVersion);
@@ -763,7 +761,7 @@ uwt_os_getenv(value on)
   CAMLlocal1(p);
   char buffer[ALLOCA_PATH_LEN];
   size_t size = ALLOCA_PATH_LEN;
-  int tag = Ok_tag;
+  uint8_t tag = Ok_tag;
   int r = uv_os_getenv(String_val(on), buffer, &size);
   if ( r == 0 ){
     p = caml_alloc_string(size);

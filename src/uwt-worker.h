@@ -29,8 +29,8 @@ extern "C" {
 #include <uv.h>
 #include <caml/mlvalues.h>
 
-#define Ok_tag 0
-#define Error_tag 1
+#define Ok_tag ((unsigned char)0)
+#define Error_tag ((unsigned char)1)
 
 struct worker_params {
     void *p1;

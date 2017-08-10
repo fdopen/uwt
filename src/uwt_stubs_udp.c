@@ -157,7 +157,7 @@ alloc_recv_result(ssize_t nread,
         Field(msock_addr,0) = param;
       }
     }
-    const int tag = flags & UV_UDP_PARTIAL ? Partial_data : Data_of;
+    const uint8_t tag = (flags & UV_UDP_PARTIAL) ? Partial_data : Data_of;
     param = caml_alloc_small(2,tag);
     Field(param,0) = bytes_t;
     Field(param,1) = msock_addr;
@@ -292,9 +292,9 @@ uwt_udp_recv_own_cb(uv_udp_t* handle,
     else {
       value triple = Val_unit;
       value sockaddr = Val_unit;
-      value is_partial;
       param = Val_unit;
       Begin_roots3(triple,sockaddr,param);
+      value is_partial;
       if ( addr != NULL ){
         param = uwt__alloc_sockaddr(addr);
         if ( param != Val_unit ){

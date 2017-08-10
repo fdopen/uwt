@@ -111,7 +111,7 @@ uwt_pipe_name(value o_pipe,pipe_name pfunc)
   o_str = Val_unit;
   uv_pipe_t* p = (uv_pipe_t*)op->handle;
   int erg = pfunc(p,name,&s);
-  int etag;
+  uint8_t etag;
   if ( erg == UV_ENOBUFS ){
     ++s;
     o_str = caml_alloc_string(s);

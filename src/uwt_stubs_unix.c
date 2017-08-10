@@ -149,7 +149,7 @@ getunitp2_camlval(uv_req_t * req)
   const int er = POINTER_TO_INT(w->p2);
   if ( er != 0 ){
     ret = caml_alloc_small(1,Error_tag);
-    Field(ret,0) = Val_uwt_error(POINTER_TO_INT(er));
+    Field(ret,0) = Val_uwt_error(er);
   }
   else {
     ret = caml_alloc_small(1,Ok_tag);
@@ -192,14 +192,15 @@ c_copy_string_array(char **src)
 static char **
 c_copy_addr_array(char ** src, int addr_len)
 {
+  size_t ar_len = 0;
   if ( src == NULL ){
     return NULL;
   }
   char ** p = src;
   while ( *p ){
-    p++;
+    ++p;
+    ++ar_len;
   }
-  const size_t ar_len = p - src;
   p = malloc((ar_len+1) * sizeof(char*));
   if ( p == NULL ){
     return NULL;
@@ -1500,6 +1501,7 @@ dup_group(const struct group * orig)
     free(copy->gr_name);
     free(copy->gr_passwd);
     c_free_string_array(copy->gr_mem);
+    free(copy);
     return NULL;
   }
   copy->gr_gid = orig->gr_gid;
@@ -2188,7 +2190,8 @@ uwt_realpath_sync(value o_name)
   const char * mname = String_val(o_name);
   void * name;
   uv_work_t req;
-  value val_er = Val_long(-1);
+  bool error_found = true;
+  value val_er = VAL_UWT_ERROR_UNKNOWN;
 
   struct worker_params wp;
   wp.p1 = NULL;
@@ -2216,10 +2219,13 @@ uwt_realpath_sync(value o_name)
   if ( wp.p1 == NULL ){
     val_er = Val_uwt_error(POINTER_TO_INT(wp.p2));
   }
+  else {
+    error_found = false;
+  }
   caml_leave_blocking_section();
 
 endf:
-  if ( val_er != Val_long(-1) ){
+  if ( error_found ){
     ret = caml_alloc_small(1,Error_tag);
     Field(ret,0) = val_er;
   }

@@ -170,7 +170,7 @@ int main(void)
   for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
-    fprintf(c2,"  VAL_UWT_ERROR_%s = (Val_long(%d)),\n",x,i);
+    fprintf(c2,"  VAL_UWT_ERROR_%s = (Val_long(%u)),\n",x,i);
   }
   fputs("} val_uwt_error_t;\n\n",c2);
 
@@ -294,7 +294,7 @@ int main(void)
   }
   fputs("\n",ml);
 
-  if ( fclose(c2) || fclose(c) || fclose(ml) ){
+  if ( fclose(c2) | fclose(c) | fclose(ml) ){
     fputs("i/o error\n",stderr);
     return 1;
   }

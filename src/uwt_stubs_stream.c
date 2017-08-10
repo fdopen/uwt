@@ -150,7 +150,7 @@ read_start_cb(uv_stream_t* stream,ssize_t nread, const uv_buf_t * buf)
     value o;
     value cb;
     bool finished;
-    int tag;
+    uint8_t tag;
     if ( nread < 0 ){
       ret = Val_uwt_error(nread);
       tag = Error_tag;
