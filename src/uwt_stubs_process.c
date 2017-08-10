@@ -74,6 +74,7 @@ spawn_exit_cb(uv_process_t*t, int64_t exit_status, int term_signal)
 {
   HANDLE_CB_INIT(h, t);
   value exn = Val_unit;
+  h->x.process_finished = 1;
   /* exit_cb is only optional in OCaml, we use it here to cleanup (or not...) */
   if ( h->cb_read != CB_INVALID && h->cb_listen != CB_INVALID ){
     const int o_signal = uwt__rev_convert_signal_number(term_signal);
@@ -341,6 +342,9 @@ uwt_process_kill_na(value o_h,value o_sig)
 {
   HANDLE_INIT_NA(h, o_h);
   INT_VAL_RET_IR_EINVAL(sig, o_sig);
+  if ( h->x.process_finished == 1 ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
   uv_process_t * p = (uv_process_t *)h->handle;
   int signum = uwt__convert_signal_number(sig);
   int ret = uv_process_kill(p,signum);

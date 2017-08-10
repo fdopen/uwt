@@ -156,6 +156,7 @@ struct handle {
     union {
         size_t obuf_offset; /* for read_own */
         void * ba_read; /* pointer to bigarray for reading */
+        int process_finished; /* don't kill processes that are finished */
     } x;
     cb_t cb_listen;
     cb_t cb_read;
