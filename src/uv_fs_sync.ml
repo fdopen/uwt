@@ -65,7 +65,15 @@ let ftruncate file ~len = ftruncate file len |> wrap
 
 external symlink: string -> string -> symlink_mode -> Int_result.int =
   "uwt_fs_symlink_sync"
-let symlink ?(mode=S_Default) ~src ~dst () = symlink src dst mode |> wrap
+let symlink ?(mode=S_Default) ~src ~dst () =
+#if HAVE_WINDOWS <> 0
+  (* FIXME: where to put this function to avoid code duplication? *)
+  let src =
+    if String.length src >= 4 && src.[0] = '\\' && src.[1] = '\\' &&
+       src.[2] = '?' && src.[3] = '\\' then src
+    else String.map (function '/' -> '\\' | c -> c) src in
+#endif
+  symlink src dst mode |> wrap
 
 external utime: string -> float -> float -> Int_result.int = "uwt_fs_utime_sync"
 let utime s ~access ~modif = utime s access modif |> wrap

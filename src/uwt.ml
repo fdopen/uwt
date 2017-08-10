@@ -1772,6 +1772,12 @@ module Fs = struct
   external symlink: string -> string -> symlink_mode -> loop -> unit_cb ->
     Req.r = "uwt_fs_symlink"
   let symlink ?(mode=S_Default) ~src ~dst () =
+#if HAVE_WINDOWS <> 0
+    let src =
+      if String.length src >= 4 && src.[0] = '\\' && src.[1] = '\\' &&
+         src.[2] = '?' && src.[3] = '\\' then  src
+      else String.map (function '/' -> '\\' | c -> c) src in
+#endif
     Req.qlu ~f:(symlink src dst mode) ~name:"symlink" ~param:dst
 
   external mkdtemp: string -> loop -> string cb -> Req.r = "uwt_fs_mkdtemp"
