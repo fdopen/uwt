@@ -80,7 +80,7 @@ X3(lstat);
 X3(fstat);
 X6(writev);
 X3(realpath);
-
+X5(copyfile);
 
 #undef X7
 #undef X6

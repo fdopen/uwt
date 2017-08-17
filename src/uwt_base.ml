@@ -477,6 +477,7 @@ module type Fs_functions = sig
   val fchown : file -> uid:int -> gid:int -> unit t
   val scandir : string -> (file_kind * string) array t
   val realpath: string -> string t
+  val copyfile : ?excl:bool -> src:string -> dst:string -> unit -> unit t
 end
 
 module Conv = struct

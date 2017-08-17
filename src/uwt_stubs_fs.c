@@ -903,6 +903,20 @@ FSFUNC_1(fs_realpath, fs_readlink_cb, o_path, {
   });
 })
 
+#if HAVE_DECL_UV_FS_COPYFILE
+FSFUNC_3(fs_copyfile, runit, o_old, o_new, o_flags,{
+  const int flags = Long_val(o_flags) == 0 ? 0 : UV_FS_COPYFILE_EXCL;
+  COPY_STR2(o_old, o_new,{
+    BLOCK(uv_fs_copyfile(loop, req, STRING_VAL(o_old), STRING_VAL(o_new),
+                         flags, cb));
+  });
+})
+#else
+FSFUNC_3(fs_copyfile, runit, o_old, o_new, o_flags,{
+    ret = UV_ENOSYS;
+  })
+#endif
+
 #ifdef DEF_O_NONBLOCK
 #undef DEF_O_NONBLOCK
 #undef O_NONBLOCK

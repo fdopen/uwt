@@ -558,6 +558,18 @@ module type Fs_functions = sig
       While this function can still be used, it's not recommended if scenarios
       such as the above need to be supported.
   *)
+
+  val copyfile : ?excl:bool -> src:string -> dst:string -> unit -> unit t
+  (** Copies a file from [~src] to [~dst].
+
+      If [?excl] is true, copyfile() will fail with [EEXIST] if the
+      destination path already exists. The default behavior is to
+      overwrite the destination if it exists.
+
+      Warning: If the destination path is created, but an error occurs
+      while copying the data, then the destination path is
+      removed. There is a brief window of time between closing and
+      removing the file where another process could access the file. *)
 end
 
 module Conv : sig

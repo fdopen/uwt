@@ -243,3 +243,7 @@ let realpath param  : string uv_result =
       realpath_o param
     | x -> x
 #endif
+
+external copyfile: string -> string -> bool -> Int_result.int =
+  "uwt_fs_copyfile_sync"
+let copyfile ?(excl=false) ~src ~dst () = copyfile src dst excl |> wrap

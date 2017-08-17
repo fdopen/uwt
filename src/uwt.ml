@@ -1825,6 +1825,11 @@ module Fs = struct
   let scandir param = Req.ql ~f:(scandir param) ~name:"scandir" ~param
 
   let realpath = Unix.realpath
+
+  external copyfile: string -> string -> bool -> loop -> unit_cb ->
+    Req.r = "uwt_fs_copyfile"
+  let copyfile ?(excl=false) ~src ~dst () =
+    Req.qlu ~f:(copyfile src dst excl) ~name:"copyfile" ~param:dst
 end
 
 module Fs_poll = struct
