@@ -110,8 +110,6 @@ libuv-compile:
 	section
 		echo $(CompileLibuv $(UWT_BUILD_JOBS))
 
-ConfReplace(_oasis)
-
 if $(or $(lt $(OCAMLC_VERSION_MAJOR),4),$(and $(eq 4,$(OCAMLC_VERSION_MAJOR)),$(lt $(OCAMLC_VERSION_MINOR),3)))
 	OCAMLFINDFLAGS+= -open Result
 	OCAMLPACKS+= result
@@ -124,17 +122,12 @@ else
 .DEFAULT: all
 .SUBDIRS: src examples test
 
-ConfReplace(_oasis)
-
-setup.ml: _oasis
-	oasis setup
-
 clean::
 	clean-helper()
 	rm -f oUnit*.log setup.data setup.log
 
 distclean:: clean
-	rm -f *~ .*~ setup.ml _oasis *.xz *.gz  *.tar.*
+	rm -f *~ .*~ *.xz *.gz  *.tar.*
 	rm -rf libuv-v*
 
 .PHONY: opam-install

@@ -26,8 +26,6 @@ cd src
 omake -s error.ml uwt-error.h error_val.ml map_error.h configure
 cp -p config.h.in configure uwt-error.h error.ml error_val.ml map_error.h "${mtmpf}/src"
 cd ..
-omake -s setup.ml _oasis
-cp -p setup.ml _oasis "$mtmpf"
 
 cd libuv
 mkdir -p "${mtmpf}/libuv"
@@ -46,12 +44,6 @@ fi
 cd "$mtmpf"
 touch src/configure libuv/configure
 rm -rf .git* libuv/.git*
-
-for f in "${curdir}/dist/libuv32.vcxproj" "${curdir}/dist/libuv64.vcxproj" ; do
-    if [ -f "$f" ]; then
-        install -m 0644 "$f" libuv
-    fi
-done
 
 $find . -type f ! -executable ! -perm 644 -exec chmod 644 {} \+
 $find . -type f -executable ! -perm 755 -exec chmod 755 {} \+

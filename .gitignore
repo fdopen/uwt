@@ -27,9 +27,7 @@
 *.tar.xz
 *.tar
 *.idoc
-/setup.ml
 /.omakedb*
-/_oasis
 /src/META
 /src/config.h
 /src/config.h.in
