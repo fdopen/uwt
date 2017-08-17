@@ -34,7 +34,7 @@ distclean::
 section
 	.SCANNER: scan-c-%: config.h
 	CFILES= emap_gen
-	CFLAGS= $(CFLAGS) $(CFLAGS_LIBUV)
+	CFLAGS= $(OCAMLC_CC_CFLAGS) $(CFLAGS) $(CFLAGS_LIBUV)
 	LDFLAGS+= $(LDFLAGS_LIBUV)
 	Repeat_ctargets($(CFILES))
 	T=$(CProgram emap_gen, $(CFILES))
