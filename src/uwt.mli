@@ -1016,6 +1016,7 @@ module Poll : sig
     | Readable
     | Writable
     | Disconnect
+    | Prioritized
 
   val start : Unix.file_descr -> event list -> cb:(t -> event list uv_result -> unit) -> t uv_result
   (**

@@ -21,12 +21,17 @@
 
 #include "uwt_stubs_poll.h"
 
-static const int poll_flag_table[3] = {
+static const int poll_flag_table[4] = {
   UV_READABLE, UV_WRITABLE,
 #if HAVE_DECL_UV_DISCONNECT
-  UV_DISCONNECT
+  UV_DISCONNECT,
 #else
-  4
+  4,
+#endif
+#if HAVE_DECL_UV_PRIORITIZED
+  UV_PRIORITIZED,
+#else
+  8,
 #endif
 };
 
@@ -67,6 +72,11 @@ uwt_poll_start(value o_loop,
   const int event = SAFE_CONVERT_FLAG_LIST(o_event,poll_flag_table);
 #if !defined(HAVE_DECL_UV_DISCONNECT) || !HAVE_DECL_UV_DISCONNECT
   if (unlikely( event & 4 )){
+    return uwt__alloc_eresult(VAL_UWT_ERROR_ENOSYS);
+  }
+#endif
+#if !defined(HAVE_DECL_UV_PRIORITIZED) || !HAVE_DECL_UV_PRIORITIZED
+  if (unlikely( event & 8 )){
     return uwt__alloc_eresult(VAL_UWT_ERROR_ENOSYS);
   }
 #endif

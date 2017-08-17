@@ -1188,6 +1188,7 @@ module Poll = struct
     | Readable
     | Writable
     | Disconnect
+    | Prioritized
 
   external start:
     loop -> Unix.file_descr -> event list -> ( t -> event list uv_result -> unit ) -> t uv_result
