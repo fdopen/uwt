@@ -1,3 +1,20 @@
+0.2.2 2017-08-17
+---------------------------
+
+- update to libuv 1.14.0:
+  * new function: `Uwt.Fs.copyfile`
+  * `Uwt.Poll.start` now supports watching for sysfs interrupts or TCP
+    out-of-band messages
+  * `Uwt.Udp.try_send` now works under Windows
+
+- `Uwt.Tcp.enable_keepalive` will now fail, if you pass an `Uwt.Tcp.t`
+  handle to it, that doesn't wrap a socket yet. libuv silently ignores
+  the delay parameter in this case.  You can use `Uwt.Tcp.init_ipv4` or
+  `Uwt.Tcp.init_ipv6` instead of `Uwt.Tcp.init` to circumvent this problem.
+
+- `Uwt_io` and `Uwt_log` have been updated to match the recent `lwt.unix`
+  changes.
+
 0.2.1 2017-06-01
 ---------------------------
 
