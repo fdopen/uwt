@@ -30,6 +30,11 @@ type loop_mode =
 open Uwt_base
 include Fs_types
 
+#if HAVE_WINDOWS <> 0
+external init_uwt : unit -> unit = "uwt_init_sync_na" NOALLOC
+let () = init_uwt ()
+#endif
+
 let wrap x =
   if Int_result.is_error x then
     Error (Int_result.to_error x)

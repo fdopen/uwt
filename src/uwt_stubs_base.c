@@ -747,10 +747,25 @@ static struct custom_operations ops_uwt_handle_nf = {
 #pragma GCC diagnostic pop
 #endif
 
+#ifdef _WIN32
+CAMLprim value
+uwt_init_sync_na(value unit)
+{
+  (void) unit;
+  /* workaround libuv bug. see #1488 */
+  uv_hrtime();
+  return Val_unit;
+}
+#endif
+
 CAMLprim value
 uwt_init_na(value unit)
 {
   unsigned int i,j;
+
+#ifdef _WIN32
+  uv_hrtime();
+#endif
 
   /* they must point to the same location. Otherwise the
      polymorphic comparison function won't behave as intended */
