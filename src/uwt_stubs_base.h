@@ -113,6 +113,9 @@ UWT_EXTERN1(uwt_default_loop);
 
 /* memory handling (c heap) */
 UWT_EXTERN1(uwt_init_na);
+#ifdef _WIN32
+UWT_EXTERN1(uwt_init_sync_na);
+#endif
 
 UWT_LOCAL void
 uwt__malloc_uv_buf_t(uv_buf_t *, size_t);
