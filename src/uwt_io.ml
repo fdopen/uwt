@@ -1353,6 +1353,51 @@ let with_file ?buffer ?flags ?perm ~mode filename f =
     (fun () -> f ic)
     (fun () -> close ic)
 
+let prng = lazy (Random.State.make_self_init ())
+
+let temp_file_name temp_dir prefix =
+  let rnd = Random.State.int (Lazy.force prng) 0x1000000 in
+  Filename.concat temp_dir (Printf.sprintf "%s%06x" prefix rnd)
+
+let open_temp_file ?buffer ?flags ?perm ?temp_dir ?prefix () =
+  let flags =
+    match flags with
+    | None -> [Uwt.Fs.O_WRONLY; Uwt.Fs.O_CREAT; Uwt.Fs.O_EXCL]
+    | Some flags -> flags
+  in
+  let dir =
+    match temp_dir with
+    | None -> Filename.get_temp_dir_name ()
+    | Some dirname -> dirname
+  in
+  let prefix =
+    match prefix with
+    | None -> "uwt_io_temp_file_"
+    | Some prefix -> prefix
+  in
+
+  let rec attempt n =
+    let fname = temp_file_name dir prefix in
+    Lwt.catch
+      (fun () ->
+        open_file ?buffer ~flags ?perm ~mode:Output fname >>= fun chan ->
+        Lwt.return (fname, chan))
+      (function
+        | Unix.Unix_error _ when n < 1000 -> attempt (n + 1)
+        | exn -> Lwt.fail exn)
+  in
+  attempt 0
+
+let with_temp_file ?buffer ?flags ?perm ?temp_dir ?prefix f =
+  open_temp_file
+    ?buffer ?flags ?perm ?temp_dir ?prefix () >>= fun (fname, chan) ->
+  Lwt.finalize
+    (fun () ->
+      f (fname, chan))
+    (fun () ->
+      close chan >>= fun () ->
+      Uwt.Fs.unlink fname)
+
 let file_length filename = with_file ~mode:input filename length
 
 let close_socket s =
