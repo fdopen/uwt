@@ -9,8 +9,8 @@ env:
   - TESTS=false
   - PACKAGE=uwt.0.2.1
   matrix:
-  - OCAML_VERSION=4.03
   - OCAML_VERSION=4.04
+  - OCAML_VERSION=4.05
 os:
   - linux
   - osx
@@ -19,4 +19,4 @@ matrix:
     - os: osx
       env: OCAML_VERSION=4.04
     - os: linux
-      env: OCAML_VERSION=4.03
+      env: OCAML_VERSION=4.05
