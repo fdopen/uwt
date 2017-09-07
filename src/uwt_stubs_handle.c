@@ -125,7 +125,11 @@ uwt_set_buffer_size_common_na(value o_stream, value o_len, value o)
 {
   HANDLE_INIT_NOUNINIT_NA(s, o_stream);
   int ret;
-  INT_VAL_RET_IR_EINVAL(x,o_len);
+  const intnat len = Long_val(o_len);
+  if ( len <= 0 || len > INT_MAX ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
+  int x = len;
   if ( Long_val(o) == 0 ){
     ret = uv_send_buffer_size(s->handle,&x);
   }
