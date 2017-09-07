@@ -835,8 +835,6 @@ module Sys_info : sig
   }
 
   val win_version: unit -> win_version uv_result
-  (** Wrapper around GetVersionEx. It will always return [Error
-      ENOSYS] on non windows systems.
-      Your application must be manifested, otherwise you will get
-      wrong informations on windows 8.1 and newer *)
+  (** Wrapper around RtlGetVersion. It will always return [Error
+      ENOSYS] on non windows systems. *)
 end

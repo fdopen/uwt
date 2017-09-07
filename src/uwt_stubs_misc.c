@@ -665,18 +665,33 @@ uwt_set_process_title_na(value sys_argv, value o_str)
 
 
 #ifdef _WIN32
+static int rtl_get_version(OSVERSIONINFOEXW *os)
+{
+  typedef NTSTATUS (WINAPI ptrRtlGetVersion)(PRTL_OSVERSIONINFOEXW);
+  ptrRtlGetVersion *RtlGetVersion;
+  HMODULE hm = GetModuleHandleW(L"ntdll.dll");
+  if ( hm == NULL ){
+    return (uwt_translate_sys_error(GetLastError()));
+  }
+  RtlGetVersion = (ptrRtlGetVersion *)GetProcAddress(hm, "RtlGetVersion");
+  if ( RtlGetVersion == NULL ){
+    return (uwt_translate_sys_error(GetLastError()));
+  }
+  RtlGetVersion(os);
+  return 0;
+}
+
 CAMLprim value uwt_win_version(value unit);
 CAMLprim value
 uwt_win_version(value unit)
 {
   OSVERSIONINFOEXW os;
   value ret;
-  int error;
   (void) unit;
   ZeroMemory(&os, sizeof(os));
   os.dwOSVersionInfoSize = sizeof(os);
-  if ( GetVersionExW((LPOSVERSIONINFOW)&os) == 0 ){
-    error = uwt_translate_sys_error(GetLastError());
+  int error = rtl_get_version(&os);
+  if ( error != 0 ){
     goto error_end;
   }
   char * szCSDVersion = NULL;
@@ -762,19 +777,25 @@ uwt_os_getenv(value on)
   char buffer[ALLOCA_PATH_LEN];
   size_t size = ALLOCA_PATH_LEN;
   uint8_t tag = Ok_tag;
-  int r = uv_os_getenv(String_val(on), buffer, &size);
-  if ( r == 0 ){
-    p = caml_alloc_string(size);
-    memcpy(String_val(p), buffer, size);
+  if (unlikely (!uwt_is_safe_string(on))){
+    p = VAL_UWT_ERROR_ECHARSET;
+    tag = Error_tag;
   }
   else {
-    if ( r == UV_ENOBUFS ){
-      p = caml_alloc_string(size-1);
-      r = uv_os_getenv(String_val(on), String_val(p), &size);
+    int r = uv_os_getenv(String_val(on), buffer, &size);
+    if ( r == 0 ){
+      p = caml_alloc_string(size);
+      memcpy(String_val(p), buffer, size);
     }
-    if ( r != 0 ){
-      p = Val_uwt_error(r);
-      tag = Error_tag;
+    else {
+      if ( r == UV_ENOBUFS ){
+        p = caml_alloc_string(size-1);
+        r = uv_os_getenv(String_val(on), String_val(p), &size);
+      }
+      if ( r != 0 ){
+        p = Val_uwt_error(r);
+        tag = Error_tag;
+      }
     }
   }
   value ret = caml_alloc_small(1,tag);
@@ -789,6 +810,10 @@ CAMLprim value
 uwt_os_setenv_na(value on, value ov)
 {
 #if HAVE_DECL_UV_OS_SETENV
+  if (unlikely( !uwt_is_safe_string(on) ||
+                !uwt_is_safe_string(ov) )){
+    return VAL_UWT_INT_RESULT_ECHARSET;
+  }
   const int r = uv_os_setenv(String_val(on), String_val(ov));
   return (VAL_UWT_UNIT_RESULT(r));
 #else
@@ -800,6 +825,9 @@ CAMLprim value
 uwt_os_unsetenv_na(value on)
 {
 #if HAVE_DECL_UV_OS_UNSETENV
+  if (unlikely( !uwt_is_safe_string(on) )){
+    return VAL_UWT_INT_RESULT_ECHARSET;
+  }
   const int r = uv_os_unsetenv(String_val(on));
   return (VAL_UWT_UNIT_RESULT(r));
 #else
