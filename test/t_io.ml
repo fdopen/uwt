@@ -183,6 +183,48 @@ let l = [
      test (module Uwt_io.LE);
      test (module Uwt_io.BE);
   );
+  ("open_temp_file">::
+   fun _ ->
+     m_true (
+       Uwt_io.open_temp_file () >>= fun (fname, out_chan) ->
+       Uwt_io.write out_chan "test file content" >>= fun () ->
+       Uwt_io.close out_chan >>= fun () ->
+       Uwt.Fs.unlink fname >>= fun () ->
+       Lwt.return_true ));
+  ("with_temp_file">::
+   fun _ ->
+     let prefix = "test_tempfile" in
+     let f () =
+       Uwt.Fs.mkdtemp "uwt-temp_filename.XXXXXX" >>= fun temp_dir ->
+       let check_temp_dir () =
+         match Uv_fs_sync.scandir temp_dir with
+         | Error _ -> failwith "can't read dir"
+         | Ok [| _, prefix'|] ->
+           let len = String.length prefix
+           and len' = String.length prefix' in
+           assert (len' > len && String.sub prefix' 0 len = prefix)
+         | Ok _ -> failwith "to many files in temp_dir" in
+       let write_data (_, chan) =
+         check_temp_dir ();
+         Uwt_io.write chan "test file content"
+       in
+       Uwt_io.with_temp_file write_data ~temp_dir ~prefix >>= fun () ->
+       let module E = struct exception E end in
+       let write_data_fail _ = check_temp_dir (); Lwt.fail E.E in
+       Lwt.catch
+         (fun () -> Uwt_io.with_temp_file ~temp_dir ~prefix write_data_fail)
+         (function
+         | E.E -> Lwt.return_unit
+         | x -> Lwt.fail x) >>= fun () ->
+       Uwt.Fs.rmdir temp_dir
+     in
+     m_equal () (f ()));
+  ("with_temp_file_close">::
+   fun _ ->
+     m_true (
+       let f (_, chan) = Uwt_io.write chan "test file content" >>= fun _ ->
+         Uwt_io.close chan in
+       Uwt_io.with_temp_file f >>= fun _ -> Lwt.return_true));
 ]
 
 let l = "Io">:::l
