@@ -1,4 +1,4 @@
-AC_INIT([uwt], [0.1.0],[andreashauptmann@t-online.de],[uwt])
+AC_INIT([uwt], [0.2.3],[andreashauptmann@t-online.de],[uwt])
 
 AC_PROG_CC
 

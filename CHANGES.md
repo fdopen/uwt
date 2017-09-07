@@ -1,3 +1,14 @@
+0.2.3 2017-09-08
+---------------------------
+
+- update to libuv 1.14.1
+
+- new functions from `Lwt_io`: `Uwt_io.open_temp_file` and
+  `Uwt_io.with_temp_file`
+
+- `Uwt_base.Sys_info.win_version` now reports your current Windows
+  version, even if your executable is not manifested.
+
 0.2.2 2017-08-17
 ---------------------------
 
