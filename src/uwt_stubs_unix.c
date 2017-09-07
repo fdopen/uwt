@@ -1043,7 +1043,8 @@ CAMLprim value
 uwt_getprotobynumber(value o_number, value o_uwt)
 {
   value ret;
-  void * p2 = INT_TO_POINTER(Long_val(o_number));
+  INT_VAL_RET_IR_EINVAL(n,o_number);
+  void * p2 = INT_TO_POINTER(n);
   ret = uwt_add_worker_result(o_uwt,
                               getprotobyname_cleaner,
                               getprotobynumber_worker,
@@ -1471,13 +1472,18 @@ CAMLprim value
 uwt_getpwuid(value o_uid, value o_uwt)
 {
   value ret;
-  void * uid = INT_TO_POINTER(Long_val(o_uid));
+  intnat int_id = Long_val(o_uid);
+  uid_t uid = int_id;
+  if ( uid != int_id || ((uid_t)-1 >= 0 && int_id < 0) ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
+  void * puid = INT_TO_POINTER(uid);
   ret = uwt_add_worker_result(o_uwt,
                               passwd_cleaner,
                               getpwuid_worker,
                               passwd_camlval,
                               NULL,
-                              uid);
+                              puid);
   return ret;
 }
 #else
@@ -1636,7 +1642,7 @@ static void
 getgrgid_worker(uv_work_t * req)
 {
   struct worker_params * w = req->data;
-  const uid_t uid = POINTER_TO_INT(w->p2);
+  const gid_t uid = POINTER_TO_INT(w->p2);
   errno = 0;
 #ifdef HAVE_GETGRGID_R
   char buf[ALLOCA_SIZE];
@@ -1668,13 +1674,18 @@ CAMLprim value
 uwt_getgrgid(value o_gid, value o_uwt)
 {
   value ret;
-  void * gid = INT_TO_POINTER(Long_val(o_gid));
+  intnat int_id = Long_val(o_gid);
+  gid_t gid = int_id;
+  if ( gid != int_id || ((gid_t)-1 >= 0 && int_id < 0) ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
+  void * pgid = INT_TO_POINTER(gid);
   ret = uwt_add_worker_result(o_uwt,
                               group_cleaner,
                               getgrgid_worker,
                               group_camlval,
                               NULL,
-                              gid);
+                              pgid);
   return ret;
 }
 #else

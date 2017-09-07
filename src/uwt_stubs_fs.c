@@ -809,7 +809,8 @@ FSFUNC_3(fs_chown, runit, o_path, o_uid, o_gid, {
   const intnat r_gid = Long_val(o_gid);
   const uv_uid_t uid = r_uid;
   const uv_gid_t gid = r_gid;
-  if ( r_uid != uid || gid != r_gid ){
+  if ( r_uid != uid || gid != r_gid || ((uv_uid_t)-1 >= 0 && r_uid < 0) ||
+       ((uv_gid_t)-1 >= 0 && r_gid < 0) ){
     ret = UV_EINVAL;
     goto eend;
   }
@@ -824,7 +825,8 @@ FSFUNC_3(fs_fchown, runit, o_fd, o_uid, o_gid, {
   const intnat r_gid = Long_val(o_gid);
   const uv_uid_t uid = r_uid;
   const uv_gid_t gid = r_gid;
-  if ( r_uid != uid || gid != r_gid ){
+  if ( r_uid != uid || gid != r_gid || ((uv_uid_t)-1 >= 0 && r_uid < 0) ||
+       ((uv_gid_t)-1 >= 0 && r_gid < 0) ){
     ret = UV_EINVAL;
     goto eend;
   }

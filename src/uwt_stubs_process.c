@@ -274,13 +274,13 @@ uwt_spawn(value p1, value p2, value p3, value p4)
   t.stdio = stdio;
   intnat p_overflow = Long_val(Field(Field(p1,2),0));
   t.uid = p_overflow;
-  if ( t.uid != p_overflow ){
+  if ( t.uid != p_overflow || ((uv_uid_t)-1 >= 0 && p_overflow < 0 )){
     erg = UV_EINVAL;
     goto error_end;
   }
   p_overflow = Long_val(Field(Field(p1,2),1));
   t.gid = p_overflow;
-  if ( t.gid != p_overflow ){
+  if ( t.gid != p_overflow || ((uv_gid_t)-1 >= 0 && p_overflow < 0 )){
     erg = UV_EINVAL;
     goto error_end;
   }

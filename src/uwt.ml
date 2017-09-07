@@ -1463,9 +1463,11 @@ module Unix = struct
     int * string -> service_entry C_worker.u -> C_worker.t =
     "uwt_getservbyport"
   let getservbyport port proto =
+    let name = "getservbyport" in
+    if port < 0 || port >= 65536 then ufail name Unix.EINVAL else
     let p = port,proto in
     serv_protect(
-      C_worker.call_internal ~name:"getservbyport" ~param:proto getservbyport p)
+      C_worker.call_internal ~name ~param:proto getservbyport p)
 
   type protocol_entry = Unix.protocol_entry = {
     p_name : string;
