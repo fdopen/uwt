@@ -105,7 +105,7 @@ let l = [
    fun _ctx ->
      unix_equal UU.getprotobynumber U.getprotobynumber 17;
      m_raises (Unix.ENOENT,"getprotobynumber","")(
-       UU.getprotobynumber max_int >|= fun s -> s.U.p_proto));
+       UU.getprotobynumber 262_144 >|= fun s -> s.U.p_proto));
   ("getservbyname">::
    fun _ctx ->
      m_true (
