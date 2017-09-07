@@ -380,16 +380,16 @@ gethostbyname_cleaner(uv_req_t *req)
 
 static value alloc_one_addr(char const *a)
 {
-  struct in_addr addr;
-  memcpy(&addr, a, 4);
-  return alloc_inet_addr(&addr);
+  value res = caml_alloc_string(4);
+  memcpy(String_val(res), a, 4);
+  return res;
 }
 
 static value alloc_one_addr6(char const *a)
 {
-  struct in6_addr addr;
-  memcpy(&addr, a, 16);
-  return alloc_inet6_addr(&addr);
+  value res = caml_alloc_string(16);
+  memcpy(String_val(res), a, 16);
+  return res;
 }
 
 static value
