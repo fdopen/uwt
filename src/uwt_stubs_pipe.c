@@ -210,3 +210,28 @@ uwt_pipe_connect(value o_pipe,value o_path,value o_cb)
   ++s->in_use_cnt;
   CAMLreturn(Val_long(0));
 }
+
+CAMLprim value
+uwt_pipe_chmod(value o_pipe, value o_flags)
+{
+#if HAVE_DECL_UV_PIPE_CHMOD
+  HANDLE_NO_UNINIT_CLOSED_WRAP(o_pipe);
+  CAMLparam1(o_pipe);
+  struct handle * op = Handle_val(o_pipe);
+  int res;
+  switch ( Long_val(o_flags) ){
+  case 0: res = UV_READABLE; break;
+  case 1: res = UV_WRITABLE; break;
+  default:
+    res = UV_WRITABLE | UV_READABLE;
+  }
+  caml_enter_blocking_section();
+  res = uv_pipe_chmod((uv_pipe_t*)op->handle, res);
+  caml_leave_blocking_section();
+  CAMLreturn(VAL_UWT_UNIT_RESULT(res));
+#else
+  (void) o_pipe;
+  (void) o_flags;
+  return VAL_UWT_INT_RESULT_ENOSYS;
+#endif
+}

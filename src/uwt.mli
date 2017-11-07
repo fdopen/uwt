@@ -897,6 +897,18 @@ module Pipe : sig
 
   val with_connect: path:string -> (t -> 'a Lwt.t) -> 'a Lwt.t
   val with_open: ?ipc:bool -> Unix.file_descr -> (t -> 'a Lwt.t) -> 'a Lwt.t
+
+  type chmod =
+    | Pipe_readable
+    | Pipe_writeable
+    | Pipe_readable_writeable
+
+  val chmod : t -> chmod -> Int_result.unit
+  (** Alters pipe permissions, allowing it to be accessed from
+      processes run by different users. Makes the pipe writable or
+      readable by all users. This function is blocking. *)
+
+  val chmod_exn : t -> chmod -> unit
 end
 
 

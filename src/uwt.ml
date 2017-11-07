@@ -1124,6 +1124,14 @@ module Pipe = struct
     | Ok t ->
       Lwt.finalize (fun () -> f t)
         (fun () -> close_noerr t ; Lwt.return_unit)
+
+  type chmod =
+    | Pipe_readable
+    | Pipe_writeable
+    | Pipe_readable_writeable
+
+  external chmod: t -> chmod -> Int_result.unit = "uwt_pipe_chmod"
+  let chmod_exn t c = chmod t c |> to_exnu "uv_pipe_chmod"
 end
 
 module Timer = struct

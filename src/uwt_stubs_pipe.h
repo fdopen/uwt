@@ -37,6 +37,7 @@ UWT_EXTERN2(uwt_pipe_pending_instances_na);
 UWT_EXTERN1(uwt_pipe_pending_count_na);
 UWT_EXTERN1(uwt_pipe_pending_type_na);
 UWT_EXTERN3(uwt_pipe_connect);
+UWT_EXTERN2(uwt_pipe_chmod);
 
 #ifdef __cplusplus
 }
