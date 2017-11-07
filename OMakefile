@@ -91,19 +91,27 @@ static.=
 		value $(if $(equal $(t),0), true, false)
 	if $(equal $(Check_prog_in_path cppo), false)
 		$(ConfMsgError $''cppo missing'')
+	if $(equal $(BYTE_ENABLED), true)
+		export
+		OCAMLCFLAGS= -g -bin-annot
+		OCAMLOPTFLAGS= -g
+	else
+		export
+		OCAMLCFLAGS= -g
+		OCAMLOPTFLAGS= -g -bin-annot
 	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))
 		export
-		OCAMLFLAGS= -g -bin-annot -strict-sequence -principal -safe-string -w A-3-4 -warn-error +1..49-3-4-45
 		CFLAGS= $(CFLAGS) $(DEVCFLAGS)
+		OCAMLFLAGS= -strict-sequence -principal -safe-string -w A-3-4 -warn-error +1..49-3-4-45
 	else
 		export
 		# omake sets OCAMLFLAGS to '-warn-error A' by default which usually
 		# breaks compilation every time a new ocaml version is released
-		OCAMLFLAGS= -g -bin-annot -safe-string -warn-error +1..49-3-4
+		OCAMLFLAGS= -safe-string -warn-error +1..49-3-4
 		if $(not $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64)))
 			CFLAGS= $(CFLAGS) -O2 -g
 			export
-	export OCAMLFLAGS CFLAGS LDFLAGS_LIBUV CFLAGS_LIBUV INTERNAL_LIBUV HAVE_LWT INTERNAL_LIBUV UWT_BUILD_JOBS
+	export OCAMLFLAGS OCAMLCFLAGS OCAMLOPTFLAGS CFLAGS LDFLAGS_LIBUV CFLAGS_LIBUV INTERNAL_LIBUV HAVE_LWT INTERNAL_LIBUV UWT_BUILD_JOBS
 
 .PHONY: libuv-compile
 libuv-compile:

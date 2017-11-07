@@ -229,9 +229,10 @@ Install_helper(name, OBJFILES, OPT_OBJFILES)=
 	IFILES= $(set $(filter-out %$(EXT_OBJ) %.cmo, $(OBJFILES)) $(MLIS) )
 	OPT_IFILES=$(set $(filter-out %$(EXT_OBJ) %.cmo, $(OPT_OBJFILES) ))
 	CMTIFILES=$(set $(replacesuffixes .cmo, .cmti, $(filter %.cmo, $(OBJFILES) $(OPT_OBJFILES))))
+	CMTFILES=$(set $(replacesuffixes .cmx, .cmt, $(filter %.cmx, $(OBJFILES) $(OPT_OBJFILES))) $(replacesuffixes .cmo, .cmt, $(filter %.cmo, $(OBJFILES) $(OPT_OBJFILES))))
 	install:: META $(OBJFILES)
 		$(OCAMLFIND) remove $(name) || true
-		$(OCAMLFIND) install -patch-version $(VERSION) $(name) META $(IFILES) -optional $(CMTIFILES) $(OPT_IFILES)
+		$(OCAMLFIND) install -patch-version $(VERSION) $(name) META $(IFILES) -optional $(CMTFILES) $(CMTIFILES) $(OPT_IFILES)
 	uninstall::
 		$(OCAMLFIND) remove $(name)
 
