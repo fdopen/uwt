@@ -56,6 +56,7 @@ UWT_EXTERN1(uwt_chdir);
 UWT_EXTERN1(uwt_os_getenv);
 UWT_EXTERN2(uwt_os_setenv_na);
 UWT_EXTERN1(uwt_os_unsetenv_na);
+UWT_EXTERN1(uwt_os_getppid_na);
 
 #ifdef __cplusplus
 }

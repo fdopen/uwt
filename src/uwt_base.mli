@@ -794,6 +794,10 @@ module Misc : sig
       necessary report an error, if it fails ... *)
 
   val get_process_title: unit -> string uv_result
+
+  val getppid: unit -> Int_result.int
+  (** Returns the parent process ID. Similar to [Unix.getppid], but also works
+      under Windows *)
 end
 
 module Sys_info : sig

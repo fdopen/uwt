@@ -627,6 +627,8 @@ module Misc = struct
   external putenv: key:string -> data:string -> Int_result.unit =
     "uwt_os_setenv_na" NOALLOC
   external unsetenv: string -> Int_result.unit = "uwt_os_unsetenv_na" NOALLOC
+
+  external getppid: unit -> Int_result.int = "uwt_os_getppid_na" NOALLOC
 end
 
 module Sys_info = struct

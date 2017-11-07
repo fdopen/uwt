@@ -834,3 +834,19 @@ uwt_os_unsetenv_na(value on)
   return VAL_UWT_INT_RESULT_ENOSYS;
 #endif
 }
+
+CAMLprim value
+uwt_os_getppid_na(value on)
+{
+#if HAVE_DECL_UV_OS_GETPPID
+  uv_pid_t p = uv_os_getppid();
+#ifdef _WIN32
+  if ( p < 0 ) { /* in error case, just `-1`, no error translation */
+    return VAL_UWT_INT_RESULT_UNKNOWN;
+  }
+#endif
+  return (Val_long(p));
+#else
+  return VAL_UWT_INT_RESULT_ENOSYS;
+#endif
+}
