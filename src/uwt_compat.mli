@@ -272,7 +272,7 @@ module Lwt_unix : sig
         taking them from byte sequence [buff], starting at position [ofs]
         in [buff]. Return the number of bytes actually written.  [write]
         repeats the writing operation until all bytes have been written or
-        an error occurs. *)
+        an error occurs (but only for streams) *)
 
     val write_string : file_descr -> string -> int -> int -> int Lwt.t
     (** See {!write}. *)
