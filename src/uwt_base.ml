@@ -377,6 +377,12 @@ module Fs_types = struct
     | O_SHORT_LIVED
     | O_SEQUENTIAL
     | O_RANDOM
+    | O_DIRECT
+    | O_EXLOCK
+    | O_NOATIME
+    | O_SYMLINK
+    | O_NOFOLLOW
+    | O_DIRECTORY
 
   type file_kind =
     |	S_REG

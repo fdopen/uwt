@@ -292,12 +292,54 @@ fs_callback(uv_fs_t * req)
   REQ_CB_CALL(v);
 }
 
-static const int open_flag_table[16] = {
+static const int open_flag_table[22] = {
 #ifdef _WIN32
   _O_RDONLY, _O_WRONLY, _O_RDWR, 0, _O_CREAT , _O_EXCL , _O_TRUNC, _O_APPEND,
-  0, 0, 0, 0,
-  _O_TEMPORARY, _O_SHORT_LIVED, _O_SEQUENTIAL, _O_RANDOM
+  0, /* O_NOCTTY */
+#ifdef UV_FS_O_DSYNC
+  UV_FS_O_DSYNC,
 #else
+  0,
+#endif
+#ifdef UV_FS_O_SYNC
+  UV_FS_O_SYNC,
+#else
+  0,
+#endif
+  0, /* O_RSYNC */
+  _O_TEMPORARY, _O_SHORT_LIVED, _O_SEQUENTIAL, _O_RANDOM,
+#ifdef UV_FS_O_DIRECT
+  UV_FS_O_DIRECT,
+#else
+  0,
+#endif
+#ifdef UV_FS_O_EXLOCK
+  UV_FS_O_EXLOCK,
+#else
+  0,
+#endif
+#ifdef UV_FS_O_NOATIME
+  UV_FS_O_NOATIME,
+#else
+  0,
+#endif
+#ifdef UV_FS_O_SYMLINK
+  UV_FS_O_SYMLINK,
+#else
+  0,
+#endif
+#ifdef UV_FS_O_NOFOLLOW
+  UV_FS_O_NOFOLLOW,
+#else
+  0,
+#endif
+#ifdef UV_FS_O_DIRECTORY
+  UV_FS_O_DIRECTORY,
+#else
+  0,
+#endif
+
+#else /* _WIN32 */
 #ifndef O_NONBLOCK
 #define O_NONBLOCK O_NDELAY
 #define DEF_O_NONBLOCK
@@ -316,8 +358,54 @@ static const int open_flag_table[16] = {
 #endif
   O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_CREAT , O_EXCL , O_TRUNC, O_APPEND,
   O_NOCTTY, O_DSYNC, O_SYNC, O_RSYNC,
-  0, 0, 0, 0
+  0, /* _O_TEMPORARY */
+  0, /* _O_SHORT_LIVED */
+  0, /* _O_SEQUENTIAL */
+  0,  /* _O_RANDOM */
+#if defined(UV_FS_O_DIRECT)
+  UV_FS_O_DIRECT,
+#elif defined(O_DIRECT)
+  O_DIRECT,
+#else
+  0,
 #endif
+#if defined(UV_FS_O_EXLOCK)
+  UV_FS_O_EXLOCK,
+#elif defined(O_EXLOCK)
+  O_EXLOCK,
+#else
+  0,
+#endif
+#if defined(UV_FS_O_NOATIME)
+  UV_FS_O_NOATIME,
+#elif defined(O_NOATIME)
+  O_NOATIME,
+#else
+  0,
+#endif
+#if defined(UV_FS_O_SYMLINK)
+  UV_FS_O_SYMLINK,
+#elif defined(O_SYMLINK)
+  O_SYMLINK,
+#else
+  0,
+#endif
+#if defined(UV_FS_O_NOFOLLOW)
+  UV_FS_O_NOFOLLOW,
+#elif defined(O_NOFOLLOW)
+  O_NOFOLLOW,
+#else
+  0,
+#endif
+#if defined(UV_FS_O_DIRECTORY)
+  UV_FS_O_DIRECTORY,
+#elif defined(O_DIRECTORY)
+  O_DIRECTORY,
+#else
+  0,
+#endif
+
+#endif /* _WIN32 */
 };
 #ifdef _WIN32
 static void

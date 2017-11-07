@@ -328,6 +328,13 @@ module Fs_types : sig
     | O_SHORT_LIVED (** windows only, ignored on Unix *)
     | O_SEQUENTIAL (** windows only, ignored on Unix *)
     | O_RANDOM (** windows only, ignored on Unix *)
+    | O_DIRECT (** On Windows supported since libuv 1.16 *)
+    | O_EXLOCK (** OS X (and Windows, but with different semantic) *)
+    | O_NOATIME (** no windows, some Unix systems, ignored otherwise *)
+    | O_SYMLINK  (** no windows, some Unix systems, ignored otherwise *)
+    | O_NOFOLLOW (** no windows, some Unix systems, ignored otherwise *)
+    | O_DIRECTORY (** no windows, some Unix systems, ignored otherwise *)
+
   (** [O_CLOEXEC] and [O_SHARE_DELETE], [O_SHARE_WRITE],
       [O_SHARE_READ] don't exist, because these flags are
       unconditionally added by libuv, if the platform supports
