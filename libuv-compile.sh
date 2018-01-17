@@ -25,6 +25,12 @@ if [ "$unix" = "true" ]; then
         else
             rm src/unix/stream.c.n
         fi
+        cp -p src/unix/netbsd.c src/unix/netbsd.c.n
+        if ! patch -p1 <../dist/patch-src_unix_netbsd.c >/dev/null 2>&1; then
+            mv src/unix/netbsd.c.n src/unix/netbsd.c
+        else
+            rm src/unix/netbsd.c.n
+        fi
         if [ ! -x ./configure ]; then
             x="$(uname)"
             if [ "$x" = "OpenBSD" ] ; then
