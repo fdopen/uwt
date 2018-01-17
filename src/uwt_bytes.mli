@@ -36,19 +36,20 @@ val length : t -> int
 
 (** {2 Access} *)
 
-val get : t -> int -> char
+external get : t -> int -> char = "%caml_ba_ref_1"
   (** [get buffer offset] returns the byte at offset [offset] in
       [buffer]. *)
 
-val set : t -> int -> char -> unit
+external set : t -> int -> char -> unit = "%caml_ba_set_1"
   (** [get buffer offset value] changes the value of the byte at
       offset [offset] in [buffer] to [value]. *)
 
-val unsafe_get : t -> int -> char
+external unsafe_get : t -> int -> char = "%caml_ba_unsafe_ref_1"
   (** Same as {!get} but without bound checking. *)
 
-val unsafe_set : t -> int -> char -> unit
+external unsafe_set : t -> int -> char -> unit = "%caml_ba_unsafe_set_1"
   (** Same as {!set} but without bound checking. *)
+
 
 (** {2 Conversions} *)
 

@@ -8,7 +8,7 @@ AC_USE_SYSTEM_EXTENSIONS
 
 AC_MSG_CHECKING([posix source 200809L])
 
-AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h grp.h pwd.h sys/param.h byteswap.h sys/byteswap.h sys/endian.h sys/un.h arpa/inet.h)
+AC_CHECK_HEADERS(errno.h stdint.h unistd.h errno.h limits.h sys/stat.h sys/types.h sys/socket.h fcntl.h netinet/in.h netdb.h grp.h pwd.h sys/param.h sys/un.h arpa/inet.h)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_DECLS([strnlen], [], [], [#include <string.h>])
 AC_CHECK_DECLS([uv_os_tmpdir,uv_fs_copyfile,uv_os_get_passwd,uv_translate_sys_error,uv_os_getenv,uv_os_setenv,uv_os_unsetenv,uv_signal_start_oneshot,uv_os_getppid,uv_pipe_chmod,UV_DISCONNECT,UV_PRIORITIZED],[],[],[#include <uv.h>])
@@ -89,27 +89,6 @@ bar(int y __attribute__((unused)))
 	[__attribute__ ((unused))], ["unused" attribute.])],
     [AC_MSG_RESULT([no]);  AC_DEFINE(ATTR_UNUSED,
 	[], ["unused" attribute.])])
-
-AC_MSG_CHECKING([if the compiler supports __builtin_bswap16])
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([],[int x = 0; int y = __builtin_bswap16(x); return y;])],
-    [AC_MSG_RESULT([yes]);
-    AC_DEFINE([HAVE_BUILTIN_BSWAP16], [1], [Define to 1 if the compiler supports __builtin_bswap16.])],
-    [AC_MSG_RESULT([no])])
-
-AC_MSG_CHECKING([if the compiler supports __builtin_bswap32])
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([],[int x = 0; int y = __builtin_bswap32(x); return y;])],
-    [AC_MSG_RESULT([yes]);
-    AC_DEFINE([HAVE_BUILTIN_BSWAP32], [1], [Define to 1 if the compiler supports __builtin_bswap32.])],
-    [AC_MSG_RESULT([no])])
-
-AC_MSG_CHECKING([if the compiler supports __builtin_bswap64])
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([],[int x = 0; int y = __builtin_bswap64(x); return y;])],
-    [AC_MSG_RESULT([yes]);
-    AC_DEFINE([HAVE_BUILTIN_BSWAP64], [1], [Define to 1 if the compiler supports __builtin_bswap64.])],
-    [AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING(for __func__)
 AH_TEMPLATE(__func__, [C99-specified function identifier])

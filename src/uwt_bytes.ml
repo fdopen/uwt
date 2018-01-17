@@ -34,26 +34,10 @@ let length bytes = Array1.dim bytes
 
 external unsafe_fill : t -> int -> int -> char -> unit = "uwt_unix_fill_bytes" NOALLOC
 
-#if OCAML_VERSION >= (4, 03, 0)
 external get : t -> int -> char = "%caml_ba_ref_1"
 external set : t -> int -> char -> unit = "%caml_ba_set_1"
-
 external unsafe_get : t -> int -> char = "%caml_ba_unsafe_ref_1"
 external unsafe_set : t -> int -> char -> unit = "%caml_ba_unsafe_set_1"
-#else
-external unsafe_get: t -> int -> char = "uwt_unix_unsafe_getbuf" NOALLOC
-external unsafe_set: t -> int -> char -> unit = "uwt_unix_unsafe_setbuf" NOALLOC
-
-let get b i =
-  if i < 0 || i >= Array1.dim b then
-    raise (Invalid_argument "index out of bounds");
-  unsafe_get b i
-
-let set b i c =
-  if i < 0 || i >= Array1.dim b then
-    raise (Invalid_argument "index out of bounds");
-  unsafe_set b i c
-#endif
 
 let fill bytes ofs len ch =
   if ofs < 0 || len < 0 || ofs > length bytes - len then

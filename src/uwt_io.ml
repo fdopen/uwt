@@ -637,27 +637,6 @@ let resize_buffer : type m. m channel -> int -> unit Lwt.t = fun wrapper len ->
         in
         primitive f wrapper
 
-(* +-----------------------------------------------------------------+
-   | Byte-order                                                      |
-   +-----------------------------------------------------------------+ *)
-
-module ByteOrder =
-struct
-  module type S = sig
-    val little_endian : bool
-  end
-
-  module LE =
-  struct
-    let little_endian = true
-  end
-
-  module BE =
-  struct
-    let little_endian = false
-  end
-end
-
 module Primitives =
 struct
 
@@ -1018,111 +997,6 @@ struct
       Lwt.return x
     end
 
-  module MakeNumberIO(ByteOrder : ByteOrder.S) =
-  struct
-    open ByteOrder
-    (* +-------------------------------------------------------------+
-       | Reading numbers                                             |
-       +-------------------------------------------------------------+ *)
-    external read_int:
-      Uwt_bytes.t -> int -> bool -> int = "uwt_unix_read_int" NOALLOC
-    external read_int16:
-      Uwt_bytes.t -> int -> bool -> int = "uwt_unix_read_int16" NOALLOC
-#if OCAML_VERSION >= (4, 03, 0)
-#define UNBOXED(x) (x [@unboxed])
-#define UNBOXED_FUN(x) STRINGIFY(x) STRINGIFY(CONCAT(x,_native))
-#define NOALLOC430 [@@noalloc]
-#else
-#define UNBOXED(x) x
-#define UNBOXED_FUN(x) STRINGIFY(x)
-#define NOALLOC430
-#endif
-    external read_int32:
-      Uwt_bytes.t -> int -> bool -> UNBOXED(int32) =
-      UNBOXED_FUN(uwt_unix_read_int32) NOALLOC430
-    external read_int64:
-      Uwt_bytes.t -> int -> bool -> UNBOXED(int64) =
-      UNBOXED_FUN(uwt_unix_read_int64) NOALLOC430
-    external read_float32:
-      Uwt_bytes.t -> int -> bool -> UNBOXED(float) =
-      UNBOXED_FUN(uwt_unix_read_float32) NOALLOC430
-    external read_float64:
-      Uwt_bytes.t -> int -> bool -> UNBOXED(float) =
-      UNBOXED_FUN(uwt_unix_read_float64) NOALLOC430
-
-    let read_int ic =
-      read_block_unsafe ic 4
-        (fun buffer ptr -> Lwt.return (read_int buffer ptr little_endian))
-    let read_int16 ic =
-      read_block_unsafe ic 2
-        (fun buffer ptr ->
-           Lwt.return (read_int16 buffer ptr little_endian))
-    let read_int32 ic =
-      read_block_unsafe ic 4
-        (fun buffer ptr ->
-           Lwt.return (read_int32 buffer ptr little_endian))
-    let read_int64 ic =
-      read_block_unsafe ic 8
-        (fun buffer ptr ->
-           Lwt.return (read_int64 buffer ptr little_endian))
-    let read_float32 ic =
-      read_block_unsafe ic 4
-        (fun buffer ptr ->
-           Lwt.return (read_float32 buffer ptr little_endian))
-    let read_float64 ic =
-      read_block_unsafe ic 8
-        (fun buffer ptr ->
-           Lwt.return (read_float64 buffer ptr little_endian))
-
-
-    (* +-------------------------------------------------------------+
-       | Writing numbers                                             |
-       +-------------------------------------------------------------+ *)
-    external write_int:
-      Uwt_bytes.t -> pos:int -> int -> bool -> unit =
-      "uwt_unix_write_int" NOALLOC
-    external write_int16:
-      Uwt_bytes.t -> pos:int -> int -> bool -> unit =
-      "uwt_unix_write_int16" NOALLOC
-    external write_int32:
-      Uwt_bytes.t -> pos:int -> UNBOXED(int32) -> bool -> unit =
-      UNBOXED_FUN(uwt_unix_write_int32) NOALLOC
-    external write_int64:
-      Uwt_bytes.t -> pos:int -> UNBOXED(int64) -> bool -> unit =
-      UNBOXED_FUN(uwt_unix_write_int64) NOALLOC
-    external write_float32:
-      Uwt_bytes.t -> pos:int -> UNBOXED(float) -> bool -> unit =
-      UNBOXED_FUN(uwt_unix_write_float32) NOALLOC
-    external write_float64:
-      Uwt_bytes.t -> pos:int -> UNBOXED(float) -> bool -> unit =
-      UNBOXED_FUN(uwt_unix_write_float64) NOALLOC
-
-    let write_int oc v =
-      write_block_unsafe oc 4
-        (fun buf pos ->
-           write_int buf ~pos v little_endian; Lwt.return_unit)
-    let write_int16 oc v =
-      write_block_unsafe oc 2
-        (fun buf pos ->
-           write_int16 buf ~pos v little_endian; Lwt.return_unit)
-    let write_int32 oc v =
-      write_block_unsafe oc 4
-        (fun buf pos ->
-           write_int32 buf ~pos v little_endian; Lwt.return_unit)
-    let write_int64 oc v =
-      write_block_unsafe oc 8
-        (fun buf pos ->
-           write_int64 buf ~pos v little_endian; Lwt.return_unit)
-    let write_float32 oc v =
-      write_block_unsafe oc 4
-        (fun buf pos ->
-           write_float32 buf ~pos v little_endian; Lwt.return_unit)
-    let write_float64 oc v =
-      write_block_unsafe oc 8
-        (fun buf pos ->
-           write_float64 buf ~pos v little_endian; Lwt.return_unit)
-  end
-
   (* +---------------------------------------------------------------+
      | Random access                                                 |
      +---------------------------------------------------------------+ *)
@@ -1247,27 +1121,140 @@ module type NumberIO = sig
   val write_float64 : output_channel -> float -> unit Lwt.t
 end
 
-module MakeNumberIO(ByteOrder : ByteOrder.S) =
-struct
-  module Primitives = Primitives.MakeNumberIO(ByteOrder)
-
-  let read_int ic = primitive Primitives.read_int ic
-  let read_int16 ic = primitive Primitives.read_int16 ic
-  let read_int32 ic = primitive Primitives.read_int32 ic
-  let read_int64 ic = primitive Primitives.read_int64 ic
-  let read_float32 ic = primitive Primitives.read_float32 ic
-  let read_float64 ic = primitive Primitives.read_float64 ic
-
-  let write_int oc x = primitive (fun oc -> Primitives.write_int oc x) oc
-  let write_int16 oc x = primitive (fun oc -> Primitives.write_int16 oc x) oc
-  let write_int32 oc x = primitive (fun oc -> Primitives.write_int32 oc x) oc
-  let write_int64 oc x = primitive (fun oc -> Primitives.write_int64 oc x) oc
-  let write_float32 oc x = primitive (fun oc -> Primitives.write_float32 oc x) oc
-  let write_float64 oc x = primitive (fun oc -> Primitives.write_float64 oc x) oc
+(* +-----------------------------------------------------------------+
+   | Byte-order                                                      |
+   +-----------------------------------------------------------------+ *)
+module type ByteOrder_s = sig
+  val little_endian : bool
 end
 
-module LE = MakeNumberIO(ByteOrder.LE)
-module BE = MakeNumberIO(ByteOrder.BE)
+module Ba = struct
+  external get16 : Uwt_bytes.t -> int -> int = "%caml_bigstring_get16"
+  external get32 : Uwt_bytes.t -> int -> int32 = "%caml_bigstring_get32"
+  external get64 : Uwt_bytes.t -> int -> int64 = "%caml_bigstring_get64"
+  external set16 : Uwt_bytes.t -> int -> int -> unit = "%caml_bigstring_set16"
+  external set32 : Uwt_bytes.t -> int -> int32 -> unit = "%caml_bigstring_set32"
+  external set64 : Uwt_bytes.t -> int -> int64 -> unit = "%caml_bigstring_set64"
+  external bswap16 : int -> int = "%bswap16"
+  external bswap32 : int32 -> int32 = "%bswap_int32"
+  external bswap64 : int64 -> int64 = "%bswap_int64"
+end
+
+module MakeNumberIO(ByteOrder : ByteOrder_s) =
+struct
+  open Primitives
+  open ByteOrder
+  (* +-------------------------------------------------------------+
+     | Reading numbers                                             |
+     +-------------------------------------------------------------+ *)
+
+  let read_int16 buffer ptr =
+    ((if Sys.big_endian = little_endian then
+        Ba.bswap16 (Ba.get16 buffer ptr)
+      else
+        Ba.get16 buffer ptr)
+     lsl ( Sys.word_size - 17 ))
+    asr ( Sys.word_size - 17 )
+
+  let read_int32 buffer ptr =
+    if Sys.big_endian = little_endian then
+      Ba.bswap32 (Ba.get32 buffer ptr)
+    else
+      Ba.get32 buffer ptr
+  let read_int buffer ptr = Int32.to_int (read_int32 buffer ptr)
+
+  let read_int64 buffer ptr =
+    if Sys.big_endian = little_endian then
+      Ba.bswap64 (Ba.get64 buffer ptr)
+    else
+      Ba.get64 buffer ptr
+
+  let read_float32 buffer ptr = Int32.float_of_bits (read_int32 buffer ptr)
+  let read_float64 buffer ptr = Int64.float_of_bits (read_int64 buffer ptr)
+
+  let read_int ic =
+    read_block_unsafe ic 4
+      (fun buffer ptr -> Lwt.return (read_int buffer ptr))
+  let read_int16 ic =
+    read_block_unsafe ic 2
+      (fun buffer ptr -> Lwt.return (read_int16 buffer ptr))
+  let read_int32 ic =
+    read_block_unsafe ic 4
+      (fun buffer ptr -> Lwt.return (read_int32 buffer ptr))
+  let read_int64 ic =
+    read_block_unsafe ic 8
+      (fun buffer ptr -> Lwt.return (read_int64 buffer ptr))
+  let read_float32 ic =
+    read_block_unsafe ic 4
+      (fun buffer ptr -> Lwt.return (read_float32 buffer ptr))
+  let read_float64 ic =
+    read_block_unsafe ic 8
+      (fun buffer ptr -> Lwt.return (read_float64 buffer ptr))
+
+  let read_int ic = primitive read_int ic
+  let read_int16 ic = primitive read_int16 ic
+  let read_int32 ic = primitive read_int32 ic
+  let read_int64 ic = primitive read_int64 ic
+  let read_float32 ic = primitive read_float32 ic
+  let read_float64 ic = primitive read_float64 ic
+
+  (* +-------------------------------------------------------------+
+     | Writing numbers                                             |
+     +-------------------------------------------------------------+ *)
+  let write_int16 buf pos v =
+    if Sys.big_endian = little_endian then
+      Ba.set16 buf pos (Ba.bswap16 v)
+    else
+      Ba.set16 buf pos v
+
+  let write_int32 buf pos v =
+    if Sys.big_endian = little_endian then
+      Ba.set32 buf pos (Ba.bswap32 v)
+    else
+      Ba.set32 buf pos v
+  let write_int buf pos v = write_int32 buf pos (Int32.of_int v)
+
+  let write_int64 buf pos v =
+    if Sys.big_endian = little_endian then
+      Ba.set64 buf pos (Ba.bswap64 v)
+    else
+      Ba.set64 buf pos v
+
+  let write_float32 buf pos v =
+    write_int32 buf pos (Int32.bits_of_float v)
+
+  let write_float64 buf pos v =
+    write_int64 buf pos (Int64.bits_of_float v)
+
+  let write_int oc v =
+    write_block_unsafe oc 4
+      (fun buf pos -> write_int buf pos v ; Lwt.return_unit)
+  let write_int16 oc v =
+    write_block_unsafe oc 2
+      (fun buf pos -> write_int16 buf pos v; Lwt.return_unit)
+  let write_int32 oc v =
+    write_block_unsafe oc 4
+      (fun buf pos -> write_int32 buf pos v; Lwt.return_unit)
+  let write_int64 oc v =
+    write_block_unsafe oc 8
+      (fun buf pos -> write_int64 buf pos v; Lwt.return_unit)
+  let write_float32 oc v =
+    write_block_unsafe oc 4
+      (fun buf pos -> write_float32 buf pos v; Lwt.return_unit)
+  let write_float64 oc v =
+    write_block_unsafe oc 8
+      (fun buf pos -> write_float64 buf pos v; Lwt.return_unit)
+
+  let write_int oc x = primitive (fun oc -> write_int oc x) oc
+  let write_int16 oc x = primitive (fun oc -> write_int16 oc x) oc
+  let write_int32 oc x = primitive (fun oc -> write_int32 oc x) oc
+  let write_int64 oc x = primitive (fun oc -> write_int64 oc x) oc
+  let write_float32 oc x = primitive (fun oc -> write_float32 oc x) oc
+  let write_float64 oc x = primitive (fun oc -> write_float64 oc x) oc
+end
+
+module LE = MakeNumberIO(struct let little_endian = true end)
+module BE = MakeNumberIO(struct let little_endian = false end)
 
 type byte_order = Little_endian | Big_endian
 let system_byte_order =
@@ -1275,9 +1262,9 @@ let system_byte_order =
   | true -> Big_endian
   | false -> Little_endian
 
-include (val (match system_byte_order with
-                | Little_endian -> (module LE : NumberIO)
-                | Big_endian -> (module BE : NumberIO)) : NumberIO)
+include (val (match Sys.big_endian with
+                | false -> (module LE : NumberIO)
+                | true -> (module BE : NumberIO)) : NumberIO)
 
 (* +-----------------------------------------------------------------+
    | Other                                                           |
