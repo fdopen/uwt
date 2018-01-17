@@ -836,8 +836,9 @@ uwt_os_unsetenv_na(value on)
 }
 
 CAMLprim value
-uwt_os_getppid_na(value on)
+uwt_os_getppid_na(value unit)
 {
+  (void) unit;
 #if HAVE_DECL_UV_OS_GETPPID
   uv_pid_t p = uv_os_getppid();
 #ifdef _WIN32
