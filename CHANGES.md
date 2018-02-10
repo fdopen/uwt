@@ -1,3 +1,15 @@
+0.2.4 2018-02-10
+---------------------------
+
+- fix compilation under OCaml 4.06.0 (Windows)
+
+- update to libuv 1.19.1:
+   * new flags for `Uwt.Fs.openfile`: `O_DIRECT`, `O_EXLOCK`,
+     `O_NOATIME`, `O_SYMLINK`, `O_NOFOLLOW`, and `O_DIRECTORY`
+   * new function: `Uwt.Pipe.chmod` to allow access from other users
+   * new function: `Uwt.Misc.getppid` (similar to `Unix.getppid`, but also
+     supported under Windows).
+
 0.2.3 2017-09-08
 ---------------------------
 
