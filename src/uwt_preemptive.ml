@@ -119,8 +119,6 @@ let send_notification (a:int) =
    | Parameters                                                      |
    +-----------------------------------------------------------------+ *)
 
-let section = Uwt_log.Section.make "uwt(preemptive)"
-
 (* Minimum number of preemptive threads: *)
 let min_threads : int ref = ref 0
 
@@ -136,9 +134,6 @@ let get_max_number_of_threads_queued _ =
 let set_max_number_of_threads_queued n =
   if n < 0 then invalid_arg "Uwt_preemptive.set_max_number_of_threads_queued";
   max_thread_queued := n
-
-(* The function for logging errors: *)
-let error_log = ref (fun msg -> ignore (Uwt_log.error ~section msg))
 
 (* The total number of preemptive threads currently running: *)
 let threads_count = ref 0
@@ -261,9 +256,8 @@ let set_bounds (min, max) =
 
 let initialized = ref false
 
-let init min max errlog =
+let init min max _errlog =
   initialized := true;
-  error_log := errlog;
   set_bounds (min, max)
 
 let simple_init () =

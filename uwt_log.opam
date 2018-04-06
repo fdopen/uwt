@@ -1,0 +1,17 @@
+opam-version: "1.2"
+maintainer: "andreashauptmann@t-online.de"
+authors: [ "andreashauptmann@t-online.de" ]
+license: "LGPL-2.1 with OCaml linking exception"
+homepage: "https://github.com/fdopen/uwt"
+dev-repo: "https://github.com/fdopen/uwt.git"
+bug-reports: "https://github.com/fdopen/uwt/issues"
+build: ["omake" "-j%{jobs}%" "EXTERNAL_UWT_LOGS=true" "lib-log"]
+install: ["omake" "EXTERNAL_UWT_LOGS=true" "install-log"]
+available: [ocaml-version >= "4.02.1"]
+depends: [
+  "ocamlfind" {build}
+  "omake" {build}
+  "lwt" {>= "4.0"}
+  "lwt_log"
+  "uwt" {>= "0.3"}
+]

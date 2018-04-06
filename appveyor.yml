@@ -9,7 +9,7 @@ environment:
     PACKAGE: uwt.0.2.1
   matrix:
     - OPAM_SWITCH: 4.05.0+msvc64c
-    - OPAM_SWITCH: 4.06.0+mingw32c
+    - OPAM_SWITCH: 4.06.1+mingw32c
 
 install:
   - ps: iex ((new-object net.webclient).DownloadString("https://raw.githubusercontent.com/$env:FORK_USER/ocaml-ci-scripts/$env:FORK_BRANCH/appveyor-install.ps1"))

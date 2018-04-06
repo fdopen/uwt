@@ -1,0 +1,8 @@
+version = "@VERSION@"
+description = "Logger for Uwt (deprecated)"
+requires = "uwt @LOGS_PKG@"
+archive(byte) = "uwt-log.cma"
+archive(byte, plugin) = "uwt-log.cma"
+archive(native) = "uwt-log.cmxa"
+archive(native, plugin) = "uwt-log.cmxs"
+exists_if = "uwt-log.cma"

@@ -433,7 +433,7 @@ val with_file :
     pass a custom flags list that does not include [Unix.O_TRUNC]. *)
 
 val open_temp_file :
-  ?buffer:Lwt_bytes.t ->
+  ?buffer:Uwt_bytes.t ->
   ?flags:Uwt.Fs.uv_open_flag list ->
   ?perm:Unix.file_perm ->
   ?temp_dir:string ->

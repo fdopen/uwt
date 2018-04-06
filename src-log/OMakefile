@@ -1,0 +1,35 @@
+.PHONY: all lib-log install-log
+.DEFAULT: all
+
+ConfReplace(META)
+
+EXTERNAL_BUILD=
+	x=$(GetVarEnv EXTERNAL_UWT_LOGS)
+	value $(or $(equal $(x),$'1'), $(equal $(x),$'true'))
+
+section
+	OCAMLPACKS+= unix lwt bigarray bytes $(LOGS_PKG)
+	if $(equal $(EXTERNAL_BUILD),true)
+		OCAMLPACKS+= uwt
+		export
+	else
+		OCAML_LIBS+= ../src/uwt-base ../src/uwt
+		OCAMLINCLUDES[]+= ../src
+		export
+	f=uwt_log
+	Repeat_targets($(f))
+	UWT_LOG=$(MOCamlLibrary uwt-log, $(f))
+	lib-log: $(UWT_LOG)
+	Install_helper_ext(-log,uwt_log,$(UWT_LOG),$(EMPTY))
+
+if $(equal $(INTERNAL_LIBUV),$(EMPTY))
+	clean::
+		clean-helper()
+else
+	clean::
+		clean-helper-keep($(basename $(INTERNAL_LIBUV)))
+
+distclean:: clean
+	rm -f *~ .*~ $(basename $(INTERNAL_LIBUV))
+
+all: lib-log

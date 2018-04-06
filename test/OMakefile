@@ -24,10 +24,10 @@ section
 	TLIB=$(MixedLibrary t_lib, $(MLFILES), $(CFILES))
 	export TLIB
 
-OCAMLPACKS+= lwt bigarray unix threads lwt.log oUnit ppx_import ppx_deriving.show
+OCAMLPACKS+= lwt bigarray unix threads $(LOGS_PKG) oUnit ppx_import ppx_deriving.show
 OCAMLFLAGS+= -thread
-OCAMLINCLUDES[]+= ../src ../examples
-MLIBS=../src/uwt-base ../src/uv-fs-sync ../src/uwt ../src/uwt-ext ../src/uwt-compat ../src/uwt-preemptive ../examples/show_uwt t_lib
+OCAMLINCLUDES[]+= ../src ../src-log ../examples
+MLIBS=../src/uwt-base ../src/uv-fs-sync ../src/uwt ../src/uwt-ext ../src/uwt-compat ../src/uwt-preemptive ../src-log/uwt-log ../examples/show_uwt t_lib
 OCAML_LIBS+= $(MLIBS)
 
 section

@@ -59,6 +59,7 @@ if [ "$unix" = "true" ]; then
     lib="../libuv/.libs/libuv.a"
     rm -f src/libuv.a examples/libuv.a test/libuv.a
     ln -s "${lib}" src/libuv.a
+    ln -s "${lib}" src-log/libuv.a
     ln -s "${lib}" examples/libuv.a
     ln -s "${lib}" test/libuv.a
 else
@@ -147,6 +148,7 @@ else
     cd ..
     rm -f src/libuv"${ext_lib}" examples/libuv"${ext_lib}" test/libuv"${ext_lib}"
     cp "${lib}" src/libuv"${ext_lib}"
+    cp "${lib}" src-log/libuv"${ext_lib}"
     cp "${lib}" examples/libuv"${ext_lib}"
     cp "${lib}" test/libuv"${ext_lib}"
 fi

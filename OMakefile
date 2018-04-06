@@ -1,6 +1,6 @@
 .PHONY: clean all distclean install uninstall lib test examples minimal
 
-VERSION=0.2.4
+VERSION=0.3.0
 PROJNAME=uwt
 USE_OCAMLFIND= true
 BYTE_ENABLED=	true
@@ -111,7 +111,14 @@ static.=
 		if $(not $(or $(equal $(OCAMLC_SYSTEM),win32), $(equal $(OCAMLC_SYSTEM),win64)))
 			CFLAGS= $(CFLAGS) -O2 -g
 			export
-	export OCAMLFLAGS OCAMLCFLAGS OCAMLOPTFLAGS CFLAGS LDFLAGS_LIBUV CFLAGS_LIBUV INTERNAL_LIBUV HAVE_LWT INTERNAL_LIBUV UWT_BUILD_JOBS
+	HAVE_LWT_LOG=$(eq 0,$(shell-code ocamlfind query lwt_log.core >$(NULL_DEVICE)))
+	if $(equal $(HAVE_LWT_LOG),true)
+		LOGS_PKG = lwt_log.core
+		export
+	else
+		LOGS_PKG = lwt.log
+		export
+	export OCAMLFLAGS OCAMLCFLAGS OCAMLOPTFLAGS CFLAGS LDFLAGS_LIBUV CFLAGS_LIBUV INTERNAL_LIBUV HAVE_LWT INTERNAL_LIBUV UWT_BUILD_JOBS LOGS_PKG
 
 .PHONY: libuv-compile
 libuv-compile:
@@ -128,7 +135,7 @@ else
 	export
 
 .DEFAULT: all
-.SUBDIRS: src examples test
+.SUBDIRS: src src-log examples test
 
 clean::
 	clean-helper()

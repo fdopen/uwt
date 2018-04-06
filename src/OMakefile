@@ -90,7 +90,7 @@ section
 	.SCANNER: scan-ocaml-%: config.inc
 	OCAMLPACKS+= lwt
 	OCAML_LIBS+= uwt-base uwt
-	FILES= uwt_log uwt_throttle uwt_timeout uwt_chan
+	FILES= uwt_throttle uwt_timeout
 	CPPOFILES= uwt_io uwt_process
 	Repeat_targets($(FILES))
 	section
@@ -102,7 +102,7 @@ section
 
 section
 	OCAMLPACKS+= lwt
-	OCAML_LIBS+= uwt-base uwt uwt-ext
+	OCAML_LIBS+= uwt-base uwt
 	OCAMLFLAGS+= -thread
 	FILES= uwt_preemptive
 	Repeat_targets($(FILES))
@@ -111,7 +111,7 @@ section
 	export UWT_PREEMPTIVE
 
 section
-	OCAMLPACKS+= lwt lwt.log
+	OCAMLPACKS+= lwt
 	OCAML_LIBS+= uwt-base uwt uwt-ext
 	FILES= uwt_compat
 	OCAMLFINDFLAGS+= -pp "cppo -V OCAML:$(OCAMLC_VERSION)"

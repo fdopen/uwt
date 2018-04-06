@@ -54,10 +54,10 @@ example_s(f)=
 		rm -f $(f)$(EXE)
 
 example_r(f,x)=
-	OCAMLPACKS+= ppx_deriving.show lwt bigarray unix threads lwt.log
+	OCAMLPACKS+= ppx_deriving.show lwt bigarray unix threads $(LOGS_PKG)
 	OCAMLFLAGS+= -thread
-	OCAMLINCLUDES[]+= ../src
-	OCAML_LIBS+= ../src/uwt-base ../src/uwt ../src/uwt-ext ../src/uwt-preemptive show_uwt
+	OCAMLINCLUDES[]+= ../src ../src-log
+	OCAML_LIBS+= ../src/uwt-base ../src/uwt ../src/uwt-ext ../src/uwt-preemptive ../src-log/uwt-log show_uwt
 	if $(equal $(x),true)
 		OCAML_LIBS+= help
 		export

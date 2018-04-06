@@ -43,6 +43,7 @@
 /src/error_val.ml
 /src/error_val.mli
 /src/uwt-error.h
+/src-log/META
 /examples/copy
 /examples/dns
 /examples/echo_tcp
