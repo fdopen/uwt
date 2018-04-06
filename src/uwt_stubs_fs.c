@@ -994,18 +994,49 @@ FSFUNC_1(fs_realpath, fs_readlink_cb, o_path, {
 })
 
 #if HAVE_DECL_UV_FS_COPYFILE
+
+/* ugly, but using #ifdef inside a macro is not portable,... */
+#ifndef UV_FS_COPYFILE_FICLONE
+#define UWT_FS_COPYFILE_FICLONE 0
+#else
+#define UWT_FS_COPYFILE_FICLONE UV_FS_COPYFILE_FICLONE
+#endif
+
+#ifndef UV_FS_COPYFILE_FICLONE_FORCE
+#define UWT_FS_COPYFILE_FICLONE_FORCE 0
+#else
+#define UWT_FS_COPYFILE_FICLONE_FORCE UV_FS_COPYFILE_FICLONE_FORCE
+#endif
+
 FSFUNC_3(fs_copyfile, runit, o_old, o_new, o_flags,{
-  const int flags = Long_val(o_flags) == 0 ? 0 : UV_FS_COPYFILE_EXCL;
-  COPY_STR2(o_old, o_new,{
-    BLOCK(uv_fs_copyfile(loop, req, STRING_VAL(o_old), STRING_VAL(o_new),
-                         flags, cb));
-  });
+  const int copy_flags = Long_val(o_flags);
+  int flags = 0 ;
+  if ( copy_flags & 1 ){
+    flags |= UV_FS_COPYFILE_EXCL;
+  }
+  if ( copy_flags & 2 ){
+    flags |= UWT_FS_COPYFILE_FICLONE; /* emulate, if libuv version too low */
+  }
+  if ( copy_flags & 4 ){
+    if ( !UWT_FS_COPYFILE_FICLONE_FORCE ){
+      ret = UV_ENOSYS;
+    }
+    flags |= UWT_FS_COPYFILE_FICLONE_FORCE;
+  }
+  if ( ret != UV_ENOSYS ){
+    COPY_STR2(o_old, o_new,{
+        BLOCK(uv_fs_copyfile(loop, req, STRING_VAL(o_old), STRING_VAL(o_new),
+                             flags, cb));
+      });
+  }
 })
+#undef UWT_FS_COPYFILE_FICLONE
+#undef UWT_FS_COPYFILE_FICLONE_FORCE
 #else
 FSFUNC_3(fs_copyfile, runit, o_old, o_new, o_flags,{
     ret = UV_ENOSYS;
   })
-#endif
+#endif /* HAVE_DECL_UV_FS_COPYFILE */
 
 #ifdef DEF_O_NONBLOCK
 #undef DEF_O_NONBLOCK

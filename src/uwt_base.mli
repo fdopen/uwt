@@ -385,6 +385,11 @@ module Fs_types : sig
     st_birthtime: int64;
     st_birthtime_nsec: int;
   }
+
+  type clone_mode =
+    | No_clone
+    | Try_clone
+    | Force_clone
 end
 
 module type Fs_functions = sig
@@ -566,12 +571,21 @@ module type Fs_functions = sig
       such as the above need to be supported.
   *)
 
-  val copyfile : ?excl:bool -> src:string -> dst:string -> unit -> unit t
+  val copyfile : ?excl:bool -> ?clone:clone_mode -> src:string -> dst:string -> unit -> unit t
   (** Copies a file from [~src] to [~dst].
 
-      If [?excl] is true, copyfile() will fail with [EEXIST] if the
+      If [?excl] is true, copyfile will fail with [EEXIST] if the
       destination path already exists. The default behavior is to
       overwrite the destination if it exists.
+
+      If [?clone] is [Try_clone], copyfile will attempt to create a
+      copy-on-write reflink. If the underlying platform (or your installed
+      libuv version) does not support copy-on-write, then a fallback copy
+      mechanism is used.
+      If [?clone] is [Force_clone], copyfile will attempt to create a
+      copy-on-write reflink. If the underlying platform does not support
+      copy-on-write, then an error is returned.
+      The default behaviour is a normal copy ([No_clone]).
 
       Warning: If the destination path is created, but an error occurs
       while copying the data, then the destination path is

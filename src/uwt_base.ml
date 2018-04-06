@@ -428,6 +428,11 @@ module Fs_types = struct
     st_birthtime: int64;
     st_birthtime_nsec: int;
   }
+
+  type clone_mode =
+    | No_clone
+    | Try_clone
+    | Force_clone
 end
 
 module type Fs_functions = sig
@@ -483,7 +488,7 @@ module type Fs_functions = sig
   val fchown : file -> uid:int -> gid:int -> unit t
   val scandir : string -> (file_kind * string) array t
   val realpath: string -> string t
-  val copyfile : ?excl:bool -> src:string -> dst:string -> unit -> unit t
+  val copyfile : ?excl:bool -> ?clone:clone_mode -> src:string -> dst:string -> unit -> unit t
 end
 
 module Conv = struct

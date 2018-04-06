@@ -1837,10 +1837,16 @@ module Fs = struct
 
   let realpath = Unix.realpath
 
-  external copyfile: string -> string -> bool -> loop -> unit_cb ->
+  external copyfile: string -> string -> int -> loop -> unit_cb ->
     Req.r = "uwt_fs_copyfile"
-  let copyfile ?(excl=false) ~src ~dst () =
-    Req.qlu ~f:(copyfile src dst excl) ~name:"copyfile" ~param:dst
+  let copyfile ?(excl=false) ?(clone=No_clone) ~src ~dst () =
+    let flags =
+      (if excl then 1 else 0) lor
+        (match clone with
+         | No_clone -> 0
+         | Try_clone -> 2
+         | Force_clone -> 4) in
+    Req.qlu ~f:(copyfile src dst flags) ~name:"copyfile" ~param:dst
 end
 
 module Fs_poll = struct
