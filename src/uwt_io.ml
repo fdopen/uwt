@@ -1385,7 +1385,12 @@ let with_temp_file ?buffer ?flags ?perm ?temp_dir ?prefix f =
       close chan >>= fun () ->
       Uwt.Fs.unlink fname)
 
-let file_length filename = with_file ~mode:input filename length
+let file_length filename =
+  Uwt.Fs.stat filename >>= fun stat ->
+  if stat.Uwt.Fs.st_kind = Uwt.Fs.S_DIR then
+    Lwt.fail (Unix.(Unix_error (EISDIR, "file_length", filename)))
+  else
+    with_file ~mode:input filename length
 
 let close_socket s =
   if Uwt.Stream.(is_writable s = false || write_queue_size s <= 0) then (
