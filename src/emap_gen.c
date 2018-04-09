@@ -182,9 +182,8 @@ int main(void)
   }
   fputs("} val_uwt_int_result_errno_t;\n",c2);
 
-
-  fputs("#pragma GCC diagnostic push\n"
-        "#pragma GCC diagnostic ignored \"-Wenum-compare\"\n",c);
+  fputs("#include \"macros.h\"\n"
+        "DISABLE_WARNING_ENUM_COMPARE()\n",c);
 
   fputs("value\n"
         "Val_uwt_error(int n)\n"
@@ -220,7 +219,7 @@ int main(void)
         "}\n",c);
 
   fputs("\n",c);
-  fputs("#pragma GCC diagnostic pop\n\n",c);
+  fputs("POP_WARNING()\n\n",c);
 
   fputs("value\n"
         "Val_uwt_int_result(intnat n)\n"

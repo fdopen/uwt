@@ -22,6 +22,15 @@
 #define DEFINE_MUTEXES 1
 #include "config.inc"
 
+(* [Lwt_sequence] is deprecated - we don't want users outside Lwt using it.
+   However, it is still used internally by Lwt. So, briefly disable warning 3
+   ("deprecated"), and create a local, non-deprecated alias for
+   [Lwt_sequence] that can be referred to by the rest of the code in this
+   module without triggering any more warnings. *)
+[@@@ocaml.warning "-3"]
+module Lwt_sequence = Lwt_sequence
+[@@@ocaml.warning "+3"]
+
 open Lwt.Infix
 external init_uwt : unit -> unit = "uwt_init_na" NOALLOC
 let () = init_uwt ()
@@ -1881,7 +1890,7 @@ module Main = struct
   let enter_iter_hooks = Lwt_sequence.create ()
   let leave_iter_hooks = Lwt_sequence.create ()
   let yielded = Lwt_sequence.create ()
-  let yield () = Lwt.add_task_r yielded
+  let yield () = (Lwt.add_task_r [@ocaml.warning "-3"]) yielded
 
   let rec run ~nothing_cnt task =
     Lwt.wakeup_paused ();

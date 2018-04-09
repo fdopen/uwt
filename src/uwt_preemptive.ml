@@ -23,6 +23,15 @@
 
 (* Modified for uwt, by Andreas Hauptmann (c) 2015 *)
 
+(* [Lwt_sequence] is deprecated - we don't want users outside Lwt using it.
+   However, it is still used internally by Lwt. So, briefly disable warning 3
+   ("deprecated"), and create a local, non-deprecated alias for
+   [Lwt_sequence] that can be referred to by the rest of the code in this
+   module without triggering any more warnings. *)
+[@@@ocaml.warning "-3"]
+module Lwt_sequence = Lwt_sequence
+[@@@ocaml.warning "+3"]
+
 open Lwt.Infix
 
 (* Informations about a notifier *)
@@ -236,7 +245,7 @@ let get_worker () =
   else if !threads_count < !max_threads then
     Lwt.return (make_worker ())
   else
-    Lwt.add_task_r waiters
+    (Lwt.add_task_r [@ocaml.warning "-3"]) waiters
 
 (* +-----------------------------------------------------------------+
    | Initialisation, and dynamic parameters reset                    |

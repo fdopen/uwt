@@ -424,6 +424,44 @@ strdup (const char *s)
 #define TAG_POINTER(v)                          \
   ((intnat)(((uintptr_t)(v) | (uintptr_t)1)))
 
+#if defined(__clang__)
+
+#define DISABLE_WARNING_TYPE_LIMIT()                    \
+  _Pragma("clang diagnostic push")                      \
+  _Pragma("clang diagnostic ignored \"-Wtype-limits\"")
+#define DISABLE_WARNING_CAST_QUAL()                     \
+  _Pragma("clang diagnostic push")                      \
+  _Pragma("clang diagnostic ignored \"-Wcast-qual\"")
+#define DISABLE_WARNING_ENUM_COMPARE()                  \
+  _Pragma("clang diagnostic push")                      \
+  _Pragma("clang diagnostic ignored \"-Wenum-compare\"")
+#define POP_WARNING()                           \
+  _Pragma("clang diagnostic pop")
+
+#elif defined(__GNUC__) && ( __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+
+#define DISABLE_WARNING_TYPE_LIMIT()                                \
+  _Pragma("GCC diagnostic push")                                    \
+  _Pragma("GCC diagnostic ignored \"-Wtype-limits\"")
+#define DISABLE_WARNING_CAST_QUAL()                                 \
+  _Pragma("GCC diagnostic push")                                    \
+  _Pragma("GCC diagnostic ignored \"-Wcast-qual\"")
+#define DISABLE_WARNING_ENUM_COMPARE()                              \
+  _Pragma("GCC diagnostic push")                                    \
+  _Pragma("GCC diagnostic ignored \"-Wenum-compare\"")
+#define POP_WARNING()                           \
+  _Pragma("GCC diagnostic pop")
+
+#else
+
+#define DISABLE_WARNING_TYPE_LIMIT()
+#define DISABLE_WARNING_CAST_QUAL()
+#define DISABLE_WARNING_ENUM_COMPARE()
+#define POP_WARNING()
+
+
+#endif
+
 #ifdef __cplusplus
 }
 #endif

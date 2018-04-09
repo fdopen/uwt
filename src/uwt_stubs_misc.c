@@ -802,6 +802,7 @@ uwt_os_getenv(value on)
   Field(ret,0) = p;
   CAMLreturn(ret);
 #else
+  (void) on;
   return (uwt__alloc_eresult(VAL_UWT_ERROR_ENOSYS));
 #endif
 }
@@ -817,6 +818,8 @@ uwt_os_setenv_na(value on, value ov)
   const int r = uv_os_setenv(String_val(on), String_val(ov));
   return (VAL_UWT_UNIT_RESULT(r));
 #else
+  (void) on;
+  (void) ov;
   return VAL_UWT_INT_RESULT_ENOSYS;
 #endif
 }
@@ -831,6 +834,7 @@ uwt_os_unsetenv_na(value on)
   const int r = uv_os_unsetenv(String_val(on));
   return (VAL_UWT_UNIT_RESULT(r));
 #else
+  (void) on;
   return VAL_UWT_INT_RESULT_ENOSYS;
 #endif
 }

@@ -712,10 +712,8 @@ handle_finalize(value p)
   }
 }
 
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#endif
+DISABLE_WARNING_CAST_QUAL()
+
 #define OPS_NAME ((char*)"ops_name")
 static char * const custom_op_name = OPS_NAME;
 
@@ -743,9 +741,7 @@ static struct custom_operations ops_uwt_handle_nf = {
 #endif
 };
 
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
+POP_WARNING()
 
 #ifdef _WIN32
 CAMLprim value

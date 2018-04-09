@@ -1474,9 +1474,11 @@ uwt_getpwuid(value o_uid, value o_uwt)
   value ret;
   intnat int_id = Long_val(o_uid);
   uid_t uid = int_id;
+  DISABLE_WARNING_TYPE_LIMIT();
   if ( uid != int_id || ((uid_t)-1 >= 0 && int_id < 0) ){
     return VAL_UWT_INT_RESULT_EINVAL;
   }
+  POP_WARNING();
   void * puid = INT_TO_POINTER(uid);
   ret = uwt_add_worker_result(o_uwt,
                               passwd_cleaner,
@@ -1676,9 +1678,11 @@ uwt_getgrgid(value o_gid, value o_uwt)
   value ret;
   intnat int_id = Long_val(o_gid);
   gid_t gid = int_id;
+  DISABLE_WARNING_TYPE_LIMIT();
   if ( gid != int_id || ((gid_t)-1 >= 0 && int_id < 0) ){
     return VAL_UWT_INT_RESULT_EINVAL;
   }
+  POP_WARNING();
   void * pgid = INT_TO_POINTER(gid);
   ret = uwt_add_worker_result(o_uwt,
                               group_cleaner,

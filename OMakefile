@@ -102,7 +102,7 @@ static.=
 	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))
 		export
 		CFLAGS= $(CFLAGS) $(DEVCFLAGS)
-		OCAMLFLAGS= -strict-sequence -principal -safe-string -w A-3-4 -warn-error +1..49-3-4-45
+		OCAMLFLAGS= -strict-sequence -principal -safe-string -w A-4 -warn-error +1..49-3-4-45
 	else
 		export
 		# omake sets OCAMLFLAGS to '-warn-error A' by default which usually

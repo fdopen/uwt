@@ -892,6 +892,7 @@ FSFUNC_2(fs_fchmod, runit, o_fd, o_mode, {
   BLOCK(uv_fs_fchmod(loop, req, fd, mode, cb));
 })
 
+DISABLE_WARNING_TYPE_LIMIT();
 FSFUNC_3(fs_chown, runit, o_path, o_uid, o_gid, {
   const intnat r_uid = Long_val(o_uid);
   const intnat r_gid = Long_val(o_gid);
@@ -920,6 +921,7 @@ FSFUNC_3(fs_fchown, runit, o_fd, o_uid, o_gid, {
   }
   BLOCK(uv_fs_fchown(loop, req, fd, uid, gid, cb));
 })
+POP_WARNING();
 
 FSFUNC_3(fs_utime, runit, o_p, o_atime, o_mtime, {
   const double atime = Double_val(o_atime);
@@ -1033,9 +1035,17 @@ FSFUNC_3(fs_copyfile, runit, o_old, o_new, o_flags,{
 #undef UWT_FS_COPYFILE_FICLONE
 #undef UWT_FS_COPYFILE_FICLONE_FORCE
 #else
-FSFUNC_3(fs_copyfile, runit, o_old, o_new, o_flags,{
-    ret = UV_ENOSYS;
-  })
+value uwt_fs_copyfile(value a, value b, value c, value d, value e) {
+  (void) a; (void) b; (void) c; (void) d; (void) e;
+  value ret = caml_alloc_small(1,Error_tag);
+  Field(ret,0) = VAL_UWT_ERROR_ENOSYS;
+  return ret;
+}
+
+value uwt_fs_copyfile_sync(value a, value b, value c) {
+  (void) a; (void) b; (void) c;
+  return VAL_UWT_INT_RESULT_ENOSYS;
+}
 #endif /* HAVE_DECL_UV_FS_COPYFILE */
 
 #ifdef DEF_O_NONBLOCK

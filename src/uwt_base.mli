@@ -132,8 +132,12 @@ type ('a , 'b) o_result = ('a, 'b) result =
   | Error of 'b [@@ocaml.deprecated "please use Result.result instead"]
 (** Please use [Result.Ok] or just [Ok], not [Uwt.Ok] or [Uwt_base.Ok] *)
 
+[@@@ocaml.warning "-3"]
+
 type 'a result = ('a , error) o_result
 [@@ocaml.deprecated "please use Result.result or uv_result instead"]
+
+[@@@ocaml.warning "+3"]
 
 module Int_result : sig
   (** [Int_result.t] is used instead of ['a result], if a function
