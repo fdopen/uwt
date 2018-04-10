@@ -2,41 +2,29 @@
 
 Uwt provides OCaml bindings for libuv. The main loop of libuv is
 integrated into {{:https://ocsigen.org/lwt/manual/} [lwt]}, the
-light-weight cooperative threads library.
+light-weight cooperative threads ("promise") library.
 
 Uwt is {b not} {i compatible} with [lwt.unix]. It's not a further
-[Lwt_engine] in addition to [select] and [libev]. It only uses the system
-independent parts of lwt that can also be used with JavaScript or ocamljava.
+[Lwt_engine] in addition to [select] and [libev]. It only uses the
+system independent parts of lwt that can also be used with
+{{:http://ocsigen.org/js_of_ocaml/} [JavaScript]} or
+{{:http://www.ocamljava.org/} [ocamljava]}.
 
 {2 Lwt Independent Core}
 
-{!Uwt_base} (findlib name: [uwt.base]) contains type definitions and
-functions that are shared by {!Uwt} and {!Uv_fs_sync}. {!Uwt_base} is
-included in {!Uwt}, so you usually don't use it directly.
+{!Uwt_base} contains type definitions and functions that are shared by
+{!Uwt} and {!Uv_fs_sync}. {!Uwt_base} is included in {!Uwt}, you
+usually don't use it directly.
 
 {!modules:
 Uwt_base
 Uwt_bytes
 }
 
-{!Uv_fs_sync} (findlib name: [uwt.sync]) can be used for synchronous
-filesystem operations. This might be useful, if you target Windows:
-
-- additional options and functions are available, that are missing
-  inside the standard Unix module.
-
-- filenames and similar parameters and return values are always utf-8
-  encoded.
-
-{!modules:
-Uv_fs_sync
-}
-
 {2 Uwt}
 
-The main part of this library (findlib name: [uwt.async], included in
-[uwt]) The naming conventions mirror the conventions of libuv, so you
-can easily consult the official
+The main part of this library. The naming conventions mirror the
+conventions of libuv, so you can easily consult the official
 {{:http://docs.libuv.org/en/v1.x/index.html} [libuv manual]}.
 
 Selected parts of the manual are now included inside the mli files
@@ -50,14 +38,11 @@ Uwt
 {2 Higher Level Helpers}
 
 [lwt.unix] also provides higher level modules. They have been ported
-to [uwt] and have a very similar interface (findlib name: [uwt.ext],
-included in [uwt]).
+to [uwt] and have a very similar interface:
 
 {!modules:
-Uwt_log
 Uwt_throttle
 Uwt_timeout
-Uwt_chan
 Uwt_io
 Uwt_process
 }
@@ -74,15 +59,30 @@ Uwt_preemptive
 
 {2 Compatibility Helper}
 
-{!Uwt_compat} (findlib name: [uwt.compat]) provides aliases with
-module names as found in [lwt.unix], e.g. [Lwt_io] instead of [Uwt_io]
-or [Lwt_main] instead of {!Uwt.Main}).  This is necessary, if you want
-to use the {{:https://ocsigen.org/lwt/2.7.0/api/Pa_lwt} [camlp4 syntax
+{!Uwt_compat} provides aliases with module names as found in
+[lwt.unix], e.g. [Lwt_io] instead of [Uwt_io] or [Lwt_main] instead of
+{!Uwt.Main}).  This is necessary, if you want to use the
+{{:https://ocsigen.org/lwt/2.7.0/api/Pa_lwt} [camlp4 syntax
 extension]} of lwt. And it makes it easier to test or use existing
 code with [uwt] instead of [lwt.unix].
 
 {!modules:
 Uwt_compat
+}
+
+{2 Synchronous File I/O}
+
+{!Uv_fs_sync} (findlib name: [uwt.sync]) can be used for synchronous
+filesystem operations. This might be useful, if you target Windows:
+
+- additional options and functions are available, that are missing
+  inside the standard Unix module.
+
+- filenames and similar parameters and return values are always utf-8
+  encoded.
+
+{!modules:
+Uv_fs_sync
 }
 
 {2 Index}

@@ -43,10 +43,6 @@
  - Uwt is {b not} {i thread safe}. All uwt functions should be called
    from your main thread.
 
- - Uwt is in beta stage. The interface is likely to change in the
-   first official release. Feel free to open an issue and make
-   suggestions about it :)
-
    Please notice, that there are subtle differences compared to
    [lwt.unix]. Because all requests are accomplished by libuv
    (sometimes in parallel in different threads), you don't have that
@@ -57,7 +53,7 @@
    - [Stream.write] and related functions can never be canceled. The
    analogous write functions in [Lwt_unix] however are cancelable as
    long as the underlying file descriptor is not opened in blocking
-   mode. ({Stream.read} currently returns the only cancelable thread
+   mode. ({!Stream.read} currently returns the only cancelable thread
    inside {!Stream} and its subclasses. But there is no guarantee that
    {!Tcp.read} will continue to be cancelable under Windows in future
    libuv versions.)
@@ -163,7 +159,12 @@ module Main : sig
 
       Notes:
       - each hook is called exactly one time
-      - exceptions raised by hooks are ignored *)
+      - exceptions raised by hooks are ignored
+
+      Don't use {!Pervasives.exit} together with uwt - or only use it outside any
+      function that is passed to {!Main.run}. {!Pervasives.exit}
+      interrupts the normal code flow and will leave libuv's internal
+      state in an inconsistent state. Your exit hooks will never be called. *)
 
 [@@@ocaml.warning "+3"]
 
@@ -311,7 +312,7 @@ end
 module Stream : sig
   (** Stream handles provide an abstraction of a duplex communication
       channel. [Stream.t] is an abstract type, libuv provides 3 stream
-      implementations in the forn of [Tcp.t], [Pipe.t] and [Tty.t]. *)
+      implementations in the form of [Tcp.t], [Pipe.t] and [Tty.t]. *)
 
   type t
   include module type of Handle with type t := t

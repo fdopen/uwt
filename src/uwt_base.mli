@@ -127,10 +127,10 @@ val of_unix_error : Unix.error -> error
 
 type 'a uv_result = ('a , error) result
 
+(**/**)
 type ('a , 'b) o_result = ('a, 'b) result =
   | Ok of 'a
   | Error of 'b [@@ocaml.deprecated "please use Result.result instead"]
-(** Please use [Result.Ok] or just [Ok], not [Uwt.Ok] or [Uwt_base.Ok] *)
 
 [@@@ocaml.warning "-3"]
 
@@ -138,6 +138,8 @@ type 'a result = ('a , error) o_result
 [@@ocaml.deprecated "please use Result.result or uv_result instead"]
 
 [@@@ocaml.warning "+3"]
+
+(**/**)
 
 module Int_result : sig
   (** [Int_result.t] is used instead of ['a result], if a function
@@ -339,10 +341,11 @@ module Fs_types : sig
     | O_NOFOLLOW (** no windows, some Unix systems, ignored otherwise *)
     | O_DIRECTORY (** no windows, some Unix systems, ignored otherwise *)
 
-  (** [O_CLOEXEC] and [O_SHARE_DELETE], [O_SHARE_WRITE],
-      [O_SHARE_READ] don't exist, because these flags are
-      unconditionally added by libuv, if the platform supports
-      them. *)
+  (** Flags for {!Fs_functions.openfile}
+
+      [O_CLOEXEC] doesn't exist, because this flag is unconditionally
+      added by libuv. [O_SHARE_DELETE], [O_SHARE_WRITE], [O_SHARE_READ]
+      are always added on Windows, unless [O_EXLOCK] is specified. *)
 
   type file_kind =
     | S_REG  (** Regular file *)
@@ -358,7 +361,7 @@ module Fs_types : sig
     | S_Default
     | S_Dir (** indicates that path points to a directory. *)
     | S_Junction (** request that the symlink is created using junction points.*)
-  (**  On Windows it can be specified how the symlink will be created: *)
+  (**  On Windows it can be specified how to create symlinks. *)
 
   type access_permission =
     | Read  (** Read permission *)
@@ -367,33 +370,36 @@ module Fs_types : sig
     | Exists (** File exists *)
 
   type stats = {
-    st_dev: int;
-    st_kind: file_kind;
-    st_perm: int;
-    st_nlink: int;
-    st_uid: int;
-    st_gid: int;
-    st_rdev: int;
-    st_ino: int;
-    st_size: int64;
-    st_blksize: int;
-    st_blocks: int;
-    st_flags: int;
-    st_gen: int;
-    st_atime: int64;
-    st_atime_nsec: int;
-    st_mtime: int64;
-    st_mtime_nsec: int;
-    st_ctime: int64;
-    st_ctime_nsec: int;
-    st_birthtime: int64;
-    st_birthtime_nsec: int;
+    st_dev: int;        (** Device number *)
+    st_kind: file_kind; (** Kind of the file *)
+    st_perm: int;       (** Access rights *)
+    st_nlink: int;      (** Number of links *)
+    st_uid: int;        (** User id of the owner *)
+    st_gid: int;        (** Group ID of the file's group *)
+    st_rdev: int;       (** Device minor number *)
+    st_ino: int;        (** Inode number *)
+    st_size: int64;     (** Size in bytes *)
+    st_blksize: int;    (** "Preferred" block size for efficient filesystem I/O *)
+    st_blocks: int;     (** Number of blocks allocated to the file, in 512-byte units *)
+    st_flags: int;      (** User defined flags for file *)
+    st_gen: int;        (** File generation number *)
+    st_atime: int64;    (** Last access time *)
+    st_atime_nsec: int; (** Nanosecond components of last access time *)
+    st_mtime: int64;    (** Last modification time *)
+    st_mtime_nsec: int; (** Nanosecond components of last modification time *)
+    st_ctime: int64;    (** Last status change time *)
+    st_ctime_nsec: int; (** Nanosecond components of lastt status change time *)
+    st_birthtime: int64; (** File creation time *)
+    st_birthtime_nsec: int; (** Nanosecond components of File creation time *)
   }
+  (** File status information. Support for the various fields differs
+      depending on the OS and filesystem. *)
 
   type clone_mode =
-    | No_clone
-    | Try_clone
-    | Force_clone
+    | No_clone (** Create a normal copy *)
+    | Try_clone (** Try to clone the file, but create a normal copy, if it fails *)
+    | Force_clone (** Try tlone the file, don't create a normal copy, if it fails *)
+  (** Clone mode for {!Fs_functions.copyfile} *)
 end
 
 module type Fs_functions = sig
@@ -813,16 +819,18 @@ module Misc : sig
       environment variable exists, this function returns
       successfully. *)
 
-  val set_process_title: string -> Int_result.unit
-  (** The following two functions don't work reliable,
-      especially with byte code. And set_process_title won't
-      necessary report an error, if it fails ... *)
-
-  val get_process_title: unit -> string uv_result
-
   val getppid: unit -> Int_result.int
   (** Returns the parent process ID. Similar to [Unix.getppid], but also works
       under Windows *)
+
+  (** The following two functions don't work reliable, especially with
+      byte code. *)
+
+  val set_process_title: string -> Int_result.unit
+  (** Sets the process title. It won't necessary report an error, if it fails *)
+
+  val get_process_title: unit -> string uv_result
+
 end
 
 module Sys_info : sig
