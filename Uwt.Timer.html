@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,9 +33,8 @@
 </div>
 <h1>Module <a href="type_Uwt.Timer.html">Uwt.Timer</a></h1>
 
-<pre><span class="keyword">module</span> Timer: <code class="code">sig</code> <a href="Uwt.Timer.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-Timer handles are used to schedule callbacks to be called in the future.<br>
+<pre><span id="MODULETimer"><span class="keyword">module</span> Timer</span>: <code class="code">sig</code> <a href="Uwt.Timer.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>Timer handles are used to schedule callbacks to be called in the future.</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
@@ -46,14 +43,18 @@ Timer handles are used to schedule callbacks to be called in the future.<br>
 
 <pre><span id="VALto_handle"><span class="keyword">val</span> to_handle</span> : <code class="type"><a href="Uwt.Timer.html#TYPEt">t</a> -> <a href="Uwt.Handle.html#TYPEt">Uwt.Handle.t</a></code></pre>
 <pre><span id="VALsleep"><span class="keyword">val</span> sleep</span> : <code class="type">int -> unit Lwt.t</code></pre><div class="info ">
-<code class="code">sleep d</code> is a thread that remains suspended for <code class="code">d</code> milliseconds
-      and then terminates.<br>
+<div class="info-desc">
+<p><code class="code">sleep d</code> is a thread that remains suspended for <code class="code">d</code> milliseconds
+      and then terminates.</p>
+</div>
 </div>
 
 <pre><span id="VALstart"><span class="keyword">val</span> start</span> : <code class="type">repeat:int -><br>       timeout:int -> cb:(<a href="Uwt.Timer.html#TYPEt">t</a> -> unit) -> <a href="Uwt.Timer.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-Timers, that are executed only once (repeat=0), are automatically closed.
+<div class="info-desc">
+<p>Timers, that are executed only once (repeat=0), are automatically closed.
       After their callback have been executed, their handles are invalid.
-      Call <code class="code">close</code> to stop a repeating timer<br>
+      Call <code class="code">close</code> to stop a repeating timer</p>
+</div>
 </div>
 
 <pre><span id="VALstart_exn"><span class="keyword">val</span> start_exn</span> : <code class="type">repeat:int -> timeout:int -> cb:(<a href="Uwt.Timer.html#TYPEt">t</a> -> unit) -> <a href="Uwt.Timer.html#TYPEt">t</a></code></pre></body></html>

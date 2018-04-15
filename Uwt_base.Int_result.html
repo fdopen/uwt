@@ -18,10 +18,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -33,11 +31,10 @@
 </div>
 <h1>Module <a href="type_Uwt_base.Int_result.html">Uwt_base.Int_result</a></h1>
 
-<pre><span class="keyword">module</span> Int_result: <code class="code">sig</code> <a href="Uwt_base.Int_result.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-<code class="code">Int_result.t</code> is used instead of <code class="code">'a result</code>, if a function
+<pre><span id="MODULEInt_result"><span class="keyword">module</span> Int_result</span>: <code class="code">sig</code> <a href="Uwt_base.Int_result.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p><code class="code">Int_result.t</code> is used instead of <code class="code">'a result</code>, if a function
       returns either an error or a non-negative integer (including
-      unit/bool).<br>
+      unit/bool).</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type">'a</code> t</span> = private <code class="type">int</code> </pre>
 
@@ -57,40 +54,46 @@
 <pre><span id="VALis_ok"><span class="keyword">val</span> is_ok</span> : <code class="type">'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> bool</code></pre>
 <pre><span id="VALis_error"><span class="keyword">val</span> is_error</span> : <code class="type">'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> bool</code></pre>
 <pre><span id="VALto_int"><span class="keyword">val</span> to_int</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a> -> <a href="Uwt_base.Int_result.html#TYPEreal_int">real_int</a></code></pre><div class="info ">
-will raise <code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_ok"><code class="code">Uwt_base.Int_result.is_ok</code></a> is false<br>
+<div class="info-desc">
+<p>will raise <code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_ok"><code class="code">Uwt_base.Int_result.is_ok</code></a> is false</p>
+</div>
 </div>
 
 <pre><span id="VALto_error"><span class="keyword">val</span> to_error</span> : <code class="type">'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> <a href="Uwt_base.html#TYPEerror">Uwt_base.error</a></code></pre><div class="info ">
-will raise <code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_error"><code class="code">Uwt_base.Int_result.is_error</code></a> is false<br>
+<div class="info-desc">
+<p>will raise <code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_error"><code class="code">Uwt_base.Int_result.is_error</code></a> is false</p>
+</div>
 </div>
 
 <pre><span id="VALplain"><span class="keyword">val</span> plain</span> : <code class="type">'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> <a href="Uwt_base.Int_result.html#TYPEreal_int">real_int</a></code></pre><div class="info ">
-return a plain integer number, positive or negative<br>
+<div class="info-desc">
+<p>return a plain integer number, positive or negative</p>
+</div>
 </div>
 
 <pre><span id="VALto_exn"><span class="keyword">val</span> to_exn</span> : <code class="type">?name:string -> ?param:string -> 'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> exn</code></pre><div class="info ">
-will raise <code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_error"><code class="code">Uwt_base.Int_result.is_error</code></a> is false<br>
+<div class="info-desc">
+<p>will raise <code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_error"><code class="code">Uwt_base.Int_result.is_error</code></a> is false</p>
+</div>
 </div>
 
 <pre><span id="VALraise_exn"><span class="keyword">val</span> raise_exn</span> : <code class="type">?name:string -> ?param:string -> 'a <a href="Uwt_base.Int_result.html#TYPEt">t</a> -> 'b</code></pre><div class="info ">
-<code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_error"><code class="code">Uwt_base.Int_result.is_error</code></a> is false<br>
+<div class="info-desc">
+<p><code class="code">Invalid_argument</code>, if <a href="Uwt_base.Int_result.html#VALis_error"><code class="code">Uwt_base.Int_result.is_error</code></a> is false</p>
 </div>
-<br>
-You can use the following values to compare a Int_result.t value with an
-      assumed error, e.g.
-<p>
+</div>
+<p>You can use the following values to compare a Int_result.t value with an
+      assumed error, e.g.</p>
 
-      <pre class="codepre"><code class="code">        let p = Uwt.Stream.try_write t ~buf in
+<pre class="codepre"><code class="code">        let p = Uwt.Stream.try_write t ~buf in
         if (p :&gt; int) = Uwt.Int_result.eagain then
           ...
         else
           ...
       </code></pre>
-<p>
-
-      All values are negative integers, but don't make any further
+<p>All values are negative integers, but don't make any further
       assumption about them. Their concrete values can change with any
-      uwt release.<br>
+      uwt release.</p>
 
 <pre><span id="VALeagain"><span class="keyword">val</span> eagain</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>
 <pre><span id="VALe2big"><span class="keyword">val</span> e2big</span> : <code class="type"><a href="Uwt_base.Int_result.html#TYPEint">int</a></code></pre>

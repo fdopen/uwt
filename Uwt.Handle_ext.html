@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,32 +33,40 @@
 </div>
 <h1>Module <a href="type_Uwt.Handle_ext.html">Uwt.Handle_ext</a></h1>
 
-<pre><span class="keyword">module</span> Handle_ext: <code class="code">sig</code> <a href="Uwt.Handle_ext.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<pre><span id="MODULEHandle_ext"><span class="keyword">module</span> Handle_ext</span>: <code class="code">sig</code> <a href="Uwt.Handle_ext.html">..</a> <code class="code">end</code></pre><hr width="100%">
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
 
 <pre><span id="VALget_send_buffer_size"><span class="keyword">val</span> get_send_buffer_size</span> : <code class="type"><a href="Uwt.Handle_ext.html#TYPEt">t</a> -> Int_result.int</code></pre><div class="info ">
-Gets the size of the send buffer that the operating system uses
-      for the socket.<br>
+<div class="info-desc">
+<p>Gets the size of the send buffer that the operating system uses
+      for the socket.</p>
+</div>
 </div>
 
 <pre><span id="VALget_send_buffer_size_exn"><span class="keyword">val</span> get_send_buffer_size_exn</span> : <code class="type"><a href="Uwt.Handle_ext.html#TYPEt">t</a> -> int</code></pre>
 <pre><span id="VALget_recv_buffer_size"><span class="keyword">val</span> get_recv_buffer_size</span> : <code class="type"><a href="Uwt.Handle_ext.html#TYPEt">t</a> -> Int_result.int</code></pre><div class="info ">
-Gets the size of the receive buffer that the operating system
-      uses for the socket.<br>
+<div class="info-desc">
+<p>Gets the size of the receive buffer that the operating system
+      uses for the socket.</p>
+</div>
 </div>
 
 <pre><span id="VALget_recv_buffer_size_exn"><span class="keyword">val</span> get_recv_buffer_size_exn</span> : <code class="type"><a href="Uwt.Handle_ext.html#TYPEt">t</a> -> int</code></pre>
 <pre><span id="VALset_send_buffer_size"><span class="keyword">val</span> set_send_buffer_size</span> : <code class="type"><a href="Uwt.Handle_ext.html#TYPEt">t</a> -> int -> Int_result.unit</code></pre><div class="info ">
-Sets the size of the send buffer that the operating system uses
-      for the socket.<br>
+<div class="info-desc">
+<p>Sets the size of the send buffer that the operating system uses
+      for the socket.</p>
+</div>
 </div>
 
 <pre><span id="VALset_send_buffer_size_exn"><span class="keyword">val</span> set_send_buffer_size_exn</span> : <code class="type"><a href="Uwt.Handle_ext.html#TYPEt">t</a> -> int -> unit</code></pre>
 <pre><span id="VALset_recv_buffer_size"><span class="keyword">val</span> set_recv_buffer_size</span> : <code class="type"><a href="Uwt.Handle_ext.html#TYPEt">t</a> -> int -> Int_result.unit</code></pre><div class="info ">
-Sets the size of the receive buffer that the operating
-      system uses for the socket.<br>
+<div class="info-desc">
+<p>Sets the size of the receive buffer that the operating
+      system uses for the socket.</p>
+</div>
 </div>
 
 <pre><span id="VALset_recv_buffer_size_exn"><span class="keyword">val</span> set_recv_buffer_size_exn</span> : <code class="type"><a href="Uwt.Handle_ext.html#TYPEt">t</a> -> int -> unit</code></pre></body></html>

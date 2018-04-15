@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,15 +33,13 @@
 </div>
 <h1>Module <a href="type_Uwt_base.Iovec_write.html">Uwt_base.Iovec_write</a></h1>
 
-<pre><span class="keyword">module</span> Iovec_write: <code class="code">sig</code> <a href="Uwt_base.Iovec_write.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-pass multiple buffers at once to a libuv write function.
-<p>
+<pre><span id="MODULEIovec_write"><span class="keyword">module</span> Iovec_write</span>: <code class="code">sig</code> <a href="Uwt_base.Iovec_write.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>pass multiple buffers at once to a libuv write function.</p>
+
 <ul>
 <li>first integer: offset in string / bytes / bigarray</li>
 <li>second integer: number of bytes to write</li>
 </ul>
-<br>
 
 <pre><code><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = </code></pre><table class="typetable">
 <tr>
@@ -71,7 +67,9 @@ pass multiple buffers at once to a libuv write function.
 
 
 <pre><span id="VALdrop"><span class="keyword">val</span> drop</span> : <code class="type"><a href="Uwt_base.Iovec_write.html#TYPEt">t</a> list -> int -> <a href="Uwt_base.Iovec_write.html#TYPEt">t</a> list</code></pre><div class="info ">
-<code class="code">drop tl n</code> adjusts the I/O vector list <code class="code">tl</code> so that it no longer
-      includes its first <code class="code">n</code> bytes.<br>
+<div class="info-desc">
+<p><code class="code">drop tl n</code> adjusts the I/O vector list <code class="code">tl</code> so that it no longer
+      includes its first <code class="code">n</code> bytes.</p>
+</div>
 </div>
 </body></html>

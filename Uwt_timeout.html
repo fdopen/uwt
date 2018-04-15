@@ -18,10 +18,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -33,8 +31,10 @@
 &nbsp;</div>
 <h1>Module <a href="type_Uwt_timeout.html">Uwt_timeout</a></h1>
 
-<pre><span class="keyword">module</span> Uwt_timeout: <code class="code">sig</code> <a href="Uwt_timeout.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Timeouts<br>
+<pre><span id="MODULEUwt_timeout"><span class="keyword">module</span> Uwt_timeout</span>: <code class="code">sig</code> <a href="Uwt_timeout.html">..</a> <code class="code">end</code></pre><div class="info module top">
+<div class="info-desc">
+<p>Timeouts</p>
+</div>
 </div>
 <hr width="100%">
 
@@ -42,26 +42,36 @@ Timeouts<br>
 
 
 <pre><span id="VALset_exn_handler"><span class="keyword">val</span> set_exn_handler</span> : <code class="type">(exn -> unit) -> unit</code></pre><div class="info ">
-set the default handler for exception occurring after a timeout.
+<div class="info-desc">
+<p>set the default handler for exception occurring after a timeout.
     The function lauched after a timeout should not raise any exception.
-    That's why the default handler will exit the program.<br>
+    That's why the default handler will exit the program.</p>
+</div>
 </div>
 
 <pre><span id="VALcreate"><span class="keyword">val</span> create</span> : <code class="type">int -> (unit -> unit) -> <a href="Uwt_timeout.html#TYPEt">t</a></code></pre><div class="info ">
-<code class="code">create n f</code> defines a new timeout with <code class="code">n</code> seconds duration. <code class="code">f</code> is
+<div class="info-desc">
+<p><code class="code">create n f</code> defines a new timeout with <code class="code">n</code> seconds duration. <code class="code">f</code> is
     the function to be called after the timeout.
-    That function must not raise any exception.<br>
+    That function must not raise any exception.</p>
+</div>
 </div>
 
 <pre><span id="VALstart"><span class="keyword">val</span> start</span> : <code class="type"><a href="Uwt_timeout.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
-starts a timeout.<br>
+<div class="info-desc">
+<p>starts a timeout.</p>
+</div>
 </div>
 
 <pre><span id="VALstop"><span class="keyword">val</span> stop</span> : <code class="type"><a href="Uwt_timeout.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
-stops a timeout.<br>
+<div class="info-desc">
+<p>stops a timeout.</p>
+</div>
 </div>
 
 <pre><span id="VALchange"><span class="keyword">val</span> change</span> : <code class="type"><a href="Uwt_timeout.html#TYPEt">t</a> -> int -> unit</code></pre><div class="info ">
-changes the duration of a timeout.<br>
+<div class="info-desc">
+<p>changes the duration of a timeout.</p>
+</div>
 </div>
 </body></html>

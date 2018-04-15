@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,12 +33,11 @@
 </div>
 <h1>Module <a href="type_Uwt.Fs_poll.html">Uwt.Fs_poll</a></h1>
 
-<pre><span class="keyword">module</span> Fs_poll: <code class="code">sig</code> <a href="Uwt.Fs_poll.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-FS Poll handles allow the user to monitor a given path for
+<pre><span id="MODULEFs_poll"><span class="keyword">module</span> Fs_poll</span>: <code class="code">sig</code> <a href="Uwt.Fs_poll.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>FS Poll handles allow the user to monitor a given path for
      changes. Unlike <a href="Uwt.Fs_event.html#TYPEt"><code class="code">Uwt.Fs_event.t</code></a>, fs poll handles use stat to detect
      when a file has changed so they can work on file systems where fs
-     event handles can't.<br>
+     event handles can't.</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
@@ -68,12 +65,13 @@ FS Poll handles allow the user to monitor a given path for
 
 
 <pre><span id="VALstart"><span class="keyword">val</span> start</span> : <code class="type">string -><br>       int -><br>       cb:(<a href="Uwt.Fs_poll.html#TYPEt">t</a> -> <a href="Uwt.Fs_poll.html#TYPEreport">report</a> uv_result -> unit) -><br>       <a href="Uwt.Fs_poll.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-Check the file at path for changes every interval milliseconds.
-<p>
+<div class="info-desc">
+<p>Check the file at path for changes every interval milliseconds.</p>
 
-      Note: For maximum portability, use multi-second
+<p>Note: For maximum portability, use multi-second
       intervals. Sub-second intervals will not detect all changes on many
-      file systems.<br>
+      file systems.</p>
+</div>
 </div>
 
 <pre><span id="VALstart_exn"><span class="keyword">val</span> start_exn</span> : <code class="type">string -><br>       int -><br>       cb:(<a href="Uwt.Fs_poll.html#TYPEt">t</a> -> <a href="Uwt.Fs_poll.html#TYPEreport">report</a> uv_result -> unit) -> <a href="Uwt.Fs_poll.html#TYPEt">t</a></code></pre></body></html>

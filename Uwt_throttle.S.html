@@ -17,10 +17,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -31,7 +29,7 @@
 &nbsp;</div>
 <h1>Module type <a href="type_Uwt_throttle.S.html">Uwt_throttle.S</a></h1>
 
-<pre><span class="keyword">module type</span> S = <code class="code">sig</code> <a href="Uwt_throttle.S.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<pre><span id="MODULETYPES"><span class="keyword">module type</span> S</span> = <code class="code">sig</code> <a href="Uwt_throttle.S.html">..</a> <code class="code">end</code></pre><hr width="100%">
 
 <pre><span id="TYPEkey"><span class="keyword">type</span> <code class="type"></code>key</span> </pre>
 
@@ -46,6 +44,8 @@
 <div class="param_info"><code class="code">n</code> : initial size of the hash table</div>
 
 <pre><span id="VALwait"><span class="keyword">val</span> wait</span> : <code class="type"><a href="Uwt_throttle.S.html#TYPEt">t</a> -> <a href="Uwt_throttle.S.html#TYPEkey">key</a> -> bool Lwt.t</code></pre><div class="info ">
-<b>Returns</b> <code class="code">false</code> if maximum reached, <code class="code">true</code> else<br>
+<ul class="info-attributes">
+<li><b>Returns</b> <code class="code">false</code> if maximum reached, <code class="code">true</code> else</li>
+</ul>
 </div>
 </body></html>

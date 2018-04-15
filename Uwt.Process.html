@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,11 +33,10 @@
 </div>
 <h1>Module <a href="type_Uwt.Process.html">Uwt.Process</a></h1>
 
-<pre><span class="keyword">module</span> Process: <code class="code">sig</code> <a href="Uwt.Process.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-Process handles will spawn a new process and allow the user to
+<pre><span id="MODULEProcess"><span class="keyword">module</span> Process</span>: <code class="code">sig</code> <a href="Uwt.Process.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>Process handles will spawn a new process and allow the user to
      control it and establish communication channels with it using
-     streams.<br>
+     streams.</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
@@ -96,18 +93,19 @@ Process handles will spawn a new process and allow the user to
 <td align="left" valign="top" >
 <code><span id="TYPEELTstdio.Create_pipe_duplex"><span class="constructor">Create_pipe_duplex</span></span> <span class="keyword">of</span> <code class="type"><a href="Uwt.Pipe.html#TYPEt">Uwt.Pipe.t</a></code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-<code class="code">Create_pipe_read</code>,<code class="code">Create_pipe_write</code>, etc. determine the
+<div class="info-desc">
+<p><code class="code">Create_pipe_read</code>,<code class="code">Create_pipe_write</code>, etc. determine the
         direction of flow from the child process' perspective.
         Previously there was only <code class="code">Create_pipe</code>, which is identic to
         <code class="code">Create_pipe_read</code> for <code class="code">stdin</code> and <code class="code">Create_pipe_write</code> for
-        <code class="code">stdout</code> and <code class="code">stderr</code>.
-<p>
+        <code class="code">stdout</code> and <code class="code">stderr</code>.</p>
 
-        This however doesn't allow you the specify a duplex data stream
+<p>This however doesn't allow you the specify a duplex data stream
         for inter-process communication (and the interface for it is not exposed
         otherwise for windows). Therefore <code class="code">Create_pipe_duplex</code>, etc. were
         added later. <code class="code">Create_pipe</code> is now redundant, but left in place in order
-        to not break existing code.<br>
+        to not break existing code.</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -118,17 +116,17 @@ Process handles will spawn a new process and allow the user to
 
 
 <pre><span id="VALspawn"><span class="keyword">val</span> spawn</span> : <code class="type">?stdin:<a href="Uwt.Process.html#TYPEstdio">stdio</a> -><br>       ?stdout:<a href="Uwt.Process.html#TYPEstdio">stdio</a> -><br>       ?stderr:<a href="Uwt.Process.html#TYPEstdio">stdio</a> -><br>       ?uid:int -><br>       ?gid:int -><br>       ?verbatim_arguments:bool -><br>       ?detach:bool -><br>       ?hide:bool -><br>       ?env:string list -><br>       ?cwd:string -><br>       ?exit_cb:<a href="Uwt.Process.html#TYPEexit_cb">exit_cb</a> -><br>       string -> string list -> <a href="Uwt.Process.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-Initializes the process handle and starts the process.
-<p>
+<div class="info-desc">
+<p>Initializes the process handle and starts the process.</p>
 
-     Possible reasons for failing to spawn would include (but not be
+<p>Possible reasons for failing to spawn would include (but not be
      limited to) the file to execute not existing, not having permissions
      to use the setuid or setgid specified, or not having enough memory
-     to allocate for the new process.
-<p>
+     to allocate for the new process.</p>
 
-     The first element of your argument list is supposed to be the
-     path to the program.<br>
+<p>The first element of your argument list is supposed to be the
+     path to the program.</p>
+</div>
 </div>
 <div class="param_info"><code class="code">verbatim_arguments</code> : default false</div>
 <div class="param_info"><code class="code">detach</code> : default false</div>
@@ -136,39 +134,45 @@ Initializes the process handle and starts the process.
 
 <pre><span id="VALspawn_exn"><span class="keyword">val</span> spawn_exn</span> : <code class="type">?stdin:<a href="Uwt.Process.html#TYPEstdio">stdio</a> -><br>       ?stdout:<a href="Uwt.Process.html#TYPEstdio">stdio</a> -><br>       ?stderr:<a href="Uwt.Process.html#TYPEstdio">stdio</a> -><br>       ?uid:int -><br>       ?gid:int -><br>       ?verbatim_arguments:bool -><br>       ?detach:bool -><br>       ?hide:bool -><br>       ?env:string list -><br>       ?cwd:string -><br>       ?exit_cb:<a href="Uwt.Process.html#TYPEexit_cb">exit_cb</a> -> string -> string list -> <a href="Uwt.Process.html#TYPEt">t</a></code></pre>
 <pre><span id="VALdisable_stdio_inheritance"><span class="keyword">val</span> disable_stdio_inheritance</span> : <code class="type">unit -> unit</code></pre><div class="info ">
-Disables inheritance for file descriptors / handles that this
+<div class="info-desc">
+<p>Disables inheritance for file descriptors / handles that this
      process inherited from its parent. The effect is that child
      processes spawned by this process don't accidentally inherit
-     these handles.
-<p>
+     these handles.</p>
 
-     It is recommended to call this function as early in your program
+<p>It is recommended to call this function as early in your program
      as possible, before the inherited file descriptors can be closed
-     or duplicated.
-<p>
+     or duplicated.</p>
 
-     Note: This function works on a best-effort basis: there is no
+<p>Note: This function works on a best-effort basis: there is no
      guarantee that libuv can discover all file descriptors that were
      inherited. In general it does a better job on Windows than it
-     does on Unix.<br>
+     does on Unix.</p>
+</div>
 </div>
 
 <pre><span id="VALpid"><span class="keyword">val</span> pid</span> : <code class="type"><a href="Uwt.Process.html#TYPEt">t</a> -> Int_result.int</code></pre><div class="info ">
-returns the PID of the spawned process<br>
+<div class="info-desc">
+<p>returns the PID of the spawned process</p>
+</div>
 </div>
 
 <pre><span id="VALpid_exn"><span class="keyword">val</span> pid_exn</span> : <code class="type"><a href="Uwt.Process.html#TYPEt">t</a> -> int</code></pre>
 <pre><span id="VALprocess_kill"><span class="keyword">val</span> process_kill</span> : <code class="type"><a href="Uwt.Process.html#TYPEt">t</a> -> int -> Int_result.unit</code></pre><div class="info ">
-Sends the specified signal to the given process handle. Check
+<div class="info-desc">
+<p>Sends the specified signal to the given process handle. Check
       the documentation on <a href="Uwt.Signal.html"><code class="code">Uwt.Signal</code></a> for signal support, specially on
-      Windows.<br>
+      Windows.</p>
+</div>
 </div>
 
 <pre><span id="VALprocess_kill_exn"><span class="keyword">val</span> process_kill_exn</span> : <code class="type"><a href="Uwt.Process.html#TYPEt">t</a> -> int -> unit</code></pre>
 <pre><span id="VALkill"><span class="keyword">val</span> kill</span> : <code class="type">pid:int -> signum:int -> Int_result.unit</code></pre><div class="info ">
-Sends the specified signal to the given PID. Check the
+<div class="info-desc">
+<p>Sends the specified signal to the given PID. Check the
       documentation on <a href="Uwt.Signal.html"><code class="code">Uwt.Signal</code></a> for signal support, specially on
-      Windows.<br>
+      Windows.</p>
+</div>
 </div>
 
 <pre><span id="VALkill_exn"><span class="keyword">val</span> kill_exn</span> : <code class="type">pid:int -> signum:int -> unit</code></pre></body></html>

@@ -14,10 +14,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -97,6 +95,10 @@
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;exepath&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;cwd&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;chdir&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getenv&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;putenv&nbsp;:&nbsp;key:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;data:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;unsetenv&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getppid&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.int<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;set_process_title&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_base</span>.<span class="constructor">Int_result</span>.unit<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get_process_title&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Uwt_base</span>.uv_result<br>
 <span class="keyword">end</span></code></body></html>

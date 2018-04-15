@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,13 +33,14 @@
 </div>
 <h1>Module <a href="type_Uwt_base.html">Uwt_base</a></h1>
 
-<pre><span class="keyword">module</span> Uwt_base: <code class="code">sig</code> <a href="Uwt_base.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Lwt independent core<br>
+<pre><span id="MODULEUwt_base"><span class="keyword">module</span> Uwt_base</span>: <code class="code">sig</code> <a href="Uwt_base.html">..</a> <code class="code">end</code></pre><div class="info module top">
+<div class="info-desc">
+<p>Lwt independent core</p>
+</div>
 </div>
 <hr width="100%">
-<br>
-Uwt_base contains type definitions and functions that are shared by
-   <a href="Uwt.html"><code class="code">Uwt</code></a> and <a href="Uv_fs_sync.html"><code class="code">Uv_fs_sync</code></a><br>
+<p>Uwt_base contains type definitions and functions that are shared by
+   <a href="Uwt.html"><code class="code">Uwt</code></a> and <a href="Uv_fs_sync.html"><code class="code">Uv_fs_sync</code></a></p>
 
 <pre><code><span id="TYPEerror"><span class="keyword">type</span> <code class="type"></code>error</span> = </code></pre><table class="typetable">
 <tr>
@@ -50,7 +49,9 @@ Uwt_base contains type definitions and functions that are shared by
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.E2BIG"><span class="constructor">E2BIG</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-argument list too long<br>
+<div class="info-desc">
+<p>argument list too long</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -60,7 +61,9 @@ argument list too long<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EACCES"><span class="constructor">EACCES</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-permission denied<br>
+<div class="info-desc">
+<p>permission denied</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -70,7 +73,9 @@ permission denied<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EADDRINUSE"><span class="constructor">EADDRINUSE</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-address already in use<br>
+<div class="info-desc">
+<p>address already in use</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -80,7 +85,9 @@ address already in use<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EADDRNOTAVAIL"><span class="constructor">EADDRNOTAVAIL</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-address not available<br>
+<div class="info-desc">
+<p>address not available</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -90,7 +97,9 @@ address not available<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAFNOSUPPORT"><span class="constructor">EAFNOSUPPORT</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-address family not supported<br>
+<div class="info-desc">
+<p>address family not supported</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -100,7 +109,9 @@ address family not supported<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAGAIN"><span class="constructor">EAGAIN</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-resource temporarily unavailable<br>
+<div class="info-desc">
+<p>resource temporarily unavailable</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -110,7 +121,9 @@ resource temporarily unavailable<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_ADDRFAMILY"><span class="constructor">EAI_ADDRFAMILY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-address family not supported<br>
+<div class="info-desc">
+<p>address family not supported</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -120,7 +133,9 @@ address family not supported<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_AGAIN"><span class="constructor">EAI_AGAIN</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-temporary failure<br>
+<div class="info-desc">
+<p>temporary failure</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -130,7 +145,9 @@ temporary failure<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_BADFLAGS"><span class="constructor">EAI_BADFLAGS</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-bad ai_flags value<br>
+<div class="info-desc">
+<p>bad ai_flags value</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -140,7 +157,9 @@ bad ai_flags value<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_BADHINTS"><span class="constructor">EAI_BADHINTS</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-invalid value for hints<br>
+<div class="info-desc">
+<p>invalid value for hints</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -150,7 +169,9 @@ invalid value for hints<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_CANCELED"><span class="constructor">EAI_CANCELED</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-request canceled<br>
+<div class="info-desc">
+<p>request canceled</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -160,7 +181,9 @@ request canceled<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_FAIL"><span class="constructor">EAI_FAIL</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-permanent failure<br>
+<div class="info-desc">
+<p>permanent failure</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -170,7 +193,9 @@ permanent failure<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_FAMILY"><span class="constructor">EAI_FAMILY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-ai_family not supported<br>
+<div class="info-desc">
+<p>ai_family not supported</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -180,7 +205,9 @@ ai_family not supported<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_MEMORY"><span class="constructor">EAI_MEMORY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-out of memory<br>
+<div class="info-desc">
+<p>out of memory</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -190,7 +217,9 @@ out of memory<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_NODATA"><span class="constructor">EAI_NODATA</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-no address<br>
+<div class="info-desc">
+<p>no address</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -200,7 +229,9 @@ no address<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_NONAME"><span class="constructor">EAI_NONAME</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-unknown node or service<br>
+<div class="info-desc">
+<p>unknown node or service</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -210,7 +241,9 @@ unknown node or service<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_OVERFLOW"><span class="constructor">EAI_OVERFLOW</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-argument buffer overflow<br>
+<div class="info-desc">
+<p>argument buffer overflow</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -220,7 +253,9 @@ argument buffer overflow<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_PROTOCOL"><span class="constructor">EAI_PROTOCOL</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-resolved protocol is unknown<br>
+<div class="info-desc">
+<p>resolved protocol is unknown</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -230,7 +265,9 @@ resolved protocol is unknown<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_SERVICE"><span class="constructor">EAI_SERVICE</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-service not available for socket type<br>
+<div class="info-desc">
+<p>service not available for socket type</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -240,7 +277,9 @@ service not available for socket type<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EAI_SOCKTYPE"><span class="constructor">EAI_SOCKTYPE</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-socket type not supported<br>
+<div class="info-desc">
+<p>socket type not supported</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -250,7 +289,9 @@ socket type not supported<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EALREADY"><span class="constructor">EALREADY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-connection already in progress<br>
+<div class="info-desc">
+<p>connection already in progress</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -260,7 +301,9 @@ connection already in progress<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EBADF"><span class="constructor">EBADF</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-bad file descriptor<br>
+<div class="info-desc">
+<p>bad file descriptor</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -270,7 +313,9 @@ bad file descriptor<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EBUSY"><span class="constructor">EBUSY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-resource busy or locked<br>
+<div class="info-desc">
+<p>resource busy or locked</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -280,7 +325,9 @@ resource busy or locked<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ECANCELED"><span class="constructor">ECANCELED</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-operation canceled<br>
+<div class="info-desc">
+<p>operation canceled</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -290,11 +337,13 @@ operation canceled<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ECHARSET"><span class="constructor">ECHARSET</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Windows filenames (and similar parameters) are
+<div class="info-desc">
+<p>Windows filenames (and similar parameters) are
                  expected to be utf-8 encoded. <code class="code">ECHARSET</code> is returned, if one
                  parameter contains invalid byte sequences.
                  Furthermore, <code class="code">ECHARSET</code> will be returned, if your strings
-                 contain null bytes (on *nix, too).<br>
+                 contain null bytes (on *nix, too).</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -304,7 +353,9 @@ Windows filenames (and similar parameters) are
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ECONNABORTED"><span class="constructor">ECONNABORTED</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-software caused connection abort<br>
+<div class="info-desc">
+<p>software caused connection abort</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -314,7 +365,9 @@ software caused connection abort<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ECONNREFUSED"><span class="constructor">ECONNREFUSED</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-connection refused<br>
+<div class="info-desc">
+<p>connection refused</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -324,7 +377,9 @@ connection refused<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ECONNRESET"><span class="constructor">ECONNRESET</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-connection reset by peer<br>
+<div class="info-desc">
+<p>connection reset by peer</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -334,7 +389,9 @@ connection reset by peer<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EDESTADDRREQ"><span class="constructor">EDESTADDRREQ</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-destination address required<br>
+<div class="info-desc">
+<p>destination address required</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -344,7 +401,9 @@ destination address required<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EEXIST"><span class="constructor">EEXIST</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-file already exists<br>
+<div class="info-desc">
+<p>file already exists</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -354,7 +413,9 @@ file already exists<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EFAULT"><span class="constructor">EFAULT</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-bad address in system call argument<br>
+<div class="info-desc">
+<p>bad address in system call argument</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -364,7 +425,9 @@ bad address in system call argument<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EFBIG"><span class="constructor">EFBIG</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-file too large<br>
+<div class="info-desc">
+<p>file too large</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -374,7 +437,9 @@ file too large<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EHOSTUNREACH"><span class="constructor">EHOSTUNREACH</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-host is unreachable<br>
+<div class="info-desc">
+<p>host is unreachable</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -384,7 +449,9 @@ host is unreachable<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EINTR"><span class="constructor">EINTR</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-interrupted system call<br>
+<div class="info-desc">
+<p>interrupted system call</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -394,7 +461,9 @@ interrupted system call<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EINVAL"><span class="constructor">EINVAL</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-invalid argument<br>
+<div class="info-desc">
+<p>invalid argument</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -404,7 +473,9 @@ invalid argument<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EIO"><span class="constructor">EIO</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-i/o error<br>
+<div class="info-desc">
+<p>i/o error</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -414,7 +485,9 @@ i/o error<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EISCONN"><span class="constructor">EISCONN</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-socket is already connected<br>
+<div class="info-desc">
+<p>socket is already connected</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -424,7 +497,9 @@ socket is already connected<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EISDIR"><span class="constructor">EISDIR</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-illegal operation on a directory<br>
+<div class="info-desc">
+<p>illegal operation on a directory</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -434,7 +509,9 @@ illegal operation on a directory<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ELOOP"><span class="constructor">ELOOP</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-too many symbolic links encountered<br>
+<div class="info-desc">
+<p>too many symbolic links encountered</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -444,7 +521,9 @@ too many symbolic links encountered<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EMFILE"><span class="constructor">EMFILE</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-too many open files<br>
+<div class="info-desc">
+<p>too many open files</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -454,7 +533,9 @@ too many open files<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EMSGSIZE"><span class="constructor">EMSGSIZE</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-message too long<br>
+<div class="info-desc">
+<p>message too long</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -464,7 +545,9 @@ message too long<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENAMETOOLONG"><span class="constructor">ENAMETOOLONG</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-name too long<br>
+<div class="info-desc">
+<p>name too long</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -474,7 +557,9 @@ name too long<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENETDOWN"><span class="constructor">ENETDOWN</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-network is down<br>
+<div class="info-desc">
+<p>network is down</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -484,7 +569,9 @@ network is down<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENETUNREACH"><span class="constructor">ENETUNREACH</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-network is unreachable<br>
+<div class="info-desc">
+<p>network is unreachable</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -494,7 +581,9 @@ network is unreachable<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENFILE"><span class="constructor">ENFILE</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-file table overflow<br>
+<div class="info-desc">
+<p>file table overflow</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -504,7 +593,9 @@ file table overflow<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOBUFS"><span class="constructor">ENOBUFS</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-no buffer space available<br>
+<div class="info-desc">
+<p>no buffer space available</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -514,7 +605,9 @@ no buffer space available<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENODEV"><span class="constructor">ENODEV</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-no such device<br>
+<div class="info-desc">
+<p>no such device</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -524,7 +617,9 @@ no such device<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOENT"><span class="constructor">ENOENT</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-no such file or directory<br>
+<div class="info-desc">
+<p>no such file or directory</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -534,7 +629,9 @@ no such file or directory<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOMEM"><span class="constructor">ENOMEM</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-not enough memory<br>
+<div class="info-desc">
+<p>not enough memory</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -544,7 +641,9 @@ not enough memory<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENONET"><span class="constructor">ENONET</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-machine is not on the network<br>
+<div class="info-desc">
+<p>machine is not on the network</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -554,7 +653,9 @@ machine is not on the network<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOPROTOOPT"><span class="constructor">ENOPROTOOPT</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-protocol not available<br>
+<div class="info-desc">
+<p>protocol not available</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -564,7 +665,9 @@ protocol not available<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOSPC"><span class="constructor">ENOSPC</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-no space left on device<br>
+<div class="info-desc">
+<p>no space left on device</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -574,7 +677,9 @@ no space left on device<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOSYS"><span class="constructor">ENOSYS</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-function not implemented<br>
+<div class="info-desc">
+<p>function not implemented</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -584,7 +689,9 @@ function not implemented<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOTCONN"><span class="constructor">ENOTCONN</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-socket is not connected<br>
+<div class="info-desc">
+<p>socket is not connected</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -594,7 +701,9 @@ socket is not connected<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOTDIR"><span class="constructor">ENOTDIR</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-not a directory<br>
+<div class="info-desc">
+<p>not a directory</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -604,7 +713,9 @@ not a directory<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOTEMPTY"><span class="constructor">ENOTEMPTY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-directory not empty<br>
+<div class="info-desc">
+<p>directory not empty</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -614,7 +725,9 @@ directory not empty<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOTSOCK"><span class="constructor">ENOTSOCK</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-socket operation on non-socket<br>
+<div class="info-desc">
+<p>socket operation on non-socket</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -624,7 +737,9 @@ socket operation on non-socket<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENOTSUP"><span class="constructor">ENOTSUP</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-operation not supported on socket<br>
+<div class="info-desc">
+<p>operation not supported on socket</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -634,7 +749,9 @@ operation not supported on socket<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EPERM"><span class="constructor">EPERM</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-operation not permitted<br>
+<div class="info-desc">
+<p>operation not permitted</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -644,7 +761,9 @@ operation not permitted<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EPIPE"><span class="constructor">EPIPE</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-broken pipe<br>
+<div class="info-desc">
+<p>broken pipe</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -654,7 +773,9 @@ broken pipe<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EPROTO"><span class="constructor">EPROTO</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-protocol error<br>
+<div class="info-desc">
+<p>protocol error</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -664,7 +785,9 @@ protocol error<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EPROTONOSUPPORT"><span class="constructor">EPROTONOSUPPORT</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-protocol not supported<br>
+<div class="info-desc">
+<p>protocol not supported</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -674,7 +797,9 @@ protocol not supported<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EPROTOTYPE"><span class="constructor">EPROTOTYPE</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-protocol wrong type for socket<br>
+<div class="info-desc">
+<p>protocol wrong type for socket</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -684,7 +809,9 @@ protocol wrong type for socket<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ERANGE"><span class="constructor">ERANGE</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-result too large<br>
+<div class="info-desc">
+<p>result too large</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -694,7 +821,9 @@ result too large<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EROFS"><span class="constructor">EROFS</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-read-only file system<br>
+<div class="info-desc">
+<p>read-only file system</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -704,7 +833,9 @@ read-only file system<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ESHUTDOWN"><span class="constructor">ESHUTDOWN</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-cannot send after transport endpoint shutdown<br>
+<div class="info-desc">
+<p>cannot send after transport endpoint shutdown</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -714,7 +845,9 @@ cannot send after transport endpoint shutdown<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ESPIPE"><span class="constructor">ESPIPE</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-invalid seek<br>
+<div class="info-desc">
+<p>invalid seek</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -724,7 +857,9 @@ invalid seek<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ESRCH"><span class="constructor">ESRCH</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-no such process<br>
+<div class="info-desc">
+<p>no such process</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -734,7 +869,9 @@ no such process<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ETIMEDOUT"><span class="constructor">ETIMEDOUT</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-connection timed out<br>
+<div class="info-desc">
+<p>connection timed out</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -744,7 +881,9 @@ connection timed out<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ETXTBSY"><span class="constructor">ETXTBSY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-text file is busy<br>
+<div class="info-desc">
+<p>text file is busy</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -754,7 +893,9 @@ text file is busy<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EXDEV"><span class="constructor">EXDEV</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-cross-device link not permitted<br>
+<div class="info-desc">
+<p>cross-device link not permitted</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -764,7 +905,9 @@ cross-device link not permitted<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.UNKNOWN"><span class="constructor">UNKNOWN</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-unknown error<br>
+<div class="info-desc">
+<p>unknown error</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -774,7 +917,9 @@ unknown error<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EOF"><span class="constructor">EOF</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-end of file<br>
+<div class="info-desc">
+<p>end of file</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -784,7 +929,9 @@ end of file<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.ENXIO"><span class="constructor">ENXIO</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-no such device or address<br>
+<div class="info-desc">
+<p>no such device or address</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -794,7 +941,9 @@ no such device or address<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.EMLINK"><span class="constructor">EMLINK</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-too many links<br>
+<div class="info-desc">
+<p>too many links</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -804,9 +953,11 @@ too many links<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTerror.UWT_EFATAL"><span class="constructor">UWT_EFATAL</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-something happened that the author of uwt didn't expect.
+<div class="info-desc">
+<p>something happened that the author of uwt didn't expect.
                    Probably a bug or the api of libuv has changed in the
-                   meanwhile<br>
+                   meanwhile</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -814,55 +965,41 @@ something happened that the author of uwt didn't expect.
 
 
 <pre><span id="VALstrerror"><span class="keyword">val</span> strerror</span> : <code class="type"><a href="Uwt_base.html#TYPEerror">error</a> -> string</code></pre><div class="info ">
-error message for the given error code<br>
+<div class="info-desc">
+<p>error message for the given error code</p>
+</div>
 </div>
 
 <pre><span id="VALerr_name"><span class="keyword">val</span> err_name</span> : <code class="type"><a href="Uwt_base.html#TYPEerror">error</a> -> string</code></pre><div class="info ">
-error name for the given error code<br>
+<div class="info-desc">
+<p>error name for the given error code</p>
+</div>
 </div>
 
 <pre><span id="VALto_unix_error"><span class="keyword">val</span> to_unix_error</span> : <code class="type"><a href="Uwt_base.html#TYPEerror">error</a> -> Unix.error</code></pre><div class="info ">
-map error to <code class="code">Unix.error</code> , <code class="code">Unix.EUNKNOWNERR</code> is
-    used, if the mapping is not possible<br>
+<div class="info-desc">
+<p>map error to <code class="code">Unix.error</code> , <code class="code">Unix.EUNKNOWNERR</code> is
+    used, if the mapping is not possible</p>
+</div>
 </div>
 
 <pre><span id="VALof_unix_error"><span class="keyword">val</span> of_unix_error</span> : <code class="type">Unix.error -> <a href="Uwt_base.html#TYPEerror">error</a></code></pre><div class="info ">
-get back the original Uwt.error from an exception
-    raised by a Uwt function<br>
+<div class="info-desc">
+<p>get back the original Uwt.error from an exception
+    raised by a Uwt function</p>
+</div>
 </div>
 
 <pre><span id="TYPEuv_result"><span class="keyword">type</span> <code class="type">'a</code> uv_result</span> = <code class="type">('a, <a href="Uwt_base.html#TYPEerror">error</a>) Pervasives.result</code> </pre>
 
 
-<pre><span id="TYPEo_result"><span class="keyword">type</span> <code class="type">('a, 'b)</code> o_result</span> = <code class="type">('a, 'b) Pervasives.result</code> = </pre><table class="typetable">
-<tr>
-<td align="left" valign="top" >
-<code><span class="keyword">|</span></code></td>
-<td align="left" valign="top" >
-<code><span id="TYPEELTo_result.Ok"><span class="constructor">Ok</span></span> <span class="keyword">of</span> <code class="type">'a</code></code></td>
-
-</tr>
-<tr>
-<td align="left" valign="top" >
-<code><span class="keyword">|</span></code></td>
-<td align="left" valign="top" >
-<code><span id="TYPEELTo_result.Error"><span class="constructor">Error</span></span> <span class="keyword">of</span> <code class="type">'b</code></code></td>
-<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Please use <code class="code">Result.Ok</code> or just <code class="code">Ok</code>, not <code class="code">Uwt.Ok</code> or <code class="code">Uwt_base.Ok</code><br>
-</div>
-</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
-</tr></table>
-
-
-
-<pre><span id="TYPEresult"><span class="keyword">type</span> <code class="type">'a</code> result</span> = <code class="type">('a, <a href="Uwt_base.html#TYPEerror">error</a>) <a href="Uwt_base.html#TYPEo_result">o_result</a></code> </pre>
-
-
-<pre><span class="keyword">module</span> <a href="Uwt_base.Int_result.html">Int_result</a>: <code class="code">sig</code> <a href="Uwt_base.Int_result.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEInt_result"><span class="keyword">module</span> <a href="Uwt_base.Int_result.html">Int_result</a></span>: <code class="code">sig</code> <a href="Uwt_base.Int_result.html">..</a> <code class="code">end</code></pre>
 <pre><span id="TYPEfile"><span class="keyword">type</span> <code class="type"></code>file</span> </pre>
 <div class="info ">
-Abstract type for a file descriptor.
-    Unlike <code class="code">Unix.file_descr</code> it is not intended to wrap a SOCKET.<br>
+<div class="info-desc">
+<p>Abstract type for a file descriptor.
+    Unlike <code class="code">Unix.file_descr</code> it is not intended to wrap a SOCKET.</p>
+</div>
 </div>
 
 
@@ -873,20 +1010,26 @@ Abstract type for a file descriptor.
 
 
 <pre><span id="VALstdin"><span class="keyword">val</span> stdin</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">file</a></code></pre><div class="info ">
-File descriptor for standard input.<br>
+<div class="info-desc">
+<p>File descriptor for standard input.</p>
+</div>
 </div>
 
 <pre><span id="VALstdout"><span class="keyword">val</span> stdout</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">file</a></code></pre><div class="info ">
-File descriptor for standard output.<br>
+<div class="info-desc">
+<p>File descriptor for standard output.</p>
+</div>
 </div>
 
 <pre><span id="VALstderr"><span class="keyword">val</span> stderr</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">file</a></code></pre><div class="info ">
-File descriptor for standard error.<br>
+<div class="info-desc">
+<p>File descriptor for standard error.</p>
+</div>
 </div>
 
-<pre><span class="keyword">module</span> <a href="Uwt_base.Iovec_write.html">Iovec_write</a>: <code class="code">sig</code> <a href="Uwt_base.Iovec_write.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt_base.Fs_types.html">Fs_types</a>: <code class="code">sig</code> <a href="Uwt_base.Fs_types.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module type</span> <a href="Uwt_base.Fs_functions.html">Fs_functions</a> = <code class="code">sig</code> <a href="Uwt_base.Fs_functions.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt_base.Conv.html">Conv</a>: <code class="code">sig</code> <a href="Uwt_base.Conv.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt_base.Misc.html">Misc</a>: <code class="code">sig</code> <a href="Uwt_base.Misc.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt_base.Sys_info.html">Sys_info</a>: <code class="code">sig</code> <a href="Uwt_base.Sys_info.html">..</a> <code class="code">end</code></pre></body></html>
+<pre><span id="MODULEIovec_write"><span class="keyword">module</span> <a href="Uwt_base.Iovec_write.html">Iovec_write</a></span>: <code class="code">sig</code> <a href="Uwt_base.Iovec_write.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEFs_types"><span class="keyword">module</span> <a href="Uwt_base.Fs_types.html">Fs_types</a></span>: <code class="code">sig</code> <a href="Uwt_base.Fs_types.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULETYPEFs_functions"><span class="keyword">module type</span> <a href="Uwt_base.Fs_functions.html">Fs_functions</a></span> = <code class="code">sig</code> <a href="Uwt_base.Fs_functions.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEConv"><span class="keyword">module</span> <a href="Uwt_base.Conv.html">Conv</a></span>: <code class="code">sig</code> <a href="Uwt_base.Conv.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEMisc"><span class="keyword">module</span> <a href="Uwt_base.Misc.html">Misc</a></span>: <code class="code">sig</code> <a href="Uwt_base.Misc.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULESys_info"><span class="keyword">module</span> <a href="Uwt_base.Sys_info.html">Sys_info</a></span>: <code class="code">sig</code> <a href="Uwt_base.Sys_info.html">..</a> <code class="code">end</code></pre></body></html>

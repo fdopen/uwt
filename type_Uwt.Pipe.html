@@ -14,10 +14,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -130,4 +128,7 @@
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;with_connect&nbsp;:&nbsp;path:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;with_open&nbsp;:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;?ipc:bool&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;chmod&nbsp;=&nbsp;<span class="constructor">Pipe_readable</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Pipe_writeable</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Pipe_readable_writeable</span><br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;chmod&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.chmod&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;chmod_exn&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.chmod&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 <span class="keyword">end</span></code></body></html>

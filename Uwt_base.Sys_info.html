@@ -18,10 +18,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -33,13 +31,11 @@
 &nbsp;</div>
 <h1>Module <a href="type_Uwt_base.Sys_info.html">Uwt_base.Sys_info</a></h1>
 
-<pre><span class="keyword">module</span> Sys_info: <code class="code">sig</code> <a href="Uwt_base.Sys_info.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-Information about your operating system.
-<p>
+<pre><span id="MODULESys_info"><span class="keyword">module</span> Sys_info</span>: <code class="code">sig</code> <a href="Uwt_base.Sys_info.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>Information about your operating system.</p>
 
-     The module was introduced in order to skip certain unit tests
-     on some platforms. But it might be useful for other purpose, too.<br>
+<p>The module was introduced in order to skip certain unit tests
+     on some platforms. But it might be useful for other purpose, too.</p>
 
 <pre><code><span id="TYPEos"><span class="keyword">type</span> <code class="type"></code>os</span> = </code></pre><table class="typetable">
 <tr>
@@ -158,8 +154,10 @@ Information about your operating system.
 
 
 <pre><span id="VALos"><span class="keyword">val</span> os</span> : <code class="type"><a href="Uwt_base.Sys_info.html#TYPEos">os</a></code></pre><div class="info ">
-<a href="Uwt_base.Sys_info.html#VALos"><code class="code">Uwt_base.Sys_info.os</code></a> is determined at compile time (by the c compiler) and
-      might differ from the later OS<br>
+<div class="info-desc">
+<p><a href="Uwt_base.Sys_info.html#VALos"><code class="code">Uwt_base.Sys_info.os</code></a> is determined at compile time (by the c compiler) and
+      might differ from the later OS</p>
+</div>
 </div>
 
 <pre><code><span id="TYPEwin_version"><span class="keyword">type</span> <code class="type"></code>win_version</span> = {</code></pre><table class="typetable">
@@ -203,9 +201,9 @@ Information about your operating system.
 
 
 <pre><span id="VALwin_version"><span class="keyword">val</span> win_version</span> : <code class="type">unit -> <a href="Uwt_base.Sys_info.html#TYPEwin_version">win_version</a> <a href="Uwt_base.html#TYPEuv_result">Uwt_base.uv_result</a></code></pre><div class="info ">
-Wrapper around GetVersionEx. It will always return <code class="code">Error
-      ENOSYS</code> on non windows systems.
-      Your application must be manifested, otherwise you will get
-      wrong informations on windows 8.1 and newer<br>
+<div class="info-desc">
+<p>Wrapper around RtlGetVersion. It will always return <code class="code">Error
+      ENOSYS</code> on non windows systems.</p>
+</div>
 </div>
 </body></html>

@@ -18,10 +18,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -33,33 +31,45 @@
 </div>
 <h1>Class <a href="type_Uwt_process.process_none.html">Uwt_process.process_none</a></h1>
 
-<pre><span name="TYPEprocess_none"><span class="keyword">class</span> process_none</span> : <code class="type">?timeout:float -> ?uid:int -> ?gid:int -> ?env:string array -> ?cwd:string -> ?stdin:<a href="Uwt_process.html#TYPEredirection">redirection</a> -> ?stdout:<a href="Uwt_process.html#TYPEredirection">redirection</a> -> ?stderr:<a href="Uwt_process.html#TYPEredirection">redirection</a> -> <a href="Uwt_process.html#TYPEcommand">command</a> -> </code><code class="code">object</code> <a href="Uwt_process.process_none-c.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<pre><span id="TYPEprocess_none"><span class="keyword">class</span> process_none</span> : <code class="type">?timeout:float -> ?uid:int -> ?gid:int -> ?env:string array -> ?cwd:string -> ?stdin:<a href="Uwt_process.html#TYPEredirection">redirection</a> -> ?stdout:<a href="Uwt_process.html#TYPEredirection">redirection</a> -> ?stderr:<a href="Uwt_process.html#TYPEredirection">redirection</a> -> <a href="Uwt_process.html#TYPEcommand">command</a> -> </code><code class="code">object</code> <a href="Uwt_process.process_none-c.html">..</a> <code class="code">end</code></pre><hr width="100%">
 
 <pre><span id="METHODpid"><span class="keyword">method</span> pid</span> : <code class="type">int</code></pre><div class="info ">
-Pid of the sub-process<br>
+<div class="info-desc">
+<p>Pid of the sub-process</p>
+</div>
 </div>
 
 <pre><span id="METHODstate"><span class="keyword">method</span> state</span> : <code class="type"><a href="Uwt_process.html#TYPEstate">state</a></code></pre><div class="info ">
-Return the state of the process<br>
+<div class="info-desc">
+<p>Return the state of the process</p>
+</div>
 </div>
 
 <pre><span id="METHODkill"><span class="keyword">method</span> kill</span> : <code class="type">int -> unit</code></pre><div class="info ">
-<code class="code">kill signum</code> sends <code class="code">signum</code> to the process if it is still
-        running.<br>
+<div class="info-desc">
+<p><code class="code">kill signum</code> sends <code class="code">signum</code> to the process if it is still
+        running.</p>
+</div>
 </div>
 
 <pre><span id="METHODterminate"><span class="keyword">method</span> terminate</span> : <code class="type">unit</code></pre><div class="info ">
-Terminates the process. It is equivalent to <code class="code">kill Sys.sigkill</code>
-        on Unix but also works on Windows (unlike <a href="Uwt_process.process_none-c.html#METHODkill"><code class="code">Uwt_process.process_none.kill</code></a>).<br>
+<div class="info-desc">
+<p>Terminates the process. It is equivalent to <code class="code">kill Sys.sigkill</code>
+        on Unix but also works on Windows (unlike <a href="Uwt_process.process_none-c.html#METHODkill"><code class="code">Uwt_process.process_none.kill</code></a>).</p>
+</div>
 </div>
 
 <pre><span id="METHODstatus"><span class="keyword">method</span> status</span> : <code class="type">Unix.process_status Lwt.t</code></pre><div class="info ">
-Threads which wait for the sub-process to exit then returns its
-        exit status<br>
+<div class="info-desc">
+<p>Threads which wait for the sub-process to exit then returns its
+        exit status</p>
+</div>
 </div>
 
 <pre><span id="METHODclose"><span class="keyword">method</span> close</span> : <code class="type">Unix.process_status Lwt.t</code></pre><div class="info ">
-Closes the process and returns its exit status. This closes all
-        channels used to communicate with the process<br>
+<div class="info-desc">
+<p>Closes the process and returns its exit status. This closes all
+        channels used to communicate with the process</p>
+</div>
 </div>
 </body></html>

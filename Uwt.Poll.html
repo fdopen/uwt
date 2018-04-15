@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,44 +33,37 @@
 </div>
 <h1>Module <a href="type_Uwt.Poll.html">Uwt.Poll</a></h1>
 
-<pre><span class="keyword">module</span> Poll: <code class="code">sig</code> <a href="Uwt.Poll.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-Poll handles are used to watch file descriptors for readability,
-     writability and disconnection similar to the purpose of poll(2).
-<p>
+<pre><span id="MODULEPoll"><span class="keyword">module</span> Poll</span>: <code class="code">sig</code> <a href="Uwt.Poll.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>Poll handles are used to watch file descriptors for readability,
+     writability and disconnection similar to the purpose of poll(2).</p>
 
-     The purpose of poll handles is to enable integrating external
+<p>The purpose of poll handles is to enable integrating external
      libraries that rely on the event loop to signal it about the
      socket status changes, like c-ares or libssh2. Using <code class="code">Poll.t</code> for
      any other purpose is not recommended; <a href="Uwt.Tcp.html#TYPEt"><code class="code">Uwt.Tcp.t</code></a>, <a href="Uwt.Udp.html#TYPEt"><code class="code">Uwt.Udp.t</code></a>,
      etc. provide an implementation that is faster and more scalable
-     than what can be achieved with <a href="Uwt.Poll.html#TYPEt"><code class="code">Uwt.Poll.t</code></a>, especially on Windows.
-<p>
+     than what can be achieved with <a href="Uwt.Poll.html#TYPEt"><code class="code">Uwt.Poll.t</code></a>, especially on Windows.</p>
 
-     It is possible that poll handles occasionally signal that a file
+<p>It is possible that poll handles occasionally signal that a file
      descriptor is readable or writable even when it isn't. The user
      should therefore always be prepared to handle EAGAIN or
-     equivalent when it attempts to read from or write to the fd.
-<p>
+     equivalent when it attempts to read from or write to the fd.</p>
 
-     It is not okay to have multiple active poll handles for the same
+<p>It is not okay to have multiple active poll handles for the same
      socket, this can cause libuv to busyloop or otherwise
-     malfunction.
-<p>
+     malfunction.</p>
 
-     The user should not close a file descriptor while it is being
+<p>The user should not close a file descriptor while it is being
      polled by an active poll handle. This can cause the handle to
      report an error, but it might also start polling another
      socket. However the fd can be safely closed immediately after a
-     call to <code class="code">close</code>.
-<p>
+     call to <code class="code">close</code>.</p>
 
-     Note: On windows only sockets can be polled with poll handles. On
+<p>Note: On windows only sockets can be polled with poll handles. On
      Unix any file descriptor that would be accepted by poll(2) can be
-     used.
-<p>
+     used.</p>
 
-     Note: On AIX, watching for disconnection is not supported.<br>
+<p>Note: On AIX, watching for disconnection is not supported.</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
@@ -103,21 +94,29 @@ Poll handles are used to watch file descriptors for readability,
 <td align="left" valign="top" >
 <code><span id="TYPEELTevent.Disconnect"><span class="constructor">Disconnect</span></span></code></td>
 
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTevent.Prioritized"><span class="constructor">Prioritized</span></span></code></td>
+
 </tr></table>
 
 
 
 <pre><span id="VALstart"><span class="keyword">val</span> start</span> : <code class="type">Unix.file_descr -><br>       <a href="Uwt.Poll.html#TYPEevent">event</a> list -><br>       cb:(<a href="Uwt.Poll.html#TYPEt">t</a> -> <a href="Uwt.Poll.html#TYPEevent">event</a> list uv_result -> unit) -><br>       <a href="Uwt.Poll.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-Starts polling the file descriptor. events is a list of
+<div class="info-desc">
+<p>Starts polling the file descriptor. events is a list of
      <code class="code">Readable</code>, <code class="code">Writable</code> and <code class="code">Disconnect</code>.  As soon as an event
      is detected the callback will be called with status set to 0, and
-     the detected events set on the events field.
-<p>
+     the detected events set on the events field.</p>
 
-     The <code class="code">Disconnect</code> event is optional in the sense that it may not be
+<p>The <code class="code">Disconnect</code> event is optional in the sense that it may not be
      reported and the user is free to ignore it, but it can help
      optimize the shutdown path because an extra read or write call
-     might be avoided.<br>
+     might be avoided.</p>
+</div>
 </div>
 
 <pre><span id="VALstart_exn"><span class="keyword">val</span> start_exn</span> : <code class="type">Unix.file_descr -><br>       <a href="Uwt.Poll.html#TYPEevent">event</a> list -><br>       cb:(<a href="Uwt.Poll.html#TYPEt">t</a> -> <a href="Uwt.Poll.html#TYPEevent">event</a> list uv_result -> unit) -> <a href="Uwt.Poll.html#TYPEt">t</a></code></pre></body></html>

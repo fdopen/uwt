@@ -17,10 +17,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -31,7 +29,7 @@
 &nbsp;</div>
 <h1>Module type <a href="type_Uwt_base.Fs_functions.html">Uwt_base.Fs_functions</a></h1>
 
-<pre><span class="keyword">module type</span> Fs_functions = <code class="code">sig</code> <a href="Uwt_base.Fs_functions.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<pre><span id="MODULETYPEFs_functions"><span class="keyword">module type</span> Fs_functions</span> = <code class="code">sig</code> <a href="Uwt_base.Fs_functions.html">..</a> <code class="code">end</code></pre><hr width="100%">
 
 <pre><span class="keyword">include</span> <a href="Uwt_base.Fs_types.html">Uwt_base.Fs_types</a></pre>
 
@@ -39,170 +37,250 @@
 
 
 <pre><span id="VALopenfile"><span class="keyword">val</span> openfile</span> : <code class="type">?perm:int -><br>       mode:uv_open_flag list -> string -> <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Equivalent to open(2).<br>
+<div class="info-desc">
+<p>Equivalent to open(2).</p>
+</div>
 </div>
 <div class="param_info"><code class="code">perm</code> : defaults are 0o644</div>
 
 <pre><span id="VALread"><span class="keyword">val</span> read</span> : <code class="type">?pos:int -><br>       ?len:int -> <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> buf:bytes -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-<code class="code">read ~pos ~len fd ~buf</code> reads <code class="code">~len</code> bytes from descriptor <code class="code">fd</code>,
+<div class="info-desc">
+<p><code class="code">read ~pos ~len fd ~buf</code> reads <code class="code">~len</code> bytes from descriptor <code class="code">fd</code>,
       storing them in byte sequence <code class="code">buf</code>, starting at position <code class="code">~pos</code> in
-      <code class="code">~buf</code>. Return the number of bytes actually read.<br>
+      <code class="code">~buf</code>. Return the number of bytes actually read.</p>
+</div>
 </div>
 <div class="param_info"><code class="code">pos</code> : default is always zero</div>
 <div class="param_info"><code class="code">len</code> : default is always the still available length of the string /
       bigarray / Bytes.t</div>
 
 <pre><span id="VALread_ba"><span class="keyword">val</span> read_ba</span> : <code class="type">?pos:int -><br>       ?len:int -> <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> buf:<a href="Uwt_base.html#TYPEbuf">Uwt_base.buf</a> -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-like <a href="Uwt_base.Fs_functions.html#VALread"><code class="code">Uwt_base.Fs_functions.read</code></a>, buf for bigarrays. Bigarrays are passed directly
+<div class="info-desc">
+<p>like <a href="Uwt_base.Fs_functions.html#VALread"><code class="code">Uwt_base.Fs_functions.read</code></a>, buf for bigarrays. Bigarrays are passed directly
       to libuv (no copy to c heap or stack). It's faster, but you must manually
-      ensure, that the bigarray is not accessed from another thread.<br>
+      ensure, that the bigarray is not accessed from another thread.</p>
+</div>
 </div>
 
+<pre><span id="VALpread"><span class="keyword">val</span> pread</span> : <code class="type">?pos:int -><br>       ?len:int -><br>       <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> fd_offset:int64 -> buf:bytes -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALpread"><code class="code">Uwt_base.Fs_functions.pread</code></a> is equivalent to <a href="Uwt_base.Fs_functions.html#VALread"><code class="code">Uwt_base.Fs_functions.read</code></a>, except that it reads from a given
+      position <code class="code">~fd_offset</code> in the file without changing the file offset.</p>
+</div>
+</div>
+
+<pre><span id="VALpread_ba"><span class="keyword">val</span> pread_ba</span> : <code class="type">?pos:int -><br>       ?len:int -><br>       <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -><br>       fd_offset:int64 -> buf:<a href="Uwt_base.html#TYPEbuf">Uwt_base.buf</a> -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre>
 <pre><span id="VALwrite"><span class="keyword">val</span> write</span> : <code class="type">?pos:int -><br>       ?len:int -> <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> buf:bytes -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-<code class="code">write fd ~pos ~len fd ~buf</code> writes <code class="code">~len</code> bytes to descriptor <code class="code">fd</code>,
+<div class="info-desc">
+<p><code class="code">write fd ~pos ~len fd ~buf</code> writes <code class="code">~len</code> bytes to descriptor <code class="code">fd</code>,
       taking them from byte sequence <code class="code">buf</code>, starting at position <code class="code">~pos</code>
-      in <code class="code">~buf</code>. Return the number of bytes actually written.<br>
+      in <code class="code">~buf</code>. Return the number of bytes actually written.</p>
+</div>
 </div>
 
 <pre><span id="VALwrite_string"><span class="keyword">val</span> write_string</span> : <code class="type">?pos:int -><br>       ?len:int -> <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> buf:string -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre>
 <pre><span id="VALwrite_ba"><span class="keyword">val</span> write_ba</span> : <code class="type">?pos:int -><br>       ?len:int -> <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> buf:<a href="Uwt_base.html#TYPEbuf">Uwt_base.buf</a> -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre>
+<pre><span id="VALpwrite"><span class="keyword">val</span> pwrite</span> : <code class="type">?pos:int -><br>       ?len:int -><br>       <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> fd_offset:int64 -> buf:bytes -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALpwrite"><code class="code">Uwt_base.Fs_functions.pwrite</code></a> is equivalent to <a href="Uwt_base.Fs_functions.html#VALwrite"><code class="code">Uwt_base.Fs_functions.write</code></a>, except that it writes into
+      a given position <code class="code">~fd_offset</code> and does not change the file offset</p>
+</div>
+</div>
+
+<pre><span id="VALpwrite_string"><span class="keyword">val</span> pwrite_string</span> : <code class="type">?pos:int -><br>       ?len:int -><br>       <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> fd_offset:int64 -> buf:string -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre>
+<pre><span id="VALpwrite_ba"><span class="keyword">val</span> pwrite_ba</span> : <code class="type">?pos:int -><br>       ?len:int -><br>       <a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -><br>       fd_offset:int64 -> buf:<a href="Uwt_base.html#TYPEbuf">Uwt_base.buf</a> -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre>
 <pre><span id="VALwritev"><span class="keyword">val</span> writev</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> <a href="Uwt_base.Iovec_write.html#TYPEt">Uwt_base.Iovec_write.t</a> list -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-write multiple buffers at once. If the number of buffers is
+<div class="info-desc">
+<p>write multiple buffers at once. If the number of buffers is
       greater than IOV_MAX, newer libuv versions already contains code
-      to circumvent this issue<br>
+      to circumvent this issue</p>
+</div>
+</div>
+
+<pre><span id="VALpwritev"><span class="keyword">val</span> pwritev</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -><br>       <a href="Uwt_base.Iovec_write.html#TYPEt">Uwt_base.Iovec_write.t</a> list -> int64 -> int <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALpwritev"><code class="code">Uwt_base.Fs_functions.pwritev</code></a> is equivalent to <a href="Uwt_base.Fs_functions.html#VALpwrite"><code class="code">Uwt_base.Fs_functions.pwrite</code></a>, except that it writes into
+      a given position and does not change the file offset</p>
+</div>
 </div>
 
 <pre><span id="VALclose"><span class="keyword">val</span> close</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Close a file descriptor.<br>
+<div class="info-desc">
+<p>Close a file descriptor.</p>
+</div>
 </div>
 
 <pre><span id="VALunlink"><span class="keyword">val</span> unlink</span> : <code class="type">string -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-delete a name and possibly the file it refers to<br>
+<div class="info-desc">
+<p>delete a name and possibly the file it refers to</p>
+</div>
 </div>
 
 <pre><span id="VALmkdir"><span class="keyword">val</span> mkdir</span> : <code class="type">?perm:int -> string -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Create a directory.<br>
+<div class="info-desc">
+<p>Create a directory.</p>
+</div>
 </div>
 <div class="param_info"><code class="code">perm</code> : defaults are 0o777</div>
 
 <pre><span id="VALrmdir"><span class="keyword">val</span> rmdir</span> : <code class="type">string -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Delete an empty directory<br>
+<div class="info-desc">
+<p>Delete an empty directory</p>
+</div>
 </div>
 
 <pre><span id="VALfsync"><span class="keyword">val</span> fsync</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-synchronize a file's in-core state with storage device.<br>
+<div class="info-desc">
+<p>synchronize a file's in-core state with storage device.</p>
+</div>
 </div>
 
 <pre><span id="VALfdatasync"><span class="keyword">val</span> fdatasync</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-<a href="Uwt_base.Fs_functions.html#VALfdatasync"><code class="code">Uwt_base.Fs_functions.fdatasync</code></a> is similar to <a href="Uwt_base.Fs_functions.html#VALfsync"><code class="code">Uwt_base.Fs_functions.fsync</code></a>, but does not flush modified metadata
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALfdatasync"><code class="code">Uwt_base.Fs_functions.fdatasync</code></a> is similar to <a href="Uwt_base.Fs_functions.html#VALfsync"><code class="code">Uwt_base.Fs_functions.fsync</code></a>, but does not flush modified metadata
        unless that metadata is needed in order to allow a subsequent data
-       retrieval to be correctly handled.<br>
+       retrieval to be correctly handled.</p>
+</div>
 </div>
 
 <pre><span id="VALftruncate"><span class="keyword">val</span> ftruncate</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> len:int64 -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-truncate a file to a specified length<br>
+<div class="info-desc">
+<p>truncate a file to a specified length</p>
+</div>
 </div>
 
 <pre><span id="VALstat"><span class="keyword">val</span> stat</span> : <code class="type">string -> stats <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Return the information for the named file.<br>
+<div class="info-desc">
+<p>Return the information for the named file.</p>
+</div>
 </div>
 
 <pre><span id="VALlstat"><span class="keyword">val</span> lstat</span> : <code class="type">string -> stats <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-<a href="Uwt_base.Fs_functions.html#VALlstat"><code class="code">Uwt_base.Fs_functions.lstat</code></a> is identical to <a href="Uwt_base.Fs_functions.html#VALstat"><code class="code">Uwt_base.Fs_functions.stat</code></a>, except that if pathname is a symbolic
-      link. In this case it returns information about the link itself.<br>
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALlstat"><code class="code">Uwt_base.Fs_functions.lstat</code></a> is identical to <a href="Uwt_base.Fs_functions.html#VALstat"><code class="code">Uwt_base.Fs_functions.stat</code></a>, except that if pathname is a symbolic
+      link. In this case it returns information about the link itself.</p>
+</div>
 </div>
 
 <pre><span id="VALfstat"><span class="keyword">val</span> fstat</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> stats <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-<a href="Uwt_base.Fs_functions.html#VALfstat"><code class="code">Uwt_base.Fs_functions.fstat</code></a> is identical to <a href="Uwt_base.Fs_functions.html#VALstat"><code class="code">Uwt_base.Fs_functions.stat</code></a>, except that the file about which
-      information is to be retrieved is specified by the file descriptor<br>
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALfstat"><code class="code">Uwt_base.Fs_functions.fstat</code></a> is identical to <a href="Uwt_base.Fs_functions.html#VALstat"><code class="code">Uwt_base.Fs_functions.stat</code></a>, except that the file about which
+      information is to be retrieved is specified by the file descriptor</p>
+</div>
 </div>
 
 <pre><span id="VALrename"><span class="keyword">val</span> rename</span> : <code class="type">src:string -> dst:string -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-change the name or location of a file<br>
+<div class="info-desc">
+<p>change the name or location of a file</p>
+</div>
 </div>
 
 <pre><span id="VALlink"><span class="keyword">val</span> link</span> : <code class="type">target:string -> link_name:string -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-<a href="Uwt_base.Fs_functions.html#VALlink"><code class="code">Uwt_base.Fs_functions.link</code></a> creates a new link (also known as a hard link) to an existing
-      file<br>
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALlink"><code class="code">Uwt_base.Fs_functions.link</code></a> creates a new link (also known as a hard link) to an existing
+      file</p>
+</div>
 </div>
 
 <pre><span id="VALsymlink"><span class="keyword">val</span> symlink</span> : <code class="type">?mode:symlink_mode -><br>       src:string -> dst:string -> unit -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-<a href="Uwt_base.Fs_functions.html#VALsymlink"><code class="code">Uwt_base.Fs_functions.symlink</code></a> creates a symbolic link named <code class="code">~dst</code> which contains
-      the string <code class="code">~src</code><br>
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALsymlink"><code class="code">Uwt_base.Fs_functions.symlink</code></a> creates a symbolic link named <code class="code">~dst</code> which contains
+      the string <code class="code">~src</code></p>
+</div>
 </div>
 <div class="param_info"><code class="code">mode</code> : default <code class="code">S_Default</code></div>
 
 <pre><span id="VALmkdtemp"><span class="keyword">val</span> mkdtemp</span> : <code class="type">string -> string <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-The <a href="Uwt_base.Fs_functions.html#VALmkdtemp"><code class="code">Uwt_base.Fs_functions.mkdtemp</code></a> function generates a uniquely named temporary directory
+<div class="info-desc">
+<p>The <a href="Uwt_base.Fs_functions.html#VALmkdtemp"><code class="code">Uwt_base.Fs_functions.mkdtemp</code></a> function generates a uniquely named temporary directory
       from template. The last six characters of template must be XXXXXX and
-      these are replaced with a string that makes the directory name unique<br>
+      these are replaced with a string that makes the directory name unique</p>
+</div>
 </div>
 
 <pre><span id="VALsendfile"><span class="keyword">val</span> sendfile</span> : <code class="type">?pos:int64 -><br>       ?len:nativeint -><br>       dst:<a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -><br>       src:<a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> unit -> nativeint <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-A limited equivalent to <code class="code">sendfile(2)</code>. It copies data between one file
-      descriptor and another<br>
+<div class="info-desc">
+<p>A limited equivalent to <code class="code">sendfile(2)</code>. It copies data between one file
+      descriptor and another</p>
+</div>
 </div>
 <div class="param_info"><code class="code">pos</code> : default 0</div>
 <div class="param_info"><code class="code">len</code> : <code class="code">Nativeint.max_int</code></div>
 
 <pre><span id="VALutime"><span class="keyword">val</span> utime</span> : <code class="type">string -> access:float -> modif:float -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-<a href="Uwt_base.Fs_functions.html#VALutime"><code class="code">Uwt_base.Fs_functions.utime</code></a> changes the access and modification times of a file. If
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALutime"><code class="code">Uwt_base.Fs_functions.utime</code></a> changes the access and modification times of a file. If
       both times are <code class="code">0.0</code>, the access and last modification times are
-      both set to the current time.<br>
+      both set to the current time.</p>
+</div>
 </div>
 
 <pre><span id="VALfutime"><span class="keyword">val</span> futime</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> access:float -> modif:float -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-<a href="Uwt_base.Fs_functions.html#VALfutime"><code class="code">Uwt_base.Fs_functions.futime</code></a> is identical to <a href="Uwt_base.Fs_functions.html#VALutime"><code class="code">Uwt_base.Fs_functions.utime</code></a>, except that the file about which
-      information is to be retrieved is specified by the file descriptor<br>
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALfutime"><code class="code">Uwt_base.Fs_functions.futime</code></a> is identical to <a href="Uwt_base.Fs_functions.html#VALutime"><code class="code">Uwt_base.Fs_functions.utime</code></a>, except that the file about which
+      information is to be retrieved is specified by the file descriptor</p>
+</div>
 </div>
 
 <pre><span id="VALreadlink"><span class="keyword">val</span> readlink</span> : <code class="type">string -> string <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-<a href="Uwt_base.Fs_functions.html#VALreadlink"><code class="code">Uwt_base.Fs_functions.readlink</code></a> reads the value of a symbolic link<br>
+<div class="info-desc">
+<p><a href="Uwt_base.Fs_functions.html#VALreadlink"><code class="code">Uwt_base.Fs_functions.readlink</code></a> reads the value of a symbolic link</p>
+</div>
 </div>
 
 <pre><span id="VALaccess"><span class="keyword">val</span> access</span> : <code class="type">string -> access_permission list -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Check user's permissions for a file<br>
+<div class="info-desc">
+<p>Check user's permissions for a file</p>
+</div>
 </div>
 
 <pre><span id="VALchmod"><span class="keyword">val</span> chmod</span> : <code class="type">string -> perm:int -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Change the permissions of the named file.<br>
+<div class="info-desc">
+<p>Change the permissions of the named file.</p>
+</div>
 </div>
 
 <pre><span id="VALfchmod"><span class="keyword">val</span> fchmod</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> perm:int -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Change the permissions of an opened file.<br>
+<div class="info-desc">
+<p>Change the permissions of an opened file.</p>
+</div>
 </div>
 
 <pre><span id="VALchown"><span class="keyword">val</span> chown</span> : <code class="type">string -> uid:int -> gid:int -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Change the owner <code class="code">~uid</code> and owner <code class="code">~gid</code> of the named file.<br>
+<div class="info-desc">
+<p>Change the owner <code class="code">~uid</code> and owner <code class="code">~gid</code> of the named file.</p>
+</div>
 </div>
 
 <pre><span id="VALfchown"><span class="keyword">val</span> fchown</span> : <code class="type"><a href="Uwt_base.html#TYPEfile">Uwt_base.file</a> -> uid:int -> gid:int -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Change the owner <code class="code">~uid</code> and owner <code class="code">~gid</code> of the opened file.<br>
+<div class="info-desc">
+<p>Change the owner <code class="code">~uid</code> and owner <code class="code">~gid</code> of the opened file.</p>
+</div>
 </div>
 
 <pre><span id="VALscandir"><span class="keyword">val</span> scandir</span> : <code class="type">string -> (file_kind * string) array <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-On Linux, getting the type of an entry is only supported by some
+<div class="info-desc">
+<p>On Linux, getting the type of an entry is only supported by some
       filesystems (btrfs, ext2, ext3 and ext4 at the time of this
-      writing), check the getdents(2) man page.<br>
+      writing), check the getdents(2) man page.</p>
+</div>
 </div>
 
 <pre><span id="VALrealpath"><span class="keyword">val</span> realpath</span> : <code class="type">string -> string <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
-Equivalent to realpath(3) on Unix. Windows uses
-      GetFinalPathNameByHandle.
-<p>
+<div class="info-desc">
+<p>Equivalent to realpath(3) on Unix. Windows uses
+      GetFinalPathNameByHandle.</p>
 
-      Warning This function has certain platform specific caveats that
-      were discovered when used in Node.
-<p>
+<p>Warning This function has certain platform specific caveats that
+      were discovered when used in Node.</p>
 
-      macOS and other BSDs: this function will fail with UV_ELOOP if
+<p>macOS and other BSDs: this function will fail with UV_ELOOP if
       more than 32 symlinks are found while resolving the given
-      path. This limit is hardcoded and cannot be sidestepped.
-<p>
+      path. This limit is hardcoded and cannot be sidestepped.</p>
 
-      Windows: while this function works in the common case, there are
-      a number of corner cases where it doesn't:
-<p>
+<p>Windows: while this function works in the common case, there are
+      a number of corner cases where it doesn't:</p>
+
 <ul>
 <li>Paths in ramdisk</li>
 <li>volumes created by tools which sidestep the Volume Manager (such
@@ -210,8 +288,32 @@ Equivalent to realpath(3) on Unix. Windows uses
 <li>Inconsistent casing when using drive letters.</li>
 <li>Resolved path bypasses subst'd drives.</li>
 </ul>
+<p>While this function can still be used, it's not recommended if scenarios
+      such as the above need to be supported.</p>
+</div>
+</div>
 
-      While this function can still be used, it's not recommended if scenarios
-      such as the above need to be supported.<br>
+<pre><span id="VALcopyfile"><span class="keyword">val</span> copyfile</span> : <code class="type">?excl:bool -><br>       ?clone:clone_mode -><br>       src:string -> dst:string -> unit -> unit <a href="Uwt_base.Fs_functions.html#TYPEt">t</a></code></pre><div class="info ">
+<div class="info-desc">
+<p>Copies a file from <code class="code">~src</code> to <code class="code">~dst</code>.</p>
+
+<p>If <code class="code">?excl</code> is true, copyfile will fail with <code class="code">EEXIST</code> if the
+      destination path already exists. The default behavior is to
+      overwrite the destination if it exists.</p>
+
+<p>If <code class="code">?clone</code> is <code class="code">Try_clone</code>, copyfile will attempt to create a
+      copy-on-write reflink. If the underlying platform (or your installed
+      libuv version) does not support copy-on-write, then a fallback copy
+      mechanism is used.
+      If <code class="code">?clone</code> is <code class="code">Force_clone</code>, copyfile will attempt to create a
+      copy-on-write reflink. If the underlying platform does not support
+      copy-on-write, then an error is returned.
+      The default behaviour is a normal copy (<code class="code">No_clone</code>).</p>
+
+<p>Warning: If the destination path is created, but an error occurs
+      while copying the data, then the destination path is
+      removed. There is a brief window of time between closing and
+      removing the file where another process could access the file.</p>
+</div>
 </div>
 </body></html>

@@ -19,7 +19,7 @@
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
-<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Fs_poll</title>
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Async</title>
 </head>
 <body>
 <code class="code"><span class="keyword">sig</span><br>
@@ -31,16 +31,9 @@
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ref'&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;unref&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;has_ref&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_handle&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Fs_poll</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Handle</span>.t<br>
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;report&nbsp;=&nbsp;{&nbsp;prev&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Fs</span>.stats;&nbsp;curr&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Fs</span>.stats;&nbsp;}<br>
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;start&nbsp;:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;cb:(<span class="constructor">Uwt</span>.<span class="constructor">Fs_poll</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Fs_poll</span>.report&nbsp;uv_result&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Fs_poll</span>.t&nbsp;uv_result<br>
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;start_exn&nbsp;:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;cb:(<span class="constructor">Uwt</span>.<span class="constructor">Fs_poll</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Fs_poll</span>.report&nbsp;uv_result&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Fs_poll</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_handle&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Async</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Handle</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;create&nbsp;:&nbsp;(<span class="constructor">Uwt</span>.<span class="constructor">Async</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Async</span>.t&nbsp;uv_result<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;start&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Async</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;stop&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Async</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;send&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Async</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
 <span class="keyword">end</span></code></body></html>

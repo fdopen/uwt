@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,14 +33,12 @@
 </div>
 <h1>Module <a href="type_Uwt.Signal.html">Uwt.Signal</a></h1>
 
-<pre><span class="keyword">module</span> Signal: <code class="code">sig</code> <a href="Uwt.Signal.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-Signal handles implement Unix style signal handling on a
-     per-event loop bases.
-<p>
+<pre><span id="MODULESignal"><span class="keyword">module</span> Signal</span>: <code class="code">sig</code> <a href="Uwt.Signal.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>Signal handles implement Unix style signal handling on a
+     per-event loop bases.</p>
 
-     Reception of some signals is emulated on Windows:
-<p>
+<p>Reception of some signals is emulated on Windows:</p>
+
 <ul>
 <li>SIGINT is normally delivered when the user presses
      CTRL+C. However, like on Unix, it is not generated when terminal
@@ -56,23 +52,12 @@ Signal handles implement Unix style signal handling on a
      SIGHUP the program is given approximately 10 seconds to perform
      cleanup. After that Windows will unconditionally terminate it.</li>
 </ul>
-<ul>
-<li>SIGWINCH is raised whenever libuv detects that the console has
-     been resized. SIGWINCH is emulated by libuv when the program uses
-     a uv_tty_t handle to write to the console. SIGWINCH may not always
-     be delivered in a timely manner; libuv will only detect size
-     changes when the cursor is being moved. When a readable uv_tty_t
-     handle is used in raw mode, resizing the console buffer will also
-     trigger a SIGWINCH signal.</li>
-</ul>
-
-     Watchers for other signals can be successfully created, but these
+<p>Watchers for other signals can be successfully created, but these
      signals are never received. These signals are: SIGILL, SIGABRT,
-     SIGFPE, SIGSEGV, SIGTERM and SIGKILL.
-<p>
+     SIGFPE, SIGSEGV, SIGTERM and SIGKILL.</p>
 
-     Calls to raise() or abort() to programmatically raise a signal
-     are not detected by libuv; these will not trigger a signal watcher.<br>
+<p>Calls to raise() or abort() to programmatically raise a signal
+     are not detected by libuv; these will not trigger a signal watcher.</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
@@ -81,14 +66,25 @@ Signal handles implement Unix style signal handling on a
 
 <pre><span id="VALto_handle"><span class="keyword">val</span> to_handle</span> : <code class="type"><a href="Uwt.Signal.html#TYPEt">t</a> -> <a href="Uwt.Handle.html#TYPEt">Uwt.Handle.t</a></code></pre>
 <pre><span id="VALsigbreak"><span class="keyword">val</span> sigbreak</span> : <code class="type">int</code></pre><div class="info ">
-<a href="Uwt.Signal.html#VALsigwinch"><code class="code">Uwt.Signal.sigwinch</code></a> and <a href="Uwt.Signal.html#VALsigbreak"><code class="code">Uwt.Signal.sigbreak</code></a> are windows and libuv specific.
+<div class="info-desc">
+<p><a href="Uwt.Signal.html#VALsigwinch"><code class="code">Uwt.Signal.sigwinch</code></a> and <a href="Uwt.Signal.html#VALsigbreak"><code class="code">Uwt.Signal.sigbreak</code></a> are windows and libuv specific.
       Don't use them in any other context, don't pass them to
-      <code class="code">Unix.kill</code> or similar functions.<br>
+      <code class="code">Unix.kill</code> or similar functions.</p>
+</div>
 </div>
 
 <pre><span id="VALsigwinch"><span class="keyword">val</span> sigwinch</span> : <code class="type">int</code></pre>
 <pre><span id="VALstart"><span class="keyword">val</span> start</span> : <code class="type">int -> cb:(<a href="Uwt.Signal.html#TYPEt">t</a> -> int -> unit) -> <a href="Uwt.Signal.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-use <code class="code">Sys.sigterm</code>, <code class="code">Sys.sigstop</code>, etc<br>
+<div class="info-desc">
+<p>use <code class="code">Sys.sigterm</code>, <code class="code">Sys.sigstop</code>, etc</p>
+</div>
 </div>
 
-<pre><span id="VALstart_exn"><span class="keyword">val</span> start_exn</span> : <code class="type">int -> cb:(<a href="Uwt.Signal.html#TYPEt">t</a> -> int -> unit) -> <a href="Uwt.Signal.html#TYPEt">t</a></code></pre></body></html>
+<pre><span id="VALstart_exn"><span class="keyword">val</span> start_exn</span> : <code class="type">int -> cb:(<a href="Uwt.Signal.html#TYPEt">t</a> -> int -> unit) -> <a href="Uwt.Signal.html#TYPEt">t</a></code></pre>
+<pre><span id="VALoneshot"><span class="keyword">val</span> oneshot</span> : <code class="type">int -> unit Lwt.t</code></pre><div class="info ">
+<div class="info-desc">
+<p>Wait for the signal once and reset the moment the signal is received.
+      Use Lwt.cancel to stop the signal handler</p>
+</div>
+</div>
+</body></html>

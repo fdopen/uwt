@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,16 +33,17 @@
 </div>
 <h1>Module <a href="type_Uwt_throttle.html">Uwt_throttle</a></h1>
 
-<pre><span class="keyword">module</span> Uwt_throttle: <code class="code">sig</code> <a href="Uwt_throttle.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Rate limiters<br>
+<pre><span id="MODULEUwt_throttle"><span class="keyword">module</span> Uwt_throttle</span>: <code class="code">sig</code> <a href="Uwt_throttle.html">..</a> <code class="code">end</code></pre><div class="info module top">
+<div class="info-desc">
+<p>Rate limiters</p>
+</div>
 </div>
 <hr width="100%">
-<br>
-This module defines rate limiters. A rate limiter is parametrized
+<p>This module defines rate limiters. A rate limiter is parametrized
     by its limit and a maximum waiting time. The <code class="code">wait</code> function will
     collaboratively hang for a delay necessary to respect the
     limit. If that delay exceeds the maximum waiting time, <code class="code">wait</code>
-    returns <code class="code">false</code>; otherwise it returns <code class="code">true</code>.<br>
+    returns <code class="code">false</code>; otherwise it returns <code class="code">true</code>.</p>
 
-<pre><span class="keyword">module type</span> <a href="Uwt_throttle.S.html">S</a> = <code class="code">sig</code> <a href="Uwt_throttle.S.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt_throttle.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">H</code><code class="code"> : </code><code class="type">Hashtbl.HashedType</code><code class="code">) -&gt; </code><code class="type"><a href="Uwt_throttle.S.html">S</a></code><code class="type">  with type key = H.t</code></div></pre></body></html>
+<pre><span id="MODULETYPES"><span class="keyword">module type</span> <a href="Uwt_throttle.S.html">S</a></span> = <code class="code">sig</code> <a href="Uwt_throttle.S.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEMake"><span class="keyword">module</span> <a href="Uwt_throttle.Make.html">Make</a></span>: <div class="sig_block"><code class="code">functor (</code><code class="code">H</code><code class="code"> : </code><code class="type">Hashtbl.HashedType</code><code class="code">) -&gt; </code><code class="type"><a href="Uwt_throttle.S.html">S</a></code><code class="type">  with type key = H.t</code></div></pre></body></html>

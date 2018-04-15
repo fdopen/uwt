@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Uwt.C_worker.html">
+<link rel="next" href="Uwt.Debug.html">
+<link rel="Up" href="Uwt.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of class methods" rel=Appendix href="index_methods.html">
+<link title="Index of classes" rel=Appendix href="index_classes.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Uv_fs_sync" rel="Chapter" href="Uv_fs_sync.html">
+<link title="Uwt" rel="Chapter" href="Uwt.html">
+<link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
+<link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
+<link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
+<link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
+<link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
+<link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
+<link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
+<link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt.Async</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Uwt.C_worker.html" title="Uwt.C_worker">Previous</a>
+&nbsp;<a class="up" href="Uwt.html" title="Uwt">Up</a>
+&nbsp;<a class="post" href="Uwt.Debug.html" title="Uwt.Debug">Next</a>
+</div>
+<h1>Module <a href="type_Uwt.Async.html">Uwt.Async</a></h1>
+
+<pre><span id="MODULEAsync"><span class="keyword">module</span> Async</span>: <code class="code">sig</code> <a href="Uwt.Async.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>Async handles allow the user to "wakeup" the event loop and get a callback
+     called from another (system) thread.</p>
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+
+
+<pre><span class="keyword">include</span> <a href="Uwt.Handle.html">Uwt.Handle</a></pre>
+
+<pre><span id="VALto_handle"><span class="keyword">val</span> to_handle</span> : <code class="type"><a href="Uwt.Async.html#TYPEt">t</a> -> <a href="Uwt.Handle.html#TYPEt">Uwt.Handle.t</a></code></pre>
+<pre><span id="VALcreate"><span class="keyword">val</span> create</span> : <code class="type">(<a href="Uwt.Async.html#TYPEt">t</a> -> unit) -> <a href="Uwt.Async.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
+<div class="info-desc">
+<p>Creates a new async handle. The handle is <b>not</b> active immediately. You
+      have to use <a href="Uwt.Async.html#VALstart"><code class="code">Uwt.Async.start</code></a></p>
+</div>
+</div>
+
+<pre><span id="VALstart"><span class="keyword">val</span> start</span> : <code class="type"><a href="Uwt.Async.html#TYPEt">t</a> -> Int_result.unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>This will increase the reference count of the async handle. <a href="Uwt.Main.html#VALrun"><code class="code">Uwt.Main.run</code></a>
+      will wait until <code class="code">send</code> is called, if there are no other pendings tasks.</p>
+</div>
+</div>
+
+<pre><span id="VALstop"><span class="keyword">val</span> stop</span> : <code class="type"><a href="Uwt.Async.html#TYPEt">t</a> -> Int_result.unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>Decrease the reference count again</p>
+</div>
+</div>
+
+<pre><span id="VALsend"><span class="keyword">val</span> send</span> : <code class="type"><a href="Uwt.Async.html#TYPEt">t</a> -> Int_result.unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>Wakeup the event loop and call the async handle's callback.</p>
+
+<p>It's safe to call this function from any system thread. The callback
+     will be called on the loop thread. <a href="Uwt.Async.html#VALcreate"><code class="code">Uwt.Async.create</code></a>, <a href="Uwt.Async.html#VALstart"><code class="code">Uwt.Async.start</code></a>, and <a href="Uwt.Async.html#VALstop"><code class="code">Uwt.Async.stop</code></a>
+     however must be called from the main thread.</p>
+
+<p>Warning: libuv will coalesce calls to <a href="Uwt.Async.html#VALsend"><code class="code">Uwt.Async.send</code></a>, that is, not every
+     call to it will yield an execution of the callback. For example:
+     if <a href="Uwt.Async.html#VALsend"><code class="code">Uwt.Async.send</code></a> is called 5 times in a row before the callback is
+     called, the callback will only be called once. If <a href="Uwt.Async.html#VALsend"><code class="code">Uwt.Async.send</code></a> is
+     called again after the callback was called, it will be called
+     again.</p>
+</div>
+</div>
+</body></html>

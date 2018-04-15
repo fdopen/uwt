@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,13 +33,14 @@
 </div>
 <h1>Module <a href="type_Uwt.html">Uwt</a></h1>
 
-<pre><span class="keyword">module</span> Uwt: <code class="code">sig</code> <a href="Uwt.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Uwt main module<br>
+<pre><span id="MODULEUwt"><span class="keyword">module</span> Uwt</span>: <code class="code">sig</code> <a href="Uwt.html">..</a> <code class="code">end</code></pre><div class="info module top">
+<div class="info-desc">
+<p>Uwt main module</p>
+</div>
 </div>
 <hr width="100%">
-<br>
-Basic overview:
-<p>
+<p>Basic overview:</p>
+
 <ul>
 <li>naming conventions mirror the conventions of libuv, so you can
    easily consult the official
@@ -66,25 +65,21 @@ Basic overview:
 <li>Uwt is <b>not</b> <i>thread safe</i>. All uwt functions should be called
    from your main thread.</li>
 </ul>
-<ul>
-<li>Uwt is in beta stage. The interface is likely to change in the
-   first official release. Feel free to open an issue and make
-   suggestions about it :)</li>
-</ul>
-
-   Please notice, that there are subtle differences compared to
+<p>Please notice, that there are subtle differences compared to
    <code class="code">lwt.unix</code>. Because all requests are accomplished by libuv
    (sometimes in parallel in different threads), you don't have that
    kind of low level control, that you have with <code class="code">lwt.unix</code>. Also <code class="code">Lwt.cancel</code>
    behaves differently and you won't notice it by looking at the type
-   information.
-<p>
+   information.</p>
+
 <ul>
 <li><code class="code">Stream.write</code> and related functions can never be canceled. The
    analogous write functions in <code class="code">Lwt_unix</code> however are cancelable as
    long as the underlying file descriptor is not opened in blocking
-   mode. (<code class="code">Stream.read</code> currently returns the only cancelable thread
-   inside <a href="Uwt.Stream.html"><code class="code">Uwt.Stream</code></a> and its subclasses)</li>
+   mode. (<a href="Uwt.Stream.html#VALread"><code class="code">Uwt.Stream.read</code></a> currently returns the only cancelable thread
+   inside <a href="Uwt.Stream.html"><code class="code">Uwt.Stream</code></a> and its subclasses. But there is no guarantee that
+   <code class="code">Tcp.read</code> will continue to be cancelable under Windows in future
+   libuv versions.)</li>
 </ul>
 <ul>
 <li>Everything that is done in work threads (e.g. File I/O, DNS
@@ -92,27 +87,27 @@ Basic overview:
    for execution and not already running in a parallel thread. However, it's
    never possible to cancel a background task in <code class="code">Lwt_unix</code>.</li>
 </ul>
-<br>
 
 <pre><span class="keyword">include</span> <a href="Uwt_base.html">Uwt_base</a></pre>
 
-<pre><span class="keyword">module</span> <a href="Uwt.Main.html">Main</a>: <code class="code">sig</code> <a href="Uwt.Main.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Fs.html">Fs</a>: <code class="code">sig</code> <a href="Uwt.Fs.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Handle.html">Handle</a>: <code class="code">sig</code> <a href="Uwt.Handle.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Handle_ext.html">Handle_ext</a>: <code class="code">sig</code> <a href="Uwt.Handle_ext.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Handle_fileno.html">Handle_fileno</a>: <code class="code">sig</code> <a href="Uwt.Handle_fileno.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Stream.html">Stream</a>: <code class="code">sig</code> <a href="Uwt.Stream.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Tcp.html">Tcp</a>: <code class="code">sig</code> <a href="Uwt.Tcp.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Udp.html">Udp</a>: <code class="code">sig</code> <a href="Uwt.Udp.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Tty.html">Tty</a>: <code class="code">sig</code> <a href="Uwt.Tty.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Pipe.html">Pipe</a>: <code class="code">sig</code> <a href="Uwt.Pipe.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Timer.html">Timer</a>: <code class="code">sig</code> <a href="Uwt.Timer.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Signal.html">Signal</a>: <code class="code">sig</code> <a href="Uwt.Signal.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Poll.html">Poll</a>: <code class="code">sig</code> <a href="Uwt.Poll.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Fs_event.html">Fs_event</a>: <code class="code">sig</code> <a href="Uwt.Fs_event.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Fs_poll.html">Fs_poll</a>: <code class="code">sig</code> <a href="Uwt.Fs_poll.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Process.html">Process</a>: <code class="code">sig</code> <a href="Uwt.Process.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Dns.html">Dns</a>: <code class="code">sig</code> <a href="Uwt.Dns.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Unix.html">Unix</a>: <code class="code">sig</code> <a href="Uwt.Unix.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.C_worker.html">C_worker</a>: <code class="code">sig</code> <a href="Uwt.C_worker.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Uwt.Debug.html">Debug</a>: <code class="code">sig</code> <a href="Uwt.Debug.html">..</a> <code class="code">end</code></pre></body></html>
+<pre><span id="MODULEMain"><span class="keyword">module</span> <a href="Uwt.Main.html">Main</a></span>: <code class="code">sig</code> <a href="Uwt.Main.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEFs"><span class="keyword">module</span> <a href="Uwt.Fs.html">Fs</a></span>: <code class="code">sig</code> <a href="Uwt.Fs.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEHandle"><span class="keyword">module</span> <a href="Uwt.Handle.html">Handle</a></span>: <code class="code">sig</code> <a href="Uwt.Handle.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEHandle_ext"><span class="keyword">module</span> <a href="Uwt.Handle_ext.html">Handle_ext</a></span>: <code class="code">sig</code> <a href="Uwt.Handle_ext.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEHandle_fileno"><span class="keyword">module</span> <a href="Uwt.Handle_fileno.html">Handle_fileno</a></span>: <code class="code">sig</code> <a href="Uwt.Handle_fileno.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEStream"><span class="keyword">module</span> <a href="Uwt.Stream.html">Stream</a></span>: <code class="code">sig</code> <a href="Uwt.Stream.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULETcp"><span class="keyword">module</span> <a href="Uwt.Tcp.html">Tcp</a></span>: <code class="code">sig</code> <a href="Uwt.Tcp.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEUdp"><span class="keyword">module</span> <a href="Uwt.Udp.html">Udp</a></span>: <code class="code">sig</code> <a href="Uwt.Udp.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULETty"><span class="keyword">module</span> <a href="Uwt.Tty.html">Tty</a></span>: <code class="code">sig</code> <a href="Uwt.Tty.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEPipe"><span class="keyword">module</span> <a href="Uwt.Pipe.html">Pipe</a></span>: <code class="code">sig</code> <a href="Uwt.Pipe.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULETimer"><span class="keyword">module</span> <a href="Uwt.Timer.html">Timer</a></span>: <code class="code">sig</code> <a href="Uwt.Timer.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULESignal"><span class="keyword">module</span> <a href="Uwt.Signal.html">Signal</a></span>: <code class="code">sig</code> <a href="Uwt.Signal.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEPoll"><span class="keyword">module</span> <a href="Uwt.Poll.html">Poll</a></span>: <code class="code">sig</code> <a href="Uwt.Poll.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEFs_event"><span class="keyword">module</span> <a href="Uwt.Fs_event.html">Fs_event</a></span>: <code class="code">sig</code> <a href="Uwt.Fs_event.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEFs_poll"><span class="keyword">module</span> <a href="Uwt.Fs_poll.html">Fs_poll</a></span>: <code class="code">sig</code> <a href="Uwt.Fs_poll.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEProcess"><span class="keyword">module</span> <a href="Uwt.Process.html">Process</a></span>: <code class="code">sig</code> <a href="Uwt.Process.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEDns"><span class="keyword">module</span> <a href="Uwt.Dns.html">Dns</a></span>: <code class="code">sig</code> <a href="Uwt.Dns.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEUnix"><span class="keyword">module</span> <a href="Uwt.Unix.html">Unix</a></span>: <code class="code">sig</code> <a href="Uwt.Unix.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEC_worker"><span class="keyword">module</span> <a href="Uwt.C_worker.html">C_worker</a></span>: <code class="code">sig</code> <a href="Uwt.C_worker.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEAsync"><span class="keyword">module</span> <a href="Uwt.Async.html">Async</a></span>: <code class="code">sig</code> <a href="Uwt.Async.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULEDebug"><span class="keyword">module</span> <a href="Uwt.Debug.html">Debug</a></span>: <code class="code">sig</code> <a href="Uwt.Debug.html">..</a> <code class="code">end</code></pre></body></html>

@@ -5,7 +5,7 @@
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
-<link rel="previous" href="Uwt_compat.Lwt_chan.html">
+<link rel="previous" href="Uwt_compat.Lwt_throttle.html">
 <link rel="Up" href="Uwt_compat.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
 <link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
@@ -18,28 +18,27 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
 <link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt_compat.Lwt_unix</title>
 </head>
 <body>
-<div class="navbar"><a class="pre" href="Uwt_compat.Lwt_chan.html" title="Uwt_compat.Lwt_chan">Previous</a>
+<div class="navbar"><a class="pre" href="Uwt_compat.Lwt_throttle.html" title="Uwt_compat.Lwt_throttle">Previous</a>
 &nbsp;<a class="up" href="Uwt_compat.html" title="Uwt_compat">Up</a>
 &nbsp;</div>
 <h1>Module <a href="type_Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a></h1>
 
-<pre><span class="keyword">module</span> Lwt_unix: <code class="code">sig</code> <a href="Uwt_compat.Lwt_unix.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Lwt_unix compatibility layer
-<p>
+<pre><span id="MODULELwt_unix"><span class="keyword">module</span> Lwt_unix</span>: <code class="code">sig</code> <a href="Uwt_compat.Lwt_unix.html">..</a> <code class="code">end</code></pre><div class="info module top">
+<div class="info-desc">
+<p>Lwt_unix compatibility layer</p>
 
-    Everything inside Lwt_unix is implemented with funcions from
+<p>Everything inside Lwt_unix is implemented with funcions from
     Uwt. The purpose is to make it easier to test or use existing
-    code with uwt instead of lwt.unix<br>
+    code with uwt instead of lwt.unix</p>
+</div>
 </div>
 <hr width="100%">
 
@@ -52,133 +51,179 @@ Lwt_unix compatibility layer
 
 
 <pre><span id="VALhandle_unix_error"><span class="keyword">val</span> handle_unix_error</span> : <code class="type">('a -> 'b Lwt.t) -> 'a -> 'b Lwt.t</code></pre><div class="info ">
-Same as <code class="code">Unix.handle_unix_error</code> but catches lwt-level
-        exceptions<br>
+<div class="info-desc">
+<p>Same as <code class="code">Unix.handle_unix_error</code> but catches lwt-level
+        exceptions</p>
+</div>
 </div>
 
 <pre><span id="VALsleep"><span class="keyword">val</span> sleep</span> : <code class="type">float -> unit Lwt.t</code></pre><div class="info ">
-<code class="code">sleep d</code> is a thread that remains suspended for <code class="code">d</code> seconds
-        and then terminates.<br>
+<div class="info-desc">
+<p><code class="code">sleep d</code> is a thread that remains suspended for <code class="code">d</code> seconds
+        and then terminates.</p>
+</div>
 </div>
 
 <pre><span id="VALyield"><span class="keyword">val</span> yield</span> : <code class="type">unit -> unit Lwt.t</code></pre><div class="info ">
-<code class="code">yield ()</code> is a thread that suspends itself and then resumes
-        as soon as possible and terminates.<br>
+<div class="info-desc">
+<p><code class="code">yield ()</code> is a thread that suspends itself and then resumes
+        as soon as possible and terminates.</p>
+</div>
 </div>
 
 <pre><span id="VALauto_yield"><span class="keyword">val</span> auto_yield</span> : <code class="type">float -> unit -> unit Lwt.t</code></pre><div class="info ">
-<code class="code">auto_yield timeout</code> returns a function <code class="code">f</code> that will yield
-        every <code class="code">timeout</code> seconds.<br>
+<div class="info-desc">
+<p><code class="code">auto_yield timeout</code> returns a function <code class="code">f</code> that will yield
+        every <code class="code">timeout</code> seconds.</p>
+</div>
 </div>
 
 <pre><span id="EXCEPTIONTimeout"><span class="keyword">exception</span> Timeout</span></pre>
 <div class="info ">
-Exception raised by timeout operations<br>
+<div class="info-desc">
+<p>Exception raised by timeout operations</p>
+</div>
 </div>
 
 <pre><span id="VALtimeout"><span class="keyword">val</span> timeout</span> : <code class="type">float -> 'a Lwt.t</code></pre><div class="info ">
-<code class="code">timeout d</code> is a thread that remains suspended for <code class="code">d</code> seconds
-        and then fails with <a href="Uwt_compat.Lwt_unix.html#EXCEPTIONTimeout"><code class="code">Uwt_compat.Lwt_unix.Timeout</code></a>.<br>
+<div class="info-desc">
+<p><code class="code">timeout d</code> is a thread that remains suspended for <code class="code">d</code> seconds
+        and then fails with <a href="Uwt_compat.Lwt_unix.html#EXCEPTIONTimeout"><code class="code">Uwt_compat.Lwt_unix.Timeout</code></a>.</p>
+</div>
 </div>
 
 <pre><span id="VALwith_timeout"><span class="keyword">val</span> with_timeout</span> : <code class="type">float -> (unit -> 'a Lwt.t) -> 'a Lwt.t</code></pre><div class="info ">
-<code class="code">with_timeout d f</code> is a short-hand for:
-<p>
+<div class="info-desc">
+<p><code class="code">with_timeout d f</code> is a short-hand for:</p>
 
-        <pre class="codepre"><code class="code">          Lwt.pick [Lwt_unix.timeout d; f ()]
-        </code></pre><br>
+<pre class="codepre"><code class="code">          Lwt.pick [Lwt_unix.timeout d; f ()]
+        </code></pre></div>
 </div>
 
 <pre><span id="VALstdin"><span class="keyword">val</span> stdin</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a></code></pre><div class="info ">
-The standard file descriptor for input<br>
+<div class="info-desc">
+<p>The standard file descriptor for input</p>
+</div>
 </div>
 
 <pre><span id="VALstdout"><span class="keyword">val</span> stdout</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a></code></pre><div class="info ">
-The standard file descriptor for output<br>
+<div class="info-desc">
+<p>The standard file descriptor for output</p>
+</div>
 </div>
 
 <pre><span id="VALstderr"><span class="keyword">val</span> stderr</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a></code></pre><div class="info ">
-The standard file descriptor for printing error messages<br>
+<div class="info-desc">
+<p>The standard file descriptor for printing error messages</p>
+</div>
 </div>
 
 <pre><span id="VALopenfile"><span class="keyword">val</span> openfile</span> : <code class="type">string -><br>       Unix.open_flag list -><br>       file_perm -> <a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> Lwt.t</code></pre><div class="info ">
-Wrapper for <code class="code">Unix.openfile</code>.<br>
+<div class="info-desc">
+<p>Wrapper for <code class="code">Unix.openfile</code>.</p>
+</div>
 </div>
 
 <pre><span id="VALclose"><span class="keyword">val</span> close</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> unit Lwt.t</code></pre><div class="info ">
-Close a file descriptor. This close the underlying unix file
-        descriptor<br>
+<div class="info-desc">
+<p>Close a file descriptor. This close the underlying unix file
+        descriptor</p>
+</div>
 </div>
 
 <pre><span id="VALread"><span class="keyword">val</span> read</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> bytes -> int -> int -> int Lwt.t</code></pre><div class="info ">
-<code class="code">read fd buff ofs len</code> reads <code class="code">len</code> bytes from descriptor <code class="code">fd</code>,
+<div class="info-desc">
+<p><code class="code">read fd buff ofs len</code> reads <code class="code">len</code> bytes from descriptor <code class="code">fd</code>,
         storing them in byte sequence <code class="code">buff</code>, starting at position <code class="code">ofs</code> in
-        <code class="code">buff</code>. Return the number of bytes actually read.<br>
+        <code class="code">buff</code>. Return the number of bytes actually read.</p>
+</div>
 </div>
 
 <pre><span id="VALwrite"><span class="keyword">val</span> write</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> bytes -> int -> int -> int Lwt.t</code></pre><div class="info ">
-<code class="code">write fd buff ofs len</code> writes <code class="code">len</code> bytes to descriptor <code class="code">fd</code>,
+<div class="info-desc">
+<p><code class="code">write fd buff ofs len</code> writes <code class="code">len</code> bytes to descriptor <code class="code">fd</code>,
         taking them from byte sequence <code class="code">buff</code>, starting at position <code class="code">ofs</code>
         in <code class="code">buff</code>. Return the number of bytes actually written.  <code class="code">write</code>
         repeats the writing operation until all bytes have been written or
-        an error occurs.<br>
+        an error occurs (but only for streams)</p>
+</div>
 </div>
 
 <pre><span id="VALwrite_string"><span class="keyword">val</span> write_string</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> string -> int -> int -> int Lwt.t</code></pre><div class="info ">
-See <a href="Uwt_compat.Lwt_unix.html#VALwrite"><code class="code">Uwt_compat.Lwt_unix.write</code></a>.<br>
+<div class="info-desc">
+<p>See <a href="Uwt_compat.Lwt_unix.html#VALwrite"><code class="code">Uwt_compat.Lwt_unix.write</code></a>.</p>
+</div>
 </div>
 
 <pre><span id="VALlseek"><span class="keyword">val</span> lseek</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> int -> Unix.seek_command -> int Lwt.t</code></pre><div class="info ">
-Set the current position for a file descriptor, and return the resulting
-        offset (from the beginning of the file).<br>
+<div class="info-desc">
+<p>Set the current position for a file descriptor, and return the resulting
+        offset (from the beginning of the file).</p>
+</div>
 </div>
 
 <pre><span id="VALtruncate"><span class="keyword">val</span> truncate</span> : <code class="type">string -> int -> unit Lwt.t</code></pre><div class="info ">
-Truncates the named file to the given size.<br>
+<div class="info-desc">
+<p>Truncates the named file to the given size.</p>
+</div>
 </div>
 
 <pre><span id="VALftruncate"><span class="keyword">val</span> ftruncate</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> int -> unit Lwt.t</code></pre><div class="info ">
-Truncates the file corresponding to the given descriptor to
-       the given size.<br>
+<div class="info-desc">
+<p>Truncates the file corresponding to the given descriptor to
+       the given size.</p>
+</div>
 </div>
 
 <pre><span id="VALfsync"><span class="keyword">val</span> fsync</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> unit Lwt.t</code></pre><div class="info ">
-Synchronise all data and metadata of the file descriptor with
-        the disk.<br>
+<div class="info-desc">
+<p>Synchronise all data and metadata of the file descriptor with
+        the disk.</p>
+</div>
 </div>
 
 <pre><span id="VALfdatasync"><span class="keyword">val</span> fdatasync</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> unit Lwt.t</code></pre><div class="info ">
-Synchronise all data (but not metadata) of the file descriptor
-        with the disk.<br>
+<div class="info-desc">
+<p>Synchronise all data (but not metadata) of the file descriptor
+        with the disk.</p>
+</div>
 </div>
 
 <pre><span id="VALstat"><span class="keyword">val</span> stat</span> : <code class="type">string -> Unix.stats Lwt.t</code></pre><div class="info ">
-Return the information for the named file.<br>
+<div class="info-desc">
+<p>Return the information for the named file.</p>
+</div>
 </div>
 
 <pre><span id="VALlstat"><span class="keyword">val</span> lstat</span> : <code class="type">string -> Unix.stats Lwt.t</code></pre><div class="info ">
-Same as <a href="Uwt_compat.Lwt_unix.html#VALstat"><code class="code">Uwt_compat.Lwt_unix.stat</code></a>, but in case the file is a symbolic link,
-        return the information for the link itself.<br>
+<div class="info-desc">
+<p>Same as <a href="Uwt_compat.Lwt_unix.html#VALstat"><code class="code">Uwt_compat.Lwt_unix.stat</code></a>, but in case the file is a symbolic link,
+        return the information for the link itself.</p>
+</div>
 </div>
 
 <pre><span id="VALfstat"><span class="keyword">val</span> fstat</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> Unix.stats Lwt.t</code></pre><div class="info ">
-Return the information for the file associated with the given
-        descriptor.<br>
+<div class="info-desc">
+<p>Return the information for the file associated with the given
+        descriptor.</p>
+</div>
 </div>
 
 <pre><span id="VALisatty"><span class="keyword">val</span> isatty</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> bool Lwt.t</code></pre><div class="info ">
-Return <code class="code">true</code> if the given file descriptor refers to a terminal or
-        console window, <code class="code">false</code> otherwise.<br>
+<div class="info-desc">
+<p>Return <code class="code">true</code> if the given file descriptor refers to a terminal or
+        console window, <code class="code">false</code> otherwise.</p>
+</div>
 </div>
 
 <pre><span id="VALfile_exists"><span class="keyword">val</span> file_exists</span> : <code class="type">string -> bool Lwt.t</code></pre><div class="info ">
-<code class="code">file_exists name</code> tests if a file named <code class="code">name</code> exists.
-<p>
+<div class="info-desc">
+<p><code class="code">file_exists name</code> tests if a file named <code class="code">name</code> exists.</p>
 
-            Note that <code class="code">file_exists</code> behaves similarly to
+<p>Note that <code class="code">file_exists</code> behaves similarly to
             <a href="http://caml.inria.fr/pub/docs/manual-ocaml/libref/Sys.html#VALfile_exists">
-            <code class="code">Sys.file_exists</code></a>:
-<p>
+            <code class="code">Sys.file_exists</code></a>:</p>
+
 <ul>
 <li>"file" is interpreted as "directory entry" in this context</li>
 </ul>
@@ -188,170 +233,238 @@ Return <code class="code">true</code> if the given file descriptor refers to a t
               <a href="http://caml.inria.fr/pub/docs/manual-ocaml/libref/Unix.html#EXCEPTIONUnix_error">
               <code class="code">Unix.Unix_error</code></a> exception.</li>
 </ul>
-<br>
+</div>
 </div>
 
-<pre><span class="keyword">module</span> <a href="Uwt_compat.Lwt_unix.LargeFile.html">LargeFile</a>: <code class="code">sig</code> <a href="Uwt_compat.Lwt_unix.LargeFile.html">..</a> <code class="code">end</code></pre>
+<pre><span id="MODULELargeFile"><span class="keyword">module</span> <a href="Uwt_compat.Lwt_unix.LargeFile.html">LargeFile</a></span>: <code class="code">sig</code> <a href="Uwt_compat.Lwt_unix.LargeFile.html">..</a> <code class="code">end</code></pre>
 <pre><span id="VALunlink"><span class="keyword">val</span> unlink</span> : <code class="type">string -> unit Lwt.t</code></pre><div class="info ">
-Removes the named file.<br>
+<div class="info-desc">
+<p>Removes the named file.</p>
+</div>
 </div>
 
 <pre><span id="VALrename"><span class="keyword">val</span> rename</span> : <code class="type">string -> string -> unit Lwt.t</code></pre><div class="info ">
-<code class="code">rename old new</code> changes the name of a file from <code class="code">old</code> to <code class="code">new</code>.<br>
+<div class="info-desc">
+<p><code class="code">rename old new</code> changes the name of a file from <code class="code">old</code> to <code class="code">new</code>.</p>
+</div>
 </div>
 
 <pre><span id="VALlink"><span class="keyword">val</span> link</span> : <code class="type">string -> string -> unit Lwt.t</code></pre><div class="info ">
-<code class="code">link source dest</code> creates a hard link named <code class="code">dest</code> to the file
-        named <code class="code">source</code>.<br>
+<div class="info-desc">
+<p><code class="code">link source dest</code> creates a hard link named <code class="code">dest</code> to the file
+        named <code class="code">source</code>.</p>
+</div>
 </div>
 
 <pre><span id="VALchmod"><span class="keyword">val</span> chmod</span> : <code class="type">string -> file_perm -> unit Lwt.t</code></pre><div class="info ">
-Change the permissions of the named file.<br>
+<div class="info-desc">
+<p>Change the permissions of the named file.</p>
+</div>
 </div>
 
 <pre><span id="VALfchmod"><span class="keyword">val</span> fchmod</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> file_perm -> unit Lwt.t</code></pre><div class="info ">
-Change the permissions of an opened file.<br>
+<div class="info-desc">
+<p>Change the permissions of an opened file.</p>
+</div>
 </div>
 
 <pre><span id="VALchown"><span class="keyword">val</span> chown</span> : <code class="type">string -> int -> int -> unit Lwt.t</code></pre><div class="info ">
-Change the owner uid and owner gid of the named file.
-        On Windows: not implemented (make no sense on a DOS file system).<br>
+<div class="info-desc">
+<p>Change the owner uid and owner gid of the named file.
+        On Windows: not implemented (make no sense on a DOS file system).</p>
+</div>
 </div>
 
 <pre><span id="VALfchown"><span class="keyword">val</span> fchown</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -> int -> int -> unit Lwt.t</code></pre><div class="info ">
-Change the owner uid and owner gid of an opened file.
-        On Windows: not implemented (make no sense on a DOS file system).<br>
+<div class="info-desc">
+<p>Change the owner uid and owner gid of an opened file.
+        On Windows: not implemented (make no sense on a DOS file system).</p>
+</div>
 </div>
 
 <pre><span id="VALaccess"><span class="keyword">val</span> access</span> : <code class="type">string -> Unix.access_permission list -> unit Lwt.t</code></pre><div class="info ">
-Check that the process has the given permissions over the named file.<br>
+<div class="info-desc">
+<p>Check that the process has the given permissions over the named file.</p>
+</div>
 </div>
 
 <pre><span id="VALmkdir"><span class="keyword">val</span> mkdir</span> : <code class="type">string -> file_perm -> unit Lwt.t</code></pre><div class="info ">
-Create a directory with the given permissions.<br>
+<div class="info-desc">
+<p>Create a directory with the given permissions.</p>
+</div>
 </div>
 
 <pre><span id="VALrmdir"><span class="keyword">val</span> rmdir</span> : <code class="type">string -> unit Lwt.t</code></pre><div class="info ">
-Remove an empty directory.<br>
+<div class="info-desc">
+<p>Remove an empty directory.</p>
+</div>
 </div>
 
 <pre><span id="VALopendir"><span class="keyword">val</span> opendir</span> : <code class="type">string -> <a href="Uwt_compat.Lwt_unix.html#TYPEdir_handle">dir_handle</a> Lwt.t</code></pre><div class="info ">
-This not really opens a descriptor on a
-       directory. <code class="code">Uwt.Fs.scandir</code> is used internally<br>
+<div class="info-desc">
+<p>This not really opens a descriptor on a
+       directory. <code class="code">Uwt.Fs.scandir</code> is used internally</p>
+</div>
 </div>
 
 <pre><span id="VALreaddir"><span class="keyword">val</span> readdir</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEdir_handle">dir_handle</a> -> string Lwt.t</code></pre>
 <pre><span id="VALreaddir_n"><span class="keyword">val</span> readdir_n</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEdir_handle">dir_handle</a> -> int -> string array Lwt.t</code></pre>
 <pre><span id="VALclosedir"><span class="keyword">val</span> closedir</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEdir_handle">dir_handle</a> -> unit Lwt.t</code></pre>
 <pre><span id="VALfiles_of_directory"><span class="keyword">val</span> files_of_directory</span> : <code class="type">string -> string Lwt_stream.t</code></pre><div class="info ">
-<code class="code">files_of_directory dir</code> returns the stream of all files of
-        <code class="code">dir</code>.<br>
+<div class="info-desc">
+<p><code class="code">files_of_directory dir</code> returns the stream of all files of
+        <code class="code">dir</code>.</p>
+</div>
 </div>
 
 <pre><span id="VALsymlink"><span class="keyword">val</span> symlink</span> : <code class="type">string -> string -> unit Lwt.t</code></pre><div class="info ">
-<code class="code">symlink source dest</code> creates the file <code class="code">dest</code> as a symbolic link
-        to the file <code class="code">source</code>.<br>
+<div class="info-desc">
+<p><code class="code">symlink source dest</code> creates the file <code class="code">dest</code> as a symbolic link
+        to the file <code class="code">source</code>.</p>
+</div>
 </div>
 
 <pre><span id="VALreadlink"><span class="keyword">val</span> readlink</span> : <code class="type">string -> string Lwt.t</code></pre><div class="info ">
-Read the contents of a symbolic link.<br>
+<div class="info-desc">
+<p>Read the contents of a symbolic link.</p>
+</div>
 </div>
 
 <pre><span id="VALgetlogin"><span class="keyword">val</span> getlogin</span> : <code class="type">unit -> string Lwt.t</code></pre><div class="info ">
-Return the login name of the user executing the process.<br>
+<div class="info-desc">
+<p>Return the login name of the user executing the process.</p>
+</div>
 </div>
 
 <pre><span id="VALgetpwnam"><span class="keyword">val</span> getpwnam</span> : <code class="type">string -> Unix.passwd_entry Lwt.t</code></pre><div class="info ">
-Find an entry in <code class="code">passwd</code> with the given name.<br>
+<div class="info-desc">
+<p>Find an entry in <code class="code">passwd</code> with the given name.</p>
+</div>
 </div>
 
 <pre><span id="VALgetgrnam"><span class="keyword">val</span> getgrnam</span> : <code class="type">string -> Unix.group_entry Lwt.t</code></pre><div class="info ">
-Find an entry in <code class="code">group</code> with the given name.<br>
+<div class="info-desc">
+<p>Find an entry in <code class="code">group</code> with the given name.</p>
+</div>
 </div>
 
 <pre><span id="VALgetpwuid"><span class="keyword">val</span> getpwuid</span> : <code class="type">int -> Unix.passwd_entry Lwt.t</code></pre><div class="info ">
-Find an entry in <code class="code">passwd</code> with the given user id.<br>
+<div class="info-desc">
+<p>Find an entry in <code class="code">passwd</code> with the given user id.</p>
+</div>
 </div>
 
 <pre><span id="VALgetgrgid"><span class="keyword">val</span> getgrgid</span> : <code class="type">int -> Unix.group_entry Lwt.t</code></pre><div class="info ">
-Find an entry in <code class="code">group</code> with the given group id.<br>
+<div class="info-desc">
+<p>Find an entry in <code class="code">group</code> with the given group id.</p>
+</div>
 </div>
 
 <pre><span id="VALchdir"><span class="keyword">val</span> chdir</span> : <code class="type">string -> unit Lwt.t</code></pre><div class="info ">
-Change the process working directory.<br>
+<div class="info-desc">
+<p>Change the process working directory.</p>
+</div>
 </div>
 
 <pre><span id="VALgethostname"><span class="keyword">val</span> gethostname</span> : <code class="type">unit -> string Lwt.t</code></pre><div class="info ">
-Return the name of the local host.<br>
+<div class="info-desc">
+<p>Return the name of the local host.</p>
+</div>
 </div>
 
 <pre><span id="VALgethostbyname"><span class="keyword">val</span> gethostbyname</span> : <code class="type">string -> Unix.host_entry Lwt.t</code></pre><div class="info ">
-Find an entry in <code class="code">hosts</code> with the given name.<br>
+<div class="info-desc">
+<p>Find an entry in <code class="code">hosts</code> with the given name.</p>
+</div>
 </div>
 
 <pre><span id="VALgethostbyaddr"><span class="keyword">val</span> gethostbyaddr</span> : <code class="type">Unix.inet_addr -> Unix.host_entry Lwt.t</code></pre><div class="info ">
-Find an entry in <code class="code">hosts</code> with the given address.<br>
+<div class="info-desc">
+<p>Find an entry in <code class="code">hosts</code> with the given address.</p>
+</div>
 </div>
 
 <pre><span id="VALgetprotobyname"><span class="keyword">val</span> getprotobyname</span> : <code class="type">string -> Unix.protocol_entry Lwt.t</code></pre><div class="info ">
-Find an entry in <code class="code">services</code> with the given name.<br>
+<div class="info-desc">
+<p>Find an entry in <code class="code">services</code> with the given name.</p>
+</div>
 </div>
 
 <pre><span id="VALgetprotobynumber"><span class="keyword">val</span> getprotobynumber</span> : <code class="type">int -> Unix.protocol_entry Lwt.t</code></pre><div class="info ">
-Find an entry in <code class="code">protocols</code> with the given protocol number.<br>
+<div class="info-desc">
+<p>Find an entry in <code class="code">protocols</code> with the given protocol number.</p>
+</div>
 </div>
 
 <pre><span id="VALgetservbyname"><span class="keyword">val</span> getservbyname</span> : <code class="type">string -> string -> Unix.service_entry Lwt.t</code></pre><div class="info ">
-Find an entry in <code class="code">services</code> with the given name.<br>
+<div class="info-desc">
+<p>Find an entry in <code class="code">services</code> with the given name.</p>
+</div>
 </div>
 
 <pre><span id="VALgetservbyport"><span class="keyword">val</span> getservbyport</span> : <code class="type">int -> string -> Unix.service_entry Lwt.t</code></pre><div class="info ">
-Find an entry in <code class="code">services</code> with the given service number.<br>
+<div class="info-desc">
+<p>Find an entry in <code class="code">services</code> with the given service number.</p>
+</div>
 </div>
 
 <pre><span id="VALgetaddrinfo"><span class="keyword">val</span> getaddrinfo</span> : <code class="type">string -> string -> Unix.getaddrinfo_option list -> Unix.addr_info list Lwt.t</code></pre><div class="info ">
-<code class="code">getaddrinfo host service opts</code> returns a list of <code class="code">Unix.addr_info</code>
+<div class="info-desc">
+<p><code class="code">getaddrinfo host service opts</code> returns a list of <code class="code">Unix.addr_info</code>
         records describing socket parameters and addresses suitable for
         communicating with the given host and service.  The empty list is
         returned if the host or service names are unknown, or the constraints
-        expressed in <code class="code">opts</code> cannot be satisfied.<br>
+        expressed in <code class="code">opts</code> cannot be satisfied.</p>
+</div>
 </div>
 
 <pre><span id="VALgetnameinfo"><span class="keyword">val</span> getnameinfo</span> : <code class="type">Unix.sockaddr -> Unix.getnameinfo_option list -> Unix.name_info Lwt.t</code></pre><div class="info ">
-<code class="code">getnameinfo addr opts</code> returns the host name and service name
+<div class="info-desc">
+<p><code class="code">getnameinfo addr opts</code> returns the host name and service name
         corresponding to the socket address <code class="code">addr</code>.  <code class="code">opts</code> is a possibly
         empty list of options that governs how these names are obtained.
-        Lwt.fails with Not_found if an error occurs.<br>
+        Lwt.fails with Not_found if an error occurs.</p>
+</div>
 </div>
 
 <pre><span id="VALpipe"><span class="keyword">val</span> pipe</span> : <code class="type">unit -> <a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> * <a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a></code></pre><div class="info ">
-<code class="code">pipe ()</code> creates pipe using <code class="code">Unix.pipe</code> and returns two file
-        descriptors created from unix file_descriptor<br>
+<div class="info-desc">
+<p><code class="code">pipe ()</code> creates pipe using <code class="code">Unix.pipe</code> and returns two file
+        descriptors created from unix file_descriptor</p>
+</div>
 </div>
 
 <pre><span id="VALpipe_in"><span class="keyword">val</span> pipe_in</span> : <code class="type">unit -> <a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> * Unix.file_descr</code></pre><div class="info ">
-<code class="code">pipe_in ()</code> is the same as <a href="Uwt_compat.Lwt_unix.html#VALpipe"><code class="code">Uwt_compat.Lwt_unix.pipe</code></a> but maps only the unix file
+<div class="info-desc">
+<p><code class="code">pipe_in ()</code> is the same as <a href="Uwt_compat.Lwt_unix.html#VALpipe"><code class="code">Uwt_compat.Lwt_unix.pipe</code></a> but maps only the unix file
         descriptor for reading into a lwt one. The second is not
         put into non-blocking mode. You usually want to use this before
-        forking to receive data from the child process.<br>
+        forking to receive data from the child process.</p>
+</div>
 </div>
 
 <pre><span id="VALpipe_out"><span class="keyword">val</span> pipe_out</span> : <code class="type">unit -> Unix.file_descr * <a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a></code></pre><div class="info ">
-<code class="code">pipe_out ()</code> is the inverse of <a href="Uwt_compat.Lwt_unix.html#VALpipe_in"><code class="code">Uwt_compat.Lwt_unix.pipe_in</code></a>. You usually want to
-        use this before forking to send data to the child process<br>
+<div class="info-desc">
+<p><code class="code">pipe_out ()</code> is the inverse of <a href="Uwt_compat.Lwt_unix.html#VALpipe_in"><code class="code">Uwt_compat.Lwt_unix.pipe_in</code></a>. You usually want to
+        use this before forking to send data to the child process</p>
+</div>
 </div>
 
 <pre><span id="VALsystem"><span class="keyword">val</span> system</span> : <code class="type">string -> Unix.process_status Lwt.t</code></pre><div class="info ">
-Executes the given command, waits until it terminates, and
+<div class="info-desc">
+<p>Executes the given command, waits until it terminates, and
         return its termination status. The string is interpreted by the
         shell <code class="code">/bin/sh</code> on Unix and <code class="code">cmd.exe</code> on Windows. The result
-        <code class="code">WEXITED 127</code> indicates that the shell couldn't be executed.<br>
+        <code class="code">WEXITED 127</code> indicates that the shell couldn't be executed.</p>
+</div>
 </div>
 
 <pre><span id="VALutimes"><span class="keyword">val</span> utimes</span> : <code class="type">string -> float -> float -> unit Lwt.t</code></pre><div class="info ">
-<code class="code">utimes path atime mtime</code> updates the access and modification
+<div class="info-desc">
+<p><code class="code">utimes path atime mtime</code> updates the access and modification
        times of the file at <code class="code">path</code>. The access time is set to <code class="code">atime</code>
        and the modification time to <code class="code">mtime</code>. To set both to the
-       current time, call <code class="code">utimes path 0. 0.</code>.<br>
+       current time, call <code class="code">utimes path 0. 0.</code>.</p>
+</div>
 </div>
 </body></html>

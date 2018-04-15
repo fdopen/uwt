@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,10 +33,9 @@
 </div>
 <h1>Module <a href="type_Uwt.Pipe.html">Uwt.Pipe</a></h1>
 
-<pre><span class="keyword">module</span> Pipe: <code class="code">sig</code> <a href="Uwt.Pipe.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-Pipe handles provide an abstraction over local domain sockets on
-      Unix and named pipes on Windows.<br>
+<pre><span id="MODULEPipe"><span class="keyword">module</span> Pipe</span>: <code class="code">sig</code> <a href="Uwt.Pipe.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>Pipe handles provide an abstraction over local domain sockets on
+      Unix and named pipes on Windows.</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
@@ -51,65 +48,75 @@ Pipe handles provide an abstraction over local domain sockets on
 
 <pre><span id="VALto_stream"><span class="keyword">val</span> to_stream</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> <a href="Uwt.Stream.html#TYPEt">Uwt.Stream.t</a></code></pre>
 <pre><span id="VALinit"><span class="keyword">val</span> init</span> : <code class="type">?ipc:bool -> unit -> <a href="Uwt.Pipe.html#TYPEt">t</a></code></pre><div class="info ">
-The only thing that can go wrong, is memory allocation.
+<div class="info-desc">
+<p>The only thing that can go wrong, is memory allocation.
       In this case the ordinary exception <code class="code">Out_of_memory</code> is thrown.
       The function is not called init_exn, because this exception can
-      be thrown by nearly all functions.<br>
+      be thrown by nearly all functions.</p>
+</div>
 </div>
 <div class="param_info"><code class="code">ipc</code> : is false by default</div>
 
 <pre><span id="VALopenpipe"><span class="keyword">val</span> openpipe</span> : <code class="type">?ipc:bool -> Unix.file_descr -> <a href="Uwt.Pipe.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-Be careful with open* functions. They exists, so you can re-use
+<div class="info-desc">
+<p>Be careful with open* functions. They exists, so you can re-use
      system dependent libraries. But if you pass a file descriptor
      to openpipe (or opentcp,...), that is not really a file descriptor of a
-     pipe (or tcp socket,...) you can trigger assert failures inside libuv.<br>
+     pipe (or tcp socket,...) you can trigger assert failures inside libuv.</p>
+</div>
 </div>
 <div class="param_info"><code class="code">ipc</code> : is false by default</div>
 
 <pre><span id="VALopenpipe_exn"><span class="keyword">val</span> openpipe_exn</span> : <code class="type">?ipc:bool -> Unix.file_descr -> <a href="Uwt.Pipe.html#TYPEt">t</a></code></pre>
 <pre><span id="VALbind"><span class="keyword">val</span> bind</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> path:string -> Int_result.unit</code></pre><div class="info ">
-Bind the pipe to a file path (Unix) or a name (Windows).<br>
+<div class="info-desc">
+<p>Bind the pipe to a file path (Unix) or a name (Windows).</p>
+</div>
 </div>
 
 <pre><span id="VALbind_exn"><span class="keyword">val</span> bind_exn</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> path:string -> unit</code></pre>
 <pre><span id="VALgetsockname"><span class="keyword">val</span> getsockname</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> string uv_result</code></pre><div class="info ">
-Get the name of the Unix domain socket or the named pipe.<br>
+<div class="info-desc">
+<p>Get the name of the Unix domain socket or the named pipe.</p>
+</div>
 </div>
 
 <pre><span id="VALgetsockname_exn"><span class="keyword">val</span> getsockname_exn</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> string</code></pre>
 <pre><span id="VALgetpeername"><span class="keyword">val</span> getpeername</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> string uv_result</code></pre><div class="info ">
-Get the name of the Unix domain socket or the named pipe to
-      which the handle is connected.<br>
+<div class="info-desc">
+<p>Get the name of the Unix domain socket or the named pipe to
+      which the handle is connected.</p>
+</div>
 </div>
 
 <pre><span id="VALgetpeername_exn"><span class="keyword">val</span> getpeername_exn</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> string</code></pre>
 <pre><span id="VALpending_instances"><span class="keyword">val</span> pending_instances</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> int -> Int_result.unit</code></pre><div class="info ">
-Set the number of pending pipe instance handles when the pipe
-      server is waiting for connections.
-<p>
+<div class="info-desc">
+<p>Set the number of pending pipe instance handles when the pipe
+      server is waiting for connections.</p>
 
-      Note: This setting applies to Windows only.<br>
+<p>Note: This setting applies to Windows only.</p>
+</div>
 </div>
 
 <pre><span id="VALpending_instances_exn"><span class="keyword">val</span> pending_instances_exn</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> int -> unit</code></pre>
 <pre><span id="VALaccept"><span class="keyword">val</span> accept</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-initializes a new client, accepts and returns it.
-<p>
+<div class="info-desc">
+<p>initializes a new client, accepts and returns it.</p>
 
-      This call is used in conjunction with <code class="code">listen</code> to accept
+<p>This call is used in conjunction with <code class="code">listen</code> to accept
       incoming connections. Call this function after receiving a
-      <code class="code">listen</code> callback to accept the connection.
-<p>
+      <code class="code">listen</code> callback to accept the connection.</p>
 
-      When the <code class="code">listen</code> callback is called it is guaranteed
+<p>When the <code class="code">listen</code> callback is called it is guaranteed
       that this function will complete successfully the first time. If
       you attempt to use it more than once, it may fail. It is
       suggested to only call this function once per <code class="code">listen</code> callback
-      call.
-<p>
+      call.</p>
 
-      Don't use this function for pipes that have been initialized with
-      <code class="code">~ipc:true</code>. It's not portable.<br>
+<p>Don't use this function for pipes that have been initialized with
+      <code class="code">~ipc:true</code>. It's not portable.</p>
+</div>
 </div>
 
 <pre><span id="VALaccept_exn"><span class="keyword">val</span> accept_exn</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a></code></pre>
@@ -117,7 +124,9 @@ initializes a new client, accepts and returns it.
 <pre><span id="VALaccept_raw_exn"><span class="keyword">val</span> accept_raw_exn</span> : <code class="type">server:<a href="Uwt.Pipe.html#TYPEt">t</a> -> client:<a href="Uwt.Pipe.html#TYPEt">t</a> -> unit</code></pre>
 <pre><span id="VALpending_count"><span class="keyword">val</span> pending_count</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> Int_result.int</code></pre>
 <pre><span id="VALpending_count_exn"><span class="keyword">val</span> pending_count_exn</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> int</code></pre><div class="info ">
-how many handles are waiting to be accepted with <a href="Uwt.Pipe.html#VALaccept_ipc"><code class="code">Uwt.Pipe.accept_ipc</code></a><br>
+<div class="info-desc">
+<p>how many handles are waiting to be accepted with <a href="Uwt.Pipe.html#VALaccept_ipc"><code class="code">Uwt.Pipe.accept_ipc</code></a></p>
+</div>
 </div>
 
 <pre><code><span id="TYPEipc_result"><span class="keyword">type</span> <code class="type"></code>ipc_result</span> = </code></pre><table class="typetable">
@@ -127,7 +136,9 @@ how many handles are waiting to be accepted with <a href="Uwt.Pipe.html#VALaccep
 <td align="left" valign="top" >
 <code><span id="TYPEELTipc_result.Ipc_error"><span class="constructor">Ipc_error</span></span> <span class="keyword">of</span> <code class="type">error</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-internal call to accept failed<br>
+<div class="info-desc">
+<p>internal call to accept failed</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -137,7 +148,9 @@ internal call to accept failed<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTipc_result.Ipc_none"><span class="constructor">Ipc_none</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-no pending handles<br>
+<div class="info-desc">
+<p>no pending handles</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -166,52 +179,95 @@ no pending handles<br>
 
 
 <pre><span id="VALaccept_ipc"><span class="keyword">val</span> accept_ipc</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> <a href="Uwt.Pipe.html#TYPEipc_result">ipc_result</a></code></pre><div class="info ">
-Used to receive handles over IPC pipes.
-<p>
+<div class="info-desc">
+<p>Used to receive handles over IPC pipes.</p>
 
-      It call's <a href="Uwt.Pipe.html#VALpending_count"><code class="code">Uwt.Pipe.pending_count</code></a>, if it's &gt; 0 then it initializes a
-      handle of the appropriate type, accepts and returns it<br>
+<p>It call's <a href="Uwt.Pipe.html#VALpending_count"><code class="code">Uwt.Pipe.pending_count</code></a>, if it's &gt; 0 then it initializes a
+      handle of the appropriate type, accepts and returns it</p>
+</div>
 </div>
 
 <pre><span id="VALwrite2"><span class="keyword">val</span> write2</span> : <code class="type">?pos:int -><br>       ?len:int -> buf:bytes -> send:<a href="Uwt.Tcp.html#TYPEt">Uwt.Tcp.t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a> -> unit Lwt.t</code></pre><div class="info ">
-Extended write function for sending handles over a pipe. The
-      pipe must be initialized with <code class="code">~ipc:true</code>.
-<p>
+<div class="info-desc">
+<p>Extended write function for sending handles over a pipe. The
+      pipe must be initialized with <code class="code">~ipc:true</code>.</p>
 
-      Note: send_handle must be a TCP socket or pipe, which is a server
+<p>Note: send_handle must be a TCP socket or pipe, which is a server
       or a connection (listening or connected state). Bound sockets or
-      pipes will be assumed to be servers.<br>
+      pipes will be assumed to be servers.</p>
+</div>
 </div>
 
 <pre><span id="VALwrite2_ba"><span class="keyword">val</span> write2_ba</span> : <code class="type">?pos:int -> ?len:int -> buf:buf -> send:<a href="Uwt.Tcp.html#TYPEt">Uwt.Tcp.t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a> -> unit Lwt.t</code></pre>
 <pre><span id="VALwrite2_string"><span class="keyword">val</span> write2_string</span> : <code class="type">?pos:int -><br>       ?len:int -> buf:string -> send:<a href="Uwt.Tcp.html#TYPEt">Uwt.Tcp.t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a> -> unit Lwt.t</code></pre>
 <pre><span id="VALwrite2_pipe"><span class="keyword">val</span> write2_pipe</span> : <code class="type">?pos:int -><br>       ?len:int -> buf:bytes -> send:<a href="Uwt.Pipe.html#TYPEt">t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a> -> unit Lwt.t</code></pre><div class="info ">
-Similar to <a href="Uwt.Pipe.html#VALwrite2"><code class="code">Uwt.Pipe.write2</code></a>, but the send handle is a pipe.
-      Note: This is not supported on Windows<br>
+<div class="info-desc">
+<p>Similar to <a href="Uwt.Pipe.html#VALwrite2"><code class="code">Uwt.Pipe.write2</code></a>, but the send handle is a pipe.
+      Note: This is not supported on Windows</p>
+</div>
 </div>
 
 <pre><span id="VALwrite2_pipe_ba"><span class="keyword">val</span> write2_pipe_ba</span> : <code class="type">?pos:int -><br>       ?len:int -> buf:buf -> send:<a href="Uwt.Pipe.html#TYPEt">t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a> -> unit Lwt.t</code></pre>
 <pre><span id="VALwrite2_pipe_string"><span class="keyword">val</span> write2_pipe_string</span> : <code class="type">?pos:int -><br>       ?len:int -> buf:string -> send:<a href="Uwt.Pipe.html#TYPEt">t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a> -> unit Lwt.t</code></pre>
 <pre><span id="VALwrite2_udp"><span class="keyword">val</span> write2_udp</span> : <code class="type">?pos:int -><br>       ?len:int -> buf:bytes -> send:<a href="Uwt.Udp.html#TYPEt">Uwt.Udp.t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a> -> unit Lwt.t</code></pre><div class="info ">
-Similar to <a href="Uwt.Pipe.html#VALwrite2"><code class="code">Uwt.Pipe.write2</code></a>, but the send handle is an udp socket.
-      Note: This is not portable at all<br>
+<div class="info-desc">
+<p>Similar to <a href="Uwt.Pipe.html#VALwrite2"><code class="code">Uwt.Pipe.write2</code></a>, but the send handle is an udp socket.
+      Note: This is not portable at all</p>
+</div>
 </div>
 
 <pre><span id="VALwrite2_udp_ba"><span class="keyword">val</span> write2_udp_ba</span> : <code class="type">?pos:int -> ?len:int -> buf:buf -> send:<a href="Uwt.Udp.html#TYPEt">Uwt.Udp.t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a> -> unit Lwt.t</code></pre>
 <pre><span id="VALwrite2_udp_string"><span class="keyword">val</span> write2_udp_string</span> : <code class="type">?pos:int -><br>       ?len:int -> buf:string -> send:<a href="Uwt.Udp.html#TYPEt">Uwt.Udp.t</a> -> <a href="Uwt.Pipe.html#TYPEt">t</a> -> unit Lwt.t</code></pre>
 <pre><span id="VALconnect"><span class="keyword">val</span> connect</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> path:string -> unit Lwt.t</code></pre><div class="info ">
-Connect to the Unix domain socket or the named pipe.<br>
+<div class="info-desc">
+<p>Connect to the Unix domain socket or the named pipe.</p>
+</div>
 </div>
 
 <pre><span id="VALwith_pipe"><span class="keyword">val</span> with_pipe</span> : <code class="type">?ipc:bool -> (<a href="Uwt.Pipe.html#TYPEt">t</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre><div class="info ">
-<code class="code">with_pipe ?ipc f</code> creates a new handle and passes
+<div class="info-desc">
+<p><code class="code">with_pipe ?ipc f</code> creates a new handle and passes
       the pipe to <code class="code">f</code>. It is ensured that the pipe is closed when <code class="code">f t</code>
-      terminates (even if it fails).
-<p>
+      terminates (even if it fails).</p>
 
-      You can also close the pipe manually inside <code class="code">f</code> without further
-      consequences.<br>
+<p>You can also close the pipe manually inside <code class="code">f</code> without further
+      consequences.</p>
+</div>
 </div>
 
 <pre><span id="VALwith_connect"><span class="keyword">val</span> with_connect</span> : <code class="type">path:string -> (<a href="Uwt.Pipe.html#TYPEt">t</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre>
-<pre><span id="VALwith_open"><span class="keyword">val</span> with_open</span> : <code class="type">?ipc:bool -> Unix.file_descr -> (<a href="Uwt.Pipe.html#TYPEt">t</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre></body></html>
+<pre><span id="VALwith_open"><span class="keyword">val</span> with_open</span> : <code class="type">?ipc:bool -> Unix.file_descr -> (<a href="Uwt.Pipe.html#TYPEt">t</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre>
+<pre><code><span id="TYPEchmod"><span class="keyword">type</span> <code class="type"></code>chmod</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTchmod.Pipe_readable"><span class="constructor">Pipe_readable</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTchmod.Pipe_writeable"><span class="constructor">Pipe_writeable</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTchmod.Pipe_readable_writeable"><span class="constructor">Pipe_readable_writeable</span></span></code></td>
+
+</tr></table>
+
+
+
+<pre><span id="VALchmod"><span class="keyword">val</span> chmod</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> <a href="Uwt.Pipe.html#TYPEchmod">chmod</a> -> Int_result.unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>Alters pipe permissions, allowing it to be accessed from
+      processes run by different users. Makes the pipe writable or
+      readable by all users. This function is blocking.</p>
+</div>
+</div>
+
+<pre><span id="VALchmod_exn"><span class="keyword">val</span> chmod_exn</span> : <code class="type"><a href="Uwt.Pipe.html#TYPEt">t</a> -> <a href="Uwt.Pipe.html#TYPEchmod">chmod</a> -> unit</code></pre></body></html>

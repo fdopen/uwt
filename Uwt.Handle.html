@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,18 +33,18 @@
 </div>
 <h1>Module <a href="type_Uwt.Handle.html">Uwt.Handle</a></h1>
 
-<pre><span class="keyword">module</span> Handle: <code class="code">sig</code> <a href="Uwt.Handle.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-<a href="Uwt.Handle.html#TYPEt"><code class="code">Uwt.Handle.t</code></a> is the base type for all libuv handle types.<br>
+<pre><span id="MODULEHandle"><span class="keyword">module</span> Handle</span>: <code class="code">sig</code> <a href="Uwt.Handle.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p><a href="Uwt.Handle.html#TYPEt"><code class="code">Uwt.Handle.t</code></a> is the base type for all libuv handle types.</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
 
 <pre><span id="VALclose"><span class="keyword">val</span> close</span> : <code class="type"><a href="Uwt.Handle.html#TYPEt">t</a> -> Int_result.unit</code></pre><div class="info ">
-Handles are closed automatically, if they are not longer referenced from
+<div class="info-desc">
+<p>Handles are closed automatically, if they are not longer referenced from
       the OCaml heap. Nevertheless, you should nearly always close them with
-      <a href="Uwt.Handle.html#VALclose"><code class="code">Uwt.Handle.close</code></a>, because:
-<p>
+      <a href="Uwt.Handle.html#VALclose"><code class="code">Uwt.Handle.close</code></a>, because:</p>
+
 <ul>
 <li>if they wrap a file descriptor, you will sooner or later run
         out of file descriptors. The OCaml garbage collector doesn't give any
@@ -57,9 +55,8 @@ Handles are closed automatically, if they are not longer referenced from
         read_start,...), that prevent that all references get removed from the
         OCaml heap.</li>
 </ul>
-
-      However, it's safe to write code in this manner:
-      <pre class="codepre"><code class="code">        let s = Uwt.Tcp.init () in
+<p>However, it's safe to write code in this manner:</p>
+<pre class="codepre"><code class="code">        let s = Uwt.Tcp.init () in
         let c = Uwt.Tcp.init () in
         Uwt.Tcp.nodelay s false;
         Uwt.Tcp.simultaneous_accepts true;
@@ -69,30 +66,31 @@ Handles are closed automatically, if they are not longer referenced from
         else
           ...
       </code></pre>
-<p>
-
-      If you want - for whatever reason - keep a file descriptor open
+<p>If you want - for whatever reason - keep a file descriptor open
       for the whole lifetime of your process, remember to keep a
-      reference to its handle.<br>
+      reference to its handle.</p>
+</div>
 </div>
 
 <pre><span id="VALclose_noerr"><span class="keyword">val</span> close_noerr</span> : <code class="type"><a href="Uwt.Handle.html#TYPEt">t</a> -> unit</code></pre>
 <pre><span id="VALclose_wait"><span class="keyword">val</span> close_wait</span> : <code class="type"><a href="Uwt.Handle.html#TYPEt">t</a> -> unit Lwt.t</code></pre><div class="info ">
-Prefer <a href="Uwt.Handle.html#VALclose"><code class="code">Uwt.Handle.close</code></a> or <a href="Uwt.Handle.html#VALclose_noerr"><code class="code">Uwt.Handle.close_noerr</code></a> to <a href="Uwt.Handle.html#VALclose_wait"><code class="code">Uwt.Handle.close_wait</code></a>. <a href="Uwt.Handle.html#VALclose"><code class="code">Uwt.Handle.close</code></a> or
+<div class="info-desc">
+<p>Prefer <a href="Uwt.Handle.html#VALclose"><code class="code">Uwt.Handle.close</code></a> or <a href="Uwt.Handle.html#VALclose_noerr"><code class="code">Uwt.Handle.close_noerr</code></a> to <a href="Uwt.Handle.html#VALclose_wait"><code class="code">Uwt.Handle.close_wait</code></a>. <a href="Uwt.Handle.html#VALclose"><code class="code">Uwt.Handle.close</code></a> or
       <a href="Uwt.Handle.html#VALclose_noerr"><code class="code">Uwt.Handle.close_noerr</code></a> return immediately (there are no useful error
       messages, beside perhaps a notice, that you've already closed that
-      handle).
-<p>
+      handle).</p>
 
-      <a href="Uwt.Handle.html#VALclose_wait"><code class="code">Uwt.Handle.close_wait</code></a> is only useful, if you intend to wait until all
+<p><a href="Uwt.Handle.html#VALclose_wait"><code class="code">Uwt.Handle.close_wait</code></a> is only useful, if you intend to wait until all
       concurrent write and read threads related to this handle are
-      canceled.<br>
+      canceled.</p>
+</div>
 </div>
 
 <pre><span id="VALis_active"><span class="keyword">val</span> is_active</span> : <code class="type"><a href="Uwt.Handle.html#TYPEt">t</a> -> bool</code></pre><div class="info ">
-Returns non-zero if the handle is active, zero if it's
-      inactive. What "active" means depends on the type of handle:
-<p>
+<div class="info-desc">
+<p>Returns non-zero if the handle is active, zero if it's
+      inactive. What "active" means depends on the type of handle:</p>
+
 <ul>
 <li>A <code class="code">Async.t</code> handle is always active and cannot be deactivated,
       except by closing it with uv_close().</li>
@@ -103,26 +101,32 @@ Returns non-zero if the handle is active, zero if it's
       that involves i/o, like reading, writing, connecting, accepting
       new connections, etc.</li>
 </ul>
-
-      Rule of thumb: if a handle of type <code class="code">Uwt.Foo.t</code> has a
+<p>Rule of thumb: if a handle of type <code class="code">Uwt.Foo.t</code> has a
       uv_foo_start() function, then it's active from the moment that
       function is called. Likewise, uv_foo_stop() deactivates the
-      handle again.<br>
+      handle again.</p>
+</div>
 </div>
 
 <pre><span id="VALref'"><span class="keyword">val</span> ref'</span> : <code class="type"><a href="Uwt.Handle.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
-Reference the given handle. References are idempotent, that is,
+<div class="info-desc">
+<p>Reference the given handle. References are idempotent, that is,
       if a handle is already referenced calling this function again
-      will have no effect.<br>
+      will have no effect.</p>
+</div>
 </div>
 
 <pre><span id="VALunref"><span class="keyword">val</span> unref</span> : <code class="type"><a href="Uwt.Handle.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
-Un-reference the given handle. References are idempotent, that
+<div class="info-desc">
+<p>Un-reference the given handle. References are idempotent, that
       is, if a handle is not referenced calling this function again will
-      have no effect.<br>
+      have no effect.</p>
+</div>
 </div>
 
 <pre><span id="VALhas_ref"><span class="keyword">val</span> has_ref</span> : <code class="type"><a href="Uwt.Handle.html#TYPEt">t</a> -> bool</code></pre><div class="info ">
-Returns non-zero if the handle is referenced, zero otherwise.<br>
+<div class="info-desc">
+<p>Returns non-zero if the handle is referenced, zero otherwise.</p>
+</div>
 </div>
 </body></html>

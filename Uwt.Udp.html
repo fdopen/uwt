@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,9 +33,8 @@
 </div>
 <h1>Module <a href="type_Uwt.Udp.html">Uwt.Udp</a></h1>
 
-<pre><span class="keyword">module</span> Udp: <code class="code">sig</code> <a href="Uwt.Udp.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-UDP handles encapsulate UDP communication for both clients and servers.<br>
+<pre><span id="MODULEUdp"><span class="keyword">module</span> Udp</span>: <code class="code">sig</code> <a href="Uwt.Udp.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>UDP handles encapsulate UDP communication for both clients and servers.</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
@@ -50,28 +47,38 @@ UDP handles encapsulate UDP communication for both clients and servers.<br>
 
 <pre><span id="VALto_handle"><span class="keyword">val</span> to_handle</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> <a href="Uwt.Handle.html#TYPEt">Uwt.Handle.t</a></code></pre>
 <pre><span id="VALsend_queue_size"><span class="keyword">val</span> send_queue_size</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> int</code></pre><div class="info ">
-Number of bytes queued for sending; strictly shows how much
-      information is currently queued.<br>
+<div class="info-desc">
+<p>Number of bytes queued for sending; strictly shows how much
+      information is currently queued.</p>
+</div>
 </div>
 
 <pre><span id="VALsend_queue_count"><span class="keyword">val</span> send_queue_count</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> int</code></pre><div class="info ">
-Number of send requests currently in the queue awaiting to be processed.<br>
+<div class="info-desc">
+<p>Number of send requests currently in the queue awaiting to be processed.</p>
+</div>
 </div>
 
 <pre><span id="VALinit"><span class="keyword">val</span> init</span> : <code class="type">unit -> <a href="Uwt.Udp.html#TYPEt">t</a></code></pre><div class="info ">
-See comment to <a href="Uwt.Pipe.html#VALinit"><code class="code">Uwt.Pipe.init</code></a><br>
+<div class="info-desc">
+<p>See comment to <a href="Uwt.Pipe.html#VALinit"><code class="code">Uwt.Pipe.init</code></a></p>
+</div>
 </div>
 
 <pre><span id="VALinit_ipv4"><span class="keyword">val</span> init_ipv4</span> : <code class="type">unit -> <a href="Uwt.Udp.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-wrappers around <code class="code">uv_udp_init_ex</code>. A socket of the given type will be
-      created immediately instead of lazy (<a href="Uwt.Udp.html#VALinit"><code class="code">Uwt.Udp.init</code></a>)<br>
+<div class="info-desc">
+<p>wrappers around <code class="code">uv_udp_init_ex</code>. A socket of the given type will be
+      created immediately instead of lazy (<a href="Uwt.Udp.html#VALinit"><code class="code">Uwt.Udp.init</code></a>)</p>
+</div>
 </div>
 
 <pre><span id="VALinit_ipv4_exn"><span class="keyword">val</span> init_ipv4_exn</span> : <code class="type">unit -> <a href="Uwt.Udp.html#TYPEt">t</a></code></pre>
 <pre><span id="VALinit_ipv6"><span class="keyword">val</span> init_ipv6</span> : <code class="type">unit -> <a href="Uwt.Udp.html#TYPEt">t</a> uv_result</code></pre>
 <pre><span id="VALinit_ipv6_exn"><span class="keyword">val</span> init_ipv6_exn</span> : <code class="type">unit -> <a href="Uwt.Udp.html#TYPEt">t</a></code></pre>
 <pre><span id="VALopenudp"><span class="keyword">val</span> openudp</span> : <code class="type">Unix.file_descr -> <a href="Uwt.Udp.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-See comment to <a href="Uwt.Pipe.html#VALopenpipe"><code class="code">Uwt.Pipe.openpipe</code></a><br>
+<div class="info-desc">
+<p>See comment to <a href="Uwt.Pipe.html#VALopenpipe"><code class="code">Uwt.Pipe.openpipe</code></a></p>
+</div>
 </div>
 
 <pre><span id="VALopenudp_exn"><span class="keyword">val</span> openudp_exn</span> : <code class="type">Unix.file_descr -> <a href="Uwt.Udp.html#TYPEt">t</a></code></pre>
@@ -94,13 +101,17 @@ See comment to <a href="Uwt.Pipe.html#VALopenpipe"><code class="code">Uwt.Pipe.o
 
 
 <pre><span id="VALbind"><span class="keyword">val</span> bind</span> : <code class="type">?mode:<a href="Uwt.Udp.html#TYPEmode">mode</a> list -><br>       <a href="Uwt.Udp.html#TYPEt">t</a> -> addr:sockaddr -> unit -> Int_result.unit</code></pre><div class="info ">
-Bind the UDP handle to an IP address and port.<br>
+<div class="info-desc">
+<p>Bind the UDP handle to an IP address and port.</p>
+</div>
 </div>
 <div class="param_info"><code class="code">mode</code> : default mode is the empty list</div>
 
 <pre><span id="VALbind_exn"><span class="keyword">val</span> bind_exn</span> : <code class="type">?mode:<a href="Uwt.Udp.html#TYPEmode">mode</a> list -> <a href="Uwt.Udp.html#TYPEt">t</a> -> addr:sockaddr -> unit -> unit</code></pre>
 <pre><span id="VALgetsockname"><span class="keyword">val</span> getsockname</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> sockaddr uv_result</code></pre><div class="info ">
-Get the local IP and port of the UDP handle.<br>
+<div class="info-desc">
+<p>Get the local IP and port of the UDP handle.</p>
+</div>
 </div>
 
 <pre><span id="VALgetsockname_exn"><span class="keyword">val</span> getsockname_exn</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> sockaddr</code></pre>
@@ -123,53 +134,71 @@ Get the local IP and port of the UDP handle.<br>
 
 
 <pre><span id="VALset_membership"><span class="keyword">val</span> set_membership</span> : <code class="type">?interface:string -><br>       <a href="Uwt.Udp.html#TYPEt">t</a> -> multicast:string -> <a href="Uwt.Udp.html#TYPEmembership">membership</a> -> Int_result.unit</code></pre><div class="info ">
-Set membership for a multicast address<br>
+<div class="info-desc">
+<p>Set membership for a multicast address</p>
+</div>
 </div>
 
 <pre><span id="VALset_membership_exn"><span class="keyword">val</span> set_membership_exn</span> : <code class="type">?interface:string -><br>       <a href="Uwt.Udp.html#TYPEt">t</a> -> multicast:string -> <a href="Uwt.Udp.html#TYPEmembership">membership</a> -> unit</code></pre>
 <pre><span id="VALset_multicast_loop"><span class="keyword">val</span> set_multicast_loop</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> bool -> Int_result.unit</code></pre><div class="info ">
-Set IP multicast loop flag. Makes multicast packets loop back to
-      local sockets<br>
+<div class="info-desc">
+<p>Set IP multicast loop flag. Makes multicast packets loop back to
+      local sockets</p>
+</div>
 </div>
 
 <pre><span id="VALset_multicast_loop_exn"><span class="keyword">val</span> set_multicast_loop_exn</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> bool -> unit</code></pre>
 <pre><span id="VALset_multicast_ttl"><span class="keyword">val</span> set_multicast_ttl</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> int -> Int_result.unit</code></pre><div class="info ">
-Set the multicast ttl, ttl - 1 through 255.<br>
+<div class="info-desc">
+<p>Set the multicast ttl, ttl - 1 through 255.</p>
+</div>
 </div>
 
 <pre><span id="VALset_multicast_ttl_exn"><span class="keyword">val</span> set_multicast_ttl_exn</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> int -> unit</code></pre>
 <pre><span id="VALset_multicast_interface"><span class="keyword">val</span> set_multicast_interface</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> string option -> Int_result.unit</code></pre><div class="info ">
-Set the multicast interface to send or receive data on<br>
+<div class="info-desc">
+<p>Set the multicast interface to send or receive data on</p>
+</div>
 </div>
 
 <pre><span id="VALset_multicast_interface_exn"><span class="keyword">val</span> set_multicast_interface_exn</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> string option -> unit</code></pre>
 <pre><span id="VALset_broadcast"><span class="keyword">val</span> set_broadcast</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> bool -> Int_result.unit</code></pre><div class="info ">
-Set broadcast on or off.<br>
+<div class="info-desc">
+<p>Set broadcast on or off.</p>
+</div>
 </div>
 
 <pre><span id="VALset_broadcast_exn"><span class="keyword">val</span> set_broadcast_exn</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> bool -> unit</code></pre>
 <pre><span id="VALset_ttl"><span class="keyword">val</span> set_ttl</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> int -> Int_result.unit</code></pre><div class="info ">
-Set the time to live. ttl - 1 through 255.<br>
+<div class="info-desc">
+<p>Set the time to live. ttl - 1 through 255.</p>
+</div>
 </div>
 
 <pre><span id="VALset_ttl_exn"><span class="keyword">val</span> set_ttl_exn</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> int -> unit</code></pre>
 <pre><span id="VALsend"><span class="keyword">val</span> send</span> : <code class="type">?pos:int -> ?len:int -> buf:bytes -> <a href="Uwt.Udp.html#TYPEt">t</a> -> sockaddr -> unit Lwt.t</code></pre><div class="info ">
-Send data over the UDP socket. If the socket has not previously
+<div class="info-desc">
+<p>Send data over the UDP socket. If the socket has not previously
       been bound with uv_udp_bind() it will be bound to 0.0.0.0 (the
-      "all interfaces" IPv4 address) and a random port number.<br>
+      "all interfaces" IPv4 address) and a random port number.</p>
+</div>
 </div>
 
 <pre><span id="VALsend_ba"><span class="keyword">val</span> send_ba</span> : <code class="type">?pos:int -> ?len:int -> buf:buf -> <a href="Uwt.Udp.html#TYPEt">t</a> -> sockaddr -> unit Lwt.t</code></pre>
 <pre><span id="VALsend_string"><span class="keyword">val</span> send_string</span> : <code class="type">?pos:int -> ?len:int -> buf:string -> <a href="Uwt.Udp.html#TYPEt">t</a> -> sockaddr -> unit Lwt.t</code></pre>
 <pre><span id="VALsend_raw"><span class="keyword">val</span> send_raw</span> : <code class="type">?pos:int -> ?len:int -> buf:bytes -> <a href="Uwt.Udp.html#TYPEt">t</a> -> sockaddr -> unit Lwt.t</code></pre><div class="info ">
-See comment to <a href="Uwt.Stream.html#VALwrite_raw"><code class="code">Uwt.Stream.write_raw</code></a><br>
+<div class="info-desc">
+<p>See comment to <a href="Uwt.Stream.html#VALwrite_raw"><code class="code">Uwt.Stream.write_raw</code></a></p>
+</div>
 </div>
 
 <pre><span id="VALsend_raw_ba"><span class="keyword">val</span> send_raw_ba</span> : <code class="type">?pos:int -> ?len:int -> buf:buf -> <a href="Uwt.Udp.html#TYPEt">t</a> -> sockaddr -> unit Lwt.t</code></pre>
 <pre><span id="VALsend_raw_string"><span class="keyword">val</span> send_raw_string</span> : <code class="type">?pos:int -> ?len:int -> buf:string -> <a href="Uwt.Udp.html#TYPEt">t</a> -> sockaddr -> unit Lwt.t</code></pre>
 <pre><span id="VALtry_send"><span class="keyword">val</span> try_send</span> : <code class="type">?pos:int -> ?len:int -> buf:bytes -> <a href="Uwt.Udp.html#TYPEt">t</a> -> sockaddr -> Int_result.int</code></pre><div class="info ">
-Same as <a href="Uwt.Udp.html#VALsend"><code class="code">Uwt.Udp.send</code></a>, but won't queue a send request if it can't be
-      completed immediately.<br>
+<div class="info-desc">
+<p>Same as <a href="Uwt.Udp.html#VALsend"><code class="code">Uwt.Udp.send</code></a>, but won't queue a send request if it can't be
+      completed immediately.</p>
+</div>
 </div>
 
 <pre><span id="VALtry_send_ba"><span class="keyword">val</span> try_send_ba</span> : <code class="type">?pos:int -> ?len:int -> buf:buf -> <a href="Uwt.Udp.html#TYPEt">t</a> -> sockaddr -> Int_result.int</code></pre>
@@ -205,8 +234,10 @@ Same as <a href="Uwt.Udp.html#VALsend"><code class="code">Uwt.Udp.send</code></a
 <td align="left" valign="top" >
 <code><span id="TYPEELTrecv_result.Transmission_error"><span class="constructor">Transmission_error</span></span> <span class="keyword">of</span> <code class="type">error</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-The type definition will likely be changed.
-        Don't use fragile pattern matching for it<br>
+<div class="info-desc">
+<p>The type definition will likely be changed.
+        Don't use fragile pattern matching for it</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -214,14 +245,18 @@ The type definition will likely be changed.
 
 
 <pre><span id="VALrecv_start"><span class="keyword">val</span> recv_start</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> cb:(<a href="Uwt.Udp.html#TYPErecv_result">recv_result</a> -> unit) -> Int_result.unit</code></pre><div class="info ">
-Prepare for receiving data. If the socket has not previously been
+<div class="info-desc">
+<p>Prepare for receiving data. If the socket has not previously been
       bound with uv_udp_bind() it is bound to 0.0.0.0 (the "all
-      interfaces" IPv4 address) and a random port number.<br>
+      interfaces" IPv4 address) and a random port number.</p>
+</div>
 </div>
 
 <pre><span id="VALrecv_start_exn"><span class="keyword">val</span> recv_start_exn</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> cb:(<a href="Uwt.Udp.html#TYPErecv_result">recv_result</a> -> unit) -> unit</code></pre>
 <pre><span id="VALrecv_stop"><span class="keyword">val</span> recv_stop</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> Int_result.unit</code></pre><div class="info ">
-Stop listening for incoming datagrams.<br>
+<div class="info-desc">
+<p>Stop listening for incoming datagrams.</p>
+</div>
 </div>
 
 <pre><span id="VALrecv_stop_exn"><span class="keyword">val</span> recv_stop_exn</span> : <code class="type"><a href="Uwt.Udp.html#TYPEt">t</a> -> unit</code></pre>
@@ -252,11 +287,14 @@ Stop listening for incoming datagrams.<br>
 
 
 <pre><span id="VALrecv"><span class="keyword">val</span> recv</span> : <code class="type">?pos:int -> ?len:int -> buf:bytes -> <a href="Uwt.Udp.html#TYPEt">t</a> -> <a href="Uwt.Udp.html#TYPErecv">recv</a> Lwt.t</code></pre><div class="info ">
-Wrappers around <a href="Uwt.Udp.html#VALrecv_start"><code class="code">Uwt.Udp.recv_start</code></a> and <a href="Uwt.Udp.html#VALrecv_stop"><code class="code">Uwt.Udp.recv_stop</code></a> for you convenience,
-      no callback soup. ~len should be greater than zero.
-<p>
+<div class="info-desc">
+<p>Wrappers around <a href="Uwt.Udp.html#VALrecv_start"><code class="code">Uwt.Udp.recv_start</code></a> and <a href="Uwt.Udp.html#VALrecv_stop"><code class="code">Uwt.Udp.recv_stop</code></a> for you convenience,
+      no callback soup. ~len should be greater than zero.</p>
 
-      See also the comments to <a href="Uwt.Stream.html#VALread"><code class="code">Uwt.Stream.read</code></a>.<br>
+<p>See also the comments to <a href="Uwt.Stream.html#VALread"><code class="code">Uwt.Stream.read</code></a>.
+      Don't pass <code class="code">~len:0</code> or an empty <code class="code">buf</code> to recv. This case is
+      captured by uwt/libuv, not your operating system :D</p>
+</div>
 </div>
 
 <pre><span id="VALrecv_ba"><span class="keyword">val</span> recv_ba</span> : <code class="type">?pos:int -> ?len:int -> buf:buf -> <a href="Uwt.Udp.html#TYPEt">t</a> -> <a href="Uwt.Udp.html#TYPErecv">recv</a> Lwt.t</code></pre></body></html>

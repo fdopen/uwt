@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,12 +33,11 @@
 </div>
 <h1>Module <a href="type_Uwt.Handle_fileno.html">Uwt.Handle_fileno</a></h1>
 
-<pre><span class="keyword">module</span> Handle_fileno: <code class="code">sig</code> <a href="Uwt.Handle_fileno.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-The usage of <a href="Uwt.Handle_fileno.html#VALfileno"><code class="code">Uwt.Handle_fileno.fileno</code></a> is unsafe and strongly discouraged.
+<pre><span id="MODULEHandle_fileno"><span class="keyword">module</span> Handle_fileno</span>: <code class="code">sig</code> <a href="Uwt.Handle_fileno.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>The usage of <a href="Uwt.Handle_fileno.html#VALfileno"><code class="code">Uwt.Handle_fileno.fileno</code></a> is unsafe and strongly discouraged.
       But it's sometimes necessary, if you need to interact with third parties
-      libraries. Rules:
-<p>
+      libraries. Rules:</p>
+
 <ul>
 <li>You must still keep your original handle around.
         Otherwise uwt will close the handle when the garbage collector removes
@@ -54,7 +51,6 @@ The usage of <a href="Uwt.Handle_fileno.html#VALfileno"><code class="code">Uwt.H
 <li>Never pass the file descriptor to functions like <a href="Uwt.Pipe.html#VALopenpipe"><code class="code">Uwt.Pipe.openpipe</code></a>
         or <a href="Uwt.Poll.html#VALstart"><code class="code">Uwt.Poll.start</code></a>.</li>
 </ul>
-<br>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 

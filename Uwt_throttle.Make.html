@@ -17,10 +17,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -31,7 +29,7 @@
 &nbsp;</div>
 <h1>Functor <a href="type_Uwt_throttle.Make.html">Uwt_throttle.Make</a></h1>
 
-<pre><span class="keyword">module</span> Make: <div class="sig_block"><code class="code">functor (</code><code class="code">H</code><code class="code"> : </code><code class="type">Hashtbl.HashedType</code><code class="code">) -&gt; </code><code class="type"><a href="Uwt_throttle.S.html">S</a></code><code class="type">  with type key = H.t</code></div></pre><table border="0" cellpadding="3" width="100%">
+<pre><span id="MODULEMake"><span class="keyword">module</span> Make</span>: <div class="sig_block"><code class="code">functor (</code><code class="code">H</code><code class="code"> : </code><code class="type">Hashtbl.HashedType</code><code class="code">) -&gt; </code><code class="type"><a href="Uwt_throttle.S.html">S</a></code><code class="type">  with type key = H.t</code></div></pre><table border="0" cellpadding="3" width="100%">
 <tr>
 <td align="left" valign="top" width="1%%"><b>Parameters: </b></td>
 <td>
@@ -60,6 +58,8 @@
 <div class="param_info"><code class="code">n</code> : initial size of the hash table</div>
 
 <pre><span id="VALwait"><span class="keyword">val</span> wait</span> : <code class="type"><a href="Uwt_throttle.S.html#TYPEt">t</a> -> <a href="Uwt_throttle.S.html#TYPEkey">key</a> -> bool Lwt.t</code></pre><div class="info ">
-<b>Returns</b> <code class="code">false</code> if maximum reached, <code class="code">true</code> else<br>
+<ul class="info-attributes">
+<li><b>Returns</b> <code class="code">false</code> if maximum reached, <code class="code">true</code> else</li>
+</ul>
 </div>
 </body></html>

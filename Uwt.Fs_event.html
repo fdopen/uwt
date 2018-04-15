@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,12 +33,11 @@
 </div>
 <h1>Module <a href="type_Uwt.Fs_event.html">Uwt.Fs_event</a></h1>
 
-<pre><span class="keyword">module</span> Fs_event: <code class="code">sig</code> <a href="Uwt.Fs_event.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-FS Event handles allow the user to monitor a given path for
+<pre><span id="MODULEFs_event"><span class="keyword">module</span> Fs_event</span>: <code class="code">sig</code> <a href="Uwt.Fs_event.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>FS Event handles allow the user to monitor a given path for
      changes, for example, if the file was renamed or there was a
      generic change in it. This handle uses the best backend for the
-     job on each platform.<br>
+     job on each platform.</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
@@ -73,13 +70,15 @@ FS Event handles allow the user to monitor a given path for
 <td align="left" valign="top" >
 <code><span id="TYPEELTflags.Entry"><span class="constructor">Entry</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-By default, if the fs event watcher is given a
+<div class="info-desc">
+<p>By default, if the fs event watcher is given a
                   directory name, we will watch for all events in that
                   directory. This flags overrides this behavior and
                   makes fs_event report only changes to the directory
                   entry itself. This flag does not affect individual
                   files watched. This flag is currently not implemented
-                  yet on any backend.<br>
+                  yet on any backend.</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -89,12 +88,14 @@ By default, if the fs event watcher is given a
 <td align="left" valign="top" >
 <code><span id="TYPEELTflags.Stat"><span class="constructor">Stat</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-By default <code class="code">Fs_event</code> will try to use a kernel
+<div class="info-desc">
+<p>By default <code class="code">Fs_event</code> will try to use a kernel
                interface such as inotify or kqueue to detect
                events. This may not work on remote filesystems such as
                NFS mounts. This flag makes fs_event fall back to
                calling stat() on a regular interval. This flag is
-               currently not implemented yet on any backend.<br>
+               currently not implemented yet on any backend.</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -104,10 +105,12 @@ By default <code class="code">Fs_event</code> will try to use a kernel
 <td align="left" valign="top" >
 <code><span id="TYPEELTflags.Recursive"><span class="constructor">Recursive</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-By default, event watcher, when watching
+<div class="info-desc">
+<p>By default, event watcher, when watching
                     directory, is not registering (is ignoring) changes
                     in it's subdirectories. This flag will override
-                    this behaviour on platforms that support it.<br>
+                    this behaviour on platforms that support it.</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -118,8 +121,10 @@ By default, event watcher, when watching
 
 
 <pre><span id="VALstart"><span class="keyword">val</span> start</span> : <code class="type">string -><br>       <a href="Uwt.Fs_event.html#TYPEflags">flags</a> list -> cb:<a href="Uwt.Fs_event.html#TYPEcb">cb</a> -> <a href="Uwt.Fs_event.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-Start the handle with the given callback, which will watch the
-      specified path for changes<br>
+<div class="info-desc">
+<p>Start the handle with the given callback, which will watch the
+      specified path for changes</p>
+</div>
 </div>
 
 <pre><span id="VALstart_exn"><span class="keyword">val</span> start_exn</span> : <code class="type">string -> <a href="Uwt.Fs_event.html#TYPEflags">flags</a> list -> cb:<a href="Uwt.Fs_event.html#TYPEcb">cb</a> -> <a href="Uwt.Fs_event.html#TYPEt">t</a></code></pre></body></html>

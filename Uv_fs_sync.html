@@ -18,10 +18,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -33,13 +31,14 @@
 </div>
 <h1>Module <a href="type_Uv_fs_sync.html">Uv_fs_sync</a></h1>
 
-<pre><span class="keyword">module</span> Uv_fs_sync: <code class="code">sig</code> <a href="Uv_fs_sync.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Synchronous filesystem operations<br>
+<pre><span id="MODULEUv_fs_sync"><span class="keyword">module</span> Uv_fs_sync</span>: <code class="code">sig</code> <a href="Uv_fs_sync.html">..</a> <code class="code">end</code></pre><div class="info module top">
+<div class="info-desc">
+<p>Synchronous filesystem operations</p>
+</div>
 </div>
 <hr width="100%">
-<br>
-This module is independent of lwt. It might be useful, if you target windows:
-<p>
+<p>This module is independent of lwt. It might be useful, if you target windows:</p>
+
 <ul>
 <li>additional options and functions are available, that are missing
    inside the standard Unix module.</li>
@@ -48,7 +47,6 @@ This module is independent of lwt. It might be useful, if you target windows:
 <li>filenames and similar parameters and return values are always utf-8
    encoded.</li>
 </ul>
-<br>
 
 <pre><span class="keyword">include</span> <a href="Uwt_base.Fs_functions.html">Uwt_base.Fs_functions</a></pre>
 </body></html>

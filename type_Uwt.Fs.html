@@ -14,10 +14,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -43,6 +41,12 @@
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">O_SHORT_LIVED</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">O_SEQUENTIAL</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">O_RANDOM</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">O_DIRECT</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">O_EXLOCK</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">O_NOATIME</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">O_SYMLINK</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">O_NOFOLLOW</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">O_DIRECTORY</span><br>
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;file_kind&nbsp;=<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Fs_types</span>.file_kind&nbsp;=<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">S_REG</span><br>
@@ -84,13 +88,26 @@
 &nbsp;&nbsp;&nbsp;&nbsp;st_birthtime&nbsp;:&nbsp;int64;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;st_birthtime_nsec&nbsp;:&nbsp;int;<br>
 &nbsp;&nbsp;}<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;clone_mode&nbsp;=&nbsp;<span class="constructor">No_clone</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Try_clone</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Force_clone</span><br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;openfile&nbsp;:&nbsp;?perm:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;mode:uv_open_flag&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;read&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;read_ba&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pread&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;fd_offset:int64&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pread_ba&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;fd_offset:int64&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write_string&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;write_ba&nbsp;:&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pwrite&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;fd_offset:int64&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:bytes&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pwrite_string&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;fd_offset:int64&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pwrite_ba&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?pos:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;?len:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;fd_offset:int64&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;buf:buf&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;writev&nbsp;:&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Iovec_write</span>.t&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pwritev&nbsp;:&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Iovec_write</span>.t&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int64&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;close&nbsp;:&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;unlink&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;mkdir&nbsp;:&nbsp;?perm:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
@@ -119,4 +136,7 @@
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fchown&nbsp;:&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;uid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;gid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;scandir&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(file_kind&nbsp;*&nbsp;string)&nbsp;array&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;realpath&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;copyfile&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;?excl:bool&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;?clone:clone_mode&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;src:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;dst:string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
 <span class="keyword">end</span></code></body></html>

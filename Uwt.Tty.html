@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,9 +33,8 @@
 </div>
 <h1>Module <a href="type_Uwt.Tty.html">Uwt.Tty</a></h1>
 
-<pre><span class="keyword">module</span> Tty: <code class="code">sig</code> <a href="Uwt.Tty.html">..</a> <code class="code">end</code></pre><hr width="100%">
-<br>
-TTY handles represent a stream for the console.<br>
+<pre><span id="MODULETty"><span class="keyword">module</span> Tty</span>: <code class="code">sig</code> <a href="Uwt.Tty.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>TTY handles represent a stream for the console.</p>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 
@@ -48,26 +45,25 @@ TTY handles represent a stream for the console.<br>
 
 <pre><span id="VALto_stream"><span class="keyword">val</span> to_stream</span> : <code class="type"><a href="Uwt.Tty.html#TYPEt">t</a> -> <a href="Uwt.Stream.html#TYPEt">Uwt.Stream.t</a></code></pre>
 <pre><span id="VALinit"><span class="keyword">val</span> init</span> : <code class="type">file -> read:bool -> <a href="Uwt.Tty.html#TYPEt">t</a> uv_result</code></pre><div class="info ">
-Initialize a new TTY stream with the given file
+<div class="info-desc">
+<p>Initialize a new TTY stream with the given file
       descriptor. Usually the file descriptor will be:
       <code class="code">stdin</code>,<code class="code">stdout</code> or <code class="code">stderr</code> <code class="code">~read</code> specifies if you plan on
       calling <code class="code">read_start</code> with this stream. <code class="code">stdin</code> is readable,
-      <code class="code">stdout</code> is not.
-<p>
+      <code class="code">stdout</code> is not.</p>
 
-      On Unix this function will determine the path of the fd of the
+<p>On Unix this function will determine the path of the fd of the
       terminal using ttyname_r(3), open it, and use it if the passed
       file descriptor refers to a TTY. This lets libuv put the tty in
       non-blocking mode without affecting other processes that share
-      the tty.
-<p>
+      the tty.</p>
 
-      This function is not thread safe on systems that don't support
-      ioctl TIOCGPTN or TIOCPTYGNAME, for instance OpenBSD and Solaris.
-<p>
+<p>This function is not thread safe on systems that don't support
+      ioctl TIOCGPTN or TIOCPTYGNAME, for instance OpenBSD and Solaris.</p>
 
-      Note: If reopening the TTY fails, libuv falls back to blocking
-      writes for non-readable TTY streams.<br>
+<p>Note: If reopening the TTY fails, libuv falls back to blocking
+      writes for non-readable TTY streams.</p>
+</div>
 </div>
 
 <pre><span id="VALinit_exn"><span class="keyword">val</span> init_exn</span> : <code class="type">file -> read:bool -> <a href="Uwt.Tty.html#TYPEt">t</a></code></pre>
@@ -97,18 +93,21 @@ Initialize a new TTY stream with the given file
 
 
 <pre><span id="VALset_mode"><span class="keyword">val</span> set_mode</span> : <code class="type"><a href="Uwt.Tty.html#TYPEt">t</a> -> mode:<a href="Uwt.Tty.html#TYPEmode">mode</a> -> Int_result.unit</code></pre><div class="info ">
-Set the TTY using the specified terminal mode<br>
+<div class="info-desc">
+<p>Set the TTY using the specified terminal mode</p>
+</div>
 </div>
 
 <pre><span id="VALset_mode_exn"><span class="keyword">val</span> set_mode_exn</span> : <code class="type"><a href="Uwt.Tty.html#TYPEt">t</a> -> mode:<a href="Uwt.Tty.html#TYPEmode">mode</a> -> unit</code></pre>
 <pre><span id="VALreset_mode"><span class="keyword">val</span> reset_mode</span> : <code class="type">unit -> Int_result.unit</code></pre><div class="info ">
-To be called when the program exits. Resets TTY settings to
-      default values for the next process to take over.
-<p>
+<div class="info-desc">
+<p>To be called when the program exits. Resets TTY settings to
+      default values for the next process to take over.</p>
 
-      This function is async signal-safe on Unix platforms but can
+<p>This function is async signal-safe on Unix platforms but can
       fail with error code UV_EBUSY if you call it when execution is
-      inside uv_tty_set_mode().<br>
+      inside uv_tty_set_mode().</p>
+</div>
 </div>
 
 <pre><span id="VALreset_mode_exn"><span class="keyword">val</span> reset_mode_exn</span> : <code class="type">unit -> unit</code></pre>
@@ -132,7 +131,9 @@ To be called when the program exits. Resets TTY settings to
 
 
 <pre><span id="VALget_winsize"><span class="keyword">val</span> get_winsize</span> : <code class="type"><a href="Uwt.Tty.html#TYPEt">t</a> -> <a href="Uwt.Tty.html#TYPEwinsize">winsize</a> uv_result</code></pre><div class="info ">
-Gets the current Window size.<br>
+<div class="info-desc">
+<p>Gets the current Window size.</p>
+</div>
 </div>
 
 <pre><span id="VALget_winsize_exn"><span class="keyword">val</span> get_winsize_exn</span> : <code class="type"><a href="Uwt.Tty.html#TYPEt">t</a> -> <a href="Uwt.Tty.html#TYPEwinsize">winsize</a></code></pre></body></html>

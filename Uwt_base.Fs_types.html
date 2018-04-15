@@ -19,10 +19,8 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
@@ -35,7 +33,7 @@
 </div>
 <h1>Module <a href="type_Uwt_base.Fs_types.html">Uwt_base.Fs_types</a></h1>
 
-<pre><span class="keyword">module</span> Fs_types: <code class="code">sig</code> <a href="Uwt_base.Fs_types.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<pre><span id="MODULEFs_types"><span class="keyword">module</span> Fs_types</span>: <code class="code">sig</code> <a href="Uwt_base.Fs_types.html">..</a> <code class="code">end</code></pre><hr width="100%">
 
 <pre><code><span id="TYPEuv_open_flag"><span class="keyword">type</span> <code class="type"></code>uv_open_flag</span> = </code></pre><table class="typetable">
 <tr>
@@ -44,7 +42,9 @@
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_RDONLY"><span class="constructor">O_RDONLY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Open for reading<br>
+<div class="info-desc">
+<p>Open for reading</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -54,7 +54,9 @@ Open for reading<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_WRONLY"><span class="constructor">O_WRONLY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Open for writing<br>
+<div class="info-desc">
+<p>Open for writing</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -64,7 +66,9 @@ Open for writing<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_RDWR"><span class="constructor">O_RDWR</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Open for reading and writing<br>
+<div class="info-desc">
+<p>Open for reading and writing</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -74,7 +78,9 @@ Open for reading and writing<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_NONBLOCK"><span class="constructor">O_NONBLOCK</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Open in non-blocking mode, ignored on Windows<br>
+<div class="info-desc">
+<p>Open in non-blocking mode, ignored on Windows</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -84,7 +90,9 @@ Open in non-blocking mode, ignored on Windows<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_CREAT"><span class="constructor">O_CREAT</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Create if nonexistent<br>
+<div class="info-desc">
+<p>Create if nonexistent</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -94,7 +102,9 @@ Create if nonexistent<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_EXCL"><span class="constructor">O_EXCL</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Fail if existing<br>
+<div class="info-desc">
+<p>Fail if existing</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -104,7 +114,9 @@ Fail if existing<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_TRUNC"><span class="constructor">O_TRUNC</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Truncate to 0 length if existing<br>
+<div class="info-desc">
+<p>Truncate to 0 length if existing</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -114,7 +126,9 @@ Truncate to 0 length if existing<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_APPEND"><span class="constructor">O_APPEND</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Open for append<br>
+<div class="info-desc">
+<p>Open for append</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -124,7 +138,9 @@ Open for append<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_NOCTTY"><span class="constructor">O_NOCTTY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Don't make this dev a controlling tty, ignored on Windows<br>
+<div class="info-desc">
+<p>Don't make this dev a controlling tty, ignored on Windows</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -134,8 +150,10 @@ Don't make this dev a controlling tty, ignored on Windows<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_DSYNC"><span class="constructor">O_DSYNC</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Writes complete as `Synchronised I/O data integrity
-                   completion', ignored by some platforms<br>
+<div class="info-desc">
+<p>Writes complete as `Synchronised I/O data integrity
+                   completion', ignored by some platforms</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -145,8 +163,10 @@ Writes complete as `Synchronised I/O data integrity
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_SYNC"><span class="constructor">O_SYNC</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Writes complete as `Synchronised I/O file integrity
-                   completion', ignored by some platforms<br>
+<div class="info-desc">
+<p>Writes complete as `Synchronised I/O file integrity
+                   completion', ignored by some platforms</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -156,9 +176,11 @@ Writes complete as `Synchronised I/O file integrity
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_RSYNC"><span class="constructor">O_RSYNC</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Reads complete as writes (depending on
+<div class="info-desc">
+<p>Reads complete as writes (depending on
                   O_SYNC/O_DSYNC), only supported on some Unix
-                  platforms, ignored otherwise<br>
+                  platforms, ignored otherwise</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -168,7 +190,9 @@ Reads complete as writes (depending on
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_TEMPORARY"><span class="constructor">O_TEMPORARY</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-windows only, ignored on Unix<br>
+<div class="info-desc">
+<p>windows only, ignored on Unix</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -178,7 +202,9 @@ windows only, ignored on Unix<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_SHORT_LIVED"><span class="constructor">O_SHORT_LIVED</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-windows only, ignored on Unix<br>
+<div class="info-desc">
+<p>windows only, ignored on Unix</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -188,7 +214,9 @@ windows only, ignored on Unix<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_SEQUENTIAL"><span class="constructor">O_SEQUENTIAL</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-windows only, ignored on Unix<br>
+<div class="info-desc">
+<p>windows only, ignored on Unix</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -198,18 +226,91 @@ windows only, ignored on Unix<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTuv_open_flag.O_RANDOM"><span class="constructor">O_RANDOM</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-windows only, ignored on Unix<br>
+<div class="info-desc">
+<p>windows only, ignored on Unix</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTuv_open_flag.O_DIRECT"><span class="constructor">O_DIRECT</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>On Windows supported since libuv 1.16</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTuv_open_flag.O_EXLOCK"><span class="constructor">O_EXLOCK</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>OS X (and Windows, but with different semantic)</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTuv_open_flag.O_NOATIME"><span class="constructor">O_NOATIME</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>no windows, some Unix systems, ignored otherwise</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTuv_open_flag.O_SYMLINK"><span class="constructor">O_SYMLINK</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>no windows, some Unix systems, ignored otherwise</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTuv_open_flag.O_NOFOLLOW"><span class="constructor">O_NOFOLLOW</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>no windows, some Unix systems, ignored otherwise</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTuv_open_flag.O_DIRECTORY"><span class="constructor">O_DIRECTORY</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>no windows, some Unix systems, ignored otherwise</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
-<div class="info ">
-<code class="code">O_CLOEXEC</code> and <code class="code">O_SHARE_DELETE</code>, <code class="code">O_SHARE_WRITE</code>,
-      <code class="code">O_SHARE_READ</code> don't exist, because these flags are
-      unconditionally added by libuv, if the platform supports
-      them.<br>
-</div>
 
+<p>Flags for <a href="Uwt_base.Fs_functions.html#VALopenfile"><code class="code">Uwt_base.Fs_functions.openfile</code></a></p>
+
+<p><code class="code">O_CLOEXEC</code> doesn't exist, because this flag is unconditionally
+      added by libuv. <code class="code">O_SHARE_DELETE</code>, <code class="code">O_SHARE_WRITE</code>, <code class="code">O_SHARE_READ</code>
+      are always added on Windows, unless <code class="code">O_EXLOCK</code> is specified.</p>
 
 <pre><code><span id="TYPEfile_kind"><span class="keyword">type</span> <code class="type"></code>file_kind</span> = </code></pre><table class="typetable">
 <tr>
@@ -218,7 +319,9 @@ windows only, ignored on Unix<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTfile_kind.S_REG"><span class="constructor">S_REG</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Regular file<br>
+<div class="info-desc">
+<p>Regular file</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -228,7 +331,9 @@ Regular file<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTfile_kind.S_DIR"><span class="constructor">S_DIR</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Directory<br>
+<div class="info-desc">
+<p>Directory</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -238,7 +343,9 @@ Directory<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTfile_kind.S_CHR"><span class="constructor">S_CHR</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Character device<br>
+<div class="info-desc">
+<p>Character device</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -248,7 +355,9 @@ Character device<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTfile_kind.S_BLK"><span class="constructor">S_BLK</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Block device<br>
+<div class="info-desc">
+<p>Block device</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -258,7 +367,9 @@ Block device<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTfile_kind.S_LNK"><span class="constructor">S_LNK</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Symbolic link<br>
+<div class="info-desc">
+<p>Symbolic link</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -268,7 +379,9 @@ Symbolic link<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTfile_kind.S_FIFO"><span class="constructor">S_FIFO</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Named pipe<br>
+<div class="info-desc">
+<p>Named pipe</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -278,7 +391,9 @@ Named pipe<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTfile_kind.S_SOCK"><span class="constructor">S_SOCK</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Socket<br>
+<div class="info-desc">
+<p>Socket</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -288,7 +403,9 @@ Socket<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTfile_kind.S_UNKNOWN"><span class="constructor">S_UNKNOWN</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Everything else - possible on some platforms.<br>
+<div class="info-desc">
+<p>Everything else - possible on some platforms.</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -309,7 +426,9 @@ Everything else - possible on some platforms.<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTsymlink_mode.S_Dir"><span class="constructor">S_Dir</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-indicates that path points to a directory.<br>
+<div class="info-desc">
+<p>indicates that path points to a directory.</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -319,13 +438,17 @@ indicates that path points to a directory.<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTsymlink_mode.S_Junction"><span class="constructor">S_Junction</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-request that the symlink is created using junction points.<br>
+<div class="info-desc">
+<p>request that the symlink is created using junction points.</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 <div class="info ">
-On Windows it can be specified how the symlink will be created:<br>
+<div class="info-desc">
+<p>On Windows it can be specified how to create symlinks.</p>
+</div>
 </div>
 
 
@@ -336,7 +459,9 @@ On Windows it can be specified how the symlink will be created:<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTaccess_permission.Read"><span class="constructor">Read</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Read permission<br>
+<div class="info-desc">
+<p>Read permission</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -346,7 +471,9 @@ Read permission<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTaccess_permission.Write"><span class="constructor">Write</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Write permission<br>
+<div class="info-desc">
+<p>Write permission</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -356,7 +483,9 @@ Write permission<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTaccess_permission.Exec"><span class="constructor">Exec</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Execution permission<br>
+<div class="info-desc">
+<p>Execution permission</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -366,7 +495,9 @@ Execution permission<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTaccess_permission.Exists"><span class="constructor">Exists</span></span></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-File exists<br>
+<div class="info-desc">
+<p>File exists</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -379,149 +510,305 @@ File exists<br>
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_dev">st_dev</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Device number</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_kind">st_kind</span>&nbsp;: <code class="type"><a href="Uwt_base.Fs_types.html#TYPEfile_kind">file_kind</a></code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Kind of the file</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_perm">st_perm</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Access rights</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_nlink">st_nlink</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Number of links</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_uid">st_uid</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>User id of the owner</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_gid">st_gid</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Group ID of the file's group</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_rdev">st_rdev</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Device minor number</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_ino">st_ino</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Inode number</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_size">st_size</span>&nbsp;: <code class="type">int64</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Size in bytes</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_blksize">st_blksize</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>"Preferred" block size for efficient filesystem I/O</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_blocks">st_blocks</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Number of blocks allocated to the file, in 512-byte units</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_flags">st_flags</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>User defined flags for file</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_gen">st_gen</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>File generation number</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_atime">st_atime</span>&nbsp;: <code class="type">int64</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Last access time</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_atime_nsec">st_atime_nsec</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Nanosecond components of last access time</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_mtime">st_mtime</span>&nbsp;: <code class="type">int64</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Last modification time</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_mtime_nsec">st_mtime_nsec</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Nanosecond components of last modification time</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_ctime">st_ctime</span>&nbsp;: <code class="type">int64</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Last status change time</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_ctime_nsec">st_ctime_nsec</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Nanosecond components of lastt status change time</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_birthtime">st_birthtime</span>&nbsp;: <code class="type">int64</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>File creation time</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstats.st_birthtime_nsec">st_birthtime_nsec</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Nanosecond components of File creation time</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 }
 
+<div class="info ">
+<div class="info-desc">
+<p>File status information. Support for the various fields differs
+      depending on the OS and filesystem.</p>
+</div>
+</div>
+
+
+<pre><code><span id="TYPEclone_mode"><span class="keyword">type</span> <code class="type"></code>clone_mode</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTclone_mode.No_clone"><span class="constructor">No_clone</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Create a normal copy</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTclone_mode.Try_clone"><span class="constructor">Try_clone</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Try to clone the file, but create a normal copy, if it fails</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTclone_mode.Force_clone"><span class="constructor">Force_clone</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<div class="info-desc">
+<p>Try tlone the file, don't create a normal copy, if it fails</p>
+</div>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+<div class="info ">
+<div class="info-desc">
+<p>Clone mode for <a href="Uwt_base.Fs_functions.html#VALcopyfile"><code class="code">Uwt_base.Fs_functions.copyfile</code></a></p>
+</div>
+</div>
 
 </body></html>

@@ -5,7 +5,7 @@
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
-<link rel="previous" href="Uwt_log.html">
+<link rel="previous" href="Uwt_io.html">
 <link rel="next" href="Uwt_process.html">
 <link rel="Up" href="index.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
@@ -19,84 +19,97 @@
 <link title="Uwt" rel="Chapter" href="Uwt.html">
 <link title="Uwt_base" rel="Chapter" href="Uwt_base.html">
 <link title="Uwt_bytes" rel="Chapter" href="Uwt_bytes.html">
-<link title="Uwt_chan" rel="Chapter" href="Uwt_chan.html">
 <link title="Uwt_compat" rel="Chapter" href="Uwt_compat.html">
 <link title="Uwt_io" rel="Chapter" href="Uwt_io.html">
-<link title="Uwt_log" rel="Chapter" href="Uwt_log.html">
 <link title="Uwt_preemptive" rel="Chapter" href="Uwt_preemptive.html">
 <link title="Uwt_process" rel="Chapter" href="Uwt_process.html">
 <link title="Uwt_throttle" rel="Chapter" href="Uwt_throttle.html">
 <link title="Uwt_timeout" rel="Chapter" href="Uwt_timeout.html"><title>Uwt - OCaml bindings for libuv : Uwt_preemptive</title>
 </head>
 <body>
-<div class="navbar"><a class="pre" href="Uwt_log.html" title="Uwt_log">Previous</a>
+<div class="navbar"><a class="pre" href="Uwt_io.html" title="Uwt_io">Previous</a>
 &nbsp;<a class="up" href="index.html" title="Index">Up</a>
 &nbsp;<a class="post" href="Uwt_process.html" title="Uwt_process">Next</a>
 </div>
 <h1>Module <a href="type_Uwt_preemptive.html">Uwt_preemptive</a></h1>
 
-<pre><span class="keyword">module</span> Uwt_preemptive: <code class="code">sig</code> <a href="Uwt_preemptive.html">..</a> <code class="code">end</code></pre><div class="info module top">
-This module allows to mix preemptive threads with <code class="code">Lwt</code>
+<pre><span id="MODULEUwt_preemptive"><span class="keyword">module</span> Uwt_preemptive</span>: <code class="code">sig</code> <a href="Uwt_preemptive.html">..</a> <code class="code">end</code></pre><div class="info module top">
+<div class="info-desc">
+<p>This module allows to mix preemptive threads with <code class="code">Lwt</code>
     cooperative threads. It maintains an extensible pool of preemptive
-    threads to which you can detach computations.<br>
+    threads to which you can detach computations.</p>
+</div>
 </div>
 <hr width="100%">
 
 <pre><span id="VALdetach"><span class="keyword">val</span> detach</span> : <code class="type">('a -> 'b) -> 'a -> 'b Lwt.t</code></pre><div class="info ">
-<code class="code">detach f x</code> runs the computation <code class="code">f x</code> in a separate preemptive thread.
+<div class="info-desc">
+<p><code class="code">detach f x</code> runs the computation <code class="code">f x</code> in a separate preemptive thread.
       <code class="code">detach</code> evaluates to an Lwt thread, which waits for the preemptive thread
-      to complete.
-<p>
+      to complete.</p>
 
-      Note that Lwt thread-local storage (i.e., <code class="code">Lwt.with_key</code>) cannot be safely
+<p>Note that Lwt thread-local storage (i.e., <code class="code">Lwt.with_key</code>) cannot be safely
       used from within <code class="code">f x</code>. The same goes for most of the rest of Lwt. If you
-      need to run an Lwt thread in <code class="code">f x</code>, use <a href="Uwt_preemptive.html#VALrun_in_main"><code class="code">Uwt_preemptive.run_in_main</code></a>.<br>
+      need to run an Lwt thread in <code class="code">f x</code>, use <a href="Uwt_preemptive.html#VALrun_in_main"><code class="code">Uwt_preemptive.run_in_main</code></a>.</p>
+</div>
 </div>
 
 <pre><span id="VALrun_in_main"><span class="keyword">val</span> run_in_main</span> : <code class="type">(unit -> 'a Lwt.t) -> 'a</code></pre><div class="info ">
-<code class="code">run_in_main f</code> can be called from a detached computation to execute
+<div class="info-desc">
+<p><code class="code">run_in_main f</code> can be called from a detached computation to execute
       <code class="code">f ()</code> in the main preemptive thread, i.e. the one executing
       <code class="code">Lwt_main.run</code>. <code class="code">run_in_main f</code> blocks until <code class="code">f ()</code> completes, then
       returns its result. If <code class="code">f ()</code> raises an exception, <code class="code">run_in_main f</code> raises
-      the same exception.
-<p>
+      the same exception.</p>
 
-      <code class="code">Lwt.with_key</code> may be used inside <code class="code">f ()</code>. <code class="code">Lwt.get</code> can correctly retrieve
+<p><code class="code">Lwt.with_key</code> may be used inside <code class="code">f ()</code>. <code class="code">Lwt.get</code> can correctly retrieve
       values set inside <code class="code">f ()</code>, but not values set outside the <code class="code">detach</code>
-      invocation that is calling <code class="code">run_in_main</code>.<br>
+      invocation that is calling <code class="code">run_in_main</code>.</p>
+</div>
 </div>
 
 <pre><span id="VALinit"><span class="keyword">val</span> init</span> : <code class="type">int -> int -> (string -> unit) -> unit</code></pre><div class="info ">
-<code class="code">init min max log</code> initialises this module. i.e. it launches the
-      minimum number of preemptive threads and starts the <b>      dispatcher</b>.<br>
+<div class="info-desc">
+<p><code class="code">init min max log</code> initialises this module. i.e. it launches the
+      minimum number of preemptive threads and starts the <b>      dispatcher</b>.</p>
+</div>
 </div>
 
 <pre><span id="VALsimple_init"><span class="keyword">val</span> simple_init</span> : <code class="type">unit -> unit</code></pre><div class="info ">
-<code class="code">simple_init ()</code> does a <i>simple initialization</i>. i.e. with
-      default parameters if the library is not yet initialised.
-<p>
+<div class="info-desc">
+<p><code class="code">simple_init ()</code> does a <i>simple initialization</i>. i.e. with
+      default parameters if the library is not yet initialised.</p>
 
-      Note: this function is automatically called <a href="Uwt_preemptive.html#VALdetach"><code class="code">Uwt_preemptive.detach</code></a>.<br>
+<p>Note: this function is automatically called <a href="Uwt_preemptive.html#VALdetach"><code class="code">Uwt_preemptive.detach</code></a>.</p>
+</div>
 </div>
 
 <pre><span id="VALget_bounds"><span class="keyword">val</span> get_bounds</span> : <code class="type">unit -> int * int</code></pre><div class="info ">
-<code class="code">get_bounds ()</code> returns the minimum and the maximum number of
-      preemptive threads.<br>
+<div class="info-desc">
+<p><code class="code">get_bounds ()</code> returns the minimum and the maximum number of
+      preemptive threads.</p>
+</div>
 </div>
 
 <pre><span id="VALset_bounds"><span class="keyword">val</span> set_bounds</span> : <code class="type">int * int -> unit</code></pre><div class="info ">
-<code class="code">set_bounds (min, max)</code> set the minimum and the maximum number
-      of preemptive threads.<br>
+<div class="info-desc">
+<p><code class="code">set_bounds (min, max)</code> set the minimum and the maximum number
+      of preemptive threads.</p>
+</div>
 </div>
 
 <pre><span id="VALset_max_number_of_threads_queued"><span class="keyword">val</span> set_max_number_of_threads_queued</span> : <code class="type">int -> unit</code></pre><div class="info ">
-Sets the size of the waiting queue, if no more preemptive
+<div class="info-desc">
+<p>Sets the size of the waiting queue, if no more preemptive
       threads are available. When the queue is full, <a href="Uwt_preemptive.html#VALdetach"><code class="code">Uwt_preemptive.detach</code></a> will
-      sleep until a thread is available.<br>
+      sleep until a thread is available.</p>
+</div>
 </div>
 
 <pre><span id="VALget_max_number_of_threads_queued"><span class="keyword">val</span> get_max_number_of_threads_queued</span> : <code class="type">unit -> int</code></pre><div class="info ">
-Returns the size of the waiting queue, if no more threads are
-      available<br>
+<div class="info-desc">
+<p>Returns the size of the waiting queue, if no more threads are
+      available</p>
+</div>
 </div>
 </body></html>
