@@ -229,20 +229,24 @@ module Lwt_unix = struct
     | File of Uwt.file
     | Tcp of Uwt.Tcp.t
     | Pipe of Uwt.Pipe.t
+    | Udp of Uwt.Udp.t
 
   let from_file_descr = function
   | File x -> `File x
   | Tcp x -> `Tcp x
   | Pipe x -> `Pipe x
+  | Udp x  -> `Udp x
 
   let to_file_descr = function
   | `File x -> File x
   | `Tcp x -> Tcp x
   | `Pipe x -> Pipe x
+  | `Udp  x -> Udp x
 
   type f_common =
     | Fd of Uwt.file
     | Stream of Uwt.Stream.t
+    | U of Uwt.Udp.t
 
   let stdin = File Uwt.stdin
   let stdout = File Uwt.stdout
@@ -318,6 +322,7 @@ module Lwt_unix = struct
   | File fd -> Fd fd
   | Pipe fd -> Stream (Uwt.Pipe.to_stream fd)
   | Tcp fd -> Stream (Uwt.Tcp.to_stream fd)
+  | Udp fd -> U fd
 
   let close fd =
     let it s =
@@ -331,11 +336,14 @@ module Lwt_unix = struct
     match fd with
     | Fd fd -> UF.close fd
     | Stream fd -> Uwt.Stream.close fd |> it
+    | U fd -> Uwt.Udp.close fd |> it
 
   let read fd buf ofs len =
     match to_com fd with
     | Fd fd -> UF.read ~pos:ofs ~len:len ~buf fd
     | Stream fd -> Uwt.Stream.read ~pos:ofs ~len:len ~buf fd
+    | U fd -> Uwt.Udp.recv ~pos:ofs ~len:len ~buf fd >>= fun x ->
+      Lwt.return x.Uwt.Udp.recv_len
 
   let write fd buf ofs len =
     match to_com fd with
@@ -343,6 +351,7 @@ module Lwt_unix = struct
     | Stream fd ->
       Uwt.Stream.write ~pos:ofs ~len:len ~buf fd >>= fun () ->
       Lwt.return len
+    | U _ -> Lwt.fail (Unix.Unix_error(Unix.EDESTADDRREQ,"write",""))
 
   let write_string fd buf ofs len =
     match to_com fd with
@@ -350,11 +359,11 @@ module Lwt_unix = struct
     | Stream fd ->
       Uwt.Stream.write_string ~pos:ofs ~len:len ~buf fd >>= fun () ->
       Lwt.return len
+    | U _ -> Lwt.fail (Unix.Unix_error(Unix.EDESTADDRREQ,"write",""))
 
   let lseek fd n com =
     match fd with
-    | Pipe _
-    | Tcp _ -> ufail U.ESPIPE "lseek"
+    | Udp _ | Pipe _  | Tcp _ -> ufail U.ESPIPE "lseek"
     | File fd ->
       UU.lseek fd (Int64.of_int n) com >>= fun l ->
       Lwt.return (Int64.to_int l)
@@ -369,21 +378,18 @@ module Lwt_unix = struct
 
   let ftruncate fd i =
     match fd with
-    | Pipe _
-    | Tcp _ -> ufail U.EINVAL "ftruncate"
+    | Udp _ | Pipe _  | Tcp _ -> ufail U.EINVAL "ftruncate"
     | File fd ->
       UF.ftruncate fd ~len:(Int64.of_int i)
 
   let fsync fd =
     match fd with
-    | Pipe _
-    | Tcp _ -> ufail U.EINVAL "fsync"
+    | Udp _ | Pipe _ | Tcp _ -> ufail U.EINVAL "fsync"
     | File fd -> UF.fsync fd
 
   let fdatasync fd =
     match fd with
-    | Pipe _
-    | Tcp _ -> ufail U.EINVAL "fdatasync"
+    | Udp _ | Pipe _ | Tcp _ -> ufail U.EINVAL "fdatasync"
     | File fd -> UF.fdatasync fd
 
   let file_kind = function
@@ -420,14 +426,13 @@ module Lwt_unix = struct
 
   let fstat fd =
     match fd with
-    | Pipe _
-    | Tcp _ -> ufail U.EINVAL "fsync"
+    | Udp _ | Pipe _ | Tcp _ -> ufail U.EINVAL "fsync"
     | File fd -> UF.fstat fd >>= stat_convert
 
   let isatty x =
     (match x with
     | File fd -> Uwt.Conv.file_descr_of_file fd |> Lwt.return
-    | Tcp _ -> Lwt.return_none
+    | Udp _  | Tcp _ -> Lwt.return_none
     | Pipe fd ->
       match Uwt.Pipe.fileno fd with
       | Error _ -> Lwt.return_none
@@ -490,14 +495,12 @@ module Lwt_unix = struct
 
     let fstat fd =
       match fd with
-      | Pipe _
-      | Tcp _ -> ufail U.EINVAL "fstat"
+      | Pipe _  | Tcp _ | Udp _ -> ufail U.EINVAL "fstat"
       | File fd -> UF.fstat fd >>= stat_convert
 
     let lseek fd n com =
       match fd with
-      | Pipe _
-      | Tcp _ -> ufail U.ESPIPE "lseek"
+      | Pipe _  | Tcp _ | Udp _ -> ufail U.ESPIPE "lseek"
       | File fd ->
         UU.lseek fd n com >>= fun l ->
         Lwt.return (Int64.to_int l)
@@ -512,8 +515,7 @@ module Lwt_unix = struct
 
     let ftruncate fd i =
       match fd with
-      | Pipe _
-      | Tcp _ -> ufail U.EINVAL "ftruncate"
+      | Pipe _ | Tcp _ | Udp _ -> ufail U.EINVAL "ftruncate"
       | File fd -> UF.ftruncate fd ~len:i
 
     let file_exists = file_exists
@@ -532,8 +534,7 @@ module Lwt_unix = struct
 
   let fchmod fd perm =
     match fd with
-    | Pipe _
-    | Tcp _ -> ufail U.EBADF "fchmod"
+    | Udp _ | Pipe _  | Tcp _ -> ufail U.EBADF "fchmod"
     | File fd -> UF.fchmod fd ~perm
 
   let chown f uid gid =
@@ -541,8 +542,7 @@ module Lwt_unix = struct
 
   let fchown fd uid gid =
     match fd with
-    | Pipe _
-    | Tcp _ -> ufail U.EBADF "fchown"
+    | Udp _ | Pipe _ | Tcp _ -> ufail U.EBADF "fchown"
     | File fd -> UF.fchown fd ~uid ~gid
 
   let access_map = function
@@ -714,4 +714,20 @@ module Lwt_unix = struct
     help ( fun () -> Uwt_process.exec s )
 
   let utimes s access modif = UF.utime s ~access ~modif
+
+  let getcwd = Uwt.Unix.getcwd
+
+  let chroot = Uwt.Unix.chroot
+
+  type signal_handler_id = Uwt.Signal.t
+
+  let on_signal_full signum cb =
+    Uwt.Signal.start_exn signum ~cb
+
+  let on_signal signum f =
+    let cb _id sig' = f sig' in
+    Uwt.Signal.start_exn signum ~cb
+
+  let disable_signal_handler = Uwt.Signal.close_noerr
+
 end

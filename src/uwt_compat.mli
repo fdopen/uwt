@@ -14,9 +14,9 @@ module Lwt_throttle = Uwt_throttle
 module Lwt_unix : sig
     type file_descr
     val to_file_descr:
-      [`File of Uwt.file | `Pipe of Uwt.Pipe.t | `Tcp of Uwt.Tcp.t ] -> file_descr
+      [`File of Uwt.file | `Pipe of Uwt.Pipe.t | `Tcp of Uwt.Tcp.t | `Udp of Uwt.Udp.t ] -> file_descr
     val from_file_descr:
-      file_descr -> [`File of Uwt.file | `Pipe of Uwt.Pipe.t | `Tcp of Uwt.Tcp.t ]
+      file_descr -> [`File of Uwt.file | `Pipe of Uwt.Pipe.t | `Tcp of Uwt.Tcp.t | `Udp of Uwt.Udp.t]
     type dir_handle
 
     (**/**)
@@ -419,6 +419,12 @@ module Lwt_unix : sig
     val chdir : string -> unit Lwt.t
     (** Change the process working directory. *)
 
+    val chroot : string -> unit Lwt.t
+    (** Wrapper for [Unix.chroot] *)
+
+    val getcwd : unit -> string Lwt.t
+    (** Wrapper for [Unix.getcwd] *)
+
     val gethostname : unit -> string Lwt.t
     (** Return the name of the local host. *)
 
@@ -481,4 +487,20 @@ module Lwt_unix : sig
        times of the file at [path]. The access time is set to [atime]
        and the modification time to [mtime]. To set both to the
        current time, call [utimes path 0. 0.]. *)
+
+    type signal_handler_id
+
+    val on_signal : int -> (int -> unit) -> signal_handler_id
+    (** [on_signal signum f] calls [f] each time the signal with numnber
+        [signum] is received by the process. It returns a signal handler
+        identifier that can be used to stop monitoring [signum]. *)
+
+    val on_signal_full : int -> (signal_handler_id -> int -> unit) -> signal_handler_id
+    (** [on_signal_full f] is the same as [on_signal f] except that [f]
+        also receive the signal handler identifier as argument so it can
+        disable it. *)
+
+    val disable_signal_handler : signal_handler_id -> unit
+    (** Stops receiving this signal *)
+
   end
