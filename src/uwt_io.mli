@@ -484,7 +484,7 @@ val with_temp_file :
 
 val open_connection :
   ?in_buffer : Uwt_bytes.t -> ?out_buffer : Uwt_bytes.t ->
-  Uwt.sockaddr -> (input_channel * output_channel) Lwt.t
+  Unix.sockaddr -> (input_channel * output_channel) Lwt.t
 (** [open_connection ?in_buffer ?out_buffer addr] opens a connection to the
     given address and returns two channels for using it.
 
@@ -496,7 +496,7 @@ val open_connection :
 
 val with_connection :
   ?in_buffer : Uwt_bytes.t -> ?out_buffer : Uwt_bytes.t ->
-  Uwt.sockaddr -> (input_channel * output_channel -> 'a Lwt.t) -> 'a Lwt.t
+  Unix.sockaddr -> (input_channel * output_channel -> 'a Lwt.t) -> 'a Lwt.t
 (** [with_connection ?fd ?in_buffer ?out_buffer addr f] opens a connection to
       the given address and passes the channels to [f] *)
 

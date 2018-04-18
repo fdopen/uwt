@@ -1,7 +1,6 @@
 (** Lwt_unix compat module *)
 
 module Lwt_main = Uwt.Main
-module Lwt_io = Uwt_io
 module Lwt_bytes = Uwt_bytes
 module Lwt_process = Uwt_process
 module Lwt_throttle = Uwt_throttle
@@ -504,3 +503,39 @@ module Lwt_unix : sig
     (** Stops receiving this signal *)
 
   end
+
+module Lwt_io : sig
+  include module type of Uwt_io
+
+  val open_file :
+    ?buffer : Lwt_bytes.t ->
+    ?flags : Unix.open_flag list ->
+    ?perm : Unix.file_perm ->
+    mode : 'a mode ->
+    file_name -> 'a channel Lwt.t
+
+  val with_file :
+    ?buffer : Lwt_bytes.t ->
+    ?flags : Unix.open_flag list ->
+    ?perm : Unix.file_perm ->
+    mode : 'a mode ->
+    file_name -> ('a channel -> 'b Lwt.t) -> 'b Lwt.t
+
+  val open_temp_file :
+    ?buffer:Lwt_bytes.t ->
+    ?flags:Unix.open_flag list ->
+    ?perm:Unix.file_perm ->
+    ?temp_dir:string ->
+    ?prefix:string ->
+    unit ->
+    (string * output_channel) Lwt.t
+
+  val with_temp_file :
+    ?buffer:Lwt_bytes.t ->
+    ?flags:Unix.open_flag list ->
+    ?perm:Unix.file_perm ->
+    ?temp_dir:string ->
+    ?prefix:string ->
+    (string * output_channel -> 'b Lwt.t) ->
+     'b Lwt.t
+end

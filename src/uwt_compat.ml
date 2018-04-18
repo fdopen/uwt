@@ -1,5 +1,4 @@
 module Lwt_main = Uwt.Main
-module Lwt_io = Uwt_io
 module Lwt_bytes = Uwt_bytes
 module Lwt_process = Uwt_process
 module Lwt_throttle = Uwt_throttle
@@ -729,5 +728,31 @@ module Lwt_unix = struct
     Uwt.Signal.start_exn signum ~cb
 
   let disable_signal_handler = Uwt.Signal.close_noerr
+
+end
+
+module Lwt_io = struct
+
+  include Uwt_io
+
+  let openf_trans = function
+    | None -> None
+    | Some l -> Some(List.fold_left Lwt_unix.trans_of [] l)
+
+  let open_file : type m. ?buffer : Uwt_bytes.t -> ?flags : Unix.open_flag list -> ?perm : Unix.file_perm -> mode : m mode -> file_name -> m channel Lwt.t = fun ?buffer ?flags ?perm ~mode filename ->
+    let flags = openf_trans flags in
+    Uwt_io.open_file ?buffer ?flags ?perm ~mode filename
+
+  let with_file ?buffer ?flags ?perm ~mode filename f =
+    let flags = openf_trans flags in
+    Uwt_io.with_file ?buffer ?flags ?perm ~mode filename f
+
+  let open_temp_file ?buffer ?flags ?perm ?temp_dir ?prefix () =
+    let flags = openf_trans flags in
+    Uwt_io.open_temp_file ?buffer ?flags ?perm ?temp_dir ?prefix ()
+
+  let with_temp_file ?buffer ?flags ?perm ?temp_dir ?prefix f =
+    let flags = openf_trans flags in
+    Uwt_io.with_temp_file ?buffer ?flags ?perm ?temp_dir ?prefix f
 
 end
