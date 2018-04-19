@@ -1,3 +1,14 @@
+0.3.0.1 2018-04-20
+---------------------------
+
+Maintenance release, because the bundled libuv version of the previous
+release contains a serious regression.
+
+- update to libuv 1.20.1
+
+- File related functions inside `Uwt_compat.Lwt_io` now take
+  parameters of type `Unix.open_flag` instead of `Uwt.Fs.uv_open_flag`
+  
 0.3.0 2018-04-15
 ---------------------------
 
