@@ -63,6 +63,12 @@ if [ "$unix" = "true" ]; then
     ln -s "${lib}" examples/libuv.a
     ln -s "${lib}" test/libuv.a
 else
+    cp -p src/win/thread.c src/win/thread.c.n
+    if ! patch -p1 <../dist/mingw.patch >/dev/null 2>&1; then
+        mv src/win/thread.c.n src/win/thread.c
+    else
+        rm src/win/thread.c.n
+    fi
     if [ "$system" = "win32" ] || [ "$system" = "win64" ] ; then
         if [ ! -f Release/lib/libuv.lib ]; then
             if [ ! -f libuv32.vcxproj ] && [ -f ../dist/libuv32.vcxproj ]; then
