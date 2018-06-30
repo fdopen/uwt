@@ -98,31 +98,28 @@
     }                                           \
   } while(0)
 
-#define COPY_STR2(x,y,code)                     \
-  do {                                          \
-    char * x##_dup = NULL;                      \
-    char * y##_dup = NULL;                      \
-    CHECK_STRING(x);                            \
-    CHECK_STRING(y);                            \
-    if ( callback_type == CB_SYNC ){            \
-      x ## _dup = strdup(String_val(x));        \
-      if ( x ## _dup == NULL ){                 \
-        ret = UV_ENOMEM;                        \
-        goto eend;                              \
-      }                                         \
-      y ## _dup = strdup(String_val(y));        \
-      if ( y ## _dup == NULL ){                 \
-        free(x ## _dup);                        \
-        x ## _dup = NULL;                       \
-        ret = UV_ENOMEM;                        \
-        goto eend;                              \
-      }                                         \
-    }                                           \
-    do code while(0);                           \
-    if ( callback_type == CB_SYNC ){            \
-      free( x##_dup );                          \
-      free( y##_dup );                          \
-    }                                           \
+#define COPY_STR2(x,y,code)                                 \
+  do {                                                      \
+    char * x##_dup = NULL;                                  \
+    char * y##_dup = NULL;                                  \
+    CHECK_STRING(x);                                        \
+    CHECK_STRING(y);                                        \
+    if ( callback_type == CB_SYNC ){                        \
+      const size_t xdup_len = strlen(String_val(x)) + 1;    \
+      const size_t ydup_len = strlen(String_val(y)) + 1;    \
+      x ## _dup = malloc(xdup_len + ydup_len);              \
+      if ( x ## _dup == NULL ){                             \
+        ret = UV_ENOMEM;                                    \
+        goto eend;                                          \
+      }                                                     \
+      memcpy(x##_dup, String_val(x), xdup_len);             \
+      y ## _dup = x##_dup + xdup_len;                       \
+      memcpy(y##_dup, String_val(y), ydup_len);             \
+    }                                                       \
+    do code while(0);                                       \
+    if ( callback_type == CB_SYNC ){                        \
+      free( x##_dup );                                      \
+    }                                                       \
   } while(0)
 
 #define STRING_VAL(x)                           \
