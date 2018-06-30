@@ -43,8 +43,9 @@ end
 
 module Udp = struct
   type error = [%import: Uwt_base.error] [@@deriving show]
-  module Bytes = struct
-    type t = [%import: Bytes.t] [@@deriving show]
-  end
-  type recv_result = [%import: Uwt.Udp.recv_result] [@@deriving show]
+  type recv_result = Uwt.Udp.recv_result =
+    | Data of Bytes.t * sockaddr option
+    | Partial_data of Bytes.t * sockaddr option
+    | Empty_from of sockaddr
+    | Transmission_error of error [@@deriving show]
 end

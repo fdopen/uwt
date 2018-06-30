@@ -122,14 +122,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\uv.h"/>
-    <ClInclude Include="include\tree.h"/>
-    <ClInclude Include="include\uv-errno.h"/>
-    <ClInclude Include="include\uv-threadpool.h"/>
-    <ClInclude Include="include\uv-version.h"/>
+    <ClInclude Include="include\uv\tree.h"/>
+    <ClInclude Include="include\uv\errno.h"/>
+    <ClInclude Include="include\uv\threadpool.h"/>
+    <ClInclude Include="include\uv\version.h"/>
     <ClInclude Include="src\heap-inl.h"/>
     <ClInclude Include="src\queue.h"/>
     <ClInclude Include="src\uv-common.h"/>
-    <ClInclude Include="include\uv-win.h"/>
+    <ClInclude Include="include\uv\win.h"/>
     <ClInclude Include="src\win\atomicops-inl.h"/>
     <ClInclude Include="src\win\handle-inl.h"/>
     <ClInclude Include="src\win\internal.h"/>
@@ -142,6 +142,7 @@
     <ClCompile Include="src\fs-poll.c"/>
     <ClCompile Include="src\inet.c"/>
     <ClCompile Include="src\threadpool.c"/>
+    <ClCompile Include="src\uv-data-getter-setters.c"/>
     <ClCompile Include="src\uv-common.c"/>
     <ClCompile Include="src\version.c"/>
     <ClCompile Include="src\win\async.c"/>

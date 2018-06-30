@@ -1,5 +1,5 @@
 .DEFAULT: lib
-.PHONY: clean all distclean doc lib minimal lwtlib
+.PHONY: clean all distclean doc lib minimal lwtlib remove_uv_include
 
 CC= $(OCAMLC_CC)
 
@@ -130,25 +130,34 @@ section
 		cp ../dist/style.css html/style.css
 
 ConfReplace(META)
+
+remove_uv_include::
+	section
+		x=$(shell $(OCAMLFIND) printconf destdir)
+		if $(not $(equal $(x), $(EMPTY)))
+			rm -rf $(x)/uwt/uv
+
+uninstall:: remove_uv_include
+install:: remove_uv_include
+
 section
 	x=$(UWT_BASE) $(UV_SYNC) uwt-worker.h uwt-error.h
 	y=$(UWT_CORE) $(UWT_COMPAT) $(UWT_EXT) $(UWT_PREEMPTIVE)
 	if $(not $(equal $(INTERNAL_LIBUV),$(EMPTY)))
-		export
-		match $(OCAMLC_SYSTEM)
-		case $"win*"
-			export
-			x+=libuv$(EXT_LIB) $(glob ../libuv/include/*.h)
-		case $"mingw*"
-			export
-			x+=libuv$(EXT_LIB) $(glob ../libuv/include/*.h)
-		default
-			export
-			x+=libuv$(EXT_LIB) $(filter-out %tree.h %stdint-msvc2008.h, $(glob ../libuv/include/*.h))
+		export x
+		x+=libuv$(EXT_LIB) $(glob ../libuv/include/*.h)
 	if $(equal $(HAVE_LWT), true)
 		Install_helper($(PROJNAME),$(x) $(y),$(EMPTY))
 	else
 		Install_helper($(PROJNAME),$(x),$(EMPTY))
+
+if $(not $(equal $(INTERNAL_LIBUV),$(EMPTY)))
+	install::
+		section
+			x=$(shell $(OCAMLFIND) printconf destdir)
+			if $(not $(equal $(x), $(EMPTY)))
+				mkdir(-m 0755 -p $(x)/uwt/uv)
+				cp $(glob ../libuv/include/uv/*.h) $(x)/uwt/uv
 
 if $(equal $(INTERNAL_LIBUV),$(EMPTY))
 	clean::

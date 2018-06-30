@@ -75,9 +75,11 @@ else
                 # that is not understood by flexlink. Changing them via
                 # grep/sed is too fragile. Things to disable: LTCG /
                 # WholeProgramOptimization
+                pform=x64
                 target_arch=x64
                 if [ "$system" = "win32" ]; then
                     target_arch=ia32
+                    pform=x86
                 fi
                 set +u
                 if [ "$PYTHON" = "" ]; then
@@ -101,7 +103,21 @@ else
                     cp libuv64.vcxproj libuv.vcxproj
                 fi
             fi
-            MSBuild.exe libuv.vcxproj '/t:Build' "/p:Configuration=Release;Platform=$pform" '/clp:NoSummary;NoItemAndPropertyList;Verbosity=minimal' '/nologo' >&2
+            set +u
+            to_add=
+            case "$WINDOWSSDKVERSION" in
+                10*)
+                    to_add="/p:WindowsTargetPlatformVersion=${WINDOWSSDKVERSION}"
+                    ;;
+            esac
+            case "$VISUALSTUDIOVERSION" in
+                15.*)
+                    # TODO: how to detect special settings like v141_xp ?
+                    to_add="${to_add} /p:PlatformToolset=v141"
+                    ;;
+            esac
+            set -u
+            MSBuild.exe libuv.vcxproj '/t:Build' "/p:Configuration=Release;Platform=$pform" '/clp:NoSummary;NoItemAndPropertyList;Verbosity=minimal' '/nologo' $to_add >&2
         fi
         lib="libuv/Release/lib/libuv.lib"
         ext_lib=".lib"

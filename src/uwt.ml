@@ -42,7 +42,7 @@ module LInt_result = struct
   let mfail ~name ~param (x: 'a Int_result.t) =
     Lwt.fail(Int_result.to_exn ~param ~name x)
 
-  let fail ?(name="") ?(param="") (x:'a Int_result.t) =
+  let fail ~name ~param (x:'a Int_result.t) =
     if Int_result.is_error x then
       mfail ~name ~param x
     else

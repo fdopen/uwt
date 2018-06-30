@@ -125,6 +125,9 @@ MixedLibrary(name,mlfiles,cfiles)=
 	MLIFILES = $(filter-exists $(addsuffix .mli, $(mlfiles)))
 	C_OBJS = $(addsuffix $(EXT_OBJ), $(cfiles))
 	LDOPT_LDFLAGS=$(mapprefix -ldopt, $(LDFLAGS))
+	if $(or $(equal $(OCAMLC_SYSTEM),mingw), $(equal $(OCAMLC_SYSTEM),mingw64))
+		LDOPT_LDFLAGS+=$(mapprefix -ldopt, -link -static-libgcc)
+		export LDOPT_LDFLAGS
 	CCLIB_LDFLAGS=$(mapprefix -cclib, $(LDFLAGS))
 	Repeat_ctargets($(cfiles))
 	lib$(name)$(EXT_LIB) dll$(name)$(EXT_DLL): $(C_OBJS)

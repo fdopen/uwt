@@ -11,7 +11,7 @@ diff --git a/src/unix/stream.c b/src/unix/stream.c
 index 7059df1..8b78341 100644
 --- a/src/unix/stream.c
 +++ b/src/unix/stream.c
-@@ -1545,7 +1545,7 @@ int uv_try_write(uv_stream_t* stream,
+@@ -1546,7 +1546,7 @@ int uv_try_write(uv_stream_t* stream,
    /* Unqueue request, regardless of immediateness */
    QUEUE_REMOVE(&req.queue);
    uv__req_unregister(stream->loop, &req);

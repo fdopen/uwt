@@ -14,6 +14,7 @@ build-test: [
   ["omake" "test" ]
 ]
 remove: [
+  ["rm" "-rf" "%{prefix}%/lib/uwt/uv"]
   ["ocamlfind" "remove" "uwt"]
   ["rm" "-rf" "%{prefix}%/doc/uwt"]
 ]

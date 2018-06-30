@@ -215,7 +215,7 @@ CAMLprim value
 uwt_pipe_chmod(value o_pipe, value o_flags)
 {
 #if HAVE_DECL_UV_PIPE_CHMOD
-  HANDLE_NO_UNINIT_CLOSED_WRAP(o_pipe);
+  HANDLE_NO_UNINIT_CLOSED_INT_RESULT(o_pipe);
   CAMLparam1(o_pipe);
   struct handle * op = Handle_val(o_pipe);
   int res;
