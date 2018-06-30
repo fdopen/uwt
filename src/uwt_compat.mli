@@ -1,3 +1,6 @@
+(* This file is part of uwt, released under the MIT license. See LICENSE.md for
+   details, or visit https://github.com/fdopen/uwt/blob/master/LICENSE.md. *)
+
 (** Lwt_unix compat module *)
 
 module Lwt_main = Uwt.Main

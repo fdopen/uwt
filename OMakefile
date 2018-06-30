@@ -156,7 +156,7 @@ opam-install:: install
 				value $(x)
 		docdir=$(t)/doc/uwt
 		mkdir(0o755,-p $(docdir))
-		cp(CHANGES.md COPYING README.md $(docdir))
+		cp(CHANGES.md LICENSE.md README.md $(docdir))
 		if $(not $(equal $(INTERNAL_LIBUV),$(EMPTY)))
 			cp(libuv/LICENSE $(docdir))
 
