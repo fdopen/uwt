@@ -45,23 +45,36 @@ poll_cb(uv_poll_t* handle, int status, int events)
   HANDLE_CB_END(param);
 }
 
+static int convert_poll_flag_list(value o_event)
+{
+  const int event = SAFE_CONVERT_FLAG_LIST(o_event,poll_flag_table);
+#if !defined(HAVE_DECL_UV_DISCONNECT) || !HAVE_DECL_UV_DISCONNECT
+  if (unlikely( event & 4 )){
+    return UV_ENOSYS;
+  }
+#endif
+#if !defined(HAVE_DECL_UV_PRIORITIZED) || !HAVE_DECL_UV_PRIORITIZED
+  if (unlikely( event & 8 )){
+    return UV_ENOSYS;
+  }
+#endif
+  if (unlikely( event == 0 )){
+    return UV_EINVAL; /* if event is 0, uv_poll_start is identic to
+                         uv_poll_stop. Nothing will ever happen. */
+  }
+  return event;
+}
+
 CAMLprim value
 uwt_poll_start(value o_loop,
                value o_sock_or_fd,
                value o_event,
                value o_cb)
 {
-  const int event = SAFE_CONVERT_FLAG_LIST(o_event,poll_flag_table);
-#if !defined(HAVE_DECL_UV_DISCONNECT) || !HAVE_DECL_UV_DISCONNECT
-  if (unlikely( event & 4 )){
-    return uwt__alloc_eresult(VAL_UWT_ERROR_ENOSYS);
+  const int event = convert_poll_flag_list(o_event);
+  if (event < 0){
+    return uwt__alloc_eresult(Val_uwt_error(event));
   }
-#endif
-#if !defined(HAVE_DECL_UV_PRIORITIZED) || !HAVE_DECL_UV_PRIORITIZED
-  if (unlikely( event & 8 )){
-    return uwt__alloc_eresult(VAL_UWT_ERROR_ENOSYS);
-  }
-#endif
 #ifdef _WIN32
   if (unlikely( Descr_kind_val(o_sock_or_fd) != KIND_SOCKET )){
     return uwt__alloc_eresult(VAL_UWT_ERROR_EINVAL);
@@ -103,4 +116,16 @@ uwt_poll_start(value o_loop,
     Tag_val(ret) = Error_tag;
   }
   CAMLreturn(ret);
+}
+
+CAMLprim value
+uwt_poll_update_na(value o_handle, value o_event)
+{
+  HANDLE_INIT_NA(h, o_handle);
+  const int event = convert_poll_flag_list(o_event);
+  if (event < 0){
+    return (Val_uwt_int_result(event));
+  }
+  const int r = uv_poll_start((uv_poll_t*)h->handle, event, poll_cb);
+  return (VAL_UWT_UNIT_RESULT(r));
 }

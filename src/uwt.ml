@@ -1193,8 +1193,20 @@ module Poll = struct
     loop -> Unix.file_descr -> event list -> ( t -> event list uv_result -> unit ) -> t uv_result
     = "uwt_poll_start"
 
-  let start_exn f e ~cb = start loop f e cb |> to_exn "uv_poll_start"
-  let start f e ~cb = start loop f e cb
+  let start f e ~cb =
+    match e with
+    | [] -> Error EINVAL
+    | _ -> start loop f e cb
+  let start_exn f e ~cb = start f e ~cb |> to_exn "uv_poll_start"
+
+  external update_events: t -> event list -> Int_result.unit
+    = "uwt_poll_update_na"
+
+  let update_events t e =
+    match e with
+    | [] -> LInt_result.uforce Int_result.einval
+    | _ -> update_events t e
+  let update_events_exn t e = update_events t e |> to_exnu "uv_poll_start"
 end
 
 module Fs_event = struct

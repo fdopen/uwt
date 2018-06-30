@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 UWT_EXTERN4(uwt_poll_start);
+UWT_EXTERN2(uwt_poll_update_na);
 
 #ifdef __cplusplus
 }

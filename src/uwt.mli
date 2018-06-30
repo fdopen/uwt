@@ -1023,6 +1023,11 @@ module Poll : sig
   *)
 
   val start_exn : Unix.file_descr -> event list -> cb:(t -> event list uv_result -> unit) -> t
+
+  val update_events : t -> event list -> Int_result.unit
+  (** Update the events mask that is being watched for *)
+
+  val update_events_exn : t -> event list -> unit
 end
 
 module Fs_event : sig
