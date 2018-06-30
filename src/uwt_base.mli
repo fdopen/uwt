@@ -552,6 +552,9 @@ module type Fs_functions = sig
   val fchown : file -> uid:int -> gid:int -> unit t
   (** Change the owner [~uid] and owner [~gid] of the opened file. *)
 
+  val lchown : string -> uid:int -> gid:int -> unit t
+  (** like chown, but do not dereference symbolic links *)
+
   val scandir : string -> (file_kind * string) array t
   (** On Linux, getting the type of an entry is only supported by some
       filesystems (btrfs, ext2, ext3 and ext4 at the time of this

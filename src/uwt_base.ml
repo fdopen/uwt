@@ -486,6 +486,7 @@ module type Fs_functions = sig
   val fchmod : file -> perm:int -> unit t
   val chown : string -> uid:int -> gid:int -> unit t
   val fchown : file -> uid:int -> gid:int -> unit t
+  val lchown : string -> uid:int -> gid:int -> unit t
   val scandir : string -> (file_kind * string) array t
   val realpath: string -> string t
   val copyfile : ?excl:bool -> ?clone:clone_mode -> src:string -> dst:string -> unit -> unit t

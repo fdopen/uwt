@@ -24,6 +24,18 @@
 #define CB_SYNC 0
 #define CB_LWT 1
 
+#define NO_FS_3(name)                                                   \
+  value uwt_ ## name (value a, value b, value c, value d, value e) {    \
+    (void) a; (void) b; (void) c; (void) d; (void) e;                   \
+    value ret = caml_alloc_small(1,Error_tag);                          \
+    Field(ret,0) = VAL_UWT_ERROR_ENOSYS;                                \
+    return ret;                                                         \
+  }                                                                     \
+  value uwt_ ## name ## _sync(value a, value b, value c) {              \
+    (void) a; (void) b; (void) c;                                       \
+    return VAL_UWT_INT_RESULT_ENOSYS;                                   \
+  }
+
 #define MALLOC_UV_BUF_T(buf,xlen)                       \
   do {                                                  \
     uv_buf_t * buf__ = buf;                             \
@@ -921,6 +933,25 @@ FSFUNC_3(fs_fchown, runit, o_fd, o_uid, o_gid, {
   }
   BLOCK(uv_fs_fchown(loop, req, fd, uid, gid, cb));
 })
+
+#if HAVE_DECL_UV_FS_LCHOWN
+FSFUNC_3(fs_lchown, runit, o_path, o_uid, o_gid, {
+  const intnat r_uid = Long_val(o_uid);
+  const intnat r_gid = Long_val(o_gid);
+  const uv_uid_t uid = r_uid;
+  const uv_gid_t gid = r_gid;
+  if ( r_uid != uid || gid != r_gid || ((uv_uid_t)-1 >= 0 && r_uid < 0) ||
+       ((uv_gid_t)-1 >= 0 && r_gid < 0) ){
+    ret = UV_EINVAL;
+    goto eend;
+  }
+  COPY_STR1(o_path,{
+    BLOCK(uv_fs_lchown(loop, req, STRING_VAL(o_path), uid, gid, cb));
+  });
+})
+#else
+NO_FS_3(fs_lchown)
+#endif
 POP_WARNING();
 
 FSFUNC_3(fs_utime, runit, o_p, o_atime, o_mtime, {
@@ -1035,17 +1066,7 @@ FSFUNC_3(fs_copyfile, runit, o_old, o_new, o_flags,{
 #undef UWT_FS_COPYFILE_FICLONE
 #undef UWT_FS_COPYFILE_FICLONE_FORCE
 #else
-value uwt_fs_copyfile(value a, value b, value c, value d, value e) {
-  (void) a; (void) b; (void) c; (void) d; (void) e;
-  value ret = caml_alloc_small(1,Error_tag);
-  Field(ret,0) = VAL_UWT_ERROR_ENOSYS;
-  return ret;
-}
-
-value uwt_fs_copyfile_sync(value a, value b, value c) {
-  (void) a; (void) b; (void) c;
-  return VAL_UWT_INT_RESULT_ENOSYS;
-}
+NO_FS_3(fs_copyfile)
 #endif /* HAVE_DECL_UV_FS_COPYFILE */
 
 #ifdef DEF_O_NONBLOCK
@@ -1082,3 +1103,4 @@ value uwt_fs_copyfile_sync(value a, value b, value c) {
 #undef R_WRAP_SYNC
 #undef STRING_VAL
 #undef runit
+#undef NO_FS_3

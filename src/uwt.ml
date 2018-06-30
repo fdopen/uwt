@@ -1840,6 +1840,10 @@ module Fs = struct
     "uwt_fs_fchown"
   let fchown fd ~uid ~gid = Req.qlu ~f:(fchown fd uid gid) ~name:"fchown" ~param
 
+  external lchown:
+    string -> int -> int -> loop -> unit_cb -> Req.r = "uwt_fs_lchown"
+  let lchown s ~uid ~gid = Req.qlu ~f:(lchown s uid gid) ~name:"lchown" ~param:s
+
   external scandir: string -> loop -> (file_kind * string) array cb ->
     Req.r = "uwt_fs_scandir"
   let scandir param = Req.ql ~f:(scandir param) ~name:"scandir" ~param

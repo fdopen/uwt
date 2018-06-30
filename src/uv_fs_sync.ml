@@ -103,6 +103,10 @@ let chown s ~uid ~gid = chown s uid gid |> wrap
 external fchown: file -> int -> int -> Int_result.int = "uwt_fs_fchown_sync"
 let fchown fd ~uid ~gid = fchown fd uid gid |> wrap
 
+external lchown: string -> int -> int -> Int_result.int =
+  "uwt_fs_lchown_sync"
+let lchown s ~uid ~gid = lchown s uid gid |> wrap
+
 external openfile: string -> uv_open_flag list -> int ->
   file uv_result = "uwt_fs_open_sync"
 

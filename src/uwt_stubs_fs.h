@@ -72,6 +72,7 @@ X4(chmod);
 X4(fchmod);
 X5(chown);
 X5(fchown);
+X5(lchown);
 X5(utime);
 X5(futime);
 X5(symlink);
