@@ -25,11 +25,16 @@
 <code class="code"><span class="keyword">sig</span><br>
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;file_descr<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_file_descr&nbsp;:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;[&nbsp;<span class="keywordsign">`</span><span class="constructor">File</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.file&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Pipe</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Tcp</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Tcp</span>.t&nbsp;]&nbsp;<span class="keywordsign">-&gt;</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Uwt_compat</span>.<span class="constructor">Lwt_unix</span>.file_descr<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[&nbsp;<span class="keywordsign">`</span><span class="constructor">File</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.file<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Pipe</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Tcp</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Tcp</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Udp</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Udp</span>.t&nbsp;]&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_compat</span>.<span class="constructor">Lwt_unix</span>.file_descr<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;from_file_descr&nbsp;:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Uwt_compat</span>.<span class="constructor">Lwt_unix</span>.file_descr&nbsp;<span class="keywordsign">-&gt;</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;[&nbsp;<span class="keywordsign">`</span><span class="constructor">File</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.file&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Pipe</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Tcp</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Tcp</span>.t&nbsp;]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[&nbsp;<span class="keywordsign">`</span><span class="constructor">File</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.file<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Pipe</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Pipe</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Tcp</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Tcp</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="keywordsign">`</span><span class="constructor">Udp</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Udp</span>.t&nbsp;]<br>
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;dir_handle<br>
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;process_status&nbsp;=<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Unix</span>.process_status&nbsp;=<br>
@@ -291,6 +296,8 @@
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getpwuid&nbsp;:&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.passwd_entry&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getgrgid&nbsp;:&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.group_entry&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;chdir&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;chroot&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;getcwd&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;gethostname&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;gethostbyname&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.host_entry&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;gethostbyaddr&nbsp;:&nbsp;<span class="constructor">Unix</span>.inet_addr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.host_entry&nbsp;<span class="constructor">Lwt</span>.t<br>
@@ -309,4 +316,12 @@
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pipe_out&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.file_descr&nbsp;*&nbsp;<span class="constructor">Uwt_compat</span>.<span class="constructor">Lwt_unix</span>.file_descr<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;system&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unix</span>.process_status&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;utimes&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;float&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;float&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;signal_handler_id<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;on_signal&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt_compat</span>.<span class="constructor">Lwt_unix</span>.signal_handler_id<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;on_signal_full&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Uwt_compat</span>.<span class="constructor">Lwt_unix</span>.signal_handler_id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Uwt_compat</span>.<span class="constructor">Lwt_unix</span>.signal_handler_id<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;disable_signal_handler&nbsp;:&nbsp;<span class="constructor">Uwt_compat</span>.<span class="constructor">Lwt_unix</span>.signal_handler_id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 <span class="keyword">end</span></code></body></html>

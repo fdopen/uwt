@@ -119,4 +119,11 @@
 </div>
 </div>
 
-<pre><span id="VALstart_exn"><span class="keyword">val</span> start_exn</span> : <code class="type">Unix.file_descr -><br>       <a href="Uwt.Poll.html#TYPEevent">event</a> list -><br>       cb:(<a href="Uwt.Poll.html#TYPEt">t</a> -> <a href="Uwt.Poll.html#TYPEevent">event</a> list uv_result -> unit) -> <a href="Uwt.Poll.html#TYPEt">t</a></code></pre></body></html>
+<pre><span id="VALstart_exn"><span class="keyword">val</span> start_exn</span> : <code class="type">Unix.file_descr -><br>       <a href="Uwt.Poll.html#TYPEevent">event</a> list -><br>       cb:(<a href="Uwt.Poll.html#TYPEt">t</a> -> <a href="Uwt.Poll.html#TYPEevent">event</a> list uv_result -> unit) -> <a href="Uwt.Poll.html#TYPEt">t</a></code></pre>
+<pre><span id="VALupdate_events"><span class="keyword">val</span> update_events</span> : <code class="type"><a href="Uwt.Poll.html#TYPEt">t</a> -> <a href="Uwt.Poll.html#TYPEevent">event</a> list -> Int_result.unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>Update the events mask that is being watched for</p>
+</div>
+</div>
+
+<pre><span id="VALupdate_events_exn"><span class="keyword">val</span> update_events_exn</span> : <code class="type"><a href="Uwt.Poll.html#TYPEt">t</a> -> <a href="Uwt.Poll.html#TYPEevent">event</a> list -> unit</code></pre></body></html>

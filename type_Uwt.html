@@ -409,6 +409,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fchmod&nbsp;:&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;perm:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;t<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;chown&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;uid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;gid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;t<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fchown&nbsp;:&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;uid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;gid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;lchown&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;uid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;gid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;t<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;scandir&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(file_kind&nbsp;*&nbsp;string)&nbsp;array&nbsp;t<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;realpath&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;t<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;copyfile&nbsp;:<br>
@@ -682,6 +683,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fchmod&nbsp;:&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;perm:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;chown&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;uid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;gid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fchown&nbsp;:&nbsp;file&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;uid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;gid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;lchown&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;uid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;gid:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;scandir&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(file_kind&nbsp;*&nbsp;string)&nbsp;array&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;realpath&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;copyfile&nbsp;:<br>
@@ -1208,6 +1210,9 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Poll</span>.event&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cb:(<span class="constructor">Uwt</span>.<span class="constructor">Poll</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Poll</span>.event&nbsp;list&nbsp;uv_result&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Poll</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;update_events&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Poll</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Poll</span>.event&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Int_result</span>.unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;update_events_exn&nbsp;:&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Poll</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Uwt</span>.<span class="constructor">Poll</span>.event&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">end</span><br>
 &nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">Fs_event</span>&nbsp;:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">sig</span><br>

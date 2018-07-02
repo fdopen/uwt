@@ -659,7 +659,7 @@
 </div>
 </div>
 
-<pre><span id="VALopen_connection"><span class="keyword">val</span> open_connection</span> : <code class="type">?in_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?out_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       Uwt.sockaddr -> (<a href="Uwt_io.html#TYPEinput_channel">input_channel</a> * <a href="Uwt_io.html#TYPEoutput_channel">output_channel</a>) Lwt.t</code></pre><div class="info ">
+<pre><span id="VALopen_connection"><span class="keyword">val</span> open_connection</span> : <code class="type">?in_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?out_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       Unix.sockaddr -> (<a href="Uwt_io.html#TYPEinput_channel">input_channel</a> * <a href="Uwt_io.html#TYPEoutput_channel">output_channel</a>) Lwt.t</code></pre><div class="info ">
 <div class="info-desc">
 <p><code class="code">open_connection ?in_buffer ?out_buffer addr</code> opens a connection to the
     given address and returns two channels for using it.</p>
@@ -672,7 +672,7 @@
 </ul>
 </div>
 
-<pre><span id="VALwith_connection"><span class="keyword">val</span> with_connection</span> : <code class="type">?in_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?out_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       Uwt.sockaddr -><br>       (<a href="Uwt_io.html#TYPEinput_channel">input_channel</a> * <a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre><div class="info ">
+<pre><span id="VALwith_connection"><span class="keyword">val</span> with_connection</span> : <code class="type">?in_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       ?out_buffer:<a href="Uwt_bytes.html#TYPEt">Uwt_bytes.t</a> -><br>       Unix.sockaddr -><br>       (<a href="Uwt_io.html#TYPEinput_channel">input_channel</a> * <a href="Uwt_io.html#TYPEoutput_channel">output_channel</a> -> 'a Lwt.t) -> 'a Lwt.t</code></pre><div class="info ">
 <div class="info-desc">
 <p><code class="code">with_connection ?fd ?in_buffer ?out_buffer addr f</code> opens a connection to
       the given address and passes the channels to <code class="code">f</code></p>

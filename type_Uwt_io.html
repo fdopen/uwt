@@ -158,11 +158,11 @@
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;open_connection&nbsp;:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;?in_buffer:<span class="constructor">Uwt_bytes</span>.t&nbsp;<span class="keywordsign">-&gt;</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;?out_buffer:<span class="constructor">Uwt_bytes</span>.t&nbsp;<span class="keywordsign">-&gt;</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Uwt</span>.sockaddr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(<span class="constructor">Uwt_io</span>.input_channel&nbsp;*&nbsp;<span class="constructor">Uwt_io</span>.output_channel)&nbsp;<span class="constructor">Lwt</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Unix</span>.sockaddr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(<span class="constructor">Uwt_io</span>.input_channel&nbsp;*&nbsp;<span class="constructor">Uwt_io</span>.output_channel)&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;with_connection&nbsp;:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;?in_buffer:<span class="constructor">Uwt_bytes</span>.t&nbsp;<span class="keywordsign">-&gt;</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;?out_buffer:<span class="constructor">Uwt_bytes</span>.t&nbsp;<span class="keywordsign">-&gt;</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Uwt</span>.sockaddr&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Unix</span>.sockaddr&nbsp;<span class="keywordsign">-&gt;</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Uwt_io</span>.input_channel&nbsp;*&nbsp;<span class="constructor">Uwt_io</span>.output_channel&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Lwt</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;server<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;establish_server_with_client_address&nbsp;:<br>

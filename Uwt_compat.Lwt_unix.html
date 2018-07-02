@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link rel="previous" href="Uwt_compat.Lwt_throttle.html">
+<link rel="next" href="Uwt_compat.Lwt_io.html">
 <link rel="Up" href="Uwt_compat.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
 <link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
@@ -28,7 +29,8 @@
 <body>
 <div class="navbar"><a class="pre" href="Uwt_compat.Lwt_throttle.html" title="Uwt_compat.Lwt_throttle">Previous</a>
 &nbsp;<a class="up" href="Uwt_compat.html" title="Uwt_compat">Up</a>
-&nbsp;</div>
+&nbsp;<a class="post" href="Uwt_compat.Lwt_io.html" title="Uwt_compat.Lwt_io">Next</a>
+</div>
 <h1>Module <a href="type_Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a></h1>
 
 <pre><span id="MODULELwt_unix"><span class="keyword">module</span> Lwt_unix</span>: <code class="code">sig</code> <a href="Uwt_compat.Lwt_unix.html">..</a> <code class="code">end</code></pre><div class="info module top">
@@ -45,8 +47,8 @@
 <pre><span id="TYPEfile_descr"><span class="keyword">type</span> <code class="type"></code>file_descr</span> </pre>
 
 
-<pre><span id="VALto_file_descr"><span class="keyword">val</span> to_file_descr</span> : <code class="type">[ `File of Uwt.file | `Pipe of <a href="Uwt.Pipe.html#TYPEt">Uwt.Pipe.t</a> | `Tcp of <a href="Uwt.Tcp.html#TYPEt">Uwt.Tcp.t</a> ] -><br>       <a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a></code></pre>
-<pre><span id="VALfrom_file_descr"><span class="keyword">val</span> from_file_descr</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -><br>       [ `File of Uwt.file | `Pipe of <a href="Uwt.Pipe.html#TYPEt">Uwt.Pipe.t</a> | `Tcp of <a href="Uwt.Tcp.html#TYPEt">Uwt.Tcp.t</a> ]</code></pre>
+<pre><span id="VALto_file_descr"><span class="keyword">val</span> to_file_descr</span> : <code class="type">[ `File of Uwt.file<br>       | `Pipe of <a href="Uwt.Pipe.html#TYPEt">Uwt.Pipe.t</a><br>       | `Tcp of <a href="Uwt.Tcp.html#TYPEt">Uwt.Tcp.t</a><br>       | `Udp of <a href="Uwt.Udp.html#TYPEt">Uwt.Udp.t</a> ] -> <a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a></code></pre>
+<pre><span id="VALfrom_file_descr"><span class="keyword">val</span> from_file_descr</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEfile_descr">file_descr</a> -><br>       [ `File of Uwt.file<br>       | `Pipe of <a href="Uwt.Pipe.html#TYPEt">Uwt.Pipe.t</a><br>       | `Tcp of <a href="Uwt.Tcp.html#TYPEt">Uwt.Tcp.t</a><br>       | `Udp of <a href="Uwt.Udp.html#TYPEt">Uwt.Udp.t</a> ]</code></pre>
 <pre><span id="TYPEdir_handle"><span class="keyword">type</span> <code class="type"></code>dir_handle</span> </pre>
 
 
@@ -366,6 +368,18 @@
 </div>
 </div>
 
+<pre><span id="VALchroot"><span class="keyword">val</span> chroot</span> : <code class="type">string -> unit Lwt.t</code></pre><div class="info ">
+<div class="info-desc">
+<p>Wrapper for <code class="code">Unix.chroot</code></p>
+</div>
+</div>
+
+<pre><span id="VALgetcwd"><span class="keyword">val</span> getcwd</span> : <code class="type">unit -> string Lwt.t</code></pre><div class="info ">
+<div class="info-desc">
+<p>Wrapper for <code class="code">Unix.getcwd</code></p>
+</div>
+</div>
+
 <pre><span id="VALgethostname"><span class="keyword">val</span> gethostname</span> : <code class="type">unit -> string Lwt.t</code></pre><div class="info ">
 <div class="info-desc">
 <p>Return the name of the local host.</p>
@@ -465,6 +479,31 @@
        times of the file at <code class="code">path</code>. The access time is set to <code class="code">atime</code>
        and the modification time to <code class="code">mtime</code>. To set both to the
        current time, call <code class="code">utimes path 0. 0.</code>.</p>
+</div>
+</div>
+
+<pre><span id="TYPEsignal_handler_id"><span class="keyword">type</span> <code class="type"></code>signal_handler_id</span> </pre>
+
+
+<pre><span id="VALon_signal"><span class="keyword">val</span> on_signal</span> : <code class="type">int -> (int -> unit) -> <a href="Uwt_compat.Lwt_unix.html#TYPEsignal_handler_id">signal_handler_id</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">on_signal signum f</code> calls <code class="code">f</code> each time the signal with numnber
+        <code class="code">signum</code> is received by the process. It returns a signal handler
+        identifier that can be used to stop monitoring <code class="code">signum</code>.</p>
+</div>
+</div>
+
+<pre><span id="VALon_signal_full"><span class="keyword">val</span> on_signal_full</span> : <code class="type">int -><br>       (<a href="Uwt_compat.Lwt_unix.html#TYPEsignal_handler_id">signal_handler_id</a> -> int -> unit) -><br>       <a href="Uwt_compat.Lwt_unix.html#TYPEsignal_handler_id">signal_handler_id</a></code></pre><div class="info ">
+<div class="info-desc">
+<p><code class="code">on_signal_full f</code> is the same as <code class="code">on_signal f</code> except that <code class="code">f</code>
+        also receive the signal handler identifier as argument so it can
+        disable it.</p>
+</div>
+</div>
+
+<pre><span id="VALdisable_signal_handler"><span class="keyword">val</span> disable_signal_handler</span> : <code class="type"><a href="Uwt_compat.Lwt_unix.html#TYPEsignal_handler_id">signal_handler_id</a> -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>Stops receiving this signal</p>
 </div>
 </div>
 </body></html>

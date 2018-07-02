@@ -236,6 +236,12 @@
 
 </div>
 </td></tr>
+<tr><td><a href="Uwt_compat.Lwt_unix.html#VALchroot">chroot</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
+<td><div class="info">
+<p>Wrapper for <code class="code">Unix.chroot</code></p>
+
+</div>
+</td></tr>
 <tr><td><a href="Uwt.Unix.html#VALchroot">chroot</a> [<a href="Uwt.Unix.html">Uwt.Unix</a>]</td>
 <td><div class="info">
 <p>Change the process root directory.</p>
@@ -249,15 +255,15 @@
 
 </div>
 </td></tr>
-<tr><td><a href="Uwt_compat.Lwt_unix.html#VALclose">close</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
-<td><div class="info">
-<p>Close a file descriptor.</p>
-
-</div>
-</td></tr>
 <tr><td><a href="Uwt_io.html#VALclose">close</a> [<a href="Uwt_io.html">Uwt_io</a>]</td>
 <td><div class="info">
 <p><code class="code">close ch</code> closes the given channel.</p>
+
+</div>
+</td></tr>
+<tr><td><a href="Uwt_compat.Lwt_unix.html#VALclose">close</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
+<td><div class="info">
+<p>Close a file descriptor.</p>
 
 </div>
 </td></tr>
@@ -368,6 +374,12 @@
 <td></td></tr>
 <tr><td><a href="Uwt.Tcp.html#VALdisable_keepalive_exn">disable_keepalive_exn</a> [<a href="Uwt.Tcp.html">Uwt.Tcp</a>]</td>
 <td></td></tr>
+<tr><td><a href="Uwt_compat.Lwt_unix.html#VALdisable_signal_handler">disable_signal_handler</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
+<td><div class="info">
+<p>Stops receiving this signal</p>
+
+</div>
+</td></tr>
 <tr><td><a href="Uwt.Process.html#VALdisable_stdio_inheritance">disable_stdio_inheritance</a> [<a href="Uwt.Process.html">Uwt.Process</a>]</td>
 <td><div class="info">
 <p>Disables inheritance for file descriptors / handles that this
@@ -847,6 +859,12 @@
 
 </div>
 </td></tr>
+<tr><td><a href="Uwt_compat.Lwt_unix.html#VALgetcwd">getcwd</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
+<td><div class="info">
+<p>Wrapper for <code class="code">Unix.getcwd</code></p>
+
+</div>
+</td></tr>
 <tr><td><a href="Uwt.Unix.html#VALgetcwd">getcwd</a> [<a href="Uwt.Unix.html">Uwt.Unix</a>]</td>
 <td><div class="info">
 <p>Return the name of the current working directory.</p>
@@ -1254,6 +1272,12 @@
 <tr><td><a href="Uwt.Process.html#VALkill_exn">kill_exn</a> [<a href="Uwt.Process.html">Uwt.Process</a>]</td>
 <td></td></tr>
 <tr><td align="left"><div>L</div></td></tr>
+<tr><td><a href="Uwt_base.Fs_functions.html#VALlchown">lchown</a> [<a href="Uwt_base.Fs_functions.html">Uwt_base.Fs_functions</a>]</td>
+<td><div class="info">
+<p>like chown, but do not dereference symbolic links</p>
+
+</div>
+</td></tr>
 <tr><td><a href="Uwt.Main.html#VALleave_iter_hooks">leave_iter_hooks</a> [<a href="Uwt.Main.html">Uwt.Main</a>]</td>
 <td><div class="info">
 <p>Functions that are called after the main iteration.</p>
@@ -1441,6 +1465,21 @@
 
 </div>
 </td></tr>
+<tr><td><a href="Uwt_compat.Lwt_unix.html#VALon_signal">on_signal</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
+<td><div class="info">
+<p><code class="code">on_signal signum f</code> calls <code class="code">f</code> each time the signal with numnber
+        <code class="code">signum</code> is received by the process.</p>
+
+</div>
+</td></tr>
+<tr><td><a href="Uwt_compat.Lwt_unix.html#VALon_signal_full">on_signal_full</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
+<td><div class="info">
+<p><code class="code">on_signal_full f</code> is the same as <code class="code">on_signal f</code> except that <code class="code">f</code>
+        also receive the signal handler identifier as argument so it can
+        disable it.</p>
+
+</div>
+</td></tr>
 <tr><td><a href="Uwt.Signal.html#VALoneshot">oneshot</a> [<a href="Uwt.Signal.html">Uwt.Signal</a>]</td>
 <td><div class="info">
 <p>Wait for the signal once and reset the moment the signal is received.</p>
@@ -1461,6 +1500,8 @@
 
 </div>
 </td></tr>
+<tr><td><a href="Uwt_compat.Lwt_io.html#VALopen_file">open_file</a> [<a href="Uwt_compat.Lwt_io.html">Uwt_compat.Lwt_io</a>]</td>
+<td></td></tr>
 <tr><td><a href="Uwt_process.html#VALopen_process">open_process</a> [<a href="Uwt_process.html">Uwt_process</a>]</td>
 <td></td></tr>
 <tr><td><a href="Uwt_process.html#VALopen_process_full">open_process_full</a> [<a href="Uwt_process.html">Uwt_process</a>]</td>
@@ -1479,6 +1520,8 @@
 
 </div>
 </td></tr>
+<tr><td><a href="Uwt_compat.Lwt_io.html#VALopen_temp_file">open_temp_file</a> [<a href="Uwt_compat.Lwt_io.html">Uwt_compat.Lwt_io</a>]</td>
+<td></td></tr>
 <tr><td><a href="Uwt_compat.Lwt_unix.html#VALopendir">opendir</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
 <td><div class="info">
 <p>This not really opens a descriptor on a
@@ -1573,18 +1616,18 @@
 </td></tr>
 <tr><td><a href="Uwt.Process.html#VALpid_exn">pid_exn</a> [<a href="Uwt.Process.html">Uwt.Process</a>]</td>
 <td></td></tr>
-<tr><td><a href="Uwt_compat.Lwt_unix.html#VALpipe">pipe</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
-<td><div class="info">
-<p><code class="code">pipe ()</code> creates pipe using <code class="code">Unix.pipe</code> and returns two file
-        descriptors created from unix file_descriptor</p>
-
-</div>
-</td></tr>
 <tr><td><a href="Uwt_io.html#VALpipe">pipe</a> [<a href="Uwt_io.html">Uwt_io</a>]</td>
 <td><div class="info">
 <p><code class="code">pipe ?cloexec ?in_buffer ?out_buffer ()</code> creates a pipe using
       <a href="Uwt.Unix.html#VALpipe"><code class="code">Uwt.Unix.pipe</code></a> and makes two channels from the two returned file
       descriptors</p>
+
+</div>
+</td></tr>
+<tr><td><a href="Uwt_compat.Lwt_unix.html#VALpipe">pipe</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
+<td><div class="info">
+<p><code class="code">pipe ()</code> creates pipe using <code class="code">Unix.pipe</code> and returns two file
+        descriptors created from unix file_descriptor</p>
 
 </div>
 </td></tr>
@@ -1729,17 +1772,17 @@
 
 </div>
 </td></tr>
+<tr><td><a href="Uwt_io.html#VALread">read</a> [<a href="Uwt_io.html">Uwt_io</a>]</td>
+<td><div class="info">
+<p><code class="code">read ?count ic</code> reads at most <code class="code">count</code> characters from <code class="code">ic</code>.</p>
+
+</div>
+</td></tr>
 <tr><td><a href="Uwt_compat.Lwt_unix.html#VALread">read</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
 <td><div class="info">
 <p><code class="code">read fd buff ofs len</code> reads <code class="code">len</code> bytes from descriptor <code class="code">fd</code>,
         storing them in byte sequence <code class="code">buff</code>, starting at position <code class="code">ofs</code> in
         <code class="code">buff</code>.</p>
-
-</div>
-</td></tr>
-<tr><td><a href="Uwt_io.html#VALread">read</a> [<a href="Uwt_io.html">Uwt_io</a>]</td>
-<td><div class="info">
-<p><code class="code">read ?count ic</code> reads at most <code class="code">count</code> characters from <code class="code">ic</code>.</p>
 
 </div>
 </td></tr>
@@ -2309,16 +2352,16 @@
 
 </div>
 </td></tr>
-<tr><td><a href="Uwt_compat.Lwt_unix.html#VALstderr">stderr</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
-<td><div class="info">
-<p>The standard file descriptor for printing error messages</p>
-
-</div>
-</td></tr>
 <tr><td><a href="Uwt_io.html#VALstderr">stderr</a> [<a href="Uwt_io.html">Uwt_io</a>]</td>
 <td><div class="info">
 <p>The standard output for error messages, it writes data to
       <code class="code">Uwt.stderr</code></p>
+
+</div>
+</td></tr>
+<tr><td><a href="Uwt_compat.Lwt_unix.html#VALstderr">stderr</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
+<td><div class="info">
+<p>The standard file descriptor for printing error messages</p>
 
 </div>
 </td></tr>
@@ -2328,15 +2371,15 @@
 
 </div>
 </td></tr>
-<tr><td><a href="Uwt_compat.Lwt_unix.html#VALstdin">stdin</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
-<td><div class="info">
-<p>The standard file descriptor for input</p>
-
-</div>
-</td></tr>
 <tr><td><a href="Uwt_io.html#VALstdin">stdin</a> [<a href="Uwt_io.html">Uwt_io</a>]</td>
 <td><div class="info">
 <p>The standard input, it reads data from <code class="code">Uwt.stdin</code></p>
+
+</div>
+</td></tr>
+<tr><td><a href="Uwt_compat.Lwt_unix.html#VALstdin">stdin</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
+<td><div class="info">
+<p>The standard file descriptor for input</p>
 
 </div>
 </td></tr>
@@ -2346,15 +2389,15 @@
 
 </div>
 </td></tr>
-<tr><td><a href="Uwt_compat.Lwt_unix.html#VALstdout">stdout</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
-<td><div class="info">
-<p>The standard file descriptor for output</p>
-
-</div>
-</td></tr>
 <tr><td><a href="Uwt_io.html#VALstdout">stdout</a> [<a href="Uwt_io.html">Uwt_io</a>]</td>
 <td><div class="info">
 <p>The standard output, it writes data to <code class="code">Uwt.stdout</code></p>
+
+</div>
+</td></tr>
+<tr><td><a href="Uwt_compat.Lwt_unix.html#VALstdout">stdout</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
+<td><div class="info">
+<p>The standard file descriptor for output</p>
 
 </div>
 </td></tr>
@@ -2580,6 +2623,14 @@
 
 </div>
 </td></tr>
+<tr><td><a href="Uwt.Poll.html#VALupdate_events">update_events</a> [<a href="Uwt.Poll.html">Uwt.Poll</a>]</td>
+<td><div class="info">
+<p>Update the events mask that is being watched for</p>
+
+</div>
+</td></tr>
+<tr><td><a href="Uwt.Poll.html#VALupdate_events_exn">update_events_exn</a> [<a href="Uwt.Poll.html">Uwt.Poll</a>]</td>
+<td></td></tr>
 <tr><td><a href="Uwt_base.Misc.html#VALuptime">uptime</a> [<a href="Uwt_base.Misc.html">Uwt_base.Misc</a>]</td>
 <td><div class="info">
 <p>Gets the current system uptime.</p>
@@ -2645,6 +2696,8 @@
 
 </div>
 </td></tr>
+<tr><td><a href="Uwt_compat.Lwt_io.html#VALwith_file">with_file</a> [<a href="Uwt_compat.Lwt_io.html">Uwt_compat.Lwt_io</a>]</td>
+<td></td></tr>
 <tr><td><a href="Uwt.Pipe.html#VALwith_open">with_open</a> [<a href="Uwt.Pipe.html">Uwt.Pipe</a>]</td>
 <td></td></tr>
 <tr><td><a href="Uwt.Tcp.html#VALwith_open">with_open</a> [<a href="Uwt.Tcp.html">Uwt.Tcp</a>]</td>
@@ -2679,9 +2732,17 @@
 
 </div>
 </td></tr>
+<tr><td><a href="Uwt_compat.Lwt_io.html#VALwith_temp_file">with_temp_file</a> [<a href="Uwt_compat.Lwt_io.html">Uwt_compat.Lwt_io</a>]</td>
+<td></td></tr>
 <tr><td><a href="Uwt_compat.Lwt_unix.html#VALwith_timeout">with_timeout</a> [<a href="Uwt_compat.Lwt_unix.html">Uwt_compat.Lwt_unix</a>]</td>
 <td><div class="info">
 <p><code class="code">with_timeout d f</code> is a short-hand for:</p>
+
+</div>
+</td></tr>
+<tr><td><a href="Uwt_io.html#VALwrite">write</a> [<a href="Uwt_io.html">Uwt_io</a>]</td>
+<td><div class="info">
+<p><code class="code">write oc str</code> writes all characters of <code class="code">str</code> on <code class="code">oc</code></p>
 
 </div>
 </td></tr>
@@ -2690,12 +2751,6 @@
 <p><code class="code">write fd buff ofs len</code> writes <code class="code">len</code> bytes to descriptor <code class="code">fd</code>,
         taking them from byte sequence <code class="code">buff</code>, starting at position <code class="code">ofs</code>
         in <code class="code">buff</code>.</p>
-
-</div>
-</td></tr>
-<tr><td><a href="Uwt_io.html#VALwrite">write</a> [<a href="Uwt_io.html">Uwt_io</a>]</td>
-<td><div class="info">
-<p><code class="code">write oc str</code> writes all characters of <code class="code">str</code> on <code class="code">oc</code></p>
 
 </div>
 </td></tr>
