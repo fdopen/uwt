@@ -1,6 +1,6 @@
 .PHONY: clean all distclean install uninstall lib test examples minimal
 
-VERSION=0.3.0.2
+VERSION=0.3.1
 PROJNAME=uwt
 USE_OCAMLFIND= true
 BYTE_ENABLED=	true

@@ -1,3 +1,13 @@
+0.3.1 2018-07-02
+---------------------------
+
+- update to libuv 1.21.0:
+   * new function: `Uwt.Fs.lchmown`
+
+- Change license to MIT
+
+- fix compilation under OCaml 4.07.0 (Windows)
+
 0.3.0.2 2018-04-23
 ---------------------------
 
@@ -13,13 +23,13 @@ release contains a serious regression.
 ---------------------------
 
 - update to lwt 4.0.0:
- * The modules `Uwt_chan` and `Uwt_log` have been removed. `Uwt_log`
-   is available as an external library
- * `Uwt_io.file_length` now fails with `EISDIR` when used on a
-   directory (see https://github.com/ocsigen/lwt/issues/563)
+   * The modules `Uwt_chan` and `Uwt_log` have been removed. `Uwt_log`
+     is available as an external library
+   * `Uwt_io.file_length` now fails with `EISDIR` when used on a
+     directory (see https://github.com/ocsigen/lwt/issues/563)
 
 - update to libuv 1.20.0:
- * `Uwt.Fs.copyfile` now supports file cloning
+   * `Uwt.Fs.copyfile` now supports file cloning
 
 0.2.4 2018-02-10
 ---------------------------
