@@ -78,9 +78,7 @@ module Req = struct
         else
           match x with
           | Ok x -> Lwt.return x
-          | Error ECANCELED -> canceled
-          | Error x -> efail ~param name x
-      in
+          | Error x -> efail ~param name x in
       Lwt.catch (fun () -> sleeper) (function
         | Lwt.Canceled ->
           if Lwt.is_sleeping wait_sleeper && cancel req then
@@ -106,8 +104,6 @@ module Req = struct
         else (
           if Int_result.is_ok x then
             Lwt.return x
-          else if Int_result.plain x = (Int_result.ecanceled :> int) then
-            canceled
           else
             Int_result.to_exn ~param ~name x |> Lwt.fail
         )
