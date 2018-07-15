@@ -1422,6 +1422,7 @@ module C_worker = struct
   let call a b = call_internal a b
 end
 
+module OUnix = Unix
 module Unix = struct
 
   type seek_command = Unix.seek_command = SEEK_SET | SEEK_CUR | SEEK_END
@@ -1796,8 +1797,14 @@ module Fs = struct
   external sendfile:
     file -> file -> int64 -> nativeint -> loop -> nativeint cb ->
     Req.r = "uwt_fs_sendfile_byte" "uwt_fs_sendfile_native"
-  let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () =
-    Req.ql ~f:(sendfile dst src pos len) ~name:"sendfile" ~param
+  let sendfile ?(pos=0L) ?len ~dst ~src () =
+    let rlen = match len with
+    | None -> -1n
+    | Some x -> x in
+    if len <> None && rlen < 0n then
+      ufail "sendfail" OUnix.EINVAL
+    else
+      Req.ql ~f:(sendfile dst src pos rlen) ~name:"sendfile" ~param
 
   external utime: string -> float -> float -> loop -> unit_cb -> Req.r =
     "uwt_fs_utime"

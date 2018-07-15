@@ -204,8 +204,14 @@ external sendfile:
   file -> file -> int64 -> nativeint ->
   nativeint uv_result = "uwt_fs_sendfile_sync"
 
-let sendfile ?(pos=0L) ?(len=Nativeint.max_int)  ~dst ~src () =
-  sendfile dst src pos len
+let sendfile ?(pos=0L) ?len ~dst ~src () =
+  let rlen = match len with
+  | None -> -1n
+  | Some x -> x in
+  if len <> None && rlen < 0n then
+    Error EINVAL
+  else
+    sendfile dst src pos rlen
 
 external stat: string -> stats uv_result = "uwt_fs_stat_sync"
 external lstat:  string -> stats uv_result = "uwt_fs_lstat_sync"

@@ -505,7 +505,7 @@ module type Fs_functions = sig
       descriptor and another
 
       @param pos default 0
-      @param len [Nativeint.max_int] *)
+      @param len [default: SIZE_MAX] *)
 
   val utime : string -> access:float -> modif:float -> unit t
   (** {!utime} changes the access and modification times of a file. If

@@ -727,7 +727,8 @@ FSFUNC_4(fs_sendfile, fs_sendfile_cb, o_outfd, o_infd, o_offset, o_len, {
   const int outfd = FD_VAL(o_outfd);
   const int infd = FD_VAL(o_infd);
   const int64_t offset = Int64_val(o_offset);
-  const int64_t len = Int64_val(o_len);
+  const intnat olen = Nativeint_val(o_len);
+  size_t len = olen < 0 ? SIZE_MAX : (size_t)olen;
   BLOCK(uv_fs_sendfile(loop, req, outfd, infd, offset, len, cb));
 })
 
