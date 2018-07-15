@@ -8,6 +8,7 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
+#include "uwt-back-errno.h"
 
 #ifdef NDEBUG
 #undef NDEBUG
@@ -22,6 +23,9 @@ static const char *
 get_er_msg(int d)
 {
   switch(d){
+  case UV_EREMOTEIO: return "remote I/O error";
+  case UV_ENOTTY: return "inappropriate ioctl for device";
+  case UV_EFTYPE: return "inappropriate file type or format";
   case UV_UWT_EFATAL: return "fatal uwt error";
   default: assert(0);
   }
@@ -105,6 +109,10 @@ int er_map [] = {
   UV_EOF,
   UV_ENXIO,
   UV_EMLINK,
+  UV_EHOSTDOWN,
+  UV_EREMOTEIO,
+  UV_ENOTTY,
+  UV_EFTYPE,
   UV_UWT_EFATAL,
 };
 
@@ -113,6 +121,9 @@ err_name(int i)
 {
   switch (i){
   case UV_UWT_EFATAL: return "UWT_EFATAL";
+  case UV_EREMOTEIO: return "EREMOTEIO";
+  case UV_ENOTTY: return "ENOTTY";
+  case UV_EFTYPE: return "EFTYPE";
   default: return (uv_err_name(i));
   }
 }
@@ -184,7 +195,8 @@ int main(void)
   }
   fputs("} val_uwt_int_result_errno_t;\n",c2);
 
-  fputs("#include \"macros.h\"\n"
+  fputs("#include \"uwt-back-errno.h\" \n"
+        "#include \"macros.h\"\n"
         "DISABLE_WARNING_ENUM_COMPARE()\n",c);
 
   fputs("value\n"
@@ -272,9 +284,16 @@ int main(void)
   for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
-    if ( x[0] == 'U' && x[1] == 'W' && x[2] == 'T' ){
-      fprintf(c,"  case UV_%s : msg = \"%s\"; break; \n",
-              x, get_er_msg(val));
+    switch(val){
+    case UV_EREMOTEIO:
+    case UV_ENOTTY:
+    case UV_EFTYPE:
+    case UV_UWT_EFATAL:
+      fprintf(c,
+              "#ifdef UWT_DEFINED_UV_%s\n"
+              "  case UV_%s : msg = \"%s\"; break; \n"
+              "#endif\n"
+              , x, x, get_er_msg(val));
     }
   }
   fputs("  default: msg = uv_strerror(x);\n  }\n"

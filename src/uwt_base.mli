@@ -89,6 +89,10 @@ type error =
   | EOF (** end of file *)
   | ENXIO (** no such device or address *)
   | EMLINK (** too many links *)
+  | EHOSTDOWN (** host is down *)
+  | EREMOTEIO (** remote I/O error *)
+  | ENOTTY (** inappropriate ioctl for device *)
+  | EFTYPE (** inappropriate file type or format *)
   | UWT_EFATAL (** something happened that the author of uwt didn't expect.
                    Probably a bug or the api of libuv has changed in the
                    meanwhile *)
@@ -243,6 +247,10 @@ module Int_result : sig
   val eof : int
   val enxio : int
   val emlink : int
+  val ehostdown : int
+  val eremoteio : int
+  val enotty : int
+  val eftype : int
   val uwt_efatal : int
 end
 
