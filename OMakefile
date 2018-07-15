@@ -93,12 +93,12 @@ static.=
 		$(ConfMsgError $''cppo missing'')
 	if $(equal $(BYTE_ENABLED), true)
 		export
-		OCAMLCFLAGS= -g -bin-annot
-		OCAMLOPTFLAGS= -g
+		OCAMLCFLAGS+= -g -bin-annot
+		OCAMLOPTFLAGS+= -g
 	else
 		export
-		OCAMLCFLAGS= -g
-		OCAMLOPTFLAGS= -g -bin-annot
+		OCAMLCFLAGS+= -g
+		OCAMLOPTFLAGS+= -g -bin-annot
 	if $(not $(equal $(getenv DEBUG_MY_CODE, $(EMPTY)), $(EMPTY)))
 		export
 		CFLAGS= $(CFLAGS) $(DEVCFLAGS)

@@ -57,7 +57,7 @@ if [ "$unix" = "true" ]; then
     fi
     cd ..
     lib="../libuv/.libs/libuv.a"
-    rm -f src/libuv.a examples/libuv.a test/libuv.a
+    rm -f src/libuv.a src-log/libuv.a examples/libuv.a test/libuv.a
     ln -s "${lib}" src/libuv.a
     ln -s "${lib}" src-log/libuv.a
     ln -s "${lib}" examples/libuv.a
