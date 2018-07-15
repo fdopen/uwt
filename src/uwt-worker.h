@@ -45,7 +45,7 @@ typedef value (*cb_camlval)(uv_req_t *);
 */
 typedef void (*cb_cleaner)(uv_req_t *);
 
-int
+value
 uwt_add_worker(value o_uwt,
                cb_cleaner cleaner,
                cb_worker worker,
@@ -53,7 +53,7 @@ uwt_add_worker(value o_uwt,
                void * p1,
                void * p2);
 
-int
+value
 uwt_add_worker_result(value o_uwt,
                       cb_cleaner cleaner,
                       cb_worker worker,

@@ -35,7 +35,7 @@ UDP_TCP_INIT(udp,UV_UDP)
     value v = Field(ret,0);                                             \
     struct handle * h = Handle_val(v);                                  \
     h->initialized = 1;                                                 \
-    const int mode = Long_val(o_mode) == 0 ? AF_INET : AF_INET6 ;       \
+    const unsigned int mode = Long_val(o_mode) == 0 ? AF_INET : AF_INET6 ; \
     const int erg = uv_ ## name ## _init_ex(&l->loop,                   \
                                             (uv_ ## name ## _t*)h->handle, \
                                             mode );                     \
@@ -59,7 +59,7 @@ uwt_tcp_udp_open(value o_tcp, value o_fd, udp_tcp_openf fun)
   HANDLE_INIT_NA(t, o_tcp);
   int ret;
 #ifndef _WIN32
-  uv_os_sock_t s = Long_val(o_fd);
+  uv_os_sock_t s = FD_VAL(o_fd);
 #else
   uv_os_sock_t s;
   if ( Descr_kind_val(o_fd) != KIND_SOCKET ){

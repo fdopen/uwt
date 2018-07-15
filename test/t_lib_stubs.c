@@ -103,7 +103,7 @@ uwt_external_test(value o_user, value o_uwt)
     }
     memcpy(p1->content,c_str,p1->len);
   }
-  int ret;
+  value ret;
   ret = uwt_add_worker(o_uwt,
                        test_cleanup,
                        test_worker,

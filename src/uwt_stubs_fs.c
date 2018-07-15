@@ -113,7 +113,6 @@
   value o_ret;                                  \
   struct req * wp = NULL;                       \
   uv_fs_t * req = NULL;                         \
-  ATTR_UNUSED                                   \
   int ret = UV_UWT_EFATAL;                      \
   uv_loop_t * loop = Uv_loop_val(o_loop);       \
   enum { callback_type = CB_LWT };              \
@@ -453,12 +452,17 @@ fs_open_cb(uv_req_t * r)
   return ret;
 }
 
+#define INT_OVERFLOW_EINVAL(x,y)                            \
+  const intnat x ## ocheck_ = Long_val(y);                  \
+  if ( x ## ocheck_ < INT_MIN || x ## ocheck_ > INT_MAX ){  \
+    ret = UV_EINVAL;                                        \
+    goto eend;                                              \
+  }                                                         \
+  const int x = (int) x ## ocheck_
+
+
 FSFUNC_3(fs_open, fs_open_cb, o_name, o_flag_list, o_perm, {
-  const intnat perm = Long_val(o_perm);
-  if ( perm < INT_MIN || perm > INT_MAX ){
-    ret = UV_EINVAL;
-    goto eend;
-  }
+  INT_OVERFLOW_EINVAL(perm, o_perm);
   const int flags = SAFE_CONVERT_FLAG_LIST(o_flag_list,open_flag_table);
   COPY_STR1(o_name,{
     BLOCK(uv_fs_open(loop, req, STRING_VAL(o_name), flags, perm, cb));
@@ -659,11 +663,7 @@ FSFUNC_1(fs_unlink, runit, o_path, {
 })
 
 FSFUNC_2(fs_mkdir, runit, o_path, o_mode, {
-  const intnat mode = Long_val(o_mode);
-  if ( mode < INT_MIN || mode > INT_MAX ){
-    ret = UV_EINVAL;
-    goto eend;
-  }
+  INT_OVERFLOW_EINVAL(mode, o_mode);
   COPY_STR1(o_path,{
     BLOCK(uv_fs_mkdir(loop, req, STRING_VAL(o_path), mode, cb));
   });
@@ -773,7 +773,7 @@ fs_scandir_cb(uv_req_t * r)
       Store_field(ar,i,t);
       ++i;
     }
-    if ( i != req->result ){
+    if ( i != result ){
       param = caml_alloc_small(1,Error_tag);
       Field(param,0) = VAL_UWT_ERROR_UWT_EFATAL;
     }
@@ -863,11 +863,7 @@ FSFUNC_2(fs_access, runit, o_path, o_list, {
 })
 
 FSFUNC_2(fs_chmod, runit, o_path, o_mode, {
-  const intnat mode = Long_val(o_mode);
-  if ( mode < INT_MIN || mode > INT_MAX ){
-    ret = UV_EINVAL;
-    goto eend;
-  }
+  INT_OVERFLOW_EINVAL(mode, o_mode);
   COPY_STR1(o_path,{
     BLOCK(uv_fs_chmod(loop, req, STRING_VAL(o_path), mode, cb));
   });
@@ -875,20 +871,16 @@ FSFUNC_2(fs_chmod, runit, o_path, o_mode, {
 
 FSFUNC_2(fs_fchmod, runit, o_fd, o_mode, {
   const int fd = FD_VAL(o_fd);
-  const intnat mode = Long_val(o_mode);
-  if ( mode < INT_MIN || mode > INT_MAX ){
-    ret = UV_EINVAL;
-    goto eend;
-  }
+  INT_OVERFLOW_EINVAL(mode, o_mode);
   BLOCK(uv_fs_fchmod(loop, req, fd, mode, cb));
 })
 
-DISABLE_WARNING_TYPE_LIMIT();
+DISABLE_WARNING_TYPE_LIMIT()
 FSFUNC_3(fs_chown, runit, o_path, o_uid, o_gid, {
   const intnat r_uid = Long_val(o_uid);
   const intnat r_gid = Long_val(o_gid);
-  const uv_uid_t uid = r_uid;
-  const uv_gid_t gid = r_gid;
+  const uv_uid_t uid = (uv_uid_t)r_uid;
+  const uv_gid_t gid = (uv_gid_t)r_gid;
   if ( r_uid != uid || gid != r_gid || ((uv_uid_t)-1 >= 0 && r_uid < 0) ||
        ((uv_gid_t)-1 >= 0 && r_gid < 0) ){
     ret = UV_EINVAL;
@@ -903,8 +895,8 @@ FSFUNC_3(fs_fchown, runit, o_fd, o_uid, o_gid, {
   const int fd = FD_VAL(o_fd);
   const intnat r_uid = Long_val(o_uid);
   const intnat r_gid = Long_val(o_gid);
-  const uv_uid_t uid = r_uid;
-  const uv_gid_t gid = r_gid;
+  const uv_uid_t uid = (uv_uid_t)r_uid;
+  const uv_gid_t gid = (uv_gid_t)r_gid;
   if ( r_uid != uid || gid != r_gid || ((uv_uid_t)-1 >= 0 && r_uid < 0) ||
        ((uv_gid_t)-1 >= 0 && r_gid < 0) ){
     ret = UV_EINVAL;
@@ -917,8 +909,8 @@ FSFUNC_3(fs_fchown, runit, o_fd, o_uid, o_gid, {
 FSFUNC_3(fs_lchown, runit, o_path, o_uid, o_gid, {
   const intnat r_uid = Long_val(o_uid);
   const intnat r_gid = Long_val(o_gid);
-  const uv_uid_t uid = r_uid;
-  const uv_gid_t gid = r_gid;
+  const uv_uid_t uid = (uv_uid_t)r_uid;
+  const uv_gid_t gid = (uv_gid_t)r_gid;
   if ( r_uid != uid || gid != r_gid || ((uv_uid_t)-1 >= 0 && r_uid < 0) ||
        ((uv_gid_t)-1 >= 0 && r_gid < 0) ){
     ret = UV_EINVAL;
@@ -931,7 +923,7 @@ FSFUNC_3(fs_lchown, runit, o_path, o_uid, o_gid, {
 #else
 NO_FS_3(fs_lchown)
 #endif
-POP_WARNING();
+POP_WARNING()
 
 FSFUNC_3(fs_utime, runit, o_p, o_atime, o_mtime, {
   const double atime = Double_val(o_atime);
@@ -1083,3 +1075,4 @@ NO_FS_3(fs_copyfile)
 #undef STRING_VAL
 #undef runit
 #undef NO_FS_3
+#undef INT_OVERFLOW_EINVAL

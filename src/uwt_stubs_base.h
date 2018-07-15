@@ -19,10 +19,10 @@ typedef unsigned int cb_t;
  * uwt__gr_unregister, uwt__gr_register , everything else will be
  * changed */
 
-UWT_LOCAL value uwt__global_caml_root;
-UWT_LOCAL cb_t uwt__global_caml_root_size;
-UWT_LOCAL cb_t uwt__global_caml_root_n;
-UWT_LOCAL cb_t *uwt__global_caml_root_free_pos;
+UWT_LOCAL_VAR value uwt__global_caml_root;
+UWT_LOCAL_VAR cb_t uwt__global_caml_root_size;
+UWT_LOCAL_VAR cb_t uwt__global_caml_root_n;
+UWT_LOCAL_VAR cb_t *uwt__global_caml_root_free_pos;
 
 #define GR_ROOT_INIT_SIZE_P2 12u
 #define GET_CB_VAL__I(x)                        \
@@ -58,7 +58,7 @@ uwt__gr_register__(cb_t *a,value x);
   } while(0)
 
 /* ocaml runtime lock */
-UWT_LOCAL bool uwt_global_runtime_released;
+UWT_LOCAL_VAR bool uwt_global_runtime_released;
 #define GET_RUNTIME()                           \
   do {                                          \
     if ( uwt_global_runtime_released == true ){ \
@@ -189,8 +189,8 @@ UWT_LOCAL void uwt__free_handle(struct handle *);
 
 /* other */
 /* currently Lwt.wakeup */
-UWT_LOCAL value *uwt__global_wakeup;
-UWT_LOCAL value *uwt_global_exception_fun;
+UWT_LOCAL_VAR value *uwt__global_wakeup;
+UWT_LOCAL_VAR value *uwt_global_exception_fun;
 
 /* debugging */
 UWT_EXTERN1(uwt_free_all_memory);

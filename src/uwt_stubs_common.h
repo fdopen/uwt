@@ -108,8 +108,10 @@
 #ifndef UWT_LOCAL
 #if (defined(__GNUC__) && __GNUC__ >= 4) || defined(__clang__)
 #define UWT_LOCAL __attribute__((visibility ("hidden")))
+#define UWT_LOCAL_VAR __attribute__((visibility ("hidden"))) extern
 #else
 #define UWT_LOCAL
+#define UWT_LOCAL_VAR extern
 #endif
 #endif
 
@@ -128,6 +130,11 @@ uwt__safe_convert_flag_list(value, const int [],size_t );
 #define SAFE_CONVERT_FLAG_LIST(a,b)             \
   uwt__safe_convert_flag_list(a,b,AR_SIZE(b))
 
+UWT_LOCAL unsigned int
+uwt__safe_convert_flag_ulist(value, const unsigned int [],size_t );
+#define SAFE_CONVERT_FLAG_ULIST(a,b)             \
+  uwt__safe_convert_flag_ulist(a,b,AR_SIZE(b))
+
 UWT_LOCAL value
 uwt__safe_rev_convert_flag_list(int res, const int flags[],size_t flags_size);
 #define SAFE_REV_CONVERT_FLAG_LIST(a,b)           \
@@ -140,7 +147,7 @@ UWT_LOCAL bool
 uwt__get_sockaddr(value o_addr,struct sockaddr *saddr);
 
 UWT_LOCAL value
-uwt__alloc_eresult(val_uwt_error_t er);
+uwt__alloc_eresult(value er);
 
 extern int caml_convert_signal_number(int);
 extern int caml_rev_convert_signal_number(int);
@@ -148,7 +155,7 @@ extern int caml_rev_convert_signal_number(int);
 #ifndef _WIN32
 #define uwt__convert_signal_number caml_convert_signal_number
 #define uwt__rev_convert_signal_number caml_rev_convert_signal_number
-#define FD_VAL(x) (Long_val(x))
+#define FD_VAL(x) ((int)(Long_val(x)))
 #else
 /* Windows: libuv's kill will handle SIGTERM, SIGKILL, SIGINT (kill).
    It wil emulate SIGBREAK, SIGHUP, SIGWINCH.

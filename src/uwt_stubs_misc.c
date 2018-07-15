@@ -6,7 +6,7 @@
 CAMLprim value
 uwt_guess_handle_na(value o_fd)
 {
-  int t = UV_UNKNOWN_HANDLE;
+  uv_handle_type t = UV_UNKNOWN_HANDLE;
 #ifndef _WIN32
   t = uv_guess_handle(FD_VAL(o_fd));
 #else
@@ -277,7 +277,7 @@ uwt_cpu_info(value unit)
       Field(tup,1) = Val_long(c->speed);
 
       ar_in = caml_alloc(5,0);
-      int j = 0;
+      unsigned int j = 0;
 #define X(y)                                    \
       tmp = caml_copy_int64(c->cpu_times.y);    \
       Store_field(ar_in,j,tmp);                 \
@@ -402,7 +402,7 @@ uwt_os_dir(os_dir fdir_func)
   value ret;
   char buffer[ALLOCA_PATH_LEN];
   size_t size = ALLOCA_PATH_LEN;
-  int tag;
+  tag_t tag;
   caml_enter_blocking_section();
   const int r = fdir_func(buffer,&size);
   caml_leave_blocking_section();

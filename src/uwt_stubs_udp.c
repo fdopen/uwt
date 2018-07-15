@@ -5,7 +5,7 @@
 
 /* some functions are defined inside uwt_stubs_tcp */
 
-static const int udp_bin_flag_table[2] = {
+static const unsigned int udp_bin_flag_table[2] = {
   UV_UDP_IPV6ONLY, UV_UDP_REUSEADDR
 };
 
@@ -16,7 +16,7 @@ uwt_udp_bind_na(value o_udp, value o_sock, value o_flags){
     return VAL_UWT_INT_RESULT_UNKNOWN;
   }
   HANDLE_INIT_NA(t, o_udp);
-  const unsigned int flags = SAFE_CONVERT_FLAG_LIST(o_flags,udp_bin_flag_table);
+  const unsigned int flags = SAFE_CONVERT_FLAG_ULIST(o_flags,udp_bin_flag_table);
   const int ret = uv_udp_bind((uv_udp_t *)t->handle,
                               (struct sockaddr *)&addr,
                               flags);
@@ -333,7 +333,7 @@ CAMLprim value
 uwt_udp_recv_own(value o_udp,value o_offset,value o_len,value o_buf_cb)
 {
   HANDLE_INIT2_NO_UNINIT(u, o_udp, o_buf_cb);
-  const int ba = Tag_val(Field(o_buf_cb,0)) != String_tag;
+  const unsigned int ba = Tag_val(Field(o_buf_cb,0)) != String_tag;
   size_t len = Long_val(o_len);
   value ret;
   if ( u->cb_read != CB_INVALID ){

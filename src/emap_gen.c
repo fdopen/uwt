@@ -19,7 +19,7 @@
 #define UV_UWT_EFATAL (int16_t)(INT16_MAX + 17)
 
 static const char *
-get_er_msg(unsigned int d)
+get_er_msg(int d)
 {
   switch(d){
   case UV_UWT_EFATAL: return "fatal uwt error";
@@ -169,13 +169,12 @@ int main(void)
 
   assert( uv_unknown != UINT_MAX );
 
-  fputs("typedef enum {\n",c2);
   for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
     const char * x = err_name(val);
-    fprintf(c2,"  VAL_UWT_ERROR_%s = (Val_long(%u)),\n",x,i);
+    fprintf(c2,"#define VAL_UWT_ERROR_%s (Val_long(%u))\n",x,i);
   }
-  fputs("} val_uwt_error_t;\n\n",c2);
+  fputs("\n\n",c2);
 
   fputs("typedef enum {\n",c2);
   for ( i = 0; i < AR_SIZE(er_map); ++i ){
@@ -257,17 +256,18 @@ int main(void)
   fputs("\n",c);
 
   fputs(
-  "CAMLprim value\nuwt_strerror(value i)\n{\n"
-    "  int t = Long_val(i);\n"
+    "CAMLprim value\nuwt_strerror(value i)\n{\n"
+    "  const intnat t = Long_val(i);\n"
+    "  int x;\n"
     "  if ( t < 0 ||\n"
-    "       t >= (int)(sizeof(error_rev_map) / sizeof(error_rev_map[0]))){\n"
-    "     t = UV_UWT_EFATAL;\n"
+    "       t >= (intnat)(sizeof(error_rev_map) / sizeof(error_rev_map[0]))){\n"
+    "     x = UV_UWT_EFATAL;\n"
     "  }\n"
     "  else {\n"
-    "     t = error_rev_map[t];\n"
+    "     x = error_rev_map[t];\n"
     "  }\n"
     "  const char * msg;\n"
-    "  switch(t){\n" ,c );
+    "  switch(x){\n" ,c );
 
   for ( i = 0; i < AR_SIZE(er_map); ++i ){
     int val = er_map[i];
@@ -277,7 +277,7 @@ int main(void)
               x, get_er_msg(val));
     }
   }
-  fputs("  default: msg = uv_strerror(t);\n  }\n"
+  fputs("  default: msg = uv_strerror(x);\n  }\n"
         "  return (caml_copy_string(msg));\n"
         "}\n" ,c );
 

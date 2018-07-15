@@ -171,7 +171,7 @@ c_copy_string_array(char **src)
 }
 
 static char **
-c_copy_addr_array(char ** src, int addr_len)
+c_copy_addr_array(char ** src, unsigned int addr_len)
 {
   size_t ar_len = 0;
   if ( src == NULL ){
@@ -239,11 +239,11 @@ dup_hostent(struct hostent *orig)
       goto nomem2;
     }
   }
-  if ( !orig->h_addr_list ){
+  if ( !orig->h_addr_list || orig->h_length <= 0 ){
     h->h_addr_list = NULL;
   }
   else {
-    h->h_addr_list = c_copy_addr_array(orig->h_addr_list,orig->h_length);
+    h->h_addr_list = c_copy_addr_array(orig->h_addr_list, orig->h_length);
     if ( !h->h_addr_list ){
       goto nomem3;
     }
@@ -1699,17 +1699,14 @@ uwt_chroot(value o_name, value o_uwt)
   value ret;
   const char * oname = String_val(o_name);
   if ( !uwt_is_safe_string(o_name) ){
-    ret = VAL_UWT_INT_RESULT_ECHARSET;
-    goto endp;
+    return VAL_UWT_INT_RESULT_ECHARSET;
   }
   if ( *oname == 0 ){
-    ret = VAL_UWT_INT_RESULT_EINVAL;
-    goto endp;
+    return VAL_UWT_INT_RESULT_EINVAL;
   }
   char * cname = strdup(oname);
   if ( cname == NULL ){
-    ret = VAL_UWT_INT_RESULT_ENOMEM;
-    goto endp;
+    return VAL_UWT_INT_RESULT_ENOMEM;
   }
   ret = uwt_add_worker_result(o_uwt,
                               free_p1,
@@ -1717,7 +1714,6 @@ uwt_chroot(value o_name, value o_uwt)
                               getunitp2_camlval,
                               cname,
                               NULL);
-endp:
   return ret;
 }
 #else

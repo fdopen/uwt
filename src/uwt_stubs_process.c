@@ -255,7 +255,7 @@ uwt_spawn(value p1, value p2, value p3, value p4)
   t.stdio_count = 3;
   t.stdio = stdio;
   intnat p_overflow = Long_val(Field(Field(p1,2),0));
-  t.uid = p_overflow;
+  t.uid = (uv_uid_t)p_overflow;
 
   DISABLE_WARNING_TYPE_LIMIT();
   if ( t.uid != p_overflow || ((uv_uid_t)-1 >= 0 && p_overflow < 0 )){
@@ -265,7 +265,7 @@ uwt_spawn(value p1, value p2, value p3, value p4)
   POP_WARNING();
 
   p_overflow = Long_val(Field(Field(p1,2),1));
-  t.gid = p_overflow;
+  t.gid = (uv_gid_t)p_overflow;
 
   DISABLE_WARNING_TYPE_LIMIT();
   if ( t.gid != p_overflow || ((uv_gid_t)-1 >= 0 && p_overflow < 0 )){

@@ -481,7 +481,7 @@ uwt_default_loop(value o_unit)
    from the GC */
 
 static uv_req_t *
-malloc_uv_req_t(int type)
+malloc_uv_req_t(uv_req_type type)
 {
   struct stack * x;
   x = &stacks_req_t[type];
@@ -596,7 +596,7 @@ uwt__handle_unreg_camlval(struct handle *s)
 }
 
 static uv_handle_t *
-malloc_uv_handle_t(int type)
+malloc_uv_handle_t(uv_handle_type type)
 {
   struct stack * x;
   x = &stacks_handle_t[type];

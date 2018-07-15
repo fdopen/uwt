@@ -124,7 +124,6 @@ uwt_getaddrinfo(value o_node,
   if (unlikely( *node == '\0' && *serv == '\0' )){
     return uwt__alloc_eresult(VAL_UWT_ERROR_EINVAL);
   }
-  CAMLparam3(o_node,o_serv,o_cb);
   int erg;
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
@@ -132,7 +131,7 @@ uwt_getaddrinfo(value o_node,
   for (/*nothing*/; Is_block(o_opts); o_opts = Field(o_opts, 1) ){
     value v = Field(o_opts, 0);
     if ( Is_block(v) ){
-      const unsigned int i = Long_val(Field(v, 0));
+      const intnat i = Long_val(Field(v, 0));
       switch ( Tag_val(v) ){
       case 0: /* AI_FAMILY of socket_domain */
         hints.ai_family = socket_domain_table[i];
@@ -141,7 +140,10 @@ uwt_getaddrinfo(value o_node,
         hints.ai_socktype = socket_type_table[i];
         break;
       case 2: /* AI_PROTOCOL of int */
-        hints.ai_protocol = i;
+        if ( i < INT_MIN || i > INT_MAX ) {
+          return uwt__alloc_eresult(VAL_UWT_ERROR_EINVAL);
+        }
+        hints.ai_protocol = (int)i;
         break;
       }
     }
@@ -156,6 +158,7 @@ uwt_getaddrinfo(value o_node,
       }
     }
   }
+  CAMLparam3(o_node,o_serv,o_cb);
   GR_ROOT_ENLARGE();
   value o_ret;
   struct req * req = uwt__req_create_res(UV_GETADDRINFO, &o_ret);

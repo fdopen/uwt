@@ -13,23 +13,27 @@ int uwt_is_safe_string (value str)
   return ( caml_string_length(str) == strlen(String_val(str)) );
 }
 
-UWT_LOCAL int
-uwt__safe_convert_flag_list(value list, const int flags[],size_t flags_size)
-{
-  int res;
-  res = 0;
-  while ( list != Val_int(0) ){
-    const intnat pos = Long_val(Field(list, 0));
-    list = Field(list, 1);
-    if ( pos < 0 || (size_t)pos >= flags_size ){
-      assert(0);
-    }
-    else {
-      res |= flags[pos];
-    }
+#define XX(name,type)                                     \
+  UWT_LOCAL type                                          \
+  name(value list, const type flags[], size_t flags_size) \
+  {                                                       \
+    type res = 0;                                         \
+    while ( list != Val_int(0) ){                         \
+      const intnat pos = Long_val(Field(list, 0));        \
+      list = Field(list, 1);                              \
+      if ( pos < 0 || (size_t)pos >= flags_size ){        \
+        assert(0);                                        \
+      }                                                   \
+      else {                                              \
+        res |= flags[pos];                                \
+      }                                                   \
+    }                                                     \
+    return res;                                           \
   }
-  return res;
-}
+
+XX(uwt__safe_convert_flag_list,int)
+XX(uwt__safe_convert_flag_ulist,unsigned int)
+#undef XX
 
 UWT_LOCAL value
 uwt__safe_rev_convert_flag_list(int res, const int flags[],size_t flags_size)
@@ -166,7 +170,7 @@ uwt__get_sockaddr(value o_addr,struct sockaddr *saddr)
 }
 
 UWT_LOCAL value
-uwt__alloc_eresult(val_uwt_error_t er)
+uwt__alloc_eresult(value er)
 {
   value x = caml_alloc_small(1,Error_tag);
   Field(x,0) = er;

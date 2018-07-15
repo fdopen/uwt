@@ -46,7 +46,7 @@ event_cb(uv_fs_event_t* handle,
   HANDLE_CB_END(param);
 }
 
-static const int fs_event_flags[3] = {
+static const unsigned int fs_event_flags[3] = {
   UV_FS_EVENT_WATCH_ENTRY,
   UV_FS_EVENT_STAT,
   UV_FS_EVENT_RECURSIVE };
@@ -65,7 +65,7 @@ uwt_fs_event_start(value o_loop,
   }
   INIT_LOOP_RESULT(l,o_loop);
   CAMLparam2(o_path,o_cb);
-  const int flags = SAFE_CONVERT_FLAG_LIST(o_flags,fs_event_flags);
+  const unsigned int flags = SAFE_CONVERT_FLAG_ULIST(o_flags,fs_event_flags);
   GR_ROOT_ENLARGE();
   value ret = uwt__handle_res_create(UV_FS_EVENT, false);
   value v = Field(ret,0);

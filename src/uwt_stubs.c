@@ -2,6 +2,7 @@
    details, or visit https://github.com/fdopen/uwt/blob/master/LICENSE.md. */
 
 #define UWT_LOCAL static
+#define UWT_LOCAL_VAR static
 #include "uwt_stubs_common.c"
 #include "uwt_stubs_base.c"
 #include "uwt_stubs_handle.c"

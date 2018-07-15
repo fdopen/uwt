@@ -29,7 +29,7 @@ uwork_cb(uv_work_t *req, int status)
   REQ_CB_CALL(param);
 }
 
-static int
+static value
 uwt_add_worker_common(value o_uwt,
                       cb_cleaner cleaner,
                       cb_worker worker,
@@ -103,7 +103,7 @@ uwt_workreq_cancel_na(value o_req)
   return Val_long(0);
 }
 
-int uwt_add_worker(value a,
+value uwt_add_worker(value a,
                    cb_cleaner b,
                    cb_worker c,
                    cb_camlval d,
@@ -113,12 +113,12 @@ int uwt_add_worker(value a,
   return (uwt_add_worker_common(a,b,c,d,p1,p2,true));
 }
 
-int uwt_add_worker_result(value a,
-                          cb_cleaner b,
-                          cb_worker c,
-                          cb_camlval d,
-                          void * p1,
-                          void * p2)
+value uwt_add_worker_result(value a,
+                            cb_cleaner b,
+                            cb_worker c,
+                            cb_camlval d,
+                            void * p1,
+                            void * p2)
 {
   return (uwt_add_worker_common(a,b,c,d,p1,p2,false));
 }

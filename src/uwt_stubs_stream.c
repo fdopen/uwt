@@ -288,7 +288,7 @@ CAMLprim value
 uwt_read_own(value o_s,value o_offset,value o_len,value o_buf_cb)
 {
   HANDLE_INIT2_NO_UNINIT(s, o_s, o_buf_cb);
-  const int ba = Tag_val(Field(o_buf_cb,0)) != String_tag;
+  const unsigned int ba = Tag_val(Field(o_buf_cb,0)) != String_tag;
   value ret;
   const size_t len = Long_val(o_len);
   if ( len > ULONG_MAX ){

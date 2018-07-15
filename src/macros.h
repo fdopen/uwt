@@ -367,7 +367,7 @@ strdup (const char *s)
     if (unlikely( l_real < INT_MIN || l_real > INT_MAX )){  \
       return VAL_UWT_INT_RESULT_EINVAL;                     \
     }                                                       \
-    l = l_real;                                             \
+    l = (int)l_real;                                        \
   } while (0)
 
 #define INT_VAL_RET_WRAP_EINVAL(l,b)                        \
@@ -377,7 +377,7 @@ strdup (const char *s)
     if (unlikely( l_real < INT_MIN || l_real > INT_MAX )){  \
       return uwt__alloc_eresult(VAL_UWT_ERROR_EINVAL);      \
     }                                                       \
-    l = l_real;                                             \
+    l = (int)l_real;                                        \
   } while (0)
 
 #define UINT_VAL_RET_IR_EINVAL(l,b)                             \
@@ -387,7 +387,7 @@ strdup (const char *s)
     if (unlikely( l_real < 0 || (uintnat)l_real > UINT_MAX )){  \
       return VAL_UWT_INT_RESULT_EINVAL;                         \
     }                                                           \
-    l = l_real;                                                 \
+    l = (unsigned int)l_real;                                   \
   } while (0)
 
 #define UINT_VAL_RET_WRAP_EINVAL(l,b)                           \
@@ -397,7 +397,7 @@ strdup (const char *s)
     if (unlikely( l_real < 0 || (uintnat)l_real > UINT_MAX )){  \
       return uwt__alloc_eresult(VAL_UWT_ERROR_EINVAL);          \
     }                                                           \
-    l = l_real;                                                 \
+    l = (unsigned int)l_real;                                   \
   } while (0)
 
 #define UNTAG_POINTER(v)                        \

@@ -27,7 +27,7 @@ CAMLprim value
 uwt_tty_set_mode_na(value o_tty,value o_mode)
 {
   HANDLE_INIT_NOUNINIT_NA(s, o_tty);
-  int mode ;
+  uv_tty_mode_t mode ;
   switch ( Long_val(o_mode) ){
   case 2: mode = UV_TTY_MODE_IO; break;
   case 1: mode = UV_TTY_MODE_RAW; break;
