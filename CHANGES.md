@@ -1,12 +1,15 @@
-0.3.1 2018-07-02
+0.3.2 2018-07-16
 ---------------------------
 
-- update to libuv 1.21.0:
+- update to libuv 1.22.0:
    * new function: `Uwt.Fs.lchmown`
 
 - Change license to MIT
 
 - fix compilation under OCaml 4.07.0 (Windows)
+
+- add new `Uwt.error` codes: `EHOSTDOWN`, `EREMOTEIO`, `ENOTTY`, and
+  `EFTYPE`
 
 0.3.0.2 2018-04-23
 ---------------------------
