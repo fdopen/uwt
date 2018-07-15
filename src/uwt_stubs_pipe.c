@@ -71,6 +71,11 @@ uwt_pipe_bind_na(value o_pipe, value o_name)
   if ( (String_val(o_name))[0] == '\0' ){
     return VAL_UWT_INT_RESULT_EINVAL;
   }
+#ifndef _WIN32
+  if ( caml_string_length(o_name) >= UWT_FLDSIZ(sockaddr_un,sun_path) ) {
+    return VAL_UWT_INT_RESULT_ENAMETOOLONG;
+  }
+#endif
   /* string duplicated by libuv */
   int ret = uv_pipe_bind((uv_pipe_t*)p->handle,String_val(o_name));
   if ( ret >= 0 ){
@@ -181,6 +186,11 @@ uwt_pipe_connect(value o_pipe,value o_path,value o_cb)
     /* because libuv's broken handling of empty strings on linux */
     return VAL_UWT_INT_RESULT_ENOENT;
   }
+#ifndef _WIN32
+  if ( caml_string_length(o_path) >= UWT_FLDSIZ(sockaddr_un,sun_path) ) {
+    return VAL_UWT_INT_RESULT_ENAMETOOLONG;
+  }
+#endif
   HANDLE_INIT3(s,o_pipe,o_cb,o_path);
   struct req * wp = uwt__req_create(UV_CONNECT);
   uv_pipe_t* tpipe = (uv_pipe_t*)s->handle;

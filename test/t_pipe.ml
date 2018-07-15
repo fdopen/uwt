@@ -333,6 +333,21 @@ let l = [
        m_true ( Client.testv true );
        m_true ( Client.testv false );
      done );
+  ("longpipename">::
+   fun _ctx ->
+     OUnit2.skip_if Sys.win32 "restriction doesn't apply on windows";
+     let path = String.make 2048 'a' in
+     let p = Uwt.Pipe.init () in
+     let e = Uwt.Pipe.bind p ~path in
+     assert_equal (Uwt.Int_result.plain e) Uwt.Int_result.(plain enametoolong);
+     let t =
+       Lwt.catch (fun () ->
+           Uwt.Pipe.connect p ~path >>= fun () -> Lwt.return_false)
+         (function
+         | Unix.Unix_error(Unix.ENAMETOOLONG,"connect",_) -> Lwt.return_true
+         | x -> Lwt.fail x)
+     in
+     m_true t);
 ]
 
 let l  = "Pipe">:::l

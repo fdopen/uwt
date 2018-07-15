@@ -444,6 +444,9 @@ strdup (const char *s)
 
 #endif
 
+#define        UWT_FLDSIZ(name, field)          \
+  (sizeof(((struct name *)0)->field))
+
 #ifdef __cplusplus
 }
 #endif

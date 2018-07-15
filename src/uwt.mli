@@ -871,7 +871,7 @@ module Pipe : sig
     t -> unit Lwt.t
 
   val connect: t -> path:string -> unit Lwt.t
-  (** Connect to the Unix domain socket or the named pipe.*)
+  (** Connect to the Unix domain socket or a named pipe.*)
 
   val with_pipe: ?ipc:bool -> (t -> 'a Lwt.t) -> 'a Lwt.t
   (** [with_pipe ?ipc f] creates a new handle and passes
