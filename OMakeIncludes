@@ -86,9 +86,9 @@ Regex_ar(regex,ar)=
 
 static. =
 	section
-		if $(not $(CheckProg ocamlfind))
-			$(ConfMsgError ocamlfind missing)
-		config_out=$(shella ocamlfind ocamlc -config)
+		if $(not $(CheckProg $(OCAMLFIND)))
+			$(ConfMsgError $(OCAMLFIND) missing)
+		config_out=$(shella $(OCAMLFIND) ocamlc -config)
 		CC_CONFIG=$(Regex_ar $"^bytecomp_c_compiler:",$(config_out))
 		OCAMLC_CC= $(nth 1, $(CC_CONFIG))
 		OCAMLC_CC_CFLAGS=$(nth-tl 2, $(CC_CONFIG))
@@ -102,7 +102,7 @@ static. =
 		x=$(split .,$(OCAMLC_VERSION))
 		OCAMLC_VERSION_MAJOR=$(int $(x.nth 0))
 		OCAMLC_VERSION_MINOR=$(int $(x.nth 1))
-		HAVE_NATIVE_DYNLINK=$(and $(NATIVE_ENABLED), $(eq 0,$(shell-code ocamlfind query -predicates native dynlink)))
+		HAVE_NATIVE_DYNLINK=$(and $(NATIVE_ENABLED), $(eq 0,$(shell-code $(OCAMLFIND) query -predicates native dynlink)))
 		export OCAMLLIB
 		export OCAMLC_VERSION
 		export OCAMLC_CC
@@ -152,7 +152,7 @@ MixedLibrary(name,mlfiles,cfiles)=
 MOCamlLibrary(name,files)=
 	to_add=$(addsuffix .cmi,$(files)) $(if $(BYTE_ENABLED), $(addsuffix .cmo,$(files))) $(if $(NATIVE_ENABLED),$(addsuffix .cmx,$(files)))
 	x=$(set $(OCamlLibrary $(name),$(files)) $(to_add))
-	if $(equal $(HAVE_NATIVE_DYNLINK),false)
+	if $(or $(equal $(HAVE_NATIVE_DYNLINK),false), $(equal $(NATIVE_ENABLED),false))
 		return $(x)
 	elseif $(not $(equal $(filter %.cmxs, $(x)), $(EMPTY)))
 		return $(x)
