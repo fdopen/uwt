@@ -7,7 +7,7 @@ env:
   - PINS="ocb-stubblr.0.1.1.1:https://github.com/fdopen/ocb-stubblr.git uwt-random:https://github.com/fdopen/uwt-random.git uwt-ssl:https://github.com/fdopen/uwt-ssl.git uwt-tls:https://github.com/fdopen/uwt-tls.git uwt-conduit:https://github.com/fdopen/uwt-conduit.git uwt-cohttp:https://github.com/fdopen/uwt-cohttp.git"
   - POST_INSTALL_HOOK="./.travis-own.sh"
   - TESTS=false
-  - PACKAGE=uwt.0.2.4
+  - PACKAGE=uwt.0.3.3
   matrix:
   - OCAML_VERSION=4.05
   - OCAML_VERSION=4.06
