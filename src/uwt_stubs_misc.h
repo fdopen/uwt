@@ -39,6 +39,9 @@ UWT_EXTERN1(uwt_os_getenv);
 UWT_EXTERN2(uwt_os_setenv_na);
 UWT_EXTERN1(uwt_os_unsetenv_na);
 UWT_EXTERN1(uwt_os_getppid_na);
+UWT_EXTERN2(uwt_os_setpriority_na);
+UWT_EXTERN1(uwt_os_getpriority);
+UWT_EXTERN1(uwt_os_getpid);
 
 #ifdef __cplusplus
 }

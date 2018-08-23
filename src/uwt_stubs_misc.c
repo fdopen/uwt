@@ -832,8 +832,74 @@ uwt_os_getppid_na(value unit)
     return VAL_UWT_INT_RESULT_UNKNOWN;
   }
 #endif
-  return (Val_long(p));
+  intnat pnat = (intnat)p;
+  if ( p != pnat || pnat < 0 || Long_val(Val_long(pnat)) != pnat ) {
+    /* wrong interface. I should have returned an uv_result,
+       not an Int_result.t */
+    return VAL_UWT_INT_RESULT_ERANGE;
+  }
+  return (Val_long(pnat));
 #else
   return VAL_UWT_INT_RESULT_ENOSYS;
+#endif
+}
+
+CAMLprim value
+uwt_os_getpriority(value o_pid)
+{
+#if HAVE_DECL_UV_OS_GETPRIORITY
+  intnat pid_t = Long_val(o_pid);
+  uv_pid_t pid = (uv_pid_t)pid_t;
+  if ( pid != pid_t ) {
+    return (uwt__alloc_eresult(VAL_UWT_ERROR_EINVAL));
+  }
+  int priority;
+  int ret = uv_os_getpriority(pid, &priority);
+  if (ret < 0) {
+    return (uwt__alloc_eresult(Val_uwt_error(ret)));
+  }
+  value r = caml_alloc_small(1, Ok_tag);
+  Field(r,0) = Val_long(priority);
+  return r;
+#else
+  (void) o_pid;
+  return (uwt__alloc_eresult(VAL_UWT_ERROR_ENOSYS));
+#endif
+}
+
+CAMLprim value
+uwt_os_setpriority_na(value o_pid, value o_prio)
+{
+#if HAVE_DECL_UV_OS_GETPRIORITY
+  INT_VAL_RET_IR_EINVAL(prio,o_prio);
+  intnat pid_t = Long_val(o_pid);
+  uv_pid_t pid = (uv_pid_t)pid_t;
+  if ( pid != pid_t ){
+    return VAL_UWT_INT_RESULT_EINVAL;
+  }
+  int ret = uv_os_setpriority(pid, prio);
+  return VAL_UWT_UNIT_RESULT(ret);
+#else
+  (void) o_pid;
+  (void) o_prio;
+  return VAL_UWT_INT_RESULT_ENOSYS;
+#endif
+}
+
+CAMLprim value
+uwt_os_getpid(value o_unit)
+{
+  (void) o_unit;
+#if HAVE_DECL_UV_OS_GETPID
+  uv_pid_t pid = uv_os_getpid();
+  intnat p = (intnat) pid;
+  if ( p != pid || Long_val(Val_long(p)) != p ){
+    return (uwt__alloc_eresult(VAL_UWT_ERROR_ERANGE));
+  }
+  value r = caml_alloc_small(1, Ok_tag);
+  Field(r,0) = Val_long(p);
+  return r;
+#else
+  return (uwt__alloc_eresult(VAL_UWT_ERROR_ENOSYS));
 #endif
 }

@@ -625,6 +625,27 @@ module Misc = struct
   external unsetenv: string -> Int_result.unit = "uwt_os_unsetenv_na" NOALLOC
 
   external getppid: unit -> Int_result.int = "uwt_os_getppid_na" NOALLOC
+
+  external getpid: unit -> int uv_result = "uwt_os_getpid"
+  let getpid () =
+    if Sys.win32 = false then
+      let s = Unix.getpid () in
+      Ok s
+    else
+      getpid ()
+  let getpid_exn () = getpid () |> to_exn "getpid"
+
+  external getpriority: int -> int uv_result = "uwt_os_getpriority"
+  let getpriority_exn p = getpriority p |> to_exn "uv_os_getpriority"
+
+  external setpriority: pid:int -> priority:int -> Int_result.unit =
+    "uwt_os_setpriority_na" NOALLOC
+  let setpriority_exn ~pid ~priority =
+    let r = setpriority ~pid ~priority in
+    if Int_result.is_error r then
+      Int_result.raise_exn ~name:"uv_os_setpriority" r
+    else
+      ()
 end
 
 module Sys_info = struct

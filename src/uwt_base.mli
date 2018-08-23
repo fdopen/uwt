@@ -824,6 +824,31 @@ module Misc : sig
 
   val get_process_title: unit -> string uv_result
 
+  val setpriority: pid:int -> priority:int -> Int_result.unit
+  (** Sets the scheduling priority of the process specified by
+      `pid`. The `priority` value range is between -20 (high priority)
+      and 19 (low priority).
+
+        On Windows, this function utilizes `SetPriorityClass()`. The
+      `priority` argument is mapped to a Windows priority class. When
+      retrieving the process priority, the result will not necessarily
+      equal the exact value of `priority`. *)
+
+  val setpriority_exn: pid:int -> priority:int -> unit
+
+  val getpriority: int -> int uv_result
+  (** Retrieves the scheduling priority of the process specified by
+     `pid`. The returned value of `priority` is between -20 (high
+      priority) and 19 (low priority). *)
+
+  val getpriority_exn: int -> int
+
+  val getpid: unit -> int uv_result
+  (** Returns the current process ID. Useful for Windows.
+      {Unix.getpid} doesn't return the current Process Id.
+      See: https://caml.inria.fr/mantis/view.php?id=4034 *)
+
+  val getpid_exn: unit -> int
 end
 
 module Sys_info : sig
