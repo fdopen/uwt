@@ -1,3 +1,13 @@
+0.3.3 2018-08-28
+---------------------------
+
+- update to libuv 1.23.0:
+   * new functions: `Uwt.Misc.setpriority`, `Uwt.Misc.getpriority`,
+     and `Uwt.Misc.getpid`. (`Unix.getpid` doesn't return
+     `GetCurrentProcessID` under Windows ...)
+
+- fix compilation
+
 0.3.2 2018-07-16
 ---------------------------
 
