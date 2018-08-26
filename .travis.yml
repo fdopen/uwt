@@ -8,6 +8,7 @@ env:
   - POST_INSTALL_HOOK="./.travis-own.sh"
   - TESTS=false
   - PACKAGE=uwt.0.3.3
+  - OPAM_VERSION=1.2.2
   matrix:
   - OCAML_VERSION=4.05
   - OCAML_VERSION=4.06
