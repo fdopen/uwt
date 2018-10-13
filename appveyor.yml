@@ -3,8 +3,8 @@ platform:
 
 environment:
   global:
-    FORK_USER: ocaml
-    FORK_BRANCH: master
+    FORK_USER: fdopen
+    FORK_BRANCH: opam2win
     CYG_ROOT: C:\cygwin64
     PACKAGE: uwt.0.3.3
   matrix:

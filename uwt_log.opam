@@ -1,17 +1,17 @@
-opam-version: "1.2"
+opam-version: "2.0"
 maintainer: "andreashauptmann@t-online.de"
 authors: [ "andreashauptmann@t-online.de" ]
 license: "MIT"
 homepage: "https://github.com/fdopen/uwt"
-dev-repo: "https://github.com/fdopen/uwt.git"
+dev-repo: "git+https://github.com/fdopen/uwt.git"
 bug-reports: "https://github.com/fdopen/uwt/issues"
 build: ["omake" "-j%{jobs}%" "EXTERNAL_UWT_LOGS=true" "lib-log"]
 install: ["omake" "EXTERNAL_UWT_LOGS=true" "install-log"]
-available: [ocaml-version >= "4.02.1"]
 depends: [
   "ocamlfind" {build}
   "omake" {build}
   "lwt" {>= "4.0"}
   "lwt_log"
+  "ocaml" {>= "4.02.1"}
   "uwt" {>= "0.3"}
 ]
