@@ -105,6 +105,9 @@ module Lwt_unix : sig
       | SO_ACCEPTCONN
       | TCP_NODELAY
       | IPV6_ONLY
+#if OCAML_VERSION >= (4, 12, 0)
+      | SO_REUSEPORT
+#endif
     type socket_int_option = Unix.socket_int_option =
       | SO_SNDBUF
       | SO_RCVBUF
