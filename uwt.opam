@@ -26,6 +26,7 @@ depends: [
   "base-bytes"
   "conf-autoconf" {build} # pin only
   "conf-pkg-config" {build}
+  "conf-automake" {build}
   "ocamlfind" {build}
   "cppo" {build & >= "1.3"}
   "omake" {build}
